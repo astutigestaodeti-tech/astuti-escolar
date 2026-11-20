@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\SchoolClassController;
 use App\Http\Middleware\ResolveMunicipality;
 use Illuminate\Support\Facades\Route;
 
@@ -24,4 +25,5 @@ Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')-
 Route::prefix('/m/{municipio}')->middleware(['auth', ResolveMunicipality::class])->group(function (): void {
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
+    Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
 });
