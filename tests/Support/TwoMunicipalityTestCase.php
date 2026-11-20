@@ -103,6 +103,14 @@ abstract class TwoMunicipalityTestCase extends TestCase
                     '--force' => true,
                 ]);
 
+                if (Schema::connection('tenant')->hasTable('school_classes')) {
+                    DB::connection('tenant')->table('school_classes')->delete();
+                }
+
+                if (Schema::connection('tenant')->hasTable('school_years')) {
+                    DB::connection('tenant')->table('school_years')->delete();
+                }
+
                 DB::connection('tenant')->table('schools')->delete();
 
                 foreach ($escolas as $id => $name) {
