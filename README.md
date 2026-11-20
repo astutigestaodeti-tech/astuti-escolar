@@ -6,7 +6,7 @@ Sistema de gestão escolar para redes públicas municipais, desenvolvido como pr
 
 Reduzir o trabalho de digitação das secretarias escolares. O produto deverá receber planilhas e documentos digitais ou digitalizados (CSV, XLSX, Word, PDF e imagens), extrair dados, apresentar inconsistências e **exigir conferência e validação humana** antes de registrar informações escolares. Também estão previstos acervo histórico, emissão de documentos conferidos, registros de auditoria e apoio às obrigações oficiais.
 
-> **Estado atual:** o projeto ainda está na fundação técnica. A fundação de bancos separados e a leitura autorizada de nomes de escolas já têm testes, mas cadastro de alunos, importações, documentos, segundo fator de autenticação e obrigações oficiais ainda não estão implementados. Não usar dados reais de alunos nesta etapa.
+> **Estado atual:** o projeto ainda está na fundação técnica. A fundação de bancos separados, a leitura autorizada de nomes de escolas e **a demonstração navegável de Monte Sereno** já têm testes. O cadastro real de alunos, a importação efetiva de documentos, o segundo fator de autenticação e as obrigações oficiais ainda não estão implementados. Não usar dados reais de alunos nesta etapa.
 
 ## Tecnologias
 
@@ -44,6 +44,9 @@ php artisan serve --host=127.0.0.1 --port=8001
 ```
 
 - Página inicial: `http://127.0.0.1:8001/`.
+- **Telas demonstrativas de Monte Sereno:** `http://127.0.0.1:8001/demonstracao`. Clique no menu lateral para visitar Visão geral, Escolas, Alunos, Matrículas, Importações, Documentos e Indicadores. A busca de alunos opera apenas sobre cinco nomes inventados.
+- A rota `/demonstracao` responde **404 em produção**. As informações, quantidades, escolas e nomes exibidos são sintéticos, existem somente na memória da renderização e não geram registros no banco. A importação de documentos nessa tela é **simulação visual**, sem upload.
+
 - Verificação pública de aplicação: `http://127.0.0.1:8001/saude`, com resposta `{"status":"ok"}`. A rota não revela versão, credenciais nem dados escolares.
 
 ## Qualidade e segurança
