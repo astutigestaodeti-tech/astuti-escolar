@@ -40,6 +40,16 @@ class SchoolRecordBuilder extends Builder
         $this->denyBulkWrite();
     }
 
+    public function insertOrIgnoreReturning(array $values, $returning = ['*'])
+    {
+        $this->denyBulkWrite();
+    }
+
+    public function replace(array $values)
+    {
+        $this->denyBulkWrite();
+    }
+
     public function insertGetId(array $values, $sequence = null)
     {
         if ($this->getModel()->allowsInternalAuditedUpdate()) {
@@ -80,6 +90,11 @@ class SchoolRecordBuilder extends Builder
     }
 
     public function decrementEach(array $columns, array $extra = [])
+    {
+        $this->denyBulkWrite();
+    }
+
+    public function touch($column = null)
     {
         $this->denyBulkWrite();
     }

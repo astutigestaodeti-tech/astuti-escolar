@@ -99,25 +99,47 @@ trait HasSchoolHistory
 
         $this->assertEventsEnabled();
 
-        return $this->getConnection()->transaction(function () use ($actorId, $reason): bool {
-            $this->assertNoActiveDependents();
+        $oldAttributes = $this->getAttributes();
 
-            // Só a rotina autorizada pode alterar metadados antes da exclusão.
-            // Uma gravação de modelo silenciosa abriria um caminho sem auditoria.
-            $this->setAttribute('deleted_by', $actorId);
-            $this->setAttribute('deletion_reason', trim($reason));
-            $this->getConnection()->table($this->getTable())
-                ->where($this->getKeyName(), $this->getKey())
-                ->update(['deleted_by' => $actorId, 'deletion_reason' => trim($reason)]);
-            $this->syncOriginalAttributes(['deleted_by', 'deletion_reason']);
+        try {
+            return $this->getConnection()->transaction(function () use ($actorId, $reason): bool {
+                // A chave estrangeira dos filhos também exige lock compartilhado
+                // neste pai. A trava exclusiva evita inserção durante a exclusão.
+                $current = $this->getConnection()->table($this->getTable())
+                    ->where($this->getKeyName(), $this->getKey())
+                    ->lockForUpdate()->first(['deleted_at']);
 
-            $this->deletionAuthorized = true;
-            try {
-                return $this->delete() === true;
-            } finally {
-                $this->deletionAuthorized = false;
-            }
-        });
+                if ($current === null || $current->deleted_at !== null) {
+                    throw new LogicException('Este registro já foi arquivado por outra operação.');
+                }
+
+                $this->assertNoActiveDependents();
+
+                // Somente esta transação altera os metadados antes do evento deleted.
+                $this->setAttribute('deleted_by', $actorId);
+                $this->setAttribute('deletion_reason', trim($reason));
+                $this->getConnection()->table($this->getTable())
+                    ->where($this->getKeyName(), $this->getKey())
+                    ->update(['deleted_by' => $actorId, 'deletion_reason' => trim($reason)]);
+                $this->syncOriginalAttributes(['deleted_by', 'deletion_reason']);
+
+                $this->deletionAuthorized = true;
+                try {
+                    if ($this->delete() !== true) {
+                        throw new LogicException('Exclusão cancelada; os metadados não foram gravados.');
+                    }
+
+                    return true;
+                } finally {
+                    $this->deletionAuthorized = false;
+                }
+            });
+        } catch (\Throwable $exception) {
+            // O banco faz rollback; o modelo em memória precisa voltar junto.
+            $this->setRawAttributes($oldAttributes, true);
+
+            throw $exception;
+        }
     }
 
     public function delete(): ?bool
@@ -190,6 +212,10 @@ trait HasSchoolHistory
         $this->assertEventsEnabled();
 
         return $this->getConnection()->transaction(function () use ($options): bool {
+            if ($this instanceof SchoolClass || $this instanceof StudentEnrollment) {
+                $this->assertActiveParents();
+            }
+
             $this->auditedModelWriteAuthorized = true;
             try {
                 return parent::save($options);
@@ -212,8 +238,16 @@ trait HasSchoolHistory
 
     private function assertEventsEnabled(): void
     {
-        if (static::getEventDispatcher() instanceof NullDispatcher) {
+        $dispatcher = static::getEventDispatcher();
+        if ($dispatcher === null || $dispatcher instanceof NullDispatcher) {
             throw new LogicException('Registros escolares não podem ser gravados sem eventos de auditoria.');
+        }
+
+        // flushEventListeners() deixa o dispatcher ativo, mas remove a auditoria.
+        foreach (['created', 'updated', 'deleted', 'restoring', 'restored'] as $event) {
+            if (! $dispatcher->hasListeners('eloquent.'.$event.': '.static::class)) {
+                throw new LogicException('Os listeners obrigatórios de auditoria escolar foram removidos.');
+            }
         }
     }
 
@@ -237,11 +271,11 @@ trait HasSchoolHistory
     private function assertActiveParents(): void
     {
         $parentsPresent = match (true) {
-            $this instanceof SchoolClass => School::query()->whereKey($this->getAttribute('school_id'))->exists()
-                && SchoolYear::query()->whereKey($this->getAttribute('school_year_id'))->exists(),
-            $this instanceof StudentEnrollment => Student::query()->whereKey($this->getAttribute('student_id'))->exists()
-                && School::query()->whereKey($this->getAttribute('school_id'))->exists()
-                && SchoolYear::query()->whereKey($this->getAttribute('school_year_id'))->exists(),
+            $this instanceof SchoolClass => School::query()->whereKey($this->getAttribute('school_id'))->lockForUpdate()->first(['id']) !== null
+                && SchoolYear::query()->whereKey($this->getAttribute('school_year_id'))->lockForUpdate()->first(['id']) !== null,
+            $this instanceof StudentEnrollment => School::query()->whereKey($this->getAttribute('school_id'))->lockForUpdate()->first(['id']) !== null
+                && SchoolYear::query()->whereKey($this->getAttribute('school_year_id'))->lockForUpdate()->first(['id']) !== null
+                && Student::query()->whereKey($this->getAttribute('student_id'))->lockForUpdate()->first(['id']) !== null,
             default => true,
         };
 

@@ -51,6 +51,7 @@ class ClaudeMandatoryFindingsTest extends TwoMunicipalityTestCase
                 'upsert' => fn () => SchoolClass::query()->upsert([$payload], ['id'], ['name']),
                 'insert' => fn () => SchoolClass::query()->insert($payload),
                 'insertOrIgnore' => fn () => SchoolClass::query()->insertOrIgnore($payload),
+                'insertOrIgnoreReturning' => fn () => SchoolClass::query()->insertOrIgnoreReturning($payload),
                 'insertGetId' => fn () => SchoolClass::query()->insertGetId($payload),
                 'increment' => fn () => SchoolClass::query()->whereKey($class->id)->increment('capacity'),
                 'decrement' => fn () => SchoolClass::query()->whereKey($class->id)->decrement('capacity'),
@@ -285,6 +286,22 @@ class ClaudeMandatoryFindingsTest extends TwoMunicipalityTestCase
 
             $this->expectException(LogicException::class);
             $this->createClass($year);
+        });
+    }
+
+    public function test_i2_nova_matricula_nao_pode_ser_criada_para_aluno_arquivado(): void
+    {
+        $actor = $this->criarUsuario('matricula-aluno-arquivado@example.invalid');
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($actor): void {
+            $year = $this->createYear();
+            $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'Aluno fictício de Monte Sereno']);
+            $student->deleteWithReason('Transferência simulada', $actor->id);
+
+            $this->expectException(LogicException::class);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $student->id,
+                'school_id' => self::ESCOLA_A1, 'school_year_id' => $year->id, 'status' => 'active',
+            ]);
         });
     }
 
