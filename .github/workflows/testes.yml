@@ -1,0 +1,41 @@
+name: Testes Laravel
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    name: Testes PHP
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Conferir ambiente
+        run: |
+          php -v
+          composer --version
+          php -m | grep -Ei 'pdo_sqlite|mbstring'
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Preparar ambiente de testes
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Executar testes
+        run: php artisan test
+
+      - name: Conferir estilo PHP
+        run: vendor/bin/pint --test
