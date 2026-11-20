@@ -66,6 +66,12 @@ A suíte completa de integração MariaDB é executada no GitHub Actions. Em má
 
 As decisões técnicas estão em [`isolamento-municipal.md`](docs/arquitetura/isolamento-municipal.md) e [`autorizacao-escolar.md`](docs/arquitetura/autorizacao-escolar.md).
 
+## Organização acadêmica em desenvolvimento
+
+Os bancos individuais dos municípios agora possuem tabelas para **ano letivo** (`school_years`) e **turmas** (`school_classes`), ambas com identificação própria. Uma turma deve referenciar uma escola e um ano existentes **no mesmo banco municipal**. A exclusão física de escola ou ano com turmas associadas é impedida por chave estrangeira.
+
+A rota protegida `GET /m/{municipio}/escolas/{escola}/turmas` exibe apenas turmas ativas de escolas para as quais a conta tem acesso. Ela faz parte da versão de desenvolvimento, não da demonstração pública. Por enquanto **não há formulário de gravação**: a inclusão, alteração e exclusão dependerão de autenticação reforçada, validação de datas e auditoria, ainda pendentes.
+
 ## Próximas etapas
 
 1. Concluir a autenticação com segundo fator oficial, convites administrativos e auditoria; as rotas escolares atuais são somente de leitura e com dados sintéticos.
