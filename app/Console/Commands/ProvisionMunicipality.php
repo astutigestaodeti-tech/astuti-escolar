@@ -6,6 +6,7 @@ use App\Models\Platform\Municipality;
 use App\Tenancy\TenantConnectionManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
@@ -27,8 +28,20 @@ class ProvisionMunicipality extends Command
             return self::FAILURE;
         }
 
-        $municipality->status = 'provisioning';
-        $municipality->save();
+        $attemptId = DB::connection('platform')->transaction(function () use ($municipality): int {
+            $municipality->status = 'provisioning';
+            $municipality->save();
+
+            $now = now();
+
+            return DB::connection('platform')->table('municipality_provision_attempts')->insertGetId([
+                'municipality_id' => $municipality->id,
+                'status' => 'started',
+                'started_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        });
 
         try {
             $connections->activate($municipality);
@@ -46,13 +59,15 @@ class ProvisionMunicipality extends Command
 
             $municipality->status = 'active';
             $municipality->save();
+            $this->finishAttempt($attemptId, 'completed');
 
             $this->info('Municipio provisionado com sucesso.');
 
             return self::SUCCESS;
-        } catch (Throwable $exception) {
+        } catch (Throwable) {
             $municipality->status = 'failed';
             $municipality->save();
+            $this->finishAttempt($attemptId, 'failed');
 
             // Nunca imprimir detalhes da conexao ou credenciais no terminal.
             $this->error('Falha na provisao municipal. Verifique a configuracao segura.');
@@ -61,5 +76,16 @@ class ProvisionMunicipality extends Command
         } finally {
             $connections->reset();
         }
+    }
+
+    private function finishAttempt(int $id, string $status): void
+    {
+        DB::connection('platform')->table('municipality_provision_attempts')
+            ->where('id', $id)
+            ->update([
+                'status' => $status,
+                'finished_at' => now(),
+                'updated_at' => now(),
+            ]);
     }
 }
