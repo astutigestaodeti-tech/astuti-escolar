@@ -5,7 +5,9 @@
 $connections = [];
 $platform = config('database.connections.platform', []);
 
-if (app()->environment('local')
+// Durante o carregamento da configuracao, o servico app('env') ainda nao
+// esta disponivel. Consultar somente app.env, ja carregado neste ponto.
+if (config('app.env') === 'local'
     && is_array($platform)
     && ($platform['driver'] ?? null) === 'mariadb'
     && ($platform['database'] ?? null) === 'astuti_platform_dev'
