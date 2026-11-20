@@ -29,6 +29,17 @@ class TenantConnectionManager
             throw new InvalidArgumentException('Conexao municipal nao configurada.');
         }
 
+        // Uma configuracao duplicada comprometeria a fronteira entre municipios.
+        foreach ($connections as $otherKey => $otherSettings) {
+            if ($otherKey === $key || ! is_array($otherSettings) || ($otherSettings['driver'] ?? null) !== 'mariadb') {
+                continue;
+            }
+
+            if ($this->physicalDatabaseIdentity($otherSettings) === $this->physicalDatabaseIdentity($settings)) {
+                throw new InvalidArgumentException('Mais de um municipio aponta para a mesma base.');
+            }
+        }
+
         $this->reset();
 
         try {
@@ -45,5 +56,21 @@ class TenantConnectionManager
     {
         DB::purge('tenant');
         config()->set('database.connections.tenant', ['driver' => 'astuti_tenant_disabled']);
+    }
+
+    private function physicalDatabaseIdentity(array $settings): array
+    {
+        $host = strtolower(trim((string) ($settings['host'] ?? '')));
+
+        if ($host === 'localhost') {
+            $host = '127.0.0.1';
+        }
+
+        return [
+            $host,
+            (string) ($settings['port'] ?? '3306'),
+            (string) ($settings['unix_socket'] ?? ''),
+            strtolower(trim((string) ($settings['database'] ?? ''))),
+        ];
     }
 }
