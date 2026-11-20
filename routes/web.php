@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DemonstrationController;
-use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolClassController;
+use App\Http\Controllers\SchoolController;
 use App\Http\Middleware\ResolveMunicipality;
 use Illuminate\Support\Facades\Route;
 
