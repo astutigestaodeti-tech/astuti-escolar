@@ -12,7 +12,37 @@ jobs:
   testes:
     name: Testes PHP e interface
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 12
+
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: ci_only_root
+          MARIADB_DATABASE: astuti_platform_test
+          MARIADB_USER: astuti_ci
+          MARIADB_PASSWORD: ci_only_user
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      PLATFORM_DB_HOST: 127.0.0.1
+      PLATFORM_DB_PORT: '3307'
+      PLATFORM_DB_DATABASE: astuti_platform_test
+      PLATFORM_DB_USERNAME: astuti_ci
+      PLATFORM_DB_PASSWORD: ci_only_user
+      TENANCY_INTEGRATION: '1'
+      TENANCY_TEST_DB_HOST: 127.0.0.1
+      TENANCY_TEST_DB_PORT: '3307'
+      TENANCY_TEST_DB_A: astuti_tenant_a_test
+      TENANCY_TEST_DB_B: astuti_tenant_b_test
+      TENANCY_TEST_DB_USER: astuti_ci
+      TENANCY_TEST_DB_PASSWORD: ci_only_user
 
     steps:
       - name: Obter codigo
@@ -25,14 +55,20 @@ jobs:
         with:
           php-version: '8.4'
           tools: composer:v2
-          extensions: mbstring, pdo_sqlite, sqlite3
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_mysql
           coverage: none
 
       - name: Conferir ambiente
         run: |
           php -v
           composer --version
-          php -m | grep -Ei 'pdo_sqlite|mbstring'
+          php -m | grep -Ei 'pdo_mysql|pdo_sqlite|mbstring'
+
+      - name: Preparar bancos descartaveis
+        run: |
+          container_id="$(docker ps --filter 'ancestor=mariadb:11.8' --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec "$container_id" mariadb -uroot -pci_only_root -e "CREATE DATABASE IF NOT EXISTS astuti_tenant_a_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS astuti_tenant_b_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON astuti_tenant_a_test.* TO 'astuti_ci'@'%'; GRANT ALL PRIVILEGES ON astuti_tenant_b_test.* TO 'astuti_ci'@'%'; FLUSH PRIVILEGES;"
 
       - name: Instalar dependencias PHP
         run: composer install --no-interaction --prefer-dist --no-progress
