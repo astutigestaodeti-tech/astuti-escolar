@@ -1,9 +1,13 @@
 name: Testes Laravel
 
 on:
+  push:
+    branches:
+      - feature/incremento-02-fundacoes
   pull_request:
     branches:
       - main
+      - feature/incremento-01-saude
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

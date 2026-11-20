@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Audit\AuditTrail;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,18 +26,22 @@ class LoginController extends Controller
         ]);
 
         if (! Auth::attempt([...$credentials, 'status' => 'active'])) {
+            app(AuditTrail::class)->record('platform', 'auth.failed', User::class);
+
             throw ValidationException::withMessages([
-                'email' => 'Não foi possível entrar com essas credenciais.',
+                'email' => __('auth.failed'),
             ]);
         }
 
         $request->session()->regenerate();
+        app(AuditTrail::class)->record('platform', 'auth.login', User::class, (string) Auth::id());
 
         return redirect()->intended('/');
     }
 
     public function destroy(Request $request): RedirectResponse
     {
+        app(AuditTrail::class)->record('platform', 'auth.logout', User::class, (string) Auth::id());
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

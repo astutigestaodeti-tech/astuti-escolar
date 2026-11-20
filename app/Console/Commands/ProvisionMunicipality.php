@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Audit\AuditTrail;
 use App\Models\Platform\Municipality;
 use App\Tenancy\TenantConnectionManager;
 use Illuminate\Console\Command;
@@ -16,13 +17,14 @@ class ProvisionMunicipality extends Command
 
     protected $description = 'Aplica as migracoes de uma base municipal previamente configurada.';
 
-    public function handle(TenantConnectionManager $connections): int
+    public function handle(TenantConnectionManager $connections, AuditTrail $audit): int
     {
         $municipality = Municipality::query()
             ->where('slug', $this->argument('slug'))
             ->first();
 
         if ($municipality === null) {
+            $audit->record('platform', 'municipality.provision.not_found', Municipality::class);
             $this->error('Municipio nao cadastrado na base central.');
 
             return self::FAILURE;
@@ -60,6 +62,8 @@ class ProvisionMunicipality extends Command
             $municipality->status = 'active';
             $municipality->save();
             $this->finishAttempt($attemptId, 'completed');
+            $audit->record('platform', 'municipality.provision.completed', Municipality::class, $municipality->id,
+                ['status' => 'provisioning'], ['status' => 'completed']);
 
             $this->info('Municipio provisionado com sucesso.');
 
@@ -68,6 +72,8 @@ class ProvisionMunicipality extends Command
             $municipality->status = 'failed';
             $municipality->save();
             $this->finishAttempt($attemptId, 'failed');
+            $audit->record('platform', 'municipality.provision.failed', Municipality::class, $municipality->id,
+                ['status' => 'provisioning'], ['status' => 'failed']);
 
             // Nunca imprimir detalhes da conexao ou credenciais no terminal.
             $this->error('Falha na provisao municipal. Verifique a configuracao segura.');

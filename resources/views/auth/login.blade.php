@@ -32,7 +32,7 @@
             <p>Use a conta institucional fornecida pela Secretaria de Educação.</p>
 
             @if ($errors->any())
-                <div class="erro" role="alert"><x-icon name="alerta" :size="18" /><span>Não foi possível acessar. Confira o e-mail e a senha e tente novamente.</span></div>
+                <div class="erro" role="alert"><x-icon name="alerta" :size="18" /><span>{{ $errors->first() }}</span></div>
             @endif
 
             <form method="POST" action="{{ route('login.attempt') }}">

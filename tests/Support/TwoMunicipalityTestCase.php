@@ -73,7 +73,7 @@ abstract class TwoMunicipalityTestCase extends TestCase
 
         // Os bancos exclusivos de teste sobrevivem entre execucoes consecutivas
         // no CI; cada cenario precisa comecar sem sessoes ou tentativas antigas.
-        foreach (['sessions', 'school_scopes', 'memberships', 'municipality_provision_attempts', 'users'] as $table) {
+        foreach (['platform_audit_logs', 'sessions', 'school_scopes', 'memberships', 'municipality_provision_attempts', 'users'] as $table) {
             if (Schema::connection('platform')->hasTable($table)) {
                 DB::connection('platform')->table($table)->delete();
             }
@@ -107,7 +107,7 @@ abstract class TwoMunicipalityTestCase extends TestCase
 
                 // Apagar primeiro os vinculos de teste, antes das FKs de
                 // escolas e anos, sem desativar a integridade referencial.
-                foreach (['student_enrollments', 'students', 'school_classes', 'school_years', 'schools'] as $table) {
+                foreach (['student_enrollments', 'students', 'school_classes', 'school_years', 'schools', 'audit_logs'] as $table) {
                     if (Schema::connection('tenant')->hasTable($table)) {
                         DB::connection('tenant')->table($table)->delete();
                     }

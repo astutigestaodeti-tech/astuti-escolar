@@ -43,6 +43,11 @@ class TenantContext
         return $this->municipality !== null;
     }
 
+    public function current(): ?Municipality
+    {
+        return $this->municipality;
+    }
+
     public function runFor(Municipality $municipality, Closure $operation): mixed
     {
         $this->enter($municipality);

@@ -2,10 +2,13 @@
 
 namespace App\Models\Tenant;
 
+use App\Models\Tenant\Concerns\HasSchoolHistory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SchoolYear extends TenantModel
 {
+    use HasSchoolHistory;
+
     protected $keyType = 'string';
 
     public $incrementing = false;
