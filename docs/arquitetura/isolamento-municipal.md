@@ -15,7 +15,7 @@ O Astuti Gestão Escolar será contratado por diferentes municípios. Dados de u
 ## Decisões implementadas
 
 1. `config/tenancy.php` não contém senhas nem nomes de bancos reais. A infraestrutura segura de implantação deverá registrar um mapa privado `db_key -> configuração MariaDB`. Um `db_key` desconhecido ou inválido é recusado.
-2. A conexão `tenant` fica inutilizável por padrão. `TenantConnectionManager::activate()` abre apenas uma conexão configurada e `reset()` elimina a conexão anterior.
+2. A conexão `tenant` fica inutilizável por padrão. `TenantConnectionManager::activate()` abre apenas uma conexão configurada e `reset()` elimina a conexão anterior. O campo `db_key` tem unicidade no banco central e a ativação rejeita configurações que apontam para o mesmo destino físico declarado (host, porta, socket e banco). Isso é defesa contra erro de configuração, não substitui auditoria das credenciais na infraestrutura.
 3. `TenantContext::enter()` exige município persistido e com estado `active`. `runFor()` usa `finally` para liberar a conexão, inclusive após exceção.
 4. Modelos escolares herdam `TenantModel`, que recusa consultas sem contexto ativo.
 5. O comando `astuti:municipio-provisionar {slug}` migra a base municipal previamente configurada, com estados `provisioning`, `active` e `failed`. Cada execução deixa um registro sem credenciais em `municipality_provision_attempts`.
