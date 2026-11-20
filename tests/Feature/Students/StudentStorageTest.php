@@ -6,7 +6,6 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Tenancy\TenantContext;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use LogicException;
@@ -83,7 +82,7 @@ class StudentStorageTest extends TwoMunicipalityTestCase
         });
     }
 
-    public function test_vinculo_rejeita_escola_inexistente_por_chave_estrangeira(): void
+    public function test_vinculo_rejeita_escola_inexistente_antes_da_chave_estrangeira(): void
     {
         app(TenantContext::class)->runFor($this->municipioA, function (): void {
             $student = Student::query()->create([
@@ -99,7 +98,7 @@ class StudentStorageTest extends TwoMunicipalityTestCase
                 'status' => 'active',
             ]);
 
-            $this->expectException(QueryException::class);
+            $this->expectException(LogicException::class);
 
             StudentEnrollment::query()->create([
                 'id' => (string) Str::uuid(),

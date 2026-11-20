@@ -5,7 +5,7 @@ namespace Tests\Feature\Schools;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Tenancy\TenantContext;
-use Illuminate\Database\QueryException;
+use LogicException;
 use Tests\Support\TwoMunicipalityTestCase;
 
 class AcademicStructureTest extends TwoMunicipalityTestCase
@@ -68,7 +68,7 @@ class AcademicStructureTest extends TwoMunicipalityTestCase
                 'status' => 'planned',
             ]);
 
-            $this->expectException(QueryException::class);
+            $this->expectException(LogicException::class);
 
             SchoolClass::query()->create([
                 'id' => '77777777-7777-4777-8777-777777777777',
