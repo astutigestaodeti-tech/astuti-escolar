@@ -221,14 +221,11 @@ trait HasSchoolHistory
     private function assertNoActiveDependents(): void
     {
         $dependents = match (true) {
-            $this instanceof School =>
-                SchoolClass::query()->where('school_id', $this->getKey())->exists()
+            $this instanceof School => SchoolClass::query()->where('school_id', $this->getKey())->exists()
                 || StudentEnrollment::query()->where('school_id', $this->getKey())->exists(),
-            $this instanceof SchoolYear =>
-                SchoolClass::query()->where('school_year_id', $this->getKey())->exists()
+            $this instanceof SchoolYear => SchoolClass::query()->where('school_year_id', $this->getKey())->exists()
                 || StudentEnrollment::query()->where('school_year_id', $this->getKey())->exists(),
-            $this instanceof Student =>
-                StudentEnrollment::query()->where('student_id', $this->getKey())->exists(),
+            $this instanceof Student => StudentEnrollment::query()->where('student_id', $this->getKey())->exists(),
             default => false,
         };
 
@@ -240,11 +237,9 @@ trait HasSchoolHistory
     private function assertActiveParents(): void
     {
         $parentsPresent = match (true) {
-            $this instanceof SchoolClass =>
-                School::query()->whereKey($this->getAttribute('school_id'))->exists()
+            $this instanceof SchoolClass => School::query()->whereKey($this->getAttribute('school_id'))->exists()
                 && SchoolYear::query()->whereKey($this->getAttribute('school_year_id'))->exists(),
-            $this instanceof StudentEnrollment =>
-                Student::query()->whereKey($this->getAttribute('student_id'))->exists()
+            $this instanceof StudentEnrollment => Student::query()->whereKey($this->getAttribute('student_id'))->exists()
                 && School::query()->whereKey($this->getAttribute('school_id'))->exists()
                 && SchoolYear::query()->whereKey($this->getAttribute('school_year_id'))->exists(),
             default => true,
