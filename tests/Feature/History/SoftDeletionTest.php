@@ -93,7 +93,7 @@ class SoftDeletionTest extends TwoMunicipalityTestCase
             $class = SchoolClass::query()->create([
                 'id' => 'a1020000-0000-4000-8000-000000000006', 'school_id' => self::ESCOLA_A1,
                 'school_year_id' => $year->id, 'name' => 'Turma Monte Sereno',
-                'stage' => 'Ensino Fundamental', 'modality' => 'Regular', 'shift' => 'Tarde',
+                'stage' => 'Ensino Fundamental', 'modality' => 'Regular', 'shift' => 'Tarde', 'status' => 'active',
             ]);
             $year->deleteWithReason('Ano encerrado em cenário fictício', $user->id);
             $this->assertSame(2027, $class->fresh()->schoolYear->year);
