@@ -20,7 +20,7 @@
     $monograma = mb_strtoupper(mb_substr($partes[0] ?? '', 0, 1).mb_substr($partes[count($partes) - 1] ?? '', 0, 1));
     $usuario = auth()->user();
     $iniciaisUsuario = mb_strtoupper(collect(preg_split('/\s+/u', trim((string) ($usuario?->name ?? ''))) ?: [])->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
-    $escolasAtivo = request()->routeIs('schools.*') || request()->routeIs('school.classes.*');
+    $escolasAtivo = request()->routeIs('schools.*') || request()->routeIs('school.classes.*') || request()->routeIs('school.students.*');
 @endphp
 <a class="pular" href="#conteudo">Pular para o conteúdo</a>
 

@@ -6,7 +6,7 @@ Sistema de gestão escolar para redes públicas municipais, desenvolvido como pr
 
 Reduzir o trabalho de digitação das secretarias escolares. O produto deverá receber planilhas e documentos digitais ou digitalizados (CSV, XLSX, Word, PDF e imagens), extrair dados, apresentar inconsistências e **exigir conferência e validação humana** antes de registrar informações escolares. Também estão previstos acervo histórico, emissão de documentos conferidos, registros de auditoria e apoio às obrigações oficiais.
 
-> **Estado atual:** o projeto ainda está na fundação técnica. A fundação de bancos separados, a leitura autorizada de nomes de escolas e **a demonstração navegável de Monte Sereno** já têm testes. O cadastro real de alunos, a importação efetiva de documentos, o segundo fator de autenticação e as obrigações oficiais ainda não estão implementados. Não usar dados reais de alunos nesta etapa.
+> **Estado atual:** o projeto segue em desenvolvimento. A fundação de bancos separados, a consulta autorizada de escolas, turmas e alunos e **a demonstração navegável de Monte Sereno** já têm testes. As tabelas de alunos e vínculos escolares existem, mas ainda não há formulário de cadastro real nem importação efetiva de documentos. Segundo fator de autenticação e obrigações oficiais seguem pendentes. Não usar dados reais de alunos nesta etapa.
 
 ## Tecnologias
 
@@ -35,6 +35,7 @@ Para executar as verificações:
 php artisan test
 vendor/bin/pint --test
 npm run build
+npm run test:ui
 ```
 
 Para iniciar o servidor local:
@@ -72,10 +73,18 @@ Os bancos individuais dos municípios agora possuem tabelas para **ano letivo** 
 
 A rota protegida `GET /m/{municipio}/escolas/{escola}/turmas` exibe apenas turmas ativas de escolas para as quais a conta tem acesso. Ela faz parte da versão de desenvolvimento, não da demonstração pública. Por enquanto **não há formulário de gravação**: a inclusão, alteração e exclusão dependerão de autenticação reforçada, validação de datas e auditoria, ainda pendentes.
 
+## Consulta de alunos em desenvolvimento
+
+Cada banco municipal possui agora duas tabelas específicas: `students`, que identifica o aluno, e `student_enrollments`, que registra seus vínculos com escolas e anos letivos. Um mesmo aluno pode ter vínculos diferentes ao longo da vida escolar sem duplicar o cadastro. Não existe movimentação de alunos entre bancos municipais por essas tabelas.
+
+A rota protegida `GET /m/{municipio}/escolas/{escola}/alunos`, acessível pela ficha da escola, apresenta **somente alunos com vínculo ativo naquela escola**. A consulta exige login, valida o município e as permissões da escola, oferece busca literal por nome e paginação de 25 resultados. Vínculos múltiplos do mesmo aluno não duplicam a listagem. **Não há rota pública de criação, edição ou exclusão de alunos.**
+
+A consulta real depende de um município já provisionado e uma conta autorizada na instalação de desenvolvimento. A demonstração em `/demonstracao` continua independente e acessível apenas em `local` ou `testing`.
+
 ## Próximas etapas
 
 1. Concluir a autenticação com segundo fator oficial, convites administrativos e auditoria; as rotas escolares atuais são somente de leitura e com dados sintéticos.
-2. Escolas, alunos, turmas e matrículas, com rastreabilidade e regras por município.
+2. Concluir os fluxos de cadastro de alunos e matrículas, com rastreabilidade, validação e regras por município; suas tabelas e consultas já estão em desenvolvimento.
 3. Cofre privado de documentos, importação de planilhas, revisão humana e prevenção de duplicatas.
 4. Expansão progressiva para documentos históricos, rotinas pedagógicas, Educacenso, FUNDEB e obrigações aplicáveis de controle externo.
 

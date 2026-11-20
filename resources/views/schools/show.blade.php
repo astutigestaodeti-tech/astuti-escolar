@@ -15,7 +15,7 @@
         <div>
             <span class="contexto">Unidade escolar</span>
             <h1>{{ $school->name }}</h1>
-            <p>Dados da unidade e acesso às turmas do ano letivo.</p>
+            <p>Dados da unidade, turmas e consulta de alunos.</p>
         </div>
         <span class="etiqueta ok">Ativa</span>
     </div>
@@ -36,7 +36,14 @@
             <p>Turmas ativas da escola, com etapa, turno e vagas.</p>
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar turmas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
+
+        <section class="folha cartao" aria-labelledby="titulo-alunos">
+            <span class="acao-icone"><x-icon name="alunos" /></span>
+            <h2 id="titulo-alunos">Alunos</h2>
+            <p>Consulte os alunos com vínculo ativo nesta unidade escolar.</p>
+            <a class="botao secundario" style="margin-top:12px" href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar alunos desta escola <x-icon name="seta" :size="16" /></a>
+        </section>
     </div>
 
-    <div class="nota"><x-icon name="info" /><div><strong>Próximas etapas</strong><p>Os cadastros de alunos e matrículas serão disponibilizados nas próximas etapas, com permissões próprias.</p></div></div>
+    <div class="nota"><x-icon name="info" /><div><strong>Consulta disponível</strong><p>A inclusão e alteração de alunos e matrículas permanecem indisponíveis até a implantação da autenticação reforçada e da auditoria.</p></div></div>
 @endsection

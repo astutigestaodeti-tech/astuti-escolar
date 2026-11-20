@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Tenant\School;
+use App\Models\Tenant\Student;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+
+class SchoolStudentController extends Controller
+{
+    public function index(Request $request, string $municipio, string $escola): View
+    {
+        $municipality = $request->attributes->get('astuti.municipality');
+        $school = School::query()->where('status', 'active')->findOrFail($escola);
+        Gate::authorize('view', [$school, $municipality]);
+
+        $validated = $request->validate(['busca' => ['nullable', 'string', 'max:120']]);
+        $search = trim((string) ($validated['busca'] ?? ''));
+
+        $query = Student::query()->whereHas('enrollments', function (Builder $enrollments) use ($school): void {
+            $enrollments->where('school_id', $school->id)->where('status', 'active');
+        });
+
+        if ($search !== '') {
+            // Evita que % e _ enviados pelo usuário funcionem como curingas SQL.
+            $literalSearch = addcslashes($search, '\\%_');
+            $query->where('full_name', 'like', '%'.$literalSearch.'%');
+        }
+
+        $students = $query->orderBy('full_name')->orderBy('id')->paginate(25)->withQueryString();
+
+        return view('students.index', compact('municipality', 'school', 'students', 'search'));
+    }
+}

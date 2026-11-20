@@ -5,6 +5,7 @@ use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\SchoolStudentController;
 use App\Http\Middleware\ResolveMunicipality;
 use Illuminate\Support\Facades\Route;
 
@@ -25,4 +26,5 @@ Route::prefix('/m/{municipio}')->middleware(['auth', ResolveMunicipality::class]
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
+    Route::get('/escolas/{escola}/alunos', [SchoolStudentController::class, 'index'])->whereUuid('escola')->name('school.students.index');
 });

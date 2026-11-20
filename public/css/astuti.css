@@ -160,6 +160,11 @@ button,input,select{font:inherit;color:inherit}
 .campo:focus-within{border-color:var(--caneta);box-shadow:0 0 0 3px var(--caneta-clara)}
 .campo input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:10px 0;color:var(--tinta)}
 .busca{display:flex;gap:10px;padding:0 22px 18px}
+.paginacao{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--pauta);padding:14px 22px}
+.paginacao-resumo{font-size:13px;color:var(--tinta-2)}
+.paginacao-acoes{display:flex;align-items:center;gap:8px}
+.paginacao-acoes .botao{min-height:38px;padding:7px 12px;font-size:13px}
+.paginacao-inativa{font-size:13px;padding:8px 12px;color:var(--tinta-3)}
 
 /* ---------- Painel: folha de rosto da rede ---------- */
 .rosto{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;align-items:center;padding:30px 34px 30px 46px;margin-bottom:22px;background-color:var(--folha);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--pauta-suave) 31px,var(--pauta-suave) 32px);border:1px solid var(--linha);border-radius:var(--raio-folha);box-shadow:var(--sombra-folha)}
@@ -366,6 +371,7 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
     .acao{padding:14px 16px}
     .folha-cabecalho{padding:16px 16px 12px}
     .busca{padding:0 16px 16px;flex-direction:column}
+    .paginacao{padding:14px 16px}
     .tabela th,.tabela td{padding-left:16px;padding-right:16px}
     .etapas-linha{grid-template-columns:1fr 1fr;row-gap:20px}
     .etapas-linha li:nth-child(2)::after{display:none}
