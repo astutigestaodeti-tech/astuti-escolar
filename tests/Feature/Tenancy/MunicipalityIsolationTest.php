@@ -127,6 +127,16 @@ class MunicipalityIsolationTest extends TestCase
         School::query()->count();
     }
 
+    public function test_doiss_municipios_nao_podem_ter_a_mesma_base_configurada(): void
+    {
+        $connections = config('tenancy.connections');
+        $connections['municipio_b']['database'] = $connections['municipio_a']['database'];
+        config()->set('tenancy.connections', $connections);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->context->enter($this->municipioB);
+    }
+
     public function test_conexao_central_nao_muda_ao_trocar_municipio(): void
     {
         $this->prepararEscolas();
