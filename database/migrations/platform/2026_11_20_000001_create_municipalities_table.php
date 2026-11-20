@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('slug', 80)->unique();
             $table->string('legal_name');
-            $table->string('db_key', 80);
+            $table->string('db_key', 80)->unique();
             $table->string('status', 24)->default('provisioning');
             $table->timestamps();
         });
