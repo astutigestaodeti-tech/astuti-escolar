@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Demo;
 
+use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
@@ -12,6 +13,8 @@ use App\Models\User;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -126,6 +129,72 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
 
         $this->assertSame(1, $this->runDemo());
         $this->assertNull(Municipality::query()->where('slug', 'monte-sereno')->first());
+    }
+
+    public function test_municipio_desativado_nao_e_reativado_pela_demonstracao(): void
+    {
+        $this->assertSame(0, $this->runDemo());
+        $municipality = Municipality::query()->where('slug', 'monte-sereno')->firstOrFail();
+        $municipality->update(['status' => 'inactive']);
+
+        $this->assertSame(1, $this->runDemo());
+        $this->assertSame('inactive', $municipality->fresh()->status);
+    }
+
+    public function test_conta_reservada_com_outra_rede_nao_recebe_privilegios_municipais(): void
+    {
+        $user = $this->criarUsuario(self::EMAIL);
+        $membership = $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $originalPassword = $user->password;
+
+        $this->assertSame(1, $this->runDemo(['--renovar-senha' => true]));
+        $this->assertNull(Municipality::query()->where('slug', 'monte-sereno')->first());
+        $this->assertSame($originalPassword, $user->fresh()->password);
+        $this->assertSame([$membership->id], Membership::query()->where('user_id', $user->id)->pluck('id')->all());
+    }
+
+    public function test_vinculo_do_gestor_desativado_impede_reuso_da_conta(): void
+    {
+        $this->assertSame(0, $this->runDemo());
+        $municipality = Municipality::query()->where('slug', 'monte-sereno')->firstOrFail();
+        $user = User::query()->where('email', self::EMAIL)->firstOrFail();
+        $originalPassword = $user->password;
+        $membership = Membership::query()
+            ->where('municipality_id', $municipality->id)->where('user_id', $user->id)->firstOrFail();
+        $membership->update(['status' => 'inactive']);
+
+        $this->assertSame(1, $this->runDemo(['--renovar-senha' => true]));
+        $this->assertSame('inactive', $membership->fresh()->status);
+        $this->assertSame($originalPassword, $user->fresh()->password);
+    }
+
+    public function test_falha_ao_criar_vinculo_desfaz_conta_e_senha(): void
+    {
+        Membership::creating(static function (): never {
+            throw new RuntimeException('Falha de vinculo simulada');
+        });
+
+        try {
+            $this->assertSame(1, $this->runDemo());
+        } finally {
+            Membership::flushEventListeners();
+        }
+
+        $this->assertNull(User::query()->where('email', self::EMAIL)->first());
+        $this->assertStringNotContainsString('Senha de teste:', $this->lastOutput);
+    }
+
+    public function test_login_com_cache_de_banco_funciona_apos_preparo_local(): void
+    {
+        $this->assertSame(0, $this->runDemo());
+        $password = $this->senhaEmitida();
+
+        $this->assertTrue(Schema::connection('platform')->hasTable('cache'));
+        $this->assertTrue(Schema::connection('platform')->hasTable('cache_locks'));
+
+        config()->set('cache.default', 'database');
+        $this->post('/login', ['email' => self::EMAIL, 'password' => $password])
+            ->assertRedirect('/');
     }
 
     private function senhaEmitida(): string
