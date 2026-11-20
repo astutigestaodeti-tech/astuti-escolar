@@ -4,7 +4,6 @@ namespace Tests\Feature\Tenancy;
 
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
-use App\Tenancy\TenantConnectionManager;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
