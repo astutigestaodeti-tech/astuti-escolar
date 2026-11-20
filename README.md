@@ -1,58 +1,62 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Astuti Gestão Escolar
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de gestão escolar para redes públicas municipais, desenvolvido como produto comercial da **Astuti**.
 
-## About Laravel
+## Objetivo
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Reduzir o trabalho de digitação das secretarias escolares. O produto deverá receber planilhas e documentos digitais ou digitalizados (CSV, XLSX, Word, PDF e imagens), extrair dados, apresentar inconsistências e **exigir conferência e validação humana** antes de registrar informações escolares. Também estão previstos acervo histórico, emissão de documentos conferidos, registros de auditoria e apoio às obrigações oficiais.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+> **Estado atual:** o projeto ainda está na fundação técnica. A existência do Laravel e da rota `/saude` não significa que cadastros, importações, segregação de municípios, históricos escolares ou obrigações oficiais já estejam implementados. Não usar dados reais de alunos nesta etapa.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tecnologias
 
-## Learning Laravel
+- Debian em WSL2 para desenvolvimento local; Linux em servidor para produção futura.
+- PHP **8.4** no ambiente atualmente testado, Laravel 13 e Composer 2.
+- Node.js 24, npm, Vite e Tailwind CSS 4.
+- MariaDB para persistência de desenvolvimento; bancos municipais separados são uma decisão arquitetural **ainda não implementada**.
+- PHPUnit e Laravel Pint para os testes e o estilo do código.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+O `composer.lock` atual contém pacotes que exigem PHP 8.4.1 ou superior; o PHP 8.3 não é suficiente para instalar essas versões travadas.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Desenvolvimento local
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Na pasta do repositório, com PHP, Composer, Node e npm instalados:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm ci
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Se o arquivo `.env` **ainda não existir**, crie-o com `cp .env.example .env`, configure **somente bancos de desenvolvimento** e execute `php artisan key:generate`. Se o `.env` já estiver configurado no seu Debian, **preserve-o**. Nunca envie `.env`, senhas, bancos ou documentos reais ao GitHub.
 
-## Contributing
+Para executar as verificações:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan test
+vendor/bin/pint --test
+npm run build
+```
 
-## Code of Conduct
+Para iniciar o servidor local:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan serve --host=127.0.0.1 --port=8001
+```
 
-## Security Vulnerabilities
+- Página inicial: `http://127.0.0.1:8001/`.
+- Verificação pública de aplicação: `http://127.0.0.1:8001/saude`, com resposta `{"status":"ok"}`. A rota não revela versão, credenciais nem dados escolares.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Qualidade e segurança
 
-## License
+O fluxo de revisão usa uma ramificação de desenvolvimento e um pull request. O arquivo `.github/workflows/testes.yml` executa testes PHP, conferência de estilo e compilação da interface. Os testes atuais usam ambiente isolado de demonstração e **não comprovam isolamento entre bancos MariaDB**; essa validação terá testes próprios em incrementos seguintes.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Arquivos com credenciais, configurações locais, backups e bancos de desenvolvimento permanecem fora do controle de versão. Usaremos apenas dados fictícios e sintéticos até que existam proteção de dados, autorização, auditoria e condições operacionais adequadas para um piloto real.
+
+## Próximas etapas
+
+1. Cadastro seguro de municípios, usuários e vínculos autorizados, sem acesso entre redes.
+2. Escolas, alunos, turmas e matrículas, com rastreabilidade e regras por município.
+3. Cofre privado de documentos, importação de planilhas, revisão humana e prevenção de duplicatas.
+4. Expansão progressiva para documentos históricos, rotinas pedagógicas, Educacenso, FUNDEB e obrigações aplicáveis de controle externo.
+
+Nada será enviado automaticamente a órgãos públicos; integrações oficiais dependerão de especificação, homologação e autorização adequadas.
