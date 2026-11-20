@@ -71,7 +71,9 @@ abstract class TwoMunicipalityTestCase extends TestCase
             '--force' => true,
         ]);
 
-        foreach (['school_scopes', 'memberships', 'users'] as $table) {
+        // Os bancos exclusivos de teste sobrevivem entre execucoes consecutivas
+        // no CI; cada cenario precisa comecar sem sessoes ou tentativas antigas.
+        foreach (['sessions', 'school_scopes', 'memberships', 'municipality_provision_attempts', 'users'] as $table) {
             if (Schema::connection('platform')->hasTable($table)) {
                 DB::connection('platform')->table($table)->delete();
             }

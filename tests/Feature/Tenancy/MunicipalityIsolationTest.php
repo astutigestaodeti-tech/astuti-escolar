@@ -64,6 +64,10 @@ class MunicipalityIsolationTest extends TestCase
             '--force' => true,
         ]);
 
+        // A base de integracao e reutilizada pela segunda rodada de testes.
+        // Limpar apenas os registros de provisao descartaveis.
+        DB::connection('platform')->table('municipality_provision_attempts')->delete();
+
         $this->municipioA = $this->municipio('municipio-a', 'municipio_a');
         $this->municipioB = $this->municipio('municipio-b', 'municipio_b');
     }
