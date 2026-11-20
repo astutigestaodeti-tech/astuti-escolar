@@ -26,7 +26,7 @@ class ResolveMunicipality
 
         $user = $request->user();
 
-        if ($user === null || ! $this->access->hasMunicipalAccess($user, $municipality)) {
+        if ($user === null || $this->access->hasMunicipalAccess($user, $municipality) === false) {
             abort(403);
         }
 
