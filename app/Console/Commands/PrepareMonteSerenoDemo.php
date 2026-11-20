@@ -78,12 +78,33 @@ class PrepareMonteSerenoDemo extends Command
                 return self::FAILURE;
             }
 
+            if ($municipality !== null && ! in_array($municipality->status, ['active', 'failed', 'provisioning'], true)) {
+                $this->error('Monte Sereno esta desativado ou em estado administrativo nao permitido. Nenhum acesso sera reaberto.');
+
+                return self::FAILURE;
+            }
+
             $user = User::query()->where('email', self::EMAIL)->first();
 
             if ($user !== null && $user->status !== 'active') {
                 $this->error('A conta ficticia esta inativa. Nenhuma permissao sera alterada automaticamente.');
 
                 return self::FAILURE;
+            }
+
+            if ($user !== null) {
+                // Um e-mail reservado nao e prova de que uma conta preexistente
+                // pertence a demonstracao. Nunca elevar permissao escolar.
+                $memberships = Membership::query()->where('user_id', $user->id)->get();
+                $only = $memberships->first();
+
+                if ($municipality === null || $memberships->count() !== 1
+                    || $only->municipality_id !== $municipality->id
+                    || $only->role !== 'municipal_manager' || $only->status !== 'active') {
+                    $this->error('A conta reservada ja possui vinculos diferentes ou inativos. Nenhum acesso sera ampliado.');
+
+                    return self::FAILURE;
+                }
             }
 
             $municipality ??= Municipality::query()->create([
@@ -111,27 +132,29 @@ class PrepareMonteSerenoDemo extends Command
                 $password = Str::random(24);
             }
 
-            if ($user === null) {
-                $user = User::query()->create([
-                    'id' => (string) Str::uuid(),
-                    'name' => 'Secretaria Escolar Fictícia',
-                    'email' => self::EMAIL,
-                    'status' => 'active',
-                    'password' => Hash::make($password),
-                ]);
-            } elseif ($password !== null) {
-                $user->password = Hash::make($password);
-                $user->save();
-            }
+            DB::connection('platform')->transaction(function () use ($municipality, $user, $password): void {
+                if ($user === null) {
+                    $user = User::query()->create([
+                        'id' => (string) Str::uuid(),
+                        'name' => 'Secretaria Escolar Fictícia',
+                        'email' => self::EMAIL,
+                        'status' => 'active',
+                        'password' => Hash::make($password),
+                    ]);
+                } elseif ($password !== null) {
+                    $user->password = Hash::make($password);
+                    $user->save();
+                }
 
-            Membership::query()->firstOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'municipality_id' => $municipality->id,
-                    'role' => 'municipal_manager',
-                ],
-                ['id' => (string) Str::uuid(), 'status' => 'active'],
-            );
+                Membership::query()->firstOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'municipality_id' => $municipality->id,
+                        'role' => 'municipal_manager',
+                    ],
+                    ['id' => (string) Str::uuid(), 'status' => 'active'],
+                );
+            });
 
             $this->info('Monte Sereno pronto: 3 escolas, 115 alunos ficticios e ano letivo 2027.');
             $this->line('Acesse: http://127.0.0.1:8001/login');

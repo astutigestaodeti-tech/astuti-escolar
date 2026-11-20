@@ -61,6 +61,8 @@ php artisan astuti:demo-preparar
 
 O comando migra somente os esquemas de desenvolvimento previstos, cria o município fictício Monte Sereno, três escolas, um ano letivo de 2027, três turmas e 115 alunos **totalmente sintéticos**, além de uma conta de teste. Ele mostra um e-mail e uma senha forte aleatória; guarde a senha sem enviá-la a ninguém. Depois, com o servidor iniciado, entre em `http://127.0.0.1:8001/login` e escolha Monte Sereno para acessar escolas, turmas e alunos reais do ambiente de teste.
 
+O cache de tentativas de login usa por padrão a conexão central `platform`, e o preparo cria as tabelas necessárias nesse banco; não precisa executar migrações no SQLite padrão. Se já houver uma conta com o e-mail reservado ligada a outra rede, um vínculo inativo ou o município estiver desativado, o comando interrompe a operação para preservar as permissões. Uma falha ao criar a conta ou o vínculo desfaz ambas as alterações.
+
 Executá-lo novamente não duplica as fichas nem redefine a senha. Se perder a senha fictícia, use `php artisan astuti:demo-preparar --renovar-senha`. A operação não exclui nem substitui dados preexistentes. Para esse teste, o MariaDB deve permanecer local e o `.env` nunca deve ser publicado.
 
 **Importante:** esses 115 alunos não são o kit Monte Sereno v2 validado; são dados gerados especificamente para experimentar o funcionamento. Os registros de alunos continuam sem formulário de gravação, CPF ou documentos reais, e o ambiente não está homologado para uso escolar.
