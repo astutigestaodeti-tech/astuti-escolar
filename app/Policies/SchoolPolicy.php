@@ -9,9 +9,7 @@ use App\Models\User;
 
 class SchoolPolicy
 {
-    public function __construct(private readonly SchoolAccess $access)
-    {
-    }
+    public function __construct(private readonly SchoolAccess $access) {}
 
     public function viewAny(User $user, Municipality $municipality): bool
     {
