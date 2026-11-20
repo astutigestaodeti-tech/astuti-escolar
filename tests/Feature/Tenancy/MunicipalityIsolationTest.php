@@ -127,7 +127,7 @@ class MunicipalityIsolationTest extends TestCase
         School::query()->count();
     }
 
-    public function test_doiss_municipios_nao_podem_ter_a_mesma_base_configurada(): void
+    public function test_dois_municipios_nao_podem_ter_a_mesma_base_configurada(): void
     {
         $connections = config('tenancy.connections');
         $connections['municipio_b']['database'] = $connections['municipio_a']['database'];
@@ -135,6 +135,19 @@ class MunicipalityIsolationTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->context->enter($this->municipioB);
+    }
+
+    public function test_db_key_central_nao_pode_ser_reutilizado_por_outro_municipio(): void
+    {
+        $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
+
+        Municipality::query()->create([
+            'id' => 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+            'slug' => 'municipio-duplicado',
+            'legal_name' => 'Municipio duplicado ficticio',
+            'db_key' => 'municipio_a',
+            'status' => 'active',
+        ]);
     }
 
     public function test_conexao_central_nao_muda_ao_trocar_municipio(): void
