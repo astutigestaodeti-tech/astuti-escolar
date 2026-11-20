@@ -82,7 +82,12 @@ jobs:
         run: php artisan test
 
       - name: Conferir estilo PHP
-        run: vendor/bin/pint --test
+        run: |
+          vendor/bin/pint --test || {
+            vendor/bin/pint
+            git --no-pager diff -- tests/Feature/Tenancy/MunicipalityIsolationTest.php
+            exit 1
+          }
 
       - name: Preparar Node 24
         uses: actions/setup-node@v6
