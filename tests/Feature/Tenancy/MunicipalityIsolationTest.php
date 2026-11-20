@@ -155,6 +155,14 @@ class MunicipalityIsolationTest extends TestCase
         School::query()->count();
     }
 
+    public function test_municipio_inativo_nao_ativa_contexto(): void
+    {
+        $municipio = $this->municipio('municipio-inativo', 'municipio_a', 'failed');
+        $this->expectException(LogicException::class);
+
+        $this->context->enter($municipio);
+    }
+
     public function test_provisao_e_idempotente_e_ativa_municipio(): void
     {
         $municipio = $this->municipio('municipio-provisao', 'municipio_a', 'provisioning');
