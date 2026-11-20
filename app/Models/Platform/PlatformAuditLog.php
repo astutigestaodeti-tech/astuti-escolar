@@ -13,6 +13,8 @@ class PlatformAuditLog extends Model
 
     public $timestamps = false;
 
+    protected $dateFormat = 'Y-m-d H:i:s.u';
+
     protected $keyType = 'string';
 
     protected $guarded = [];

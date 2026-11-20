@@ -18,7 +18,7 @@ class SoftDeletionTest extends TwoMunicipalityTestCase
         $this->actingAs($user);
 
         app(TenantContext::class)->runFor($this->municipioA, function () use ($user): void {
-            $year = SchoolYear::query()->create(['id' => 'a1020000-0000-4000-8000-000000000001', 'year' => 2027, 'status' => 'planned']);
+            $year = SchoolYear::query()->create(['id' => 'a1020000-0000-4000-8000-000000000001', 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'planned']);
             $class = SchoolClass::query()->create([
                 'id' => 'a1020000-0000-4000-8000-000000000002',
                 'school_id' => self::ESCOLA_A1,
@@ -47,7 +47,7 @@ class SoftDeletionTest extends TwoMunicipalityTestCase
     public function test_exclusao_sem_motivo_ou_autoria_e_exclusao_fisica_sao_bloqueadas(): void
     {
         app(TenantContext::class)->runFor($this->municipioA, function (): void {
-            $year = SchoolYear::query()->create(['id' => 'a1020000-0000-4000-8000-000000000003', 'year' => 2027, 'status' => 'planned']);
+            $year = SchoolYear::query()->create(['id' => 'a1020000-0000-4000-8000-000000000003', 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'planned']);
             try {
                 $year->delete();
                 $this->fail('Exclusão sem autoria e motivo não deve ser possível.');

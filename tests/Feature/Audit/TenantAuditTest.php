@@ -16,6 +16,8 @@ class TenantAuditTest extends TwoMunicipalityTestCase
             $year = SchoolYear::query()->create([
                 'id' => 'a1010000-0000-4000-8000-000000000001',
                 'year' => 2027,
+                'start_date' => '2027-02-01',
+                'end_date' => '2027-12-17',
                 'status' => 'planned',
             ]);
 
@@ -38,6 +40,8 @@ class TenantAuditTest extends TwoMunicipalityTestCase
             $year = SchoolYear::query()->create([
                 'id' => 'a1010000-0000-4000-8000-000000000002',
                 'year' => 2027,
+                'start_date' => '2027-02-01',
+                'end_date' => '2027-12-17',
                 'status' => 'planned',
             ]);
             $log = AuditLog::query()->where('auditable_id', $year->id)->firstOrFail();
@@ -52,6 +56,8 @@ class TenantAuditTest extends TwoMunicipalityTestCase
             $year = SchoolYear::query()->create([
                 'id' => 'a1010000-0000-4000-8000-000000000003',
                 'year' => 2027,
+                'start_date' => '2027-02-01',
+                'end_date' => '2027-12-17',
                 'status' => 'planned',
             ]);
             $log = AuditLog::query()->where('auditable_id', $year->id)->firstOrFail();
@@ -66,13 +72,13 @@ class TenantAuditTest extends TwoMunicipalityTestCase
         $id = 'a1010000-0000-4000-8000-000000000004';
 
         $context->runFor($this->municipioA, function () use ($id): void {
-            SchoolYear::query()->create(['id' => $id, 'year' => 2027, 'status' => 'planned']);
+            SchoolYear::query()->create(['id' => $id, 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'planned']);
             $this->assertSame(1, AuditLog::query()->where('auditable_id', $id)->count());
         });
 
         $context->runFor($this->municipioB, function () use ($id): void {
             $this->assertSame(0, AuditLog::query()->where('auditable_id', $id)->count());
-            SchoolYear::query()->create(['id' => $id, 'year' => 2027, 'status' => 'active']);
+            SchoolYear::query()->create(['id' => $id, 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'active']);
             $this->assertSame('active', AuditLog::query()->where('auditable_id', $id)->firstOrFail()->after['status']);
         });
 
