@@ -137,6 +137,22 @@ class MunicipalityIsolationTest extends TestCase
         $this->context->enter($this->municipioB);
     }
 
+    public function test_base_municipal_nao_pode_apontar_para_o_banco_central(): void
+    {
+        config()->set('tenancy.connections.municipio_a.database', (string) getenv('PLATFORM_DB_DATABASE'));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->context->enter($this->municipioA);
+    }
+
+    public function test_configuracao_municipal_nao_aceita_url_que_sobrescreva_destino(): void
+    {
+        config()->set('tenancy.connections.municipio_a.url', 'mariadb://usuario:senha@127.0.0.1/qualquer_banco');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->context->enter($this->municipioA);
+    }
+
     public function test_db_key_central_nao_pode_ser_reutilizado_por_outro_municipio(): void
     {
         $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
