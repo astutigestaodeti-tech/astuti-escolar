@@ -233,6 +233,14 @@ class MunicipalityIsolationTest extends TestCase
         );
     }
 
+    public function test_tentativas_de_provisao_de_outros_testes_nao_permanecem_na_base(): void
+    {
+        $this->assertSame(
+            0,
+            DB::connection('platform')->table('municipality_provision_attempts')->count(),
+        );
+    }
+
     private function municipio(string $slug, string $key, string $status = 'active'): Municipality
     {
         return Municipality::query()->updateOrCreate(

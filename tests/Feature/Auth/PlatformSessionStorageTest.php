@@ -39,4 +39,13 @@ class PlatformSessionStorageTest extends TwoMunicipalityTestCase
             '--force' => true,
         ]));
     }
+
+    public function test_uma_sessao_criada_em_outro_teste_nao_permanece_na_base(): void
+    {
+        $this->assertSame(
+            0,
+            DB::connection('platform')->table('sessions')
+                ->where('id', 'sessao-sintetica-astuti')->count(),
+        );
+    }
 }

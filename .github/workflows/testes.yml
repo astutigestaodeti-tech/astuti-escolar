@@ -83,7 +83,9 @@ jobs:
           php artisan key:generate --force
 
       - name: Executar testes
-        run: php artisan test
+        run: |
+          php artisan test
+          php artisan test
 
       - name: Conferir estilo PHP
         run: vendor/bin/pint --test
