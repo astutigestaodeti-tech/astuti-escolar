@@ -2,14 +2,13 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DemonstrationController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Middleware\ResolveMunicipality;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/saude', fn () => response()->json(['status' => 'ok']));
 

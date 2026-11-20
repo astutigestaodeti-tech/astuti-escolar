@@ -2,14 +2,41 @@
 
 @section('title', $school->name)
 
+@section('trilha')
+    <a href="{{ route('schools.index', ['municipio' => $municipality->slug]) }}">Escolas</a>
+    <x-icon name="seta" :size="16" />
+    <span aria-current="page">{{ $school->name }}</span>
+@endsection
+
 @section('content')
-    <a class="back" href="{{ route('schools.index', ['municipio' => $municipality->slug]) }}">Voltar às escolas autorizadas</a>
-    <div class="schools">
-        <section class="school">
-            <span class="pill">Unidade escolar</span>
+    <a class="voltar" href="{{ route('schools.index', ['municipio' => $municipality->slug]) }}"><x-icon name="voltar" :size="18" /> Voltar às escolas autorizadas</a>
+
+    <div class="folha-titulo">
+        <div>
+            <span class="contexto">Unidade escolar</span>
             <h1>{{ $school->name }}</h1>
-            <p class="muted">Os cadastros de alunos e matrículas serão disponibilizados nas próximas etapas, com permissões próprias.</p>
-            <p><a class="back" href="{{ route('school.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar turmas desta escola →</a></p>
+            <p>Dados da unidade e acesso às turmas do ano letivo.</p>
+        </div>
+        <span class="etiqueta ok">Ativa</span>
+    </div>
+
+    <div class="ficha-escola">
+        <section class="folha" aria-labelledby="titulo-dados">
+            <div class="folha-cabecalho"><div><h2 id="titulo-dados">Dados da unidade</h2><p>Informações cadastradas pela Secretaria.</p></div></div>
+            <dl>
+                <div><dt>Nome</dt><dd>{{ $school->name }}</dd></div>
+                <div><dt>Código INEP</dt><dd class="numero">{{ $school->inep_code ?: 'Não informado' }}</dd></div>
+                <div><dt>Situação</dt><dd>Em funcionamento</dd></div>
+            </dl>
+        </section>
+
+        <section class="folha cartao" aria-labelledby="titulo-turmas">
+            <span class="acao-icone"><x-icon name="turmas" /></span>
+            <h2 id="titulo-turmas">Turmas</h2>
+            <p>Turmas ativas da escola, com etapa, turno e vagas.</p>
+            <a class="botao secundario" style="margin-top:12px" href="{{ route('school.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar turmas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
     </div>
+
+    <div class="nota"><x-icon name="info" /><div><strong>Próximas etapas</strong><p>Os cadastros de alunos e matrículas serão disponibilizados nas próximas etapas, com permissões próprias.</p></div></div>
 @endsection

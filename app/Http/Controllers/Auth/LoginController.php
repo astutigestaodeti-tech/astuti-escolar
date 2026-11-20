@@ -25,7 +25,7 @@ class LoginController extends Controller
 
         if (! Auth::attempt([...$credentials, 'status' => 'active'])) {
             throw ValidationException::withMessages([
-                'email' => 'Nao foi possivel entrar com essas credenciais.',
+                'email' => 'Não foi possível entrar com essas credenciais.',
             ]);
         }
 

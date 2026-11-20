@@ -4,122 +4,256 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
-    <meta name="theme-color" content="#103d4d">
-    <title>{{ $screens[$screen] }} | Astuti Escolar | Monte Sereno</title>
-    <link rel="stylesheet" href="{{ asset('css/demo.css') }}">
+    <meta name="theme-color" content="#13243b">
+    <title>{{ $screens[$screen] }} | Astuti Gestão Escolar | Monte Sereno</title>
+    <link rel="preload" href="{{ asset('fonts/atkinson-hyperlegible-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ asset('fonts/source-serif-4-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ asset('css/astuti.css') }}?v={{ filemtime(public_path('css/astuti.css')) }}">
 </head>
 <body>
 @php
-    $navIcons = ['painel' => '◫', 'escolas' => '▦', 'alunos' => '♙', 'matriculas' => '⇄', 'importacoes' => '↥', 'documentos' => '▤', 'indicadores' => '◴'];
+    $navIcons = ['painel' => 'painel', 'escolas' => 'escola', 'alunos' => 'alunos', 'matriculas' => 'matriculas', 'importacoes' => 'importacoes', 'documentos' => 'documentos', 'indicadores' => 'indicadores'];
+    $maiorEscola = max(array_column($schools, 'students'));
 @endphp
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
 
-<div class="app-shell">
-    <aside class="sidebar" aria-label="Menu principal">
-        <div class="brand">
-            <span class="brand-symbol" aria-hidden="true">A<span class="brand-dot">.</span></span>
-            <span><strong>astuti<span class="brand-dot">.</span></strong><small>GESTÃO ESCOLAR</small></span>
+<div class="app">
+    <aside class="lateral" aria-label="Menu principal">
+        <div class="municipio">
+            <img class="municipio-brasao" src="{{ asset('images/brasao-monte-sereno.webp') }}" alt="Brasão de Monte Sereno" width="64" height="62">
+            <div>
+                <div class="municipio-nome">Prefeitura Municipal de Monte Sereno</div>
+                <div class="municipio-orgao">Secretaria Municipal de Educação</div>
+            </div>
         </div>
 
-        <div class="side-group-label">AMBIENTE</div>
-        <div class="municipal-choice">
-            <img class="crest-mini" src="{{ asset('images/brasao-monte-sereno.webp') }}" alt="Brasão de Monte Sereno" width="44" height="43">
-            <span><strong>Monte Sereno</strong><small>Rede municipal fictícia</small></span>
-            <span class="chevron" aria-hidden="true">⌄</span>
-        </div>
-
-        <nav class="nav-list" aria-label="Telas de demonstração">
-            <div class="side-group-label">GESTÃO ESCOLAR</div>
+        <nav class="menu" aria-label="Telas de demonstração">
+            <span class="menu-titulo">Gestão escolar</span>
             @foreach ($screens as $slug => $label)
-                <a class="nav-link {{ $screen === $slug ? 'is-active' : '' }}" href="{{ route('demo', ['tela' => $slug]) }}" @if ($screen === $slug) aria-current="page" @endif>
-                    <span class="nav-icon" aria-hidden="true">{{ $navIcons[$slug] }}</span>
+                <a class="menu-item {{ $screen === $slug ? 'ativo' : '' }}" href="{{ route('demo', ['tela' => $slug]) }}" @if ($screen === $slug) aria-current="page" @endif>
+                    <x-icon :name="$navIcons[$slug]" />
                     <span>{{ $label }}</span>
-                    @if ($slug === 'importacoes')<span class="nav-counter">3</span>@endif
+                    @if ($slug === 'importacoes')<span class="contador" aria-label="3 importações aguardando">3</span>@endif
                 </a>
             @endforeach
         </nav>
 
-        <div class="sidebar-bottom">
-            <div class="help-card"><span class="help-icon" aria-hidden="true">✦</span><strong>Mais tempo para educar.</strong><p>Menos redigitação, mais cuidado com a comunidade escolar.</p></div>
-            <div class="sidebar-footer">Astuti Tecnologia <span>•</span> Protótipo 2026</div>
+        <div class="lateral-rodape">
+            <x-astuti-marca />
+            <p>Menos redigitação, mais tempo para a comunidade escolar.</p>
         </div>
     </aside>
 
-    <div class="workspace">
-        <header class="topbar">
-            <div class="breadcrumb"><span>Monte Sereno</span><span class="crumb-sep">/</span><strong>{{ $screens[$screen] }}</strong></div>
-            <div class="top-actions"><span class="top-date">Ano letivo <strong>2026</strong></span><span class="top-avatar" title="Usuário fictício" aria-label="Usuário fictício">AS</span><span class="top-user">Secretaria Escolar<small>Perfil de demonstração</small></span></div>
+    <div class="area">
+        <header class="topo">
+            <nav class="trilha" aria-label="Você está em">
+                <a href="{{ route('demo') }}">Monte Sereno</a>
+                <x-icon name="seta" :size="16" />
+                <span aria-current="page">{{ $screens[$screen] }}</span>
+            </nav>
+            <div class="topo-acoes">
+                <span class="ano-letivo"><x-icon name="calendario" :size="17" /><span>Ano letivo</span> <strong>2026</strong></span>
+                <span class="usuario">
+                    <span class="usuario-iniciais" aria-hidden="true">SE</span>
+                    <span class="usuario-texto">Secretaria Escolar<small>Perfil de demonstração</small></span>
+                </span>
+            </div>
         </header>
 
-        <main class="main-content">
-            <div class="demo-notice" role="note"><span class="notice-mark" aria-hidden="true">✳</span><span><strong>Ambiente de demonstração.</strong> Município fictício, sem acesso a dados reais. <strong>Dados 100% fictícios.</strong></span><span class="demo-badge">DEMO</span></div>
-            <div class="municipal-identity" aria-label="Identidade municipal fictícia">
-                <div class="municipal-lockup">
-                    <img class="crest-header" src="{{ asset('images/brasao-monte-sereno.webp') }}" alt="Brasão de Monte Sereno" width="58" height="56">
-                    <div>
-                        <span class="municipal-eyebrow">IDENTIDADE MUNICIPAL FICTÍCIA</span>
-                        <strong>Prefeitura Municipal de Monte Sereno</strong>
-                        <small>Secretaria Municipal de Educação · Ano letivo 2026</small>
-                    </div>
-                </div>
-                <span class="identity-year">REDE DE ENSINO · 2026</span>
+        <main class="conteudo" id="conteudo">
+            <div class="aviso-demo" role="note">
+                <x-icon name="alerta" />
+                <span><strong>Ambiente de demonstração.</strong> Município fictício, sem acesso a dados reais. <strong>Dados 100% fictícios.</strong></span>
+                <span class="selo-demo">Demonstração</span>
             </div>
 
             @if ($screen === 'painel')
-                <section class="welcome-block" aria-labelledby="welcome-title">
-                    <div class="welcome-copy"><span class="eyebrow">ANO LETIVO 2026 · MONTE SERENO</span><h1 id="welcome-title">Bom dia, Secretaria! <span aria-hidden="true">☀</span></h1><p>Veja o que está acontecendo na rede municipal de ensino.</p></div>
-                    <div class="year-tag"><span class="year-tag-icon" aria-hidden="true">◷</span><div><span>Ano letivo</span><strong>2026</strong></div><span class="year-active">Em andamento</span></div>
-                </section>
-
-                <section class="stats-grid" aria-label="Indicadores fictícios">
-                    <article class="stat-card"><div class="stat-top"><span class="stat-icon tone-blue" aria-hidden="true">♙</span><span class="stat-caption">REDE MUNICIPAL</span></div><strong class="stat-number">1.284</strong><span class="stat-label">Alunos atuais</span><span class="stat-foot good">↗ 4,2% <span>exemplo ilustrativo</span></span></article>
-                    <article class="stat-card"><div class="stat-top"><span class="stat-icon tone-peach" aria-hidden="true">▦</span><span class="stat-caption">UNIDADES</span></div><strong class="stat-number">04</strong><span class="stat-label">Escolas cadastradas</span><span class="stat-foot"><span>Distribuídas pela rede</span></span></article>
-                    <article class="stat-card"><div class="stat-top"><span class="stat-icon tone-purple" aria-hidden="true">◫</span><span class="stat-caption">ANO 2026</span></div><strong class="stat-number">48</strong><span class="stat-label">Turmas organizadas</span><span class="stat-foot"><span>Educação infantil e fundamental</span></span></article>
-                    <article class="stat-card"><div class="stat-top"><span class="stat-icon tone-amber" aria-hidden="true">◷</span><span class="stat-caption">ATENÇÃO</span></div><strong class="stat-number">26</strong><span class="stat-label">Registros para conferir</span><span class="stat-foot pending"><span>Exemplo de pendências</span></span></article>
-                </section>
-
-                <div class="section-header"><div><span class="eyebrow">ACESSO RÁPIDO</span><h2>O que você precisa fazer hoje?</h2><p>As tarefas mais frequentes da secretaria, em um só lugar.</p></div></div>
-                <section class="quick-grid" aria-label="Ações principais">
-                    <a href="{{ route('demo', ['tela' => 'alunos']) }}" class="quick-card"><span class="quick-icon tone-blue" aria-hidden="true">♙</span><span class="quick-text"><strong>Alunos atuais</strong><small>Localizar cadastros e informações</small></span><span class="quick-arrow" aria-hidden="true">↗</span></a>
-                    <a href="{{ route('demo', ['tela' => 'importacoes']) }}" class="quick-card"><span class="quick-icon tone-mint" aria-hidden="true">↥</span><span class="quick-text"><strong>Importar documentos</strong><small>Preparar arquivos para conferência</small></span><span class="quick-arrow" aria-hidden="true">↗</span></a>
-                    <a href="{{ route('demo', ['tela' => 'importacoes']) }}" class="quick-card"><span class="quick-icon tone-amber" aria-hidden="true">✓</span><span class="quick-text"><strong>Conferir pendências</strong><small>Validar informações antes de gravar</small></span><span class="quick-arrow" aria-hidden="true">↗</span></a>
-                    <a href="{{ route('demo', ['tela' => 'matriculas']) }}" class="quick-card"><span class="quick-icon tone-purple" aria-hidden="true">⇄</span><span class="quick-text"><strong>Matrículas</strong><small>Acompanhar a movimentação escolar</small></span><span class="quick-arrow" aria-hidden="true">↗</span></a>
-                </section>
-
-                <section class="two-columns" aria-label="Resumo da rede">
-                    <div class="panel"><div class="panel-header"><div><h3>Escolas da rede</h3><p>Visão rápida das unidades municipais</p></div><a href="{{ route('demo', ['tela' => 'escolas']) }}" class="text-link">Ver todas →</a></div>
-                        <div class="school-mini-list">@foreach (array_slice($schools, 0, 3) as $school)<div class="school-mini"><span class="school-avatar tone-{{ $school['tone'] }}">{{ $school['initial'] }}</span><span class="mini-label"><strong>{{ $school['name'] }}</strong><small>{{ $school['area'] }} · {{ $school['type'] }}</small></span><span class="mini-number">{{ $school['students'] }} <small>alunos</small></span></div>@endforeach</div>
+                <section class="rosto" aria-labelledby="titulo-rede">
+                    <div class="rosto-texto">
+                        <span class="rosto-ano">Ano letivo 2026 em andamento</span>
+                        <h1 id="titulo-rede">Rede municipal de ensino de Monte Sereno</h1>
+                        <p>O retrato do dia: matrículas, escolas e o que ainda espera a conferência da secretaria.</p>
                     </div>
-                    <div class="panel"><div class="panel-header"><div><h3>Importação inteligente</h3><p>Como será o processo de migração</p></div><span class="small-pill">Prévia</span></div><div class="process-steps"><div><span class="process-number is-done">1</span><span><strong>Receber arquivos</strong><small>Word, PDF, Excel e imagens</small></span></div><div><span class="process-number is-done">2</span><span><strong>Extrair e organizar</strong><small>Dados sugeridos, ainda não aprovados</small></span></div><div><span class="process-number">3</span><span><strong>Conferência da secretaria</strong><small>Nenhum registro é publicado sem validar</small></span></div></div><a class="inline-cta" href="{{ route('demo', ['tela' => 'importacoes']) }}">Conhecer o fluxo <span aria-hidden="true">→</span></a></div>
+                    <img class="rosto-brasao" src="{{ asset('images/brasao-monte-sereno.webp') }}" alt="" width="132" height="128">
                 </section>
+
+                <dl class="folha resumo" aria-label="Resumo da rede, com números fictícios">
+                    <div class="resumo-item"><dt>Alunos atuais</dt><dd class="numero">1.284</dd><small>Exemplo ilustrativo</small></div>
+                    <div class="resumo-item"><dt>Escolas cadastradas</dt><dd class="numero">4</dd><small>Distribuídas pela rede</small></div>
+                    <div class="resumo-item"><dt>Turmas organizadas</dt><dd class="numero">48</dd><small>Educação infantil e fundamental</small></div>
+                    <div class="resumo-item pendente"><dt>Registros para conferir</dt><dd class="numero">26</dd><a class="link" href="{{ route('demo', ['tela' => 'importacoes']) }}">Conferir pendências <x-icon name="seta" :size="16" /></a></div>
+                </dl>
+
+                <h2 class="secao-titulo">O que você precisa fazer hoje?</h2>
+                <p class="secao-sub">As tarefas mais frequentes da secretaria, em um só lugar.</p>
+                <ul class="folha acoes">
+                    <li><a class="acao" href="{{ route('demo', ['tela' => 'alunos']) }}"><span class="acao-icone"><x-icon name="alunos" /></span><span><strong>Alunos atuais</strong><small>Localizar cadastros e informações</small></span><x-icon name="seta" class="acao-seta" /></a></li>
+                    <li><a class="acao" href="{{ route('demo', ['tela' => 'importacoes']) }}"><span class="acao-icone"><x-icon name="importacoes" /></span><span><strong>Importar documentos</strong><small>Preparar arquivos para conferência</small></span><x-icon name="seta" class="acao-seta" /></a></li>
+                    <li><a class="acao" href="{{ route('demo', ['tela' => 'importacoes']) }}"><span class="acao-icone"><x-icon name="conferir" /></span><span><strong>Conferir pendências</strong><small>Validar informações antes de gravar</small></span><x-icon name="seta" class="acao-seta" /></a></li>
+                    <li><a class="acao" href="{{ route('demo', ['tela' => 'matriculas']) }}"><span class="acao-icone"><x-icon name="matriculas" /></span><span><strong>Matrículas</strong><small>Acompanhar a movimentação escolar</small></span><x-icon name="seta" class="acao-seta" /></a></li>
+                </ul>
+
+                <div class="colunas">
+                    <section class="folha" aria-labelledby="titulo-escolas">
+                        <div class="folha-cabecalho">
+                            <div><h2 id="titulo-escolas">Escolas da rede</h2><p>As unidades municipais e seus alunos</p></div>
+                            <a class="link" href="{{ route('demo', ['tela' => 'escolas']) }}">Ver todas <x-icon name="seta" :size="16" /></a>
+                        </div>
+                        <ul class="escolas-lista">
+                            @foreach (array_slice($schools, 0, 3) as $school)
+                                <li><span class="escola-sigla" aria-hidden="true">{{ $school['initial'] }}</span><span class="escola-nome"><strong>{{ $school['name'] }}</strong><small>{{ $school['type'] }}, {{ $school['area'] }}</small></span><span class="escola-total numero">{{ $school['students'] }} <small>alunos</small></span></li>
+                            @endforeach
+                        </ul>
+                    </section>
+
+                    <section class="folha" aria-labelledby="titulo-importacao">
+                        <div class="folha-cabecalho">
+                            <div><h2 id="titulo-importacao">Importação inteligente</h2><p>Como os documentos das escolas entram no sistema</p></div>
+                            <span class="etiqueta neutra">Prévia</span>
+                        </div>
+                        <ol class="etapas">
+                            <li><span class="etapa-numero">1</span><span><strong>Receber arquivos</strong><small>Word, PDF, Excel e imagens</small></span></li>
+                            <li><span class="etapa-numero">2</span><span><strong>Extrair e organizar</strong><small>Dados sugeridos, ainda não aprovados</small></span></li>
+                            <li><span class="etapa-numero">3</span><span><strong>Conferência da secretaria</strong><small>Nenhum registro é gravado sem validação</small></span></li>
+                        </ol>
+                        <div class="folha-nota"><a class="link" href="{{ route('demo', ['tela' => 'importacoes']) }}">Conhecer o fluxo de importação <x-icon name="seta" :size="16" /></a></div>
+                    </section>
+                </div>
 
             @elseif ($screen === 'escolas')
-                <div class="page-heading"><div><span class="eyebrow">REDE MUNICIPAL</span><h1>Escolas de Monte Sereno</h1><p>Unidades que compõem a rede fictícia de ensino.</p></div><span class="count-chip">04 unidades</span></div>
-                <div class="schools-grid">@foreach ($schools as $school)<article class="school-card"><div class="school-card-top"><span class="school-avatar large tone-{{ $school['tone'] }}">{{ $school['initial'] }}</span><span class="status-dot"><span aria-hidden="true">●</span> Exemplo ativo</span></div><h2>{{ $school['name'] }}</h2><p>{{ $school['type'] }} · Bairro {{ $school['area'] }}</p><div class="school-card-stats"><div><strong>{{ $school['students'] }}</strong><span>Alunos</span></div><div><strong>{{ $school['classes'] }}</strong><span>Turmas</span></div></div><span class="card-bottom-note">Unidade fictícia para apresentação</span></article>@endforeach</div>
+                <div class="folha-titulo">
+                    <div><span class="contexto">Rede municipal</span><h1>Escolas de Monte Sereno</h1><p>Unidades que compõem a rede fictícia de ensino.</p></div>
+                    <span class="marcador"><x-icon name="escola" :size="16" /> 4 unidades</span>
+                </div>
+                <div class="grade">
+                    @foreach ($schools as $school)
+                        <article class="folha cartao">
+                            <div class="cartao-topo"><span class="escola-sigla" aria-hidden="true">{{ $school['initial'] }}</span><span class="etiqueta ok">Exemplo ativo</span></div>
+                            <h2>{{ $school['name'] }}</h2>
+                            <p>{{ $school['type'] }}, bairro {{ $school['area'] }}</p>
+                            <div class="cartao-dados">
+                                <div><strong class="numero">{{ $school['students'] }}</strong><span>alunos</span></div>
+                                <div><strong class="numero">{{ $school['classes'] }}</strong><span>turmas</span></div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+                <p class="secao-sub" style="margin-top:16px">Unidades fictícias para apresentação.</p>
 
             @elseif ($screen === 'alunos')
-                <div class="page-heading"><div><span class="eyebrow">SECRETARIA ESCOLAR</span><h1>Alunos atuais</h1><p>Exemplos de como consultar os registros escolares com rapidez.</p></div><span class="count-chip">Cadastro fictício</span></div>
-                <section class="panel table-panel"><div class="panel-header"><div><h3>Lista de alunos</h3><p>Todos os nomes e registros nesta tela são inventados.</p></div></div><form method="GET" action="{{ route('demo') }}" class="search-bar"><input type="hidden" name="tela" value="alunos"><label for="student-search" class="sr-only">Buscar nome ou escola</label><input id="student-search" name="busca" type="search" value="{{ $search }}" placeholder="Pesquisar nome ou escola..."><button type="submit">Pesquisar</button></form><div class="responsive-table"><table><thead><tr><th>Aluno</th><th>Matrícula de exemplo</th><th>Escola</th><th>Turma</th><th>Situação</th></tr></thead><tbody>@forelse ($students as $student)<tr><td><div class="student-cell"><span class="student-avatar">{{ $student['initial'] }}</span><strong>{{ $student['name'] }}</strong></div></td><td class="monospace">{{ $student['id'] }}</td><td>{{ $student['school'] }}</td><td>{{ $student['class'] }}</td><td><span class="table-status {{ $student['status'] === 'Ativa' ? 'active' : 'review' }}">{{ $student['status'] }}</span></td></tr>@empty<tr><td colspan="5" class="empty-cell">Nenhum exemplo encontrado para esta busca.</td></tr>@endforelse</tbody></table></div><div class="table-footer">Exibição demonstrativa. Nenhum CPF ou dado pessoal verdadeiro.</div></section>
+                <div class="folha-titulo">
+                    <div><span class="contexto">Secretaria escolar</span><h1>Alunos atuais</h1><p>Consulte os registros escolares pelo nome do aluno ou da escola.</p></div>
+                    <span class="marcador"><x-icon name="info" :size="16" /> Cadastro fictício</span>
+                </div>
+                <section class="folha" aria-labelledby="titulo-lista">
+                    <div class="folha-cabecalho"><div><h2 id="titulo-lista">Lista de alunos</h2><p>Todos os nomes e registros nesta tela são inventados.</p></div></div>
+                    <form method="GET" action="{{ route('demo') }}" class="busca" role="search">
+                        <input type="hidden" name="tela" value="alunos">
+                        <label for="student-search" class="sr-only">Buscar nome ou escola</label>
+                        <span class="campo"><x-icon name="busca" :size="18" /><input id="student-search" name="busca" type="search" value="{{ $search }}" placeholder="Nome do aluno ou da escola"></span>
+                        <button class="botao" type="submit">Pesquisar</button>
+                    </form>
+                    <div class="rolagem">
+                        <table class="tabela">
+                            <thead><tr><th scope="col">Aluno</th><th scope="col">Matrícula de exemplo</th><th scope="col">Escola</th><th scope="col">Turma</th><th scope="col">Situação</th></tr></thead>
+                            <tbody>
+                            @forelse ($students as $student)
+                                <tr>
+                                    <td><span class="pessoa"><span class="iniciais" aria-hidden="true">{{ $student['initial'] }}</span><strong>{{ $student['name'] }}</strong></span></td>
+                                    <td class="codigo">{{ $student['id'] }}</td>
+                                    <td>{{ $student['school'] }}</td>
+                                    <td>{{ $student['class'] }}</td>
+                                    <td><span class="etiqueta {{ $student['status'] === 'Ativa' ? 'ok' : 'conferir' }}">{{ $student['status'] }}</span></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5" class="vazio">Nenhum aluno encontrado com "{{ $search }}". Confira a grafia ou pesquise pelo nome da escola.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="folha-nota">Exibição demonstrativa. Nenhum CPF ou dado pessoal verdadeiro.</div>
+                </section>
 
             @elseif ($screen === 'matriculas')
-                <div class="page-heading"><div><span class="eyebrow">ANO LETIVO 2026</span><h1>Matrículas e movimentações</h1><p>Acompanhamento centralizado por escola, ano e turma.</p></div><span class="count-chip">1.284 matrículas de exemplo</span></div>
-                <div class="summary-row"><div class="small-stat"><span>Ativas</span><strong>1.243</strong><small class="good">Exemplo de situação regular</small></div><div class="small-stat"><span>Em conferência</span><strong>26</strong><small class="pending">Aguardam secretaria</small></div><div class="small-stat"><span>Movimentações</span><strong>15</strong><small>Transferências e ajustes fictícios</small></div></div>
-                <section class="panel table-panel"><div class="panel-header"><div><h3>Movimentações recentes</h3><p>Um histórico ilustrativo e rastreável.</p></div><span class="small-pill">Exemplos</span></div><div class="responsive-table"><table><thead><tr><th>Aluno fictício</th><th>Escola</th><th>Turma</th><th>Evento</th><th>Situação</th></tr></thead><tbody>@foreach ($students as $student)<tr><td><strong>{{ $student['name'] }}</strong></td><td>{{ $student['school'] }}</td><td>{{ $student['class'] }}</td><td>Registro de matrícula</td><td><span class="table-status {{ $student['status'] === 'Ativa' ? 'active' : 'review' }}">{{ $student['status'] }}</span></td></tr>@endforeach</tbody></table></div></section>
+                <div class="folha-titulo">
+                    <div><span class="contexto">Ano letivo 2026</span><h1>Matrículas e movimentações</h1><p>Acompanhamento por escola, ano e turma.</p></div>
+                    <span class="marcador"><x-icon name="matriculas" :size="16" /> 1.284 matrículas de exemplo</span>
+                </div>
+                <dl class="folha resumo indicadores-mini" aria-label="Situação das matrículas">
+                    <div class="resumo-item"><dt>Ativas</dt><dd class="numero">1.243</dd><small>Situação regular</small></div>
+                    <div class="resumo-item"><dt>Em conferência</dt><dd class="numero">26</dd><small>Aguardam a secretaria</small></div>
+                    <div class="resumo-item"><dt>Movimentações</dt><dd class="numero">15</dd><small>Transferências e ajustes fictícios</small></div>
+                </dl>
+                <section class="folha" aria-labelledby="titulo-mov">
+                    <div class="folha-cabecalho"><div><h2 id="titulo-mov">Movimentações recentes</h2><p>Cada mudança fica registrada, com origem e data.</p></div><span class="etiqueta neutra">Exemplos</span></div>
+                    <div class="rolagem">
+                        <table class="tabela">
+                            <thead><tr><th scope="col">Aluno fictício</th><th scope="col">Escola</th><th scope="col">Turma</th><th scope="col">Evento</th><th scope="col">Situação</th></tr></thead>
+                            <tbody>
+                            @foreach ($students as $student)
+                                <tr><td><strong>{{ $student['name'] }}</strong></td><td>{{ $student['school'] }}</td><td>{{ $student['class'] }}</td><td>Registro de matrícula</td><td><span class="etiqueta {{ $student['status'] === 'Ativa' ? 'ok' : 'conferir' }}">{{ $student['status'] }}</span></td></tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
             @elseif ($screen === 'importacoes')
-                <div class="page-heading"><div><span class="eyebrow">MENOS DIGITAÇÃO</span><h1>Importação inteligente</h1><p>Da digitalização à conferência, sem perder a origem de cada informação.</p></div><span class="count-chip">Simulação visual</span></div>
-                <section class="panel import-panel"><div class="panel-header"><div><h3>Etapas da importação</h3><p>Fluxo planejado para os documentos das escolas.</p></div><span class="small-pill">Prévia do produto</span></div><ol class="import-stepper"><li><span>1</span><strong>Receber</strong><small>Arquivo original</small></li><li><span>2</span><strong>Reconhecer</strong><small>Extrair informações</small></li><li><span>3</span><strong>Conferir</strong><small>Conferência humana</small></li><li><span>4</span><strong>Validar</strong><small>Secretaria aprova</small></li></ol><div class="drop-zone"><span class="drop-symbol" aria-hidden="true">↥</span><h3>Seus arquivos, sem redigitar tudo</h3><p>Planilhas Excel, documentos Word, PDF e imagens digitalizadas.</p><span class="file-formats">XLSX</span><span class="file-formats">DOCX</span><span class="file-formats">PDF</span><span class="file-formats">JPG</span><span class="file-formats">PNG</span><div><button type="button" disabled title="Função disponível em uma etapa futura">Selecionar arquivos em breve</button></div><small class="disabled-note">Simulação visual. Nenhum arquivo será enviado ou armazenado.</small></div></section>
-                <div class="import-advice"><span aria-hidden="true">✳</span><div><strong>O sistema nunca decidirá sozinho por você.</strong><p>Documentos originais permanecem vinculados à extração. Dados duvidosos aguardam a secretaria, e uma nova via do histórico só será emitida após validação.</p></div></div>
+                <div class="folha-titulo">
+                    <div><span class="contexto">Menos digitação</span><h1>Importação inteligente</h1><p>Da digitalização à conferência, sem perder a origem de cada informação.</p></div>
+                    <span class="marcador"><x-icon name="info" :size="16" /> Simulação visual</span>
+                </div>
+                <section class="folha" aria-labelledby="titulo-etapas">
+                    <div class="folha-cabecalho"><div><h2 id="titulo-etapas">Etapas da importação</h2><p>O caminho de cada documento enviado pelas escolas.</p></div><span class="etiqueta neutra">Prévia do produto</span></div>
+                    <ol class="etapas-linha">
+                        <li data-n="1"><strong>Receber</strong><small>Arquivo original guardado</small></li>
+                        <li data-n="2"><strong>Reconhecer</strong><small>Extrair informações</small></li>
+                        <li data-n="3"><strong>Conferir</strong><small>Conferência humana</small></li>
+                        <li data-n="4"><strong>Validar</strong><small>A secretaria aprova</small></li>
+                    </ol>
+                    <div class="envio">
+                        <span class="envio-icone"><x-icon name="importacoes" :size="24" /></span>
+                        <h3>Envie os arquivos da escola, sem redigitar</h3>
+                        <p>Planilhas Excel, documentos Word, PDF e imagens digitalizadas.</p>
+                        <div class="formatos"><span>XLSX</span><span>CSV</span><span>DOCX</span><span>PDF</span><span>JPG</span><span>PNG</span></div>
+                        <button class="botao" type="button" disabled title="Função disponível em uma etapa futura">Selecionar arquivos (em breve)</button>
+                        <small class="envio-nota">Simulação visual. Nenhum arquivo será enviado ou armazenado.</small>
+                    </div>
+                </section>
+                <div class="nota"><x-icon name="escudo" /><div><strong>O sistema nunca decide sozinho.</strong><p>Os documentos originais ficam vinculados ao que foi extraído. Dados duvidosos esperam a secretaria, e nenhum histórico é emitido antes da validação.</p></div></div>
 
             @elseif ($screen === 'documentos')
-                <div class="page-heading"><div><span class="eyebrow">ACERVO ESCOLAR</span><h1>Documentos e históricos</h1><p>Uma visão do futuro arquivo escolar organizado por aluno e ano.</p></div><span class="count-chip">Arquivo fictício</span></div>
-                <section class="documents-grid"><article class="document-card"><span class="document-icon tone-blue">▤</span><h2>Fichas individuais</h2><p>Registro e conferência das informações encontradas nas fichas.</p><span>PDF · JPG · PNG</span></article><article class="document-card"><span class="document-icon tone-mint">▣</span><h2>Históricos escolares</h2><p>Reconstrução assistida e emissão após aprovação formal.</p><span>DOCX · PDF</span></article><article class="document-card"><span class="document-icon tone-peach">▥</span><h2>Livros e atas</h2><p>Preservação da origem dos registros antigos digitalizados.</p><span>PDF · JPG · PNG</span></article></section><div class="import-advice"><span aria-hidden="true">✓</span><div><strong>Emissão com rastreabilidade.</strong><p>O histórico emitido identificará fontes usadas, responsável pela conferência e data da validação. Esta função ainda está em desenvolvimento.</p></div></div>
+                <div class="folha-titulo">
+                    <div><span class="contexto">Acervo escolar</span><h1>Documentos e históricos</h1><p>O arquivo escolar organizado por aluno e por ano.</p></div>
+                    <span class="marcador"><x-icon name="acervo" :size="16" /> Arquivo fictício</span>
+                </div>
+                <ul class="folha documentos">
+                    <li><span class="acao-icone"><x-icon name="ficha" /></span><div><strong>Fichas individuais</strong><p>Registro e conferência das informações encontradas nas fichas.</p><small>PDF, JPG e PNG</small></div></li>
+                    <li><span class="acao-icone"><x-icon name="documentos" /></span><div><strong>Históricos escolares</strong><p>Reconstrução assistida e emissão somente após aprovação formal.</p><small>DOCX e PDF</small></div></li>
+                    <li><span class="acao-icone"><x-icon name="acervo" /></span><div><strong>Livros e atas</strong><p>Preservação da origem dos registros antigos digitalizados.</p><small>PDF, JPG e PNG</small></div></li>
+                </ul>
+                <div class="nota"><x-icon name="conferir" /><div><strong>Emissão com rastreabilidade.</strong><p>O histórico emitido vai indicar as fontes usadas, quem conferiu e a data da validação. Esta função ainda está em desenvolvimento.</p></div></div>
 
             @else
-                <div class="page-heading"><div><span class="eyebrow">GESTÃO BASEADA EM INFORMAÇÕES</span><h1>Indicadores da rede</h1><p>Uma apresentação ilustrativa de como acompanhar as escolas.</p></div><span class="count-chip">Valores fictícios</span></div>
-                <section class="panel indicators-panel"><div class="panel-header"><div><h3>Alunos por escola</h3><p>Distribuição demonstrativa, ano letivo de 2026.</p></div></div><div class="bar-list">@foreach ($schools as $school)<div class="bar-item"><div class="bar-heading"><strong>{{ $school['name'] }}</strong><span>{{ $school['students'] }} alunos</span></div><div class="bar-track"><div class="bar-fill tone-{{ $school['tone'] }}" style="width: {{ round($school['students'] / 462 * 100) }}%"></div></div></div>@endforeach</div></section><div class="import-advice"><span aria-hidden="true">i</span><div><strong>Sem dados oficiais nesta prévia.</strong><p>As obrigações do Censo Escolar, FUNDEB, TCE-SP e IEGM serão detalhadas em módulos específicos, com fontes e competências verificadas.</p></div></div>
+                <div class="folha-titulo">
+                    <div><span class="contexto">Gestão com base em informação</span><h1>Indicadores da rede</h1><p>Como acompanhar as escolas ao longo do ano letivo.</p></div>
+                    <span class="marcador"><x-icon name="info" :size="16" /> Valores fictícios</span>
+                </div>
+                <section class="folha" aria-labelledby="titulo-ind">
+                    <div class="folha-cabecalho"><div><h2 id="titulo-ind">Alunos por escola</h2><p>Distribuição demonstrativa do ano letivo de 2026.</p></div></div>
+                    <ul class="barras">
+                        @foreach ($schools as $school)
+                            <li>
+                                <div class="barra-rotulo"><strong>{{ $school['name'] }}</strong><span class="numero">{{ $school['students'] }} alunos</span></div>
+                                <div class="barra-trilho" role="img" aria-label="{{ $school['students'] }} alunos"><div class="barra" style="width: {{ round($school['students'] / $maiorEscola * 100) }}%"></div></div>
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
+                <div class="nota"><x-icon name="info" /><div><strong>Sem dados oficiais nesta prévia.</strong><p>As obrigações do Censo Escolar, FUNDEB, TCE-SP e IEG-M serão detalhadas em módulos próprios, com fontes e competências verificadas.</p></div></div>
             @endif
 
-            <footer class="main-footer"><span>© 2026 Astuti Gestão Escolar</span><span>Monte Sereno é um município fictício. Interface de demonstração local.</span></footer>
+            <footer class="rodape"><span>© 2026 Astuti Gestão Escolar</span><span>Monte Sereno é um município fictício. Interface de demonstração local.</span></footer>
         </main>
     </div>
 </div>
