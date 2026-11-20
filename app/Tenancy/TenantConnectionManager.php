@@ -24,9 +24,21 @@ class TenantConnectionManager
             || ($settings['driver'] ?? null) !== 'mariadb'
             || ! is_string($settings['database'] ?? null)
             || trim($settings['database']) === ''
+            || ! empty($settings['url'])
             || ! array_key_exists('username', $settings)
             || ! array_key_exists('password', $settings)) {
             throw new InvalidArgumentException('Conexao municipal nao configurada.');
+        }
+
+        $platform = config('database.connections.platform', []);
+        if (is_array($platform) && ($platform['driver'] ?? null) === 'mariadb') {
+            if (! empty($platform['url'])) {
+                throw new InvalidArgumentException('A conexao central deve ter destino explicito.');
+            }
+
+            if ($this->physicalDatabaseIdentity($platform) === $this->physicalDatabaseIdentity($settings)) {
+                throw new InvalidArgumentException('O banco municipal nao pode ser o banco central.');
+            }
         }
 
         // Uma configuracao duplicada comprometeria a fronteira entre municipios.
