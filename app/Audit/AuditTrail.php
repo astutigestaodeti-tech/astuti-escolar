@@ -20,11 +20,11 @@ class AuditTrail
 {
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
-        School::class => ['id', 'name', 'inep_code', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
-        SchoolYear::class => ['id', 'year', 'start_date', 'end_date', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
-        SchoolClass::class => ['id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'capacity', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
-        Student::class => ['id', 'full_name', 'birth_date', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
-        StudentEnrollment::class => ['id', 'student_id', 'school_id', 'school_year_id', 'status', 'started_at', 'ended_at', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
+        School::class => ['id', 'name', 'inep_code', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
+        SchoolYear::class => ['id', 'year', 'start_date', 'end_date', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
+        SchoolClass::class => ['id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'capacity', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
+        Student::class => ['id', 'full_name', 'birth_date', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
+        StudentEnrollment::class => ['id', 'student_id', 'school_id', 'school_year_id', 'status', 'started_at', 'ended_at', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
         Municipality::class => ['status'],
     ];
 
@@ -94,11 +94,9 @@ class AuditTrail
         $values = array_intersect_key($values, array_flip($allow));
 
         foreach ($values as $key => $value) {
-            if (preg_match('/password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos|cid|access.key/i', (string) $key)) {
+            if (preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key)\z/iu', (string) $key)) {
                 $values[$key] = '[REDACTED]';
             } elseif (is_array($value)) {
-                $values[$key] = '[REDACTED]';
-            } elseif (is_string($value) && preg_match('/senha|token|laudo|diagn[oó]stico|cid\s*[a-z0-9]+/iu', $value)) {
                 $values[$key] = '[REDACTED]';
             }
         }

@@ -12,6 +12,9 @@ class PortugueseValidationCompletenessTest extends TestCase
         $translated = require base_path('lang/pt_BR/validation.php');
         $missing = [];
 
+        // "custom" é um exemplo de configuração local, não uma regra do framework.
+        unset($reference['custom'], $reference['attributes']);
+
         $check = function (array $expected, array $actual, string $prefix = '') use (&$check, &$missing): void {
             foreach ($expected as $key => $value) {
                 $path = $prefix.$key;

@@ -75,7 +75,13 @@ abstract class TwoMunicipalityTestCase extends TestCase
         // no CI; cada cenario precisa comecar sem sessoes ou tentativas antigas.
         foreach (['platform_audit_logs', 'sessions', 'school_scopes', 'memberships', 'municipality_provision_attempts', 'users'] as $table) {
             if (Schema::connection('platform')->hasTable($table)) {
-                DB::connection('platform')->table($table)->delete();
+                if ($table === 'platform_audit_logs') {
+                    // Só os bancos efêmeros de teste podem usar TRUNCATE;
+                    // os gatilhos bloqueiam DELETE, como devem em produção.
+                    DB::connection('platform')->table($table)->truncate();
+                } else {
+                    DB::connection('platform')->table($table)->delete();
+                }
             }
         }
 
@@ -109,7 +115,11 @@ abstract class TwoMunicipalityTestCase extends TestCase
                 // escolas e anos, sem desativar a integridade referencial.
                 foreach (['student_enrollments', 'students', 'school_classes', 'school_years', 'schools', 'audit_logs'] as $table) {
                     if (Schema::connection('tenant')->hasTable($table)) {
-                        DB::connection('tenant')->table($table)->delete();
+                        if ($table === 'audit_logs') {
+                            DB::connection('tenant')->table($table)->truncate();
+                        } else {
+                            DB::connection('tenant')->table($table)->delete();
+                        }
                     }
                 }
 

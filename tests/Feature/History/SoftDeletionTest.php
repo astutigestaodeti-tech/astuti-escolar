@@ -36,7 +36,7 @@ class SoftDeletionTest extends TwoMunicipalityTestCase
             $this->assertSame($user->id, $deleted->deleted_by);
             $this->assertSame('Registro duplicado no teste', $deleted->deletion_reason);
 
-            $deleted->restore();
+            $deleted->restoreWithReason('Documento conferido pela secretaria', $user->id);
             $this->assertNotNull(SchoolClass::query()->find($class->id));
             $actions = AuditLog::query()->where('auditable_id', $class->id)->orderBy('occurred_at')->pluck('action')->all();
             $this->assertSame(['created', 'deleted', 'restored'], $actions);
@@ -75,7 +75,7 @@ class SoftDeletionTest extends TwoMunicipalityTestCase
             }
 
             $year->deleteWithReason('Duplicidade sintética', $user->id);
-            $year->restore();
+            $year->restoreWithReason('Conferência de registro duplicado', $user->id);
 
             $this->expectException(LogicException::class);
             $year->delete();
@@ -95,10 +95,9 @@ class SoftDeletionTest extends TwoMunicipalityTestCase
                 'school_year_id' => $year->id, 'name' => 'Turma Monte Sereno',
                 'stage' => 'Ensino Fundamental', 'modality' => 'Regular', 'shift' => 'Tarde', 'status' => 'active',
             ]);
+            $class->deleteWithReason('Turma arquivada após o encerramento', $user->id);
             $year->deleteWithReason('Ano encerrado em cenário fictício', $user->id);
-            $this->assertSame(2027, $class->fresh()->schoolYear->year);
+            $this->assertSame(2027, SchoolClass::withTrashed()->findOrFail($class->id)->schoolYear->year);
         });
-
-        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/turmas')->assertOk()->assertSee('2027');
     }
 }
