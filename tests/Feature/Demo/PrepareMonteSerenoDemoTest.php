@@ -138,7 +138,7 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
 
     private function runDemo(array $options = []): int
     {
-        $output = new BufferedOutput();
+        $output = new BufferedOutput;
         $result = Artisan::call('astuti:demo-preparar', $options, $output);
         $this->lastOutput = $output->fetch();
 
