@@ -12,6 +12,7 @@ use App\Models\Tenant\StudentEnrollment;
 use App\Models\User;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -186,6 +187,12 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
 
     public function test_login_com_cache_de_banco_funciona_apos_preparo_local(): void
     {
+        // Simula a instalacao nova: nenhuma tabela de cache preexistente.
+        Schema::connection('platform')->dropIfExists('cache_locks');
+        Schema::connection('platform')->dropIfExists('cache');
+        DB::connection('platform')->table('migrations')
+            ->where('migration', '2026_11_20_000007_create_platform_cache_tables')->delete();
+
         $this->assertSame(0, $this->runDemo());
         $password = $this->senhaEmitida();
 
