@@ -5,6 +5,7 @@ namespace Tests\Feature\Tenancy;
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
 use App\Tenancy\TenantContext;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -155,7 +156,7 @@ class MunicipalityIsolationTest extends TestCase
 
     public function test_db_key_central_nao_pode_ser_reutilizado_por_outro_municipio(): void
     {
-        $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
+        $this->expectException(UniqueConstraintViolationException::class);
 
         Municipality::query()->create([
             'id' => 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
