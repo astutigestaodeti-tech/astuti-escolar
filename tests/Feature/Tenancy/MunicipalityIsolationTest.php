@@ -179,7 +179,8 @@ class MunicipalityIsolationTest extends TestCase
 
     public function test_municipio_inativo_nao_ativa_contexto(): void
     {
-        $municipio = $this->municipio('municipio-inativo', 'municipio_a', 'failed');
+        $municipio = $this->municipioA;
+        $municipio->update(['status' => 'failed']);
         $this->expectException(LogicException::class);
 
         $this->context->enter($municipio);
@@ -187,7 +188,8 @@ class MunicipalityIsolationTest extends TestCase
 
     public function test_provisao_e_idempotente_e_ativa_municipio(): void
     {
-        $municipio = $this->municipio('municipio-provisao', 'municipio_a', 'provisioning');
+        $municipio = $this->municipioA;
+        $municipio->update(['status' => 'provisioning']);
 
         $this->assertSame(0, Artisan::call('astuti:municipio-provisionar', ['slug' => $municipio->slug]));
         $this->assertSame('active', $municipio->fresh()->status);
