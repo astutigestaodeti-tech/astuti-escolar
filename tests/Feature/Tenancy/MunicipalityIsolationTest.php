@@ -220,7 +220,7 @@ class MunicipalityIsolationTest extends TestCase
 
     public function test_provisao_falha_sem_abrir_banco_nao_configurado(): void
     {
-        $municipio = $this->municipio('municipio-falha', 'banco_nao_configurado', 'provisioning');
+        $municipio = $this->municipio('municipio-falha', 'outro_banco_nao_configurado', 'provisioning');
 
         $this->assertSame(1, Artisan::call('astuti:municipio-provisionar', ['slug' => $municipio->slug]));
         $this->assertSame('failed', $municipio->fresh()->status);
