@@ -10,10 +10,12 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -200,8 +202,38 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
         $this->assertTrue(Schema::connection('platform')->hasTable('cache_locks'));
 
         config()->set('cache.default', 'database');
+        config()->set('cache.limiter', 'database');
+        $this->app->forgetInstance('rate.limiter');
+        RateLimiter::clearResolvedInstance('rate.limiter');
+        (new AppServiceProvider($this->app))->boot();
+        DB::connection('platform')->table('cache')->delete();
+
         $this->post('/login', ['email' => self::EMAIL, 'password' => $password])
             ->assertRedirect('/');
+        $this->assertGreaterThan(0, DB::connection('platform')->table('cache')->count());
+    }
+
+    public function test_preparo_preserva_cache_legado_mesmo_se_faltar_tabela_de_travas(): void
+    {
+        $this->assertTrue(Schema::connection('platform')->hasTable('cache'));
+        DB::connection('platform')->table('cache')->updateOrInsert(
+            ['key' => 'cache-legado-preservar'],
+            ['value' => 'informacao-existente', 'expiration' => time() + 3600],
+        );
+        Schema::connection('platform')->dropIfExists('cache_locks');
+        DB::connection('platform')->table('migrations')
+            ->where('migration', '2026_11_20_000007_create_platform_cache_tables')->delete();
+
+        $this->assertSame(0, $this->runDemo());
+        $this->assertSame('informacao-existente', DB::connection('platform')->table('cache')
+            ->where('key', 'cache-legado-preservar')->value('value'));
+        $this->assertTrue(Schema::connection('platform')->hasTable('cache_locks'));
+
+        // Rollback deste complemento nunca pode apagar cache preexistente.
+        $migration = require database_path('migrations/platform/2026_11_20_000007_create_platform_cache_tables.php');
+        $migration->down();
+        $this->assertTrue(Schema::connection('platform')->hasTable('cache'));
+        $this->assertTrue(Schema::connection('platform')->hasTable('cache_locks'));
     }
 
     private function senhaEmitida(): string
