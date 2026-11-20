@@ -9,6 +9,7 @@
             <span class="pill">Unidade escolar</span>
             <h1>{{ $school->name }}</h1>
             <p class="muted">Os cadastros de alunos e matrículas serão disponibilizados nas próximas etapas, com permissões próprias.</p>
+            <p><a class="back" href="{{ route('school.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar turmas desta escola →</a></p>
         </section>
     </div>
 @endsection
