@@ -3,6 +3,7 @@
 namespace App\Models\Tenant\Concerns;
 
 use App\Audit\AuditTrail;
+use App\Models\Tenant\SchoolRecordBuilder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -10,9 +11,11 @@ use LogicException;
 
 trait HasSchoolHistory
 {
-    use SoftDeletes;
+    use SoftDeletes { restore as protected restoreSoftDeleted; }
 
     private ?array $auditRestoreBefore = null;
+
+    private bool $deletionAuthorized = false;
 
     protected static function bootHasSchoolHistory(): void
     {
@@ -72,18 +75,27 @@ trait HasSchoolHistory
             throw new LogicException('O registro não está disponível para exclusão.');
         }
 
+        if ($this->isDirty()) {
+            throw new LogicException('Salve ou descarte as alterações pendentes antes de excluir.');
+        }
+
         return $this->getConnection()->transaction(function () use ($actorId, $reason): bool {
             $this->setAttribute('deleted_by', $actorId);
             $this->setAttribute('deletion_reason', trim($reason));
-            $this->saveQuietly();
+            $this->saveQuietly(); // Apenas metadados da exclusão, sem outros campos pendentes.
 
-            return $this->delete() === true;
+            $this->deletionAuthorized = true;
+            try {
+                return $this->delete() === true;
+            } finally {
+                $this->deletionAuthorized = false;
+            }
         });
     }
 
     public function delete(): ?bool
     {
-        if (! $this->getAttribute('deleted_by') || ! $this->getAttribute('deletion_reason')) {
+        if (! $this->deletionAuthorized || ! $this->getAttribute('deleted_by') || ! $this->getAttribute('deletion_reason')) {
             throw new LogicException('Exclusão escolar exige autoria e motivo. Use deleteWithReason().');
         }
 
@@ -93,6 +105,21 @@ trait HasSchoolHistory
     public function forceDelete(): ?bool
     {
         throw new LogicException('Exclusão física de registros escolares é proibida.');
+    }
+
+    public function restore(): bool
+    {
+        return $this->getConnection()->transaction(fn (): bool => $this->restoreSoftDeleted());
+    }
+
+    public function save(array $options = []): bool
+    {
+        return $this->getConnection()->transaction(fn (): bool => parent::save($options));
+    }
+
+    public function newEloquentBuilder($query): SchoolRecordBuilder
+    {
+        return new SchoolRecordBuilder($query);
     }
 
     private function audit(string $action, ?array $before, ?array $after): void

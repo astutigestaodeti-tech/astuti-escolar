@@ -2,6 +2,7 @@
 
 namespace App\Models\Platform;
 
+use App\Audit\ImmutableAuditBuilder;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 
@@ -41,5 +42,10 @@ class PlatformAuditLog extends Model
     public function forceDelete(): ?bool
     {
         throw new LogicException('Registros de auditoria não podem ser excluídos fisicamente.');
+    }
+
+    public function newEloquentBuilder($query): ImmutableAuditBuilder
+    {
+        return new ImmutableAuditBuilder($query);
     }
 }

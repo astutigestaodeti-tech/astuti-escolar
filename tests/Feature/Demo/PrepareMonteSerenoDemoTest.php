@@ -35,7 +35,8 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
         // Reutiliza um banco efêmero exclusivo dos testes, nunca o banco do notebook.
         $settings = config('tenancy.connections.municipio_b');
         app(TenantContext::class)->runFor($this->municipioB, function (): void {
-            School::query()->where('id', self::ESCOLA_B1)->delete();
+            // Limpeza exclusiva da base descartável de teste; a aplicação não expõe exclusão física.
+            DB::connection('tenant')->table('schools')->where('id', self::ESCOLA_B1)->delete();
         });
         Municipality::query()->where('slug', 'monte-sereno')->delete();
         config()->set('tenancy.connections', ['monte_sereno' => $settings]);

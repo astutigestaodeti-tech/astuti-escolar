@@ -46,4 +46,11 @@ class SecurityHeadersTest extends TwoMunicipalityTestCase
         $this->assertNotEmpty(glob(public_path('fonts/*.woff2')));
         $this->get('/demonstracao')->assertOk()->assertSee('images/brasao-monte-sereno.webp');
     }
+
+    public function test_erros_http_tambem_recebem_cabecalhos(): void
+    {
+        $this->get('/rota-que-nao-existe')->assertNotFound()
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertHeader('Content-Security-Policy', self::CSP);
+    }
 }

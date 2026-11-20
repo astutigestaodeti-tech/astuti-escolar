@@ -121,6 +121,8 @@ return [
         'status' => 'situação',
         'started_at' => 'data de início',
         'ended_at' => 'data de encerramento',
+        'start_date' => 'data inicial',
+        'end_date' => 'data final',
         'deletion_reason' => 'motivo da exclusão',
     ],
 ];

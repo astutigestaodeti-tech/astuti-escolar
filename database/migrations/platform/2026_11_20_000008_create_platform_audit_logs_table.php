@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->timestamp('occurred_at', 6);
             $table->uuid('user_id')->nullable();
-            $table->string('role', 64)->nullable();
+            $table->string('role', 255)->nullable();
             $table->string('action', 80);
             $table->string('auditable_type', 180)->nullable();
             $table->string('auditable_id', 36)->nullable();

@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Audit;
 
+use App\Audit\AuditTrail;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\SchoolYear;
 use App\Tenancy\TenantContext;
 use LogicException;
+use Mockery;
+use RuntimeException;
 use Tests\Support\TwoMunicipalityTestCase;
 
 class TenantAuditTest extends TwoMunicipalityTestCase
@@ -90,16 +93,88 @@ class TenantAuditTest extends TwoMunicipalityTestCase
     public function test_senhas_tokens_e_laudos_sao_mascarados_antes_da_gravacao(): void
     {
         app(TenantContext::class)->runFor($this->municipioA, function (): void {
-            app(\App\Audit\AuditTrail::class)->record('tenant', 'test.redacted', SchoolYear::class, null,
+            app(AuditTrail::class)->record('tenant', 'test.redacted', SchoolYear::class, null,
                 ['password' => 'segredo-123', 'token' => 'token-123'],
                 ['medical_report' => 'laudo-123', 'nested' => ['laudo' => 'diagnostico-123']]);
 
             $log = AuditLog::query()->where('action', 'test.redacted')->firstOrFail();
-            $this->assertSame('[REDACTED]', $log->before['password']);
-            $this->assertSame('[REDACTED]', $log->before['token']);
-            $this->assertSame('[REDACTED]', $log->after['medical_report']);
-            $this->assertSame('[REDACTED]', $log->after['nested']['laudo']);
+            $this->assertSame([], $log->before);
+            $this->assertSame([], $log->after);
             $this->assertStringNotContainsString('segredo-123', $log->toJson());
+            $this->assertStringNotContainsString('laudo-123', $log->toJson());
+        });
+    }
+
+    public function test_sem_auditoria_a_criacao_e_desfeita_na_mesma_transacao(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $mock = Mockery::mock(AuditTrail::class);
+            $mock->shouldReceive('record')->once()->andThrow(new RuntimeException('Auditoria indisponível'));
+            app()->instance(AuditTrail::class, $mock);
+
+            $id = 'a1010000-0000-4000-8000-000000000005';
+            try {
+                SchoolYear::query()->create(['id' => $id, 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'planned']);
+                $this->fail('A criação sem registro de auditoria deveria falhar.');
+            } catch (RuntimeException $exception) {
+                $this->assertSame('Auditoria indisponível', $exception->getMessage());
+            }
+
+            $this->assertNull(SchoolYear::query()->find($id));
+        });
+    }
+
+    public function test_instancia_carregada_em_a_nao_pode_alterar_mesmo_uuid_em_b(): void
+    {
+        $context = app(TenantContext::class);
+        $id = 'a1010000-0000-4000-8000-000000000006';
+
+        $yearA = $context->runFor($this->municipioA, fn () => SchoolYear::query()->create([
+            'id' => $id, 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'planned',
+        ]));
+
+        $context->runFor($this->municipioB, function () use ($id, $yearA): void {
+            SchoolYear::query()->create(['id' => $id, 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'active']);
+
+            try {
+                $yearA->update(['status' => 'cancelled']);
+                $this->fail('Uma instância do município A não pode gravar no município B.');
+            } catch (LogicException) {
+                $this->assertSame('active', SchoolYear::query()->findOrFail($id)->status);
+            }
+        });
+
+        $context->runFor($this->municipioA, function () use ($id): void {
+            $this->assertSame('planned', SchoolYear::query()->findOrFail($id)->status);
+        });
+    }
+
+    public function test_multiplos_papeis_ativos_sao_identificados_sem_atribuicao_aleatoria(): void
+    {
+        $user = $this->criarUsuario('auditor-varios-papeis@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $this->actingAs($user);
+
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $year = SchoolYear::query()->create(['id' => 'a1010000-0000-4000-8000-000000000007', 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'planned']);
+            $log = AuditLog::query()->where('auditable_id', $year->id)->firstOrFail();
+            $this->assertSame('municipal_manager,school_secretary', $log->role);
+        });
+    }
+
+    public function test_update_e_delete_em_lote_na_auditoria_sao_bloqueados(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            try {
+                AuditLog::query()->update(['action' => 'fraudado']);
+                $this->fail('Não pode atualizar registros de auditoria em lote.');
+            } catch (LogicException) {
+                $this->assertTrue(true);
+            }
+
+            $this->expectException(LogicException::class);
+            AuditLog::query()->delete();
         });
     }
 }

@@ -63,7 +63,7 @@ class ProvisionMunicipality extends Command
             $municipality->save();
             $this->finishAttempt($attemptId, 'completed');
             $audit->record('platform', 'municipality.provision.completed', Municipality::class, $municipality->id,
-                ['status' => 'provisioning'], ['status' => 'completed']);
+                ['status' => 'provisioning'], ['status' => 'active']);
 
             $this->info('Municipio provisionado com sucesso.');
 

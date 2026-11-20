@@ -38,7 +38,7 @@ class SoftDeletionTest extends TwoMunicipalityTestCase
 
             $deleted->restore();
             $this->assertNotNull(SchoolClass::query()->find($class->id));
-            $actions = AuditLog::query()->where('auditable_id', $class->id)->pluck('action')->all();
+            $actions = AuditLog::query()->where('auditable_id', $class->id)->orderBy('occurred_at')->pluck('action')->all();
             $this->assertSame(['created', 'deleted', 'restored'], $actions);
             $this->assertSame($user->id, AuditLog::query()->where('auditable_id', $class->id)->where('action', 'deleted')->firstOrFail()->user_id);
         });
@@ -58,5 +58,47 @@ class SoftDeletionTest extends TwoMunicipalityTestCase
             $this->expectException(LogicException::class);
             $year->forceDelete();
         });
+    }
+
+    public function test_exclusao_em_lote_e_reuso_do_motivo_anterior_sao_bloqueados(): void
+    {
+        $user = $this->criarUsuario('historico-sem-atalhos@example.invalid');
+        $this->actingAs($user);
+
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($user): void {
+            $year = SchoolYear::query()->create(['id' => 'a1020000-0000-4000-8000-000000000004', 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'planned']);
+            try {
+                SchoolYear::query()->whereKey($year->id)->delete();
+                $this->fail('Exclusão em lote não pode contornar autoria e motivo.');
+            } catch (LogicException) {
+                $this->assertNotNull(SchoolYear::query()->find($year->id));
+            }
+
+            $year->deleteWithReason('Duplicidade sintética', $user->id);
+            $year->restore();
+
+            $this->expectException(LogicException::class);
+            $year->delete();
+        });
+    }
+
+    public function test_turma_conserva_referencia_a_ano_letivo_arquivado(): void
+    {
+        $user = $this->criarUsuario('consulta-historica@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $this->actingAs($user);
+
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($user): void {
+            $year = SchoolYear::query()->create(['id' => 'a1020000-0000-4000-8000-000000000005', 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'active']);
+            $class = SchoolClass::query()->create([
+                'id' => 'a1020000-0000-4000-8000-000000000006', 'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $year->id, 'name' => 'Turma Monte Sereno',
+                'stage' => 'Ensino Fundamental', 'modality' => 'Regular', 'shift' => 'Tarde',
+            ]);
+            $year->deleteWithReason('Ano encerrado em cenário fictício', $user->id);
+            $this->assertSame(2027, $class->fresh()->schoolYear->year);
+        });
+
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/turmas')->assertOk()->assertSee('2027');
     }
 }

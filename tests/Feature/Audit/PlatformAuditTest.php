@@ -4,6 +4,7 @@ namespace Tests\Feature\Audit;
 
 use App\Models\Platform\PlatformAuditLog;
 use Illuminate\Support\Facades\Artisan;
+use LogicException;
 use Tests\Support\TwoMunicipalityTestCase;
 
 class PlatformAuditTest extends TwoMunicipalityTestCase
@@ -35,6 +36,12 @@ class PlatformAuditTest extends TwoMunicipalityTestCase
             ->where('action', 'municipality.provision.completed')
             ->where('auditable_id', $this->municipioA->id)->firstOrFail();
 
-        $this->assertSame('completed', $log->after['status']);
+        $this->assertSame('active', $log->after['status']);
+    }
+
+    public function test_auditoria_central_impede_alteracoes_em_lote(): void
+    {
+        $this->expectException(LogicException::class);
+        PlatformAuditLog::query()->update(['action' => 'modificado']);
     }
 }

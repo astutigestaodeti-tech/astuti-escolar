@@ -3,8 +3,14 @@
 namespace App\Audit;
 
 use App\Models\Platform\Membership;
+use App\Models\Platform\Municipality;
 use App\Models\Platform\PlatformAuditLog;
 use App\Models\Tenant\AuditLog;
+use App\Models\Tenant\School;
+use App\Models\Tenant\SchoolClass;
+use App\Models\Tenant\SchoolYear;
+use App\Models\Tenant\Student;
+use App\Models\Tenant\StudentEnrollment;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -12,6 +18,16 @@ use InvalidArgumentException;
 
 class AuditTrail
 {
+    /** Nada fora desta lista chega ao JSON de auditoria. */
+    private const ALLOWED_FIELDS = [
+        School::class => ['id', 'name', 'inep_code', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
+        SchoolYear::class => ['id', 'year', 'start_date', 'end_date', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
+        SchoolClass::class => ['id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'capacity', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
+        Student::class => ['id', 'full_name', 'birth_date', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
+        StudentEnrollment::class => ['id', 'student_id', 'school_id', 'school_year_id', 'status', 'started_at', 'ended_at', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
+        Municipality::class => ['status'],
+    ];
+
     /**
      * Registra o evento na conexão correta, sem persistir segredos ou laudos.
      * A conexão é deliberadamente explícita para evitar vazamento entre redes.
@@ -48,7 +64,7 @@ class AuditTrail
                 ->where('municipality_id', $municipality->id)
                 ->where('user_id', $actor)
                 ->where('status', 'active')
-                ->value('role');
+                ->pluck('role')->unique()->sort()->implode(',') ?: null;
         }
 
         $model = $connection === 'tenant' ? AuditLog::class : PlatformAuditLog::class;
@@ -60,25 +76,30 @@ class AuditTrail
             'action' => $action,
             'auditable_type' => $auditableType,
             'auditable_id' => $auditableId,
-            'before' => self::redact($before),
-            'after' => self::redact($after),
+            'before' => self::safeSnapshot($auditableType, $before),
+            'after' => self::safeSnapshot($auditableType, $after),
             'ip' => $request?->ip(),
             'user_agent' => $request?->userAgent(),
             'request_id' => $requestId,
         ]);
     }
 
-    private static function redact(?array $values): ?array
+    private static function safeSnapshot(?string $entity, ?array $values): ?array
     {
         if ($values === null) {
             return null;
         }
 
+        $allow = self::ALLOWED_FIELDS[$entity] ?? [];
+        $values = array_intersect_key($values, array_flip($allow));
+
         foreach ($values as $key => $value) {
             if (preg_match('/password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos|cid|access.key/i', (string) $key)) {
                 $values[$key] = '[REDACTED]';
             } elseif (is_array($value)) {
-                $values[$key] = self::redact($value);
+                $values[$key] = '[REDACTED]';
+            } elseif (is_string($value) && preg_match('/senha|token|laudo|diagn[oó]stico|cid\s*[a-z0-9]+/iu', $value)) {
+                $values[$key] = '[REDACTED]';
             }
         }
 
