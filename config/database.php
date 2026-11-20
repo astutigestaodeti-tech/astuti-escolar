@@ -32,6 +32,32 @@ return [
 
     'connections' => [
 
+        // O banco central nunca e alterado ao entrar em outro municipio.
+        'platform' => [
+            'driver' => 'mariadb',
+            'url' => env('PLATFORM_DB_URL'),
+            'host' => env('PLATFORM_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('PLATFORM_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('PLATFORM_DB_DATABASE', env('DB_DATABASE', '')),
+            'username' => env('PLATFORM_DB_USERNAME', env('DB_USERNAME', '')),
+            'password' => env('PLATFORM_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('PLATFORM_DB_SOCKET', env('DB_SOCKET', '')),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                Mysql::ATTR_SSL_CA => env('PLATFORM_DB_SSL_CA'),
+            ]) : [],
+        ],
+
+        // Fora de um contexto autorizado, esta conexao falha fechada.
+        'tenant' => [
+            'driver' => 'astuti_tenant_disabled',
+        ],
+
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
