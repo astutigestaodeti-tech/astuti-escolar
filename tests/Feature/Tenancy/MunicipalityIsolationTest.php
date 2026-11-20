@@ -170,6 +170,11 @@ class MunicipalityIsolationTest extends TestCase
         $this->assertSame('active', $municipio->fresh()->status);
         $this->assertSame(0, Artisan::call('astuti:municipio-provisionar', ['slug' => $municipio->slug]));
         $this->assertSame('active', $municipio->fresh()->status);
+        $this->assertSame(
+            ['completed', 'completed'],
+            DB::connection('platform')->table('municipality_provision_attempts')
+                ->where('municipality_id', $municipio->id)->orderBy('id')->pluck('status')->all(),
+        );
     }
 
     public function test_provisao_falha_sem_abrir_banco_nao_configurado(): void
@@ -179,6 +184,11 @@ class MunicipalityIsolationTest extends TestCase
         $this->assertSame(1, Artisan::call('astuti:municipio-provisionar', ['slug' => $municipio->slug]));
         $this->assertSame('failed', $municipio->fresh()->status);
         $this->assertFalse($this->context->hasActive());
+        $this->assertSame(
+            ['failed'],
+            DB::connection('platform')->table('municipality_provision_attempts')
+                ->where('municipality_id', $municipio->id)->orderBy('id')->pluck('status')->all(),
+        );
     }
 
     private function municipio(string $slug, string $key, string $status = 'active'): Municipality
