@@ -5,6 +5,7 @@ Data da decisão: 20/11/2026
 ## O que esta etapa disponibiliza
 
 - Usuários são autenticados pelo Laravel usando a tabela platform.users no banco MariaDB central.
+- Sessões persistidas e tokens de recuperação ficam também no banco central, com referência de usuário em UUID. A migration inicial padrão do Laravel foi tornada inofensiva para não duplicar ou apagar essas tabelas; bases locais existentes não são apagadas.
 - A tabela memberships associa um usuário a um município e a uma função. Cada vínculo deve estar ativo.
 - A tabela school_scopes lista as escolas autorizadas para cada vínculo. Os UUIDs apontam para registros da base do município correspondente.
 - O perfil municipal_manager tem leitura de todas as escolas de seu município. Os perfis school_director, school_secretary e teacher precisam de escola explicitamente autorizada.
