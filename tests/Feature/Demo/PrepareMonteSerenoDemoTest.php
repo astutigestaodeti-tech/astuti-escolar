@@ -10,9 +10,10 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\User;
-use App\Providers\AppServiceProvider;
 use App\Tenancy\TenantContext;
+use Illuminate\Cache\RateLimiter as DatabaseRateLimiter;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -202,10 +203,10 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
         $this->assertTrue(Schema::connection('platform')->hasTable('cache_locks'));
 
         config()->set('cache.default', 'database');
-        config()->set('cache.limiter', 'database');
-        $this->app->forgetInstance('rate.limiter');
-        RateLimiter::clearResolvedInstance('rate.limiter');
-        (new AppServiceProvider($this->app))->boot();
+        $limiter = new DatabaseRateLimiter(Cache::store('database'));
+        $limiter->for('astuti-login', RateLimiter::limiter('astuti-login'));
+        $this->app->instance('rate.limiter', $limiter);
+        RateLimiter::swap($limiter);
         DB::connection('platform')->table('cache')->delete();
 
         $this->post('/login', ['email' => self::EMAIL, 'password' => $password])
