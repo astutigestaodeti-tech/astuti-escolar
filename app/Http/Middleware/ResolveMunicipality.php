@@ -14,8 +14,7 @@ class ResolveMunicipality
     public function __construct(
         private readonly SchoolAccess $access,
         private readonly TenantContext $context,
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
