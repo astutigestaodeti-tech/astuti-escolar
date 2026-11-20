@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#103d4d">
     <title>{{ $screens[$screen] }} | Astuti Escolar | Monte Sereno</title>
     <link rel="stylesheet" href="{{ asset('css/demo.css') }}">
 </head>
@@ -21,8 +22,8 @@
 
         <div class="side-group-label">AMBIENTE</div>
         <div class="municipal-choice">
-            <span class="municipal-monogram" aria-hidden="true">MS</span>
-            <span><strong>Monte Sereno</strong><small>Rede municipal</small></span>
+            <img class="crest-mini" src="{{ asset('images/brasao-monte-sereno.webp') }}" alt="Brasão de Monte Sereno" width="44" height="43">
+            <span><strong>Monte Sereno</strong><small>Rede municipal fictícia</small></span>
             <span class="chevron" aria-hidden="true">⌄</span>
         </div>
 
@@ -38,23 +39,34 @@
         </nav>
 
         <div class="sidebar-bottom">
-            <div class="help-card"><span class="help-icon" aria-hidden="true">✦</span><strong>Uma escola mais leve.</strong><p>Menos digitação, mais tempo para cuidar da educação.</p></div>
+            <div class="help-card"><span class="help-icon" aria-hidden="true">✦</span><strong>Mais tempo para educar.</strong><p>Menos redigitação, mais cuidado com a comunidade escolar.</p></div>
             <div class="sidebar-footer">Astuti Tecnologia <span>•</span> Protótipo 2026</div>
         </div>
     </aside>
 
     <div class="workspace">
         <header class="topbar">
-            <div class="breadcrumb"><span>Painel da rede</span><span class="crumb-sep">/</span><strong>{{ $screens[$screen] }}</strong></div>
+            <div class="breadcrumb"><span>Monte Sereno</span><span class="crumb-sep">/</span><strong>{{ $screens[$screen] }}</strong></div>
             <div class="top-actions"><span class="top-date">Ano letivo <strong>2026</strong></span><span class="top-avatar" title="Usuário fictício" aria-label="Usuário fictício">AS</span><span class="top-user">Secretaria Escolar<small>Perfil de demonstração</small></span></div>
         </header>
 
         <main class="main-content">
             <div class="demo-notice" role="note"><span class="notice-mark" aria-hidden="true">✳</span><span><strong>Ambiente de demonstração.</strong> Município fictício, sem acesso a dados reais. <strong>Dados 100% fictícios.</strong></span><span class="demo-badge">DEMO</span></div>
+            <div class="municipal-identity" aria-label="Identidade municipal fictícia">
+                <div class="municipal-lockup">
+                    <img class="crest-header" src="{{ asset('images/brasao-monte-sereno.webp') }}" alt="Brasão de Monte Sereno" width="58" height="56">
+                    <div>
+                        <span class="municipal-eyebrow">IDENTIDADE MUNICIPAL FICTÍCIA</span>
+                        <strong>Prefeitura Municipal de Monte Sereno</strong>
+                        <small>Secretaria Municipal de Educação · Ano letivo 2026</small>
+                    </div>
+                </div>
+                <span class="identity-year">REDE DE ENSINO · 2026</span>
+            </div>
 
             @if ($screen === 'painel')
                 <section class="welcome-block" aria-labelledby="welcome-title">
-                    <div class="welcome-copy"><span class="eyebrow">SEXTA-FEIRA, 20 DE NOVEMBRO DE 2026</span><h1 id="welcome-title">Bom dia, Secretaria! <span aria-hidden="true">☀</span></h1><p>Veja o que está acontecendo na rede de ensino de Monte Sereno.</p></div>
+                    <div class="welcome-copy"><span class="eyebrow">ANO LETIVO 2026 · MONTE SERENO</span><h1 id="welcome-title">Bom dia, Secretaria! <span aria-hidden="true">☀</span></h1><p>Veja o que está acontecendo na rede municipal de ensino.</p></div>
                     <div class="year-tag"><span class="year-tag-icon" aria-hidden="true">◷</span><div><span>Ano letivo</span><strong>2026</strong></div><span class="year-active">Em andamento</span></div>
                 </section>
 

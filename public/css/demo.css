@@ -195,3 +195,100 @@ td strong{color:#26485b;font-weight:750}
 @media(max-width:900px){.app-shell{display:block}.sidebar{height:auto;position:static;padding:14px 18px}.brand{padding:0 4px 12px}.side-group-label,.municipal-choice,.sidebar-bottom{display:none}.nav-list{flex-direction:row;overflow-x:auto;gap:5px}.nav-link{white-space:nowrap;flex-shrink:0;padding:10px}.nav-counter{display:none}.topbar{height:59px}.two-columns{grid-template-columns:1fr}}
 @media(max-width:640px){.main-content{padding:22px 16px}.topbar{padding:0 16px}.top-user,.top-date,.year-tag,.demo-badge{display:none}.welcome-copy h1{font-size:27px}.demo-notice{margin-bottom:25px}.stats-grid,.quick-grid,.schools-grid,.summary-row,.documents-grid{grid-template-columns:1fr}.stat-card{padding:18px}.stat-foot{min-height:0}.quick-card{padding:13px}.page-heading{display:block}.count-chip{display:inline-block;margin-top:12px}.panel-header{padding:19px}.search-bar{margin:0 16px 16px}.import-stepper{grid-template-columns:repeat(2,1fr);row-gap:22px}.import-stepper li:nth-child(2):after{display:none}.main-footer{display:block;line-height:1.8}.main-footer span{display:block}.drop-zone{margin:0 15px}.bar-heading{font-size:11px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+
+/* Identidade visual institucional de Monte Sereno: prévia com dados fictícios. */
+:root{--astuti-ink:#173d4d;--astuti-deep:#103d4d;--astuti-teal:#177c7b;--astuti-gold:#cbaa6a;--astuti-paper:#f5f8f7;--astuti-line:#e2eae8}
+body{background:var(--astuti-paper);color:var(--astuti-ink)}
+.sidebar{background:linear-gradient(165deg,#0e3448 0%,#103f4d 68%,#124d58 100%);box-shadow:10px 0 32px #143d4a0e}
+.brand-symbol{background:linear-gradient(145deg,#78c8ba,#198780);border:1px solid #a2e2d450;box-shadow:0 10px 22px #061e2a48}
+.brand-dot{color:#b8e6d8}
+.side-group-label{color:#8db9bd}
+.municipal-choice{background:#ffffff10;border:1px solid #ffffff1b;border-radius:14px;padding:10px 12px;min-height:65px}
+.municipal-choice strong{font-size:12px;color:#fff}
+.municipal-choice small{color:#a9ced0}
+.crest-mini,.crest-header{display:block;flex-shrink:0;object-fit:contain;filter:drop-shadow(0 4px 5px #06182755)}
+.crest-mini{width:44px;height:43px}
+.nav-link{border-radius:11px;color:#bcd5d7}
+.nav-link:hover{background:#ffffff13}
+.nav-link.is-active{background:#e7f3ee;color:#15485a;box-shadow:inset 3px 0 #cbaa6a}
+.help-card{background:linear-gradient(135deg,#ffffff12,#ffffff07);border-color:#ffffff23}
+.help-icon{background:#b6e0d0;color:#154f51}
+.sidebar-footer{color:#92b8bc}
+.topbar{background:#fff;border-bottom:1px solid #e5eeec}
+.breadcrumb strong{color:#1f4a53}
+.top-avatar{background:#dbeee6;color:#246d64}
+.main-content{padding-top:26px}
+.demo-notice{background:#fff8eb;border-color:#f0dfc1;color:#786139;border-radius:12px;margin-bottom:18px}
+.demo-badge{color:#987334;border-color:#e8d1a3}
+.municipal-identity{display:flex;align-items:center;justify-content:space-between;gap:18px;background:#fff;border:1px solid var(--astuti-line);border-radius:16px;padding:17px 22px;margin-bottom:25px;box-shadow:0 9px 28px #0b3e5007}
+.municipal-lockup{display:flex;align-items:center;gap:15px;min-width:0}
+.crest-header{width:58px;height:56px}
+.municipal-eyebrow{display:block;color:var(--astuti-teal);font-size:9px;line-height:1.4;letter-spacing:.15em;font-weight:850;margin-bottom:6px}
+.municipal-lockup strong{display:block;font-size:15px;line-height:1.35;color:#193e4d;letter-spacing:-.02em}
+.municipal-lockup small{display:block;color:#869ca2;font-size:11px;line-height:1.55;margin-top:4px}
+.identity-year{flex-shrink:0;color:#34766b;background:#edf6f1;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.08em;padding:10px 13px}
+.welcome-block{position:relative;isolation:isolate;overflow:hidden;min-height:235px;padding:34px 36px;margin-bottom:24px;background:radial-gradient(circle at 85% 10%,#36988d44 0,transparent 40%),linear-gradient(115deg,#103b4e 0%,#0f5262 65%,#126d70 100%);border:1px solid #23616a;border-radius:20px;color:#fff;box-shadow:0 17px 34px #103e4c20}
+.welcome-block::before{content:"";position:absolute;width:400px;height:400px;right:-120px;top:-145px;border-radius:50%;border:1px solid #ffffff23;box-shadow:0 0 0 43px #ffffff09,0 0 0 91px #ffffff07;z-index:-1}
+.welcome-block::after{content:"";position:absolute;width:165px;height:165px;right:13%;top:31px;background:url('/images/brasao-monte-sereno.webp') center/contain no-repeat;filter:drop-shadow(0 8px 13px #041c2a73);z-index:-1;pointer-events:none}
+.welcome-copy{max-width:61%}
+.welcome-copy .eyebrow{color:#aadfd1}
+.welcome-copy h1{font-size:clamp(29px,3vw,39px);max-width:395px;color:#fff;margin:14px 0 12px}
+.welcome-copy h1 span{color:#f1c985}
+.welcome-copy p{max-width:330px;color:#cce0e2;font-size:13px;line-height:1.7}
+.year-tag{position:relative;z-index:1;align-self:flex-end;background:#ffffff19;border:1px solid #ffffff47;color:#fff;backdrop-filter:blur(6px)}
+.year-tag div span{color:#e1edef}
+.year-tag div strong{color:#fff}
+.year-tag-icon{background:#ffffff25;color:#f4d095}
+.year-active{background:#e2f4e9;color:#216d58}
+.stats-grid{gap:16px}
+.stat-card{position:relative;overflow:hidden;border-radius:17px;background:#fff;border:1px solid var(--astuti-line);box-shadow:0 11px 28px #0c485009}
+.stat-card::before{content:"";position:absolute;height:3px;left:19px;right:19px;top:0;background:linear-gradient(90deg,#7ac9b9,transparent)}
+.stat-number{color:#173e4f;font-weight:850}
+.stat-label{color:#718993}
+.stat-caption{color:#a7b5b8}
+.eyebrow{color:#228a7f}
+.section-header h2,.page-heading h1{color:#1b4150}
+.quick-card,.school-card,.small-stat,.document-card,.panel{background:#fff;border:1px solid var(--astuti-line);border-radius:16px;box-shadow:0 9px 24px #103b4e08}
+.quick-card:hover{border-color:#8ac9b8;box-shadow:0 13px 29px #103b4e13}
+.quick-arrow{color:#318d7e}
+.quick-text strong{color:#1a4351}
+.panel-header h3{color:#1b4450}
+.school-card{position:relative;overflow:hidden}
+.school-card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#18847e,#cbaa6a)}
+.small-pill,.count-chip{background:#ebf5f0;color:#287868;border-color:#d7e9e2}
+.import-advice{background:#eff8f4;border-color:#d8ece6}
+.main-footer{color:#92a6aa}
+@media(max-width:1100px){.welcome-block::after{right:8%;width:145px;height:145px;top:37px}}
+@media(max-width:900px){.sidebar{box-shadow:none}.main-content{padding-top:19px}.municipal-identity{padding:15px 18px;margin-bottom:20px}.welcome-block{min-height:210px}}
+@media(max-width:640px){
+  .main-content{padding:15px 14px 23px}
+  .demo-notice{font-size:10px;line-height:1.55;padding:11px 12px;margin-bottom:14px}
+  .municipal-identity{padding:12px;margin-bottom:15px;gap:8px}
+  .municipal-lockup{gap:10px}
+  .crest-header{width:47px;height:48px}
+  .municipal-eyebrow{font-size:8px;margin-bottom:3px}
+  .municipal-lockup strong{font-size:12px}
+  .municipal-lockup small{font-size:9px}
+  .identity-year{display:none}
+  .welcome-block{min-height:202px;padding:24px 18px;margin-bottom:16px}
+  .welcome-block::after{right:2%;top:20px;width:105px;height:105px;opacity:.92}
+  .welcome-copy{max-width:100%}
+  .welcome-copy .eyebrow{font-size:9px;max-width:63%}
+  .welcome-copy h1{max-width:192px;font-size:26px;line-height:1.16;margin:13px 0 10px}
+  .welcome-copy p{max-width:215px;font-size:11px;line-height:1.6}
+  .stats-grid,.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .stat-card{padding:16px 13px}
+  .stat-card::before{left:13px;right:13px}
+  .stat-number{font-size:27px}
+  .stat-icon{width:34px;height:34px}
+  .stat-caption{font-size:8px}
+  .quick-card{display:block;min-height:119px;padding:13px 11px;position:relative}
+  .quick-icon{margin-bottom:10px}
+  .quick-text strong{font-size:12px}
+  .quick-text small{font-size:10px}
+  .quick-arrow{position:absolute;right:10px;top:15px}
+  .section-header{margin-top:24px}
+  .section-header h2{font-size:19px}
+  .page-heading h1{font-size:27px}
+}
+@media(prefers-reduced-motion:reduce){.quick-card,.nav-link{transition:none}}
