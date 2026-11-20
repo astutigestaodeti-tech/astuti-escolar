@@ -112,6 +112,70 @@ class ClaudeMandatoryFindingsTest extends TwoMunicipalityTestCase
         });
     }
 
+    public function test_c2_touch_do_builder_nao_altera_exclusao_ou_datas_sem_auditoria(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $year = $this->createYear();
+            foreach ([fn () => SchoolYear::query()->touch(), fn () => SchoolYear::query()->touch('deleted_at')] as $operation) {
+                try {
+                    $operation();
+                    $this->fail('O Builder::touch não pode atualizar registros escolares sem auditoria.');
+                } catch (LogicException $exception) {
+                    $this->assertNotEmpty($exception->getMessage());
+                }
+            }
+
+            $this->assertFalse($year->fresh()->trashed());
+        });
+    }
+
+    public function test_c2_eventos_ausentes_ou_listeners_removidos_impedem_gravacao(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $year = $this->createYear();
+            $dispatcher = SchoolYear::getEventDispatcher();
+            try {
+                SchoolYear::unsetEventDispatcher();
+                $this->expectException(LogicException::class);
+                $year->update(['status' => 'closed']);
+            } finally {
+                SchoolYear::setEventDispatcher($dispatcher);
+            }
+        });
+    }
+
+    public function test_c2_flush_de_listeners_de_auditoria_impede_alteracao(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $year = $this->createYear();
+            SchoolYear::flushEventListeners();
+            try {
+                $this->expectException(LogicException::class);
+                $year->update(['status' => 'closed']);
+            } finally {
+                SchoolYear::clearBootedModels();
+            }
+        });
+    }
+
+    public function test_c2_cancelamento_por_observer_nao_deixa_metadados_sem_auditoria(): void
+    {
+        $actor = $this->criarUsuario('observer-deletar@example.invalid');
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($actor): void {
+            $year = $this->createYear();
+            SchoolYear::deleting(fn () => false);
+
+            try {
+                $this->expectException(LogicException::class);
+                $year->deleteWithReason('Tentativa cancelada', $actor->id);
+            } finally {
+                SchoolYear::flushEventListeners();
+                SchoolYear::clearBootedModels();
+                $this->assertNull(SchoolYear::query()->findOrFail($year->id)->deleted_by);
+            }
+        });
+    }
+
     public function test_i1_banco_municipal_impede_update_e_delete_diretos_de_auditoria(): void
     {
         app(TenantContext::class)->runFor($this->municipioA, function (): void {
@@ -209,6 +273,18 @@ class ClaudeMandatoryFindingsTest extends TwoMunicipalityTestCase
             } catch (LogicException) {
                 $this->assertTrue(SchoolClass::withTrashed()->findOrFail($class->id)->trashed());
             }
+        });
+    }
+
+    public function test_i2_nova_turma_nao_pode_ser_criada_em_ano_letivo_arquivado(): void
+    {
+        $actor = $this->criarUsuario('matricula-ano-arquivado@example.invalid');
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($actor): void {
+            $year = $this->createYear();
+            $year->deleteWithReason('Fechamento de ano fictício', $actor->id);
+
+            $this->expectException(LogicException::class);
+            $this->createClass($year);
         });
     }
 
