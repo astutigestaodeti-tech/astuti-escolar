@@ -48,6 +48,23 @@ php artisan serve --host=127.0.0.1 --port=8001
 - **Telas demonstrativas de Monte Sereno:** `http://127.0.0.1:8001/demonstracao`. Clique no menu lateral para visitar Visão geral, Escolas, Alunos, Matrículas, Importações, Documentos e Indicadores. A busca de alunos opera apenas sobre cinco nomes inventados.
 - A rota `/demonstracao` responde **404 em produção**. As informações, quantidades, escolas e nomes exibidos são sintéticos, existem somente na memória da renderização e não geram registros no banco. A importação de documentos nessa tela é **simulação visual**, sem upload.
 
+### Testar as telas reais com Monte Sereno fictício
+
+Quando a instalação local usar `APP_ENV=local` e o banco central `astuti_platform_dev` no MariaDB **da própria máquina**, o projeto reconhece automaticamente a base fictícia `astuti_monte_sereno_dev` já criada. Não há acesso automático a outros bancos. O comando abaixo **não cria bancos de dados nem é permitido em produção**.
+
+Com as duas bases locais já existentes e acessíveis pelo usuário configurado no `.env`, execute uma vez:
+
+```bash
+php artisan config:clear
+php artisan astuti:demo-preparar
+```
+
+O comando migra somente os esquemas de desenvolvimento previstos, cria o município fictício Monte Sereno, três escolas, um ano letivo de 2027, três turmas e 115 alunos **totalmente sintéticos**, além de uma conta de teste. Ele mostra um e-mail e uma senha forte aleatória; guarde a senha sem enviá-la a ninguém. Depois, com o servidor iniciado, entre em `http://127.0.0.1:8001/login` e escolha Monte Sereno para acessar escolas, turmas e alunos reais do ambiente de teste.
+
+Executá-lo novamente não duplica as fichas nem redefine a senha. Se perder a senha fictícia, use `php artisan astuti:demo-preparar --renovar-senha`. A operação não exclui nem substitui dados preexistentes. Para esse teste, o MariaDB deve permanecer local e o `.env` nunca deve ser publicado.
+
+**Importante:** esses 115 alunos não são o kit Monte Sereno v2 validado; são dados gerados especificamente para experimentar o funcionamento. Os registros de alunos continuam sem formulário de gravação, CPF ou documentos reais, e o ambiente não está homologado para uso escolar.
+
 - Verificação pública de aplicação: `http://127.0.0.1:8001/saude`, com resposta `{"status":"ok"}`. A rota não revela versão, credenciais nem dados escolares.
 
 ## Qualidade e segurança

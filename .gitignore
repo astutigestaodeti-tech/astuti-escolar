@@ -24,6 +24,8 @@
 
 # Dependencias, caches e arquivos gerados
 /.codex
+/.superpowers/
+/.worktrees/
 /.cursor/
 /.idea
 /.nova
