@@ -8,6 +8,7 @@ use App\Tenancy\TenantContext;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
@@ -271,6 +272,11 @@ class MunicipalityIsolationTest extends TestCase
                     '--realpath' => true,
                     '--force' => true,
                 ]);
+                foreach (['student_enrollments', 'students'] as $table) {
+                    if (Schema::connection('tenant')->hasTable($table)) {
+                        DB::connection('tenant')->table($table)->delete();
+                    }
+                }
                 DB::connection('tenant')->table('schools')->delete();
                 School::create(['id' => $id, 'name' => 'Escola Central']);
                 School::create(['id' => substr_replace($id, '3', 0, 1), 'name' => $name]);

@@ -105,15 +105,13 @@ abstract class TwoMunicipalityTestCase extends TestCase
                     '--force' => true,
                 ]);
 
-                if (Schema::connection('tenant')->hasTable('school_classes')) {
-                    DB::connection('tenant')->table('school_classes')->delete();
+                // Apagar primeiro os vinculos de teste, antes das FKs de
+                // escolas e anos, sem desativar a integridade referencial.
+                foreach (['student_enrollments', 'students', 'school_classes', 'school_years', 'schools'] as $table) {
+                    if (Schema::connection('tenant')->hasTable($table)) {
+                        DB::connection('tenant')->table($table)->delete();
+                    }
                 }
-
-                if (Schema::connection('tenant')->hasTable('school_years')) {
-                    DB::connection('tenant')->table('school_years')->delete();
-                }
-
-                DB::connection('tenant')->table('schools')->delete();
 
                 foreach ($escolas as $id => $name) {
                     School::query()->create(['id' => $id, 'name' => $name, 'status' => 'active']);
