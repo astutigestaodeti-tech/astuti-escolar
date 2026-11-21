@@ -77,7 +77,7 @@
 - Consumes: `FictitiousDataTransfer::run(..., ?Closure $afterMunicipalCommit)`.
 - Produces: `PartialCommitException` para caso de falha apos commit municipal e antes de confirmar central, sem expor credenciais; recuperacao documentada somente com backups e inspecao supervisoras.
 
-- [ ] **Step 1:** escrever `test_falha_antes_do_commit_reverte_ambos_destinos`, injetando falha deterministica na etapa anterior ao primeiro commit; confirmar que a escrita nao persistiu.
+- [ ] **Step 1:** escrever `test_falha_antes_do_commit_reverte_ambos_destinos` com violacao de FK na fixture de insercao **depois** de a copia ter comecado e antes de qualquer commit; confirmar que nenhum dos dois destinos persistiu linhas. Este caso amplia o teste de destino invalido da Task 2 e nao precisa de callback adicional.
 - [ ] **Step 2:** escrever `test_falha_entre_commits_explica_estado_parcial_e_recusa_retry` com callback que lanca excecao apos o commit municipal; confirmar banco municipal preenchido, central vazio, excecao tipada, origem preservada e nova tentativa recusada.
 - [ ] **Step 3:** implementar apenas a classificacao necessaria de erro e checkpoint test-only interno, preservando a ordem atual de commits e sem adicionar `--forcar`/atalhos no CLI; fazer testes RED/GREEN e repetir `php artisan test`.
 - [ ] **Step 4:** escrever `test_escopo_escolar_e_usuarios_auditados_referenciam_registros_existentes`; implementar conferencia interbancos antes de permitir commit, sem criar FK impossivel entre databases.
@@ -94,7 +94,7 @@
 - Consumes: testes de Tasks 1-3.
 - Produces: job CI independente `migracao-integracao`, com MariaDB+PostgreSQL efemeros, que roda o teste `MigrateFictitiousDataToPostgresTest` duas vezes e publica falhas; workflow principal mantem PHPUnit/Pint/Vite/UI.
 
-- [ ] **Step 1:** rodar o job com duas execucoes consecutivas de `php artisan test --filter=MigrateFictitiousDataToPostgresTest`; observar inicialmente falha de contaminacao se fixtures nao isolarem execucoes, depois corrigi-la com nomes unicos `*_test`, nao por limpeza de bancos locais.
+- [ ] **Step 1:** configurar o job para executar duas vezes `php artisan test --filter=MigrateFictitiousDataToPostgresTest` nos mesmos containers; conferir que ambos passam. Se a segunda falhar por colisao de fixtures, reproduzir a falha e corrigir exclusivamente o helper de nomes unicos `*_test`, sem limpar bancos locais.
 - [ ] **Step 2:** verificar no GitHub Actions sucesso real de ambos jobs, `vendor/bin/pint --test`, `npm run build`, `npm run test:ui`, e teste PHP geral duas vezes; registrar IDs e conclusoes sem presumir resultado.
 - [ ] **Step 3:** solicitar revisao independente do PR #5 focada em precondicoes, guardas, origem read-only, falha parcial, auditoria e segredos; corrigir pontos criticos/importantes antes de qualquer corte.
 - [ ] **Step 4:** atualizar documentos de continuidade com commits/CI e pendencias, manter PR em rascunho e **nao** executar `astuti:migrar-dados-postgresql --executar` no notebook. Commit `ci(pgsql): exigir teste real de migracao com bancos efemeros`.
