@@ -51,7 +51,11 @@ class AuditTrail
             throw new InvalidArgumentException('Auditoria municipal exige contexto ativo.');
         }
 
-        $actor = $userId ?? Auth::id() ?? app(AuditActor::class)->current();
+        // Uma tentativa de senha incorreta pertence à conta informada,
+        // nunca à sessão anterior ou ao contexto de um job em andamento.
+        $actor = $action === 'auth.failed'
+            ? $userId
+            : ($userId ?? Auth::id() ?? app(AuditActor::class)->current());
         if ($connection === 'tenant' && $actor === null) {
             throw new LogicException('Uma gravação escolar exige autoria identificada, também em tarefas automáticas.');
         }
