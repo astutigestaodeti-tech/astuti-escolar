@@ -396,3 +396,27 @@ A revisao independente das quatro alteracoes encontrou **nenhuma falha critica**
 **Evidencia do comando `pg_lsclusters` no segundo terminal Debian:** PostgreSQL 17 `main` na porta **5432** esta `online`. Os cinco clusters de ensaio estao presentes e `down`: `astuti_ens_20261121_103015_6876` (55432), `astuti_ens_20261121_103538_6170` (55433), `astuti_ens_20261121_105834_239` (55434), `astuti_ens_20261121_111614_25474` (55435) e **`astuti_ens_20261121_112332_22176` (55436)**. Os diretórios de dados e logs de cada um aparecem individualmente. O servidor Laravel demonstrativo segue em outro terminal; a imagem confirma a existencia dos clusters, **nao** a conectividade ao 55436 ou o login.
 
 **Proximo passo nao destrutivo:** iniciar especificamente o cluster de ensaio 55436 por `sudo pg_ctlcluster --skip-systemctl-redirect 17 astuti_ens_20261121_112332_22176 start` e fazer consultas `SELECT` via socket com `psql -p 55436` para verificar `users`, `schools` e `students` antes de configurar um teste de login vinculado so a esse cluster. Nao executar operacoes nos demais clusters nem modificar `.env`; o `main` 5432 permanece separado.
+
+## 21/11/2026 - Captura 91: cluster ficticio 55436 iniciado e dados conferidos no notebook
+
+**Evidencia visual:** no segundo terminal Debian, o usuario iniciou exatamente `17/astuti_ens_20261121_112332_22176` com `sudo pg_ctlcluster --skip-systemctl-redirect ... start`. As consultas `SELECT` via socket Unix, `-p 55436`, retornaram **`astuti_platform_dev | 1 usuario`** e **`3 escolas | 115 alunos`** em `astuti_monte_sereno_dev`. Isso confirma a disponibilidade do banco copiado de demonstracao no cluster de ensaio distinto; nao comprova login autenticado nem acesso aos dados na interface. O PostgreSQL principal segue atribuido a 5432, sem ordem de migracao definitiva.
+
+**Proximo passo correto:** criar comando de inicio do Laravel estritamente no 55436, com teste previo de identidade fisica e contagens, autenticacao temporaria de desenvolvimento no banco copiado e sessao distinta da demonstracao 8001. Nunca gravar a senha em chat ou GitHub.
+
+## 21/11/2026 - Captura 92: roteiro de login isolado criado, testado e publicado no GitHub
+
+**Implementacao real na branch `feature/migracao-postgresql-instalacoes-isoladas`:**
+
+- `scripts/operacao/testar-login-isolado-postgresql.sh`: exige cluster nomeado `astuti_ens_20261121_112332_22176` online em **55436**, compara `pg_control_system().system_identifier` com PostgreSQL principal **5432**, confere 1 municipio, 1 usuario ativo com e-mail `demo.monte-sereno@astuti.invalid`, 1 vinculo, 3 escolas, 115 alunos e 115 matriculas. Sem aprovacao do preflight, para antes de rotacionar qualquer senha.
+- No processo local de ensaio, gera credenciais aleatorias e modifica **apenas** `astuti_ensaio` e o hash de senha do **usuario ficticio copiado** em 55436. Valida Laravel e conexoes efetivas antes de alterar o hash; nao muda `.env`, nao executa migracao, nao toca MariaDB, backups ou PostgreSQL principal. Usa cookie de sessao exclusivo `astuti_ensaio_55436` e servidor HTTP **127.0.0.1:8002**, separado da demo sintetica em 8001. Imprime a senha **somente no terminal Debian** (nao fotografar/divulgar).
+- `tests/Shell/TestarLoginIsoladoPostgresqlTest.sh`: **5 cenarios** Bash simulados passando localmente: cluster parado, identidade coincidente, contagens divergentes, Laravel inseguro e inicializacao valida. Testes anteriores tambem passaram: 9 copia isolada, 8 restauracao, 6 backup. O workflow `.github/workflows/testes.yml` passou a executar o novo teste.
+- **GitHub Actions confirmado verde na execucao #352:** [44915694895](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44915694895), commit `786ee7d`, que contem script e teste (2 commits anteriores) e a integracao ao CI. A atualizacao posterior de documentacao nao altera o comportamento de teste.
+- Documentacao operacional na mesma branch, secao `Testar login e consultas reais no notebook, sem corte`, atualizada.
+
+**Comando para o notebook, com o cluster 55436 ja online** (nao usar a janela ocupada com o servidor 8001):
+
+```bash
+cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas && bash scripts/operacao/testar-login-isolado-postgresql.sh
+```
+
+Depois, abrir **http://127.0.0.1:8002/login**, usar e-mail e senha impressos no proprio terminal. Deixar terminal aberto; Ctrl+C encerra servidor. **Estado pendente:** o comando ainda nao foi executado no notebook neste chat; login, navegacao em listas reais e permissao autenticada ainda nao estao validados. Os testes automatizados Bash nao equivalem a teste integrado no notebook. PR #5 permanece rascunho; sem corte, merge, alteracao de `.env` ou exclusao dos clusters anteriores.
