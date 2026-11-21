@@ -197,8 +197,8 @@ class PrepareMonteSerenoDemo extends Command
         $tenant = config('tenancy.connections.monte_sereno');
 
         if (! is_array($platform) || ! is_array($tenant)
-            || ($platform['driver'] ?? null) !== 'mariadb'
-            || ($tenant['driver'] ?? null) !== 'mariadb'
+            || ($platform['driver'] ?? null) !== 'pgsql'
+            || ($tenant['driver'] ?? null) !== 'pgsql'
             || ! empty($platform['url']) || ! empty($tenant['url'])
             || ! in_array(strtolower((string) ($platform['host'] ?? '')), ['localhost', '127.0.0.1', '::1'], true)
             || ! in_array(strtolower((string) ($tenant['host'] ?? '')), ['localhost', '127.0.0.1', '::1'], true)) {
