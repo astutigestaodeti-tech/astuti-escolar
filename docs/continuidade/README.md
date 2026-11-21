@@ -73,18 +73,19 @@ Evidencia: capturas do terminal Debian enviadas pelo usuario em conversa de cont
 | Banco municipal PostgreSQL | `astuti_monte_sereno_dev` confirmado, com 7 tabelas de estrutura escolar, auditoria e migrations |
 | Contagens PostgreSQL verificadas | Central: `municipalities`, `users`, `memberships` com 0; municipal: escolas, anos, turmas, alunos e matriculas com 0 |
 | MariaDB de origem | 3 bases `astuti_*_dev` confirmadas; contagens ainda pendentes |
-| Backups MariaDB | Historico anterior relata dois dumps `.sql.gz` em subpasta `~/astuti-backups/mariadb-*`, com GZIP e restauracao em bancos de teste aprovados; reconfirmacao local pendente |
+| Bancos restaurados MariaDB | Captura 69: `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385` visiveis via `sudo mariadb`; contagens atuais ainda nao confrontadas |
+| Backups MariaDB | Captura 68: dois dumps `.sql.gz` localizados em `~/astuti-backups/mariadb-20261120-234757/`, tamanhos 4,7 KB e 17 KB, ambos aprovados em `gzip -t`; sem alteracao |
 
 **Sincronizacao concluida em 21/11/2026:** o notebook estava no commit `ec78138`, quatro commits atras do remoto. Jefferson executou `git pull --ff-only` e comprovou HEAD `a27be7b1`, branch correta e arvore limpa. O historico detalhado esta em `HISTORICO.md`.
 
-O print **confirma a existencia e sete tabelas do banco municipal** `astuti_monte_sereno_dev`, mas nao as contagens de dados, integridade ou transferencia do MariaDB. Tambem nao comprova backup/restauracao das origens MariaDB, transferencia de alunos, uso da senha antiga ou testes locais completos. **Nao executar importacao, `migrate:fresh`, `db:wipe` ou seed de demonstracao antes dessas verificacoes.**
+As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os dois dumps GZIP e a existencia de dois bancos de restauracao MariaDB; ainda faltam a conferencia atual das contagens das tabelas restauradas e o dry-run com codigo atualizado. Nao foi comprovada a transferencia de dados ao PostgreSQL, a validacao do login ou a execucao de testes locais completos. **Nao executar importacao efetiva, `migrate:fresh`, `db:wipe` ou seed de demonstracao antes dessas verificacoes.**
 
 ## 6. Proximo passo seguro
 
 1. **Concluido em 21/11/2026:** branch local sincronizada por fast-forward, com HEAD `a27be7b1` e sem alteracoes pendentes.
 2. **Em andamento:** existencia das duas bases PostgreSQL, sete tabelas municipais e 0 registros nas principais tabelas de destino confirmados. Consultar as demais tabelas e contar todos os registros nas bases MariaDB de origem sem modificar dados.
-3. **Historico recuperado:** dois dumps MariaDB e ensaio de restauracao ja foram relatados como aprovados em 20-21/11. Localizar a subpasta `mariadb-*`, reconfirmar que os arquivos persistem e validar seus hashes/GZIP; nao substituir automaticamente os backups anteriores.
-4. **Simulacao anterior aprovada:** 1 municipio, 1 usuario, 3 escolas, 115 alunos, 3 turmas, 115 matriculas e 237 auditorias municipais. Repetir a simulacao na versao `a27be7b1` sem `--executar`; somente apos revisao, verificacao dos backups e autorizacao especifica considerar a transferencia.
+3. **Confirmado em capturas 68 e 69:** dois dumps MariaDB na subpasta `mariadb-20261120-234757/`, ambos com GZIP integro; bancos de restauracao preservados `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385`. Foram criados anteriormente por `sudo mariadb` e nao aparecem para o usuario limitado `aflora`. Nao recriar nem remover. Conferir as contagens das 12 tabelas dos backups restaurados contra as origens sem modificar dados.
+4. **Simulacao anterior aprovada:** 1 municipio, 1 usuario, 3 escolas, 115 alunos, 3 turmas, 115 matriculas e 237 auditorias municipais. O novo roteiro parou antes de repetir a simulacao porque consultou os bancos restaurados com usuario sem visibilidade. **Depois de conferir as 12 contagens**, repetir o dry-run na versao `a27be7b1` sem `--executar`; somente apos revisao e autorizacao especifica considerar a transferencia.
 5. Validar as contagens, relacionamentos, hashes de senha, login do municipio ficticio, autorizacoes, auditoria, testes locais, Pint e build. Comparar 3 escolas, 115 alunos e 2027.
 6. Revisar PR #5 e os PRs precedentes na ordem, sem mesclar automaticamente. Atualizar este ponto de retomada com o resultado real.
 
