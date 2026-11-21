@@ -2,6 +2,14 @@
 
 **Somente Monte Sereno v2 fictício**, no notebook Debian/WSL. O comando não usa dados reais e não é uma ferramenta de migração de Prefeituras contratantes. As bases MariaDB permanecem legíveis e **inalteradas**. O código está no PR de migração e deve passar pela revisão independente antes de qualquer execução com `--executar`.
 
+## Validação no GitHub Actions
+
+O job **Integração MariaDB para PostgreSQL** roda a suíte de transferência duas vezes nos mesmos serviços efêmeros MariaDB 11.8 e PostgreSQL 17. Cada rodada usa bases distintas com sufixo `_test` e dados gerados para Monte Sereno v2. No [run do PR #5](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44869962312), passaram 22 testes e 228 asserções em cada rodada. A suíte geral passou duas vezes, com 165 testes e 606 asserções por rodada. Pint, build Vite e os quatro testes de interface também passaram.
+
+A integração confirmou que a origem sintética fica intacta, a cópia preserva as linhas e os hashes e as referências de auditoria e escopo escolar são válidas. O teste de falha antes do commit confirmou o rollback nos dois destinos. O teste entre commits confirmou o estado parcial, a recusa de nova tentativa no mesmo par e a retomada em outro par descartável.
+
+Antes de autorizar a cópia no notebook, confira a revisão independente, o commit em uso, os dois destinos vazios, a simulação nesse ambiente e os backups da origem e dos destinos. Verifique os backups com restauração supervisionada em bancos isolados e mantenha a aplicação sem escritas durante a operação. O CI usa dados sintéticos e a validação dos backups, da configuração e do login do notebook depende de um ensaio local.
+
 ## 1. Preservar a origem antes de começar
 
 No Debian, mantenha as duas bases MariaDB originais `astuti_platform_dev` e `astuti_monte_sereno_dev`. Confira os nomes e o usuário de leitura. Faça dumps separados **fora do Git**:
