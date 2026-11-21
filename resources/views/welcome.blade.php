@@ -25,10 +25,13 @@
                         @endforeach
                     </ul>
                 @endif
-                <form method="POST" action="{{ route('logout') }}" class="inicio-acoes">
-                    @csrf
-                    <button class="botao secundario" type="submit"><x-icon name="sair" :size="18" /> Sair</button>
-                </form>
+                <div class="inicio-acoes">
+                    <a class="botao secundario" href="{{ route('two-factor.settings') }}"><x-icon name="escudo" :size="18" /> Segurança da conta</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="botao secundario" type="submit"><x-icon name="sair" :size="18" /> Sair</button>
+                    </form>
+                </div>
             @else
                 <h1>Gestão escolar para redes municipais</h1>
                 <p>Matrículas, turmas e documentos das escolas públicas, com menos redigitação e conferência humana em cada etapa.</p>
