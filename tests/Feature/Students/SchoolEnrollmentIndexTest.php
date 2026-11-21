@@ -281,6 +281,29 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
             ->assertSessionHasErrors('ano_letivo');
     }
 
+    public function test_filtro_invalido_volta_para_busca_valida_e_exibe_erro_acessivel(): void
+    {
+        $user = $this->criarUsuario('matriculas-filtro-retorno@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno do Ano Atual', 'active', 2027);
+
+        $url = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas';
+        $invalid = $this->actingAs($user)->get($url.'?busca=Aluno&ano_letivo=2025');
+        $invalid->assertRedirect($url.'?busca=Aluno')
+            ->assertSessionHasErrors('ano_letivo');
+
+        $this->get($url.'?busca=Aluno')
+            ->assertOk()
+            ->assertSee('Escolha um ano letivo disponível para esta escola.')
+            ->assertSee('role="alert"', false)
+            ->assertSee('Aluno do Ano Atual');
+
+        $this->get($url.'?busca=Aluno&ano_letivo=2027')
+            ->assertOk()
+            ->assertDontSee('Escolha um ano letivo disponível para esta escola.');
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
     private function matricular(
         Municipality $municipio,
         string $escola,
