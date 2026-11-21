@@ -138,6 +138,16 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Nao concluido:** nenhum teste novo, servico CI, refatoracao, commit de codigo ou transferencia de dados foi implementado com essa aprovacao inicial. A etapa de desenho segue aguardando validacao de Jefferson e depois planejamento TDD.
 
+## 21/11/2026 - Plano Superpowers de testes reais elaborado e verificado
+
+**Aprovacao recebida:** Jefferson aprovou o desenho `docs/superpowers/specs/2026-11-21-testes-integracao-mariadb-postgresql-design.md`, que preve banco MariaDB+PostgreSQL efemeros no GitHub e nenhum acesso ao notebook. Um check independente de viabilidade do desenho retornou sem questoes importantes pendentes.
+
+**Novo artefato, apenas documentacao:** plano `docs/superpowers/plans/2026-11-21-testes-integracao-mariadb-postgresql.md` criado na branch `feature/migracao-postgresql-instalacoes-isoladas`. Revisao de clareza atualizada no commit `54a6d2a2cf80f1fe76c9fb99bf5b4f17b2b8e32a`. Branch remota contem os commits documentais anteriores `409b5380` (desenho), `42b6b570` (plano) e `54a6d2a2` (correcao do plano). O ultimo HEAD local comprovado por Jefferson segue `a27be7b1`.
+
+**Plano de execucao:** quatro Tasks com 19 passos verificaveis: (1) job CI e fixtures so `*_test`; (2) extrair motor de copia para testes reais preservando as guardas da CLI local; (3) ensaiar erro, rollback, commit parcial, referencias e recuperacao; (4) duas execucoes, CI, revisao independente e documentacao. TDD exige observar falhas especificas antes das mudancas correspondentes.
+
+**Status efetivo:** nenhuma Task executada, nenhum codigo alterado, nenhum teste novo rodado, nenhum dado transferido. PR #5 deve permanecer draft. Proximo passo e Jefferson revisar o plano e escolher execucao direta ou por subagentes, conforme Superpowers; so entao iniciar codigo.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
