@@ -28,6 +28,7 @@
                 <a class="folha cartao" href="{{ route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">
                     <div class="cartao-topo"><x-iniciais :texto="$school->name" /><span class="etiqueta ok">Ativa</span></div>
                     <h2>{{ $school->name }}</h2>
+                    <p class="numero">{{ $school->active_students_count }} {{ (int) $school->active_students_count === 1 ? 'aluno ativo' : 'alunos ativos' }}</p>
                     <span class="cartao-acao">Abrir escola <x-icon name="seta" :size="16" /></span>
                 </a>
             @endforeach
