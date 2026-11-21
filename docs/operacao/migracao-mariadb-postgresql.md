@@ -59,7 +59,37 @@ A simulação verifica:
 - escopos escolares ligados a escolas municipais e autores informados nas auditorias ligados a usuários centrais;
 - contagem por tabela, sem revelar credenciais ou dados de estudantes.
 
-Se houver erro, **pare**. Não force a cópia e não altere a origem para fazê-la passar. Depois do backup testado e da simulação aprovada, a confirmação explícita é:
+Se houver erro, **pare**. Não force a cópia e não altere a origem para fazê-la passar.
+
+### Backups PostgreSQL antes da cópia
+
+Com a simulação aprovada e as tabelas de destino ainda vazias, faça um `pg_dump -Fc` de cada destino PostgreSQL com o esquema já preparado. O exemplo usa a conexão local do guia de instalação. Confira host, porta, usuário e os nomes dos dois bancos na configuração do notebook. Peça a senha no prompt e mantenha a aplicação sem escritas durante a preparação.
+
+O bloco cria um diretório exclusivo para cada tentativa, fora do Git. Preserve esse diretório e todos os backups anteriores. Use permissões restritas e mantenha os arquivos no armazenamento seguro da operação.
+
+```bash
+(
+    set -eu
+    umask 077
+    backup_root="$HOME/astuti-backups"
+    mkdir -p -- "$backup_root"
+    chmod 700 -- "$backup_root"
+    backup_dir="$(mktemp -d -- "$backup_root/pg-pre-copia-XXXXXXXX")"
+    cd -- "$backup_dir"
+
+    pg_dump -Fc -h 127.0.0.1 -p 5432 -U astuti_app -f platform.dump astuti_platform_dev
+    pg_dump -Fc -h 127.0.0.1 -p 5432 -U astuti_app -f monte-sereno.dump astuti_monte_sereno_dev
+    pg_restore -l platform.dump > platform.list
+    pg_restore -l monte-sereno.dump > monte-sereno.list
+    sha256sum platform.dump monte-sereno.dump > SHA256SUMS
+    sha256sum -c SHA256SUMS
+    printf 'Backups PostgreSQL pré-cópia em %s\n' "$backup_dir"
+)
+```
+
+Confira nas duas listagens o banco e o esquema esperados. Registre o horário e o caminho do par de backups. Sob supervisão, restaure cada arquivo em um novo banco isolado e vazio, com `pg_restore --exit-on-error --single-transaction --dbname` apontando para o destino isolado conferido. Verifique as migrations e confirme que as tabelas alvo continuam vazias. O ensaio usa bases distintas dos destinos `*_dev` e preserva os dumps originais.
+
+Prossiga para a confirmação explícita somente depois de verificar os dois backups, as somas SHA-256 e o resultado do ensaio supervisionado:
 
 ```bash
 php artisan astuti:migrar-dados-postgresql --executar --confirmar=MONTE-SERENO-DEV
@@ -75,7 +105,7 @@ O serviço confirma primeiro o PostgreSQL municipal e depois o central em transa
 2. Teste login com **a mesma senha anterior**. O hash não é refeito na cópia.
 3. Consulte auditoria e histórico, confirme permissões por escola e mensagens em português.
 4. Execute testes, Pint, build e verificação visual.
-5. Crie backup PG por base (`pg_dump -Fc`) e ensaie uma restauração isolada.
+5. Crie um novo backup PostgreSQL por base (`pg_dump -Fc`) após a cópia e ensaie a restauração isolada. Guarde esse par em outro diretório, identificado como pós-cópia, e preserve o par pré-cópia.
 6. Documente resultado, versão Git e horário. Só depois considere a mudança de banco concluída.
 
 O retorno temporário ao MariaDB só é viável enquanto não houver novas escritas no PostgreSQL. Não opere simultaneamente dois bancos como fontes de verdade. Em caso de falha, mantenha o sistema em manutenção e faça restauração supervisionada.
@@ -86,6 +116,6 @@ Quando a falha ocorre após o commit municipal, o comando retorna falha e inform
 
 1. Mantenha a aplicação em manutenção, suspenda escritas e interrompa a tentativa de corte. Registre a etapa, a versão Git, o horário, os nomes das bases envolvidas e a saída da CLI. Proteja os backups e os registros operacionais.
 2. Inspecione **ambos** os destinos PostgreSQL em leitura. Compare esquema, contagens e identificadores nas tabelas migradas com as referências da simulação e do backup. Confira escolas, usuários, vínculos, escopos e auditorias. Na falha simulada do CI, as linhas municipais ficaram gravadas e as tabelas centrais continuaram vazias. Se a conexão falhar durante um commit real, confirme o estado de cada base antes de decidir como recuperá-la.
-3. Identifique as cópias PostgreSQL **de antes da transferência**, uma por base. Confira o horário, a origem e as somas SHA-256 registradas. Confira o conteúdo de cada arquivo no formato customizado com `pg_restore --list`. Ensaiar a restauração em dois destinos isolados exige verificar o esquema e o estado esperado de cada cópia. Valide também a disponibilidade dos dois dumps da origem MariaDB, mantendo as bases de origem intactas.
+3. Identifique o par de cópias PostgreSQL **de antes da transferência** preparado na seção 4. Confira o horário, a origem e as somas SHA-256 registradas. Confira o conteúdo de cada arquivo no formato customizado com `pg_restore --list`. Ensaiar a restauração em dois destinos isolados exige verificar o esquema e o estado esperado de cada cópia. Valide também a disponibilidade dos dois dumps da origem MariaDB, mantendo as bases de origem intactas.
 4. Com o responsável pela operação, aprove o estado recuperado antes de retomar o corte. Preserve o par parcial para inspeção. Use um novo par de destinos verificados para o ensaio, confirme que as tabelas alvo estão vazias e faça nova simulação antes de autorizar qualquer cópia. Após uma cópia autorizada, confira as referências interbancos, o login e a auditoria.
 5. No GitHub Actions, o teste ensaia a retomada em outro par de bancos descartáveis com esquema novo, usando a origem sintética preservada. Os serviços efêmeros removem os bancos ao encerrar o job. Qualquer limpeza manual desse ensaio fica restrita aos bancos `*_test` identificados na execução, após conferir o servidor CI e os nomes exatos. O ensaio deixa intocados os bancos e as tabelas do notebook e não roda `--executar` em `*_dev`. A restauração dos backups do notebook precisa de ensaio supervisionado separado.
