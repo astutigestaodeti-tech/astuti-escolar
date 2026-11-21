@@ -1,0 +1,96 @@
+# Astuti Gestao Escolar - Ponto de retomada
+
+**Ultima revisao:** 21/11/2026  
+**Responsavel:** Jefferson Astuti  
+**Repositorio oficial:** `astutigestaodeti-tech/astuti-escolar` (privado)  
+**Registro cronologico:** [HISTORICO.md](HISTORICO.md)
+
+> Este documento serve para continuar o desenvolvimento em qualquer novo chat. O estado descrito e datado e deve ser confrontado com o GitHub e o notebook antes de qualquer mudanca.
+
+## 1. Mensagem pronta para novo chat
+
+> Quero continuar o projeto **Astuti Gestao Escolar**. Acesse o repositorio privado `astutigestaodeti-tech/astuti-escolar`, leia `AGENTS.md`, `docs/continuidade/README.md` e `docs/continuidade/HISTORICO.md`, alem dos planos relacionados a etapa atual. Confira branches, PRs, commits, testes e o estado local do meu notebook antes de propor mudancas. Nao repita etapas comprovadamente concluidas, nao exponha credenciais, nao use dados reais de alunos e nao execute operacoes destrutivas. Depois de cada marco, atualize esses documentos no GitHub com evidencias e o proximo passo. Responda em portugues brasileiro e nunca utilize travessao longo.
+
+## 2. Objetivo do produto
+
+O Astuti Gestao Escolar e um software comercial para redes municipais publicas de ensino, com interface simples e acessivel. Seu principal diferencial e reduzir redigitacao na implantacao: importar planilhas e documentos, preservar originais, identificar inconsistencias e duplicatas e exigir **conferencia e aprovacao humana autorizada** antes de gravar dados oficiais.
+
+Ordem funcional: alunos atuais, responsaveis, escolas, turmas e matriculas; depois documentos atuais; em seguida acervo historico, vida escolar, Educacenso e modulos complementares. OCR de PDF/imagens e reconstrucao de historicos sao etapas posteriores. Nunca inventar dados escolares ou gerar segunda via oficial sem validacao institucional.
+
+**Homologacao ficticia:** municipio Monte Sereno v2, com 3 escolas, 115 alunos sinteticos e ano letivo 2027, alem de municipio ficticio de contraste para testes de isolamento. Nenhum dado real de aluno pode entrar no ambiente demonstrativo.
+
+## 3. Arquitetura aprovada em 20/11/2026
+
+- Uma unica base de codigo em PHP 8.4.1+ e Laravel 13, com Blade, Tailwind/Vite, PHPUnit e GitHub Actions.
+- **PostgreSQL** como banco do produto em desenvolvimento e nas novas instalacoes. O MariaDB anterior e apenas fonte de migracao/retorno, nao dependencia de producao.
+- **Um VPS independente por Prefeitura contratante**, cada um com sua aplicacao, dominio, arquivos, backups, contas, banco `platform` e banco `tenant` PostgreSQL. Nao ha compartilhamento de dados ou sessoes entre Prefeituras.
+- Desenvolvimento inicial no notebook Windows 11 Pro com Debian 13 no WSL2. **Nenhum VPS contratado ate a confirmacao do usuario em 21/11/2026.** Infraestrutura de producao sera decidida futuramente.
+- Desenvolvimento no GitHub privado empresarial. Segredos e arquivos reais ficam fora do Git.
+- Protecao de dados de menores, autorizacao por municipio/escola, 2FA para escritas sensiveis, trilhas de auditoria, arquivos privados, backups externos e testes de restauracao antes de qualquer piloto real.
+
+## 4. Estado comprovado no GitHub em 21/11/2026
+
+| Item | Estado verificado |
+| --- | --- |
+| Repositorio | `astutigestaodeti-tech/astuti-escolar`, privado |
+| `main` antes deste registro | `edf52e89` - base antiga do projeto, sem receber ainda os incrementos em PR |
+| Branch de trabalho mais recente | `feature/migracao-postgresql-instalacoes-isoladas` |
+| Cabeca da branch remota | `a27be7b1` (`refactor(pgsql): retirar migration operacional do caminho raiz`) |
+| PR #1 | `feature/incremento-01-saude` para `main`, rascunho/aberto |
+| PR #3 | Incremento 02 para Incremento 01, rascunho/aberto |
+| PR #4 | Incremento 03 para Incremento 02, rascunho/aberto |
+| PR #5 | PostgreSQL e VPS por Prefeitura para Incremento 03, rascunho/aberto |
+| CI na branch PostgreSQL | Duas execucoes Actions sobre `a27be7b1` com conclusao `success` em 21/11/2026 |
+
+O sucesso do GitHub Actions comprova as verificacoes automatizadas executadas por aquele workflow, **nao** a transferencia concluida dos bancos do notebook nem a homologacao do sistema para Prefeituras.
+
+Documentos tecnicos atuais, localizados na branch do PR #5:
+
+- `docs/superpowers/specs/2026-11-20-postgresql-instalacoes-isoladas-design.md`
+- `docs/superpowers/plans/2026-11-20-postgresql-instalacoes-isoladas.md`
+- `docs/operacao/instalacao-postgresql-debian.md`
+- `docs/operacao/migracao-mariadb-postgresql.md`
+- `docs/operacao/vps-prefeitura.md`
+
+**Atencao:** titulos ou campos antigos desses documentos podem dizer `proposta` ou `aguardando aprovacao`; Jefferson aprovou posteriormente a migracao PostgreSQL e a arquitetura por Prefeitura. Reavaliar futuras mudancas estruturais antes de implementa-las.
+
+## 5. Estado comprovado no notebook em 21/11/2026
+
+Evidencia: capturas do terminal Debian enviadas pelo usuario em conversa de continuidade.
+
+| Verificacao | Resultado visto |
+| --- | --- |
+| Diretorio do projeto | `/home/aflora/astuti-escolar` |
+| Sistema | Debian GNU/Linux 13 (trixie) em WSL2 no Windows 11 Pro |
+| PHP e extensoes | 8.4.28; `pdo_pgsql`, `pgsql` e `pdo_mysql` presentes |
+| Composer | 2.8.8 |
+| PostgreSQL | 17.12; `127.0.0.1:5432` aceitando conexoes; servico ativo |
+| Nginx | Ausente, o que nao impede desenvolvimento local com `artisan serve` |
+| Branch local no ultimo print | `feature/migracao-postgresql-instalacoes-isoladas`, HEAD `ec78138` |
+| PostgreSQL Laravel | Conexao `platform`, banco `astuti_platform_dev`, host `127.0.0.1`, porta `5432`, usuario `astuti_app` |
+| Banco central | 11 tabelas exibidas por `php artisan db:show` |
+| Migracoes centrais | 10 migracoes especificas de plataforma exibidas como `Ran` por `php artisan migrate:status` |
+
+**Divergencia de commits:** no print do notebook, o HEAD e o `origin/...` local estavam em `ec78138`, enquanto o GitHub remoto foi verificado em `a27be7b1`. Nao presumir que a copia local ja recebeu os commits mais recentes. Antes de atualizar, conferir `git status` e executar um `git fetch` de leitura; usar atualizacao fast-forward apenas se a arvore estiver segura.
+
+O print **nao** confirma a criacao, integridade, vaziez ou transferencia do banco municipal `astuti_monte_sereno_dev` no PostgreSQL. Tambem nao comprova backup/restauracao das origens MariaDB, transferencia de alunos, uso da senha antiga ou testes locais completos. **Nao executar importacao, `migrate:fresh`, `db:wipe` ou seed de demonstracao antes dessas verificacoes.**
+
+## 6. Proximo passo seguro
+
+1. No notebook, confirmar `git status` sem alteracoes e comparar a branch local com a remota; baixar os commits novos sem sobrescrever trabalho local.
+2. Verificar, sem modificar dados, as bases MariaDB de origem e as duas bases PostgreSQL de destino; distinguir tabelas vazias de tabelas populadas.
+3. Confirmar dumps MariaDB separados, protegidos fora do Git, com ao menos um ensaio de restauracao em banco isolado de teste.
+4. Seguir o guia `docs/operacao/migracao-mariadb-postgresql.md`: preparar apenas destinos permitidos, executar simulacao, avaliar relatorio e somente apos backup e confirmacao especifica executar a transferencia.
+5. Validar as contagens, relacionamentos, hashes de senha, login do municipio ficticio, autorizacoes, auditoria, testes locais, Pint e build. Comparar 3 escolas, 115 alunos e 2027.
+6. Revisar PR #5 e os PRs precedentes na ordem, sem mesclar automaticamente. Atualizar este ponto de retomada com o resultado real.
+
+## 7. Como manter este registro util
+
+A cada marco ou fim de sessao relevante:
+
+1. Acrescentar ao `HISTORICO.md` uma entrada com data, objetivo, decisoes, evidencias, commits/PRs, testes, resultado, pendencias e proximo comando seguro.
+2. Atualizar neste arquivo apenas a fotografia atual: codigo, banco, ambiente e proximo passo, distinguindo fatos observados de tarefas previstas.
+3. Fazer commit com mensagem clara, preferencialmente `docs(continuidade): atualizar estado em AAAA-MM-DD`.
+4. Revisar se nenhum segredo, dado escolar real, dump ou informacao pessoal de outros assuntos foi incluido.
+
+**Limite importante:** o ChatGPT nao arquiva automaticamente todas as mensagens de todos os chats no GitHub. Este registro tecnicamente relevante deve ser atualizado pelo assistente quando houver acesso autorizado ao repositorio ou por um processo de sincronizacao que venha a ser implementado e autorizado. Ele nao substitui o historico integral de conversas.
