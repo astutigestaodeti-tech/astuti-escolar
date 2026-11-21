@@ -465,3 +465,22 @@ A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao en
 **Marco funcional verificado:** login -> municipio -> escolas -> unidade -> alunos e turmas, todas as telas observadas com conta ficticia. A contagem municipal de **115 alunos** ja havia sido comprovada por `SELECT` no cluster isolado **55436**; as imagens atuais comprovam **45 na primeira escola**, nao as outras 70 nem total na interface. Testes de busca, paginacao, abertura das outras duas escolas e acesso direto nao autorizado ainda pendentes.
 
 **Proxima verificacao nao destrutiva:** usar o botao `Proxima` e confirmar pagina 2 de 2 na EMEF Caminhos do Saber; acessar Alunos das outras duas escolas e confrontar somatorio com 115; testar busca por nome e tentativa de URL de escola sem permissao em conta ficticia restrita. Nao executar migracao, nem alterar dados reais, bancos originais, backups, `.env` ou PR #5 em rascunho.
+
+## 21/11/2026 - Validacao visual completa das tres escolas, 115 alunos e paginacao (12 imagens 100-111)
+
+**Evidencia nova do notebook em ambiente autenticado:** o usuario navegou pelas paginas de detalhes, alunos e turmas das tres unidades ficticias da rede Monte Sereno e enviou capturas das duas paginas das listas de alunos. As contagens exibidas nas proprias interfaces conferem exatamente com os **115 alunos** anteriormente verificados por `SELECT` no PostgreSQL isolado de ensaio **55436**.
+
+| Unidade ficticia | Alunos ativos na interface | Turma ativa exibida | Etapa, modalidade e turno | Vagas | Ano |
+| --- | ---: | --- | --- | ---: | --- |
+| EMEF Caminhos do Saber | **45** | 1º Ano A | Ensino Fundamental, Regular, Manha | 45 | 2027 |
+| EMEI Jardim das Flores | **40** | Infantil IV A | Educacao Infantil, Regular, Tarde | 40 | 2027 |
+| EMEF Rio Claro | **30** | 2º Ano A | Ensino Fundamental, Regular, Integral | 30 | 2027 |
+| **Total** | **115** | **3 turmas mostradas, uma por unidade** | - | **115 vagas** | - |
+
+**Paginacao agora efetivamente observada:** a segunda pagina de `EMEF Caminhos do Saber` exibe estudantes ficticios **026-045** e `Pagina 2 de 2`; a segunda pagina da `EMEI Jardim das Flores` exibe estudantes **071-085**, tambem `Pagina 2 de 2`; a segunda pagina da `EMEF Rio Claro` exibe estudantes **111-115**, `Pagina 2 de 2`. As primeiras paginas das tres escolas tambem foram fotografadas, com intervalos de alunos respectivamente **001-025**, **046-070** e **086-110**. Os nomes ficticios e as contagens fecham a sequencia **001-115**, sem afirmar que as imagens substituem testes automatizados de integridade.
+
+**Detalhes de unidade:** as escolas Rio Claro e Jardim das Flores exibem estado `Ativa / Em funcionamento`, rotas para alunos e turmas, e `Codigo INEP: Nao informado` no cadastro ficticio. A primeira escola ja havia sido registrada na etapa anterior. Todas as turmas apresentadas sao de 2027; registrar o ano como valor do dado de demonstracao, nao presumir defeito. **Vaga nao equivale necessariamente a matricula** fora deste conjunto de teste.
+
+**Marco alcançado:** fluxo autenticado completo de consulta foi demonstrado visualmente para as tres escolas, suas turmas e listas paginadas de alunos, com contagens compativeis com a copia isolada. **Ainda pendente e nao implementado:** cadastro e alteracao de alunos/turmas/matriculas, importacao e emissao de documentos, autenticacao reforcada e trilha de auditoria para escritas. **Ainda nao testado:** busca por nome, autorizacao negativa usando usuario restrito e URLs diretas de outra escola, acessibilidade/responsividade e testes automatizados de ponta a ponta.
+
+**Proximo passo de desenvolvimento:** consolidar testes de autorizacao e pesquisa/listas de consulta sobre o ambiente ficticio, e implementar as proximas funcionalidades conforme plano aprovado com testes e revisao. Nao executar migracao definitiva, nao alterar PostgreSQL principal 5432, MariaDB, `.env`, backups ou clusters historicos; PR #5 segue rascunho.
