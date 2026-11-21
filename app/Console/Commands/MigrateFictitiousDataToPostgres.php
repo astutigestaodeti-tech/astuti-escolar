@@ -30,8 +30,8 @@ class MigrateFictitiousDataToPostgres extends Command
         $sourcePlatform = $this->sourceSettings('astuti_platform_dev');
         $sourceTenant = $this->sourceSettings('astuti_monte_sereno_dev');
 
-        if (! MigrationVerifier::safeContext('local', $platform, $tenant, $sourcePlatform)
-            || ! is_array($tenant) || ! is_array($platform)
+        if (! is_array($tenant) || ! is_array($platform)
+            || ! MigrationVerifier::safeContext('local', $platform, $tenant, $sourcePlatform)
             || ($sourcePlatform['username'] ?? '') === ''
             || ($sourcePlatform['password'] ?? null) === null
             || ($sourceTenant['database'] ?? null) !== 'astuti_monte_sereno_dev') {
@@ -195,6 +195,12 @@ class MigrateFictitiousDataToPostgres extends Command
             foreach (array_chunk($rows, 50) as $chunk) {
                 $target->table($table)->insert($chunk);
             }
+
+            MigrationVerifier::assertSameRows(
+                $rows,
+                $target->table($table)->get()->map(static fn ($row): array => (array) $row)->all(),
+                $table,
+            );
 
             $keys = $table === 'school_scopes' ? ['membership_id', 'school_id'] : ['id'];
             $fromIds = $this->identityList($source, $table, $keys);
