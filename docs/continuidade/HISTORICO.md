@@ -484,3 +484,15 @@ A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao en
 **Marco alcançado:** fluxo autenticado completo de consulta foi demonstrado visualmente para as tres escolas, suas turmas e listas paginadas de alunos, com contagens compativeis com a copia isolada. **Ainda pendente e nao implementado:** cadastro e alteracao de alunos/turmas/matriculas, importacao e emissao de documentos, autenticacao reforcada e trilha de auditoria para escritas. **Ainda nao testado:** busca por nome, autorizacao negativa usando usuario restrito e URLs diretas de outra escola, acessibilidade/responsividade e testes automatizados de ponta a ponta.
 
 **Proximo passo de desenvolvimento:** consolidar testes de autorizacao e pesquisa/listas de consulta sobre o ambiente ficticio, e implementar as proximas funcionalidades conforme plano aprovado com testes e revisao. Nao executar migracao definitiva, nao alterar PostgreSQL principal 5432, MariaDB, `.env`, backups ou clusters historicos; PR #5 segue rascunho.
+
+## 21/11/2026 - Busca de alunos compatível com maiúsculas e minúsculas no PostgreSQL
+
+**Problema identificado:** a consulta de alunos usava `LIKE`, sensível a diferenças de maiúsculas e minúsculas no PostgreSQL. Um termo como `mari` não encontrava `Maria do Campo`. O controle de acesso por escola, município e vínculo ativo já existia e tinha cobertura automatizada.
+
+**Correção na branch `feature/migracao-postgresql-instalacoes-isoladas`:** plano `docs/superpowers/plans/2026-11-21-busca-alunos-sem-distincao-maiusculas-postgresql.md`; teste regressivo no commit `6a1f483` e ajuste de `SchoolStudentController` no commit `b89fe64`. Para o driver `pgsql`, a pesquisa parcial passa a usar `ILIKE`; outros drivers continuam com `LIKE`. O escape dos caracteres `%` e `_`, o limite de 120, a paginação de 25, a filtragem por vínculo ativo e a autorização foram preservados.
+
+**TDD real confirmado no GitHub Actions:** no commit só com o teste, a execução [44919446199](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44919446199) falhou exatamente na asserção `Maria do Campo` (177 testes passaram, 1 falhou). Após a correção, a execução [44919611025](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44919611025) ficou verde: **178 testes Laravel aprovados em ambas as rodadas, 633 asserções por rodada, 24 testes ignorados por critérios ambientais**, Pint verificou 132 arquivos, build e quatro testes UI passaram e a integração MariaDB → PostgreSQL passou.
+
+**Limites:** a busca ainda não foi conferida manualmente no notebook pelo Jefferson; testes automáticos de autorização por URL direta já existem, mas a negativa ainda não foi simulada pelo usuário na interface real. Sem gravações nos bancos do notebook, sem acesso a dados reais de menores e sem merge do PR #5, que permanece draft.
+
+**Próximo incremento:** desenvolver ficha individual de consulta do aluno com link pela lista e vínculo autorizado, mantendo a aplicação somente leitura.
