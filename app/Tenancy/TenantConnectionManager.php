@@ -20,8 +20,21 @@ class TenantConnectionManager
         $connections = config('tenancy.connections', []);
         $settings = is_array($connections) ? ($connections[$key] ?? null) : null;
 
+        // Um VPS de producao jamais pode servir duas prefeituras.
+        if (app()->environment('production')) {
+            $deployedKey = config('tenancy.deployed_db_key');
+
+            if (! is_string($deployedKey) || $deployedKey !== $key
+                || ! is_array($connections) || count($connections) !== 1) {
+                throw new InvalidArgumentException('Municipio indisponivel nesta instalacao.');
+            }
+        }
+
         if (! is_array($settings)
-            || ($settings['driver'] ?? null) !== 'mariadb'
+            || ($settings['driver'] ?? null) !== 'pgsql'
+            || ! is_string($settings['host'] ?? null)
+            || trim($settings['host']) === ''
+            || ! is_numeric($settings['port'] ?? null)
             || ! is_string($settings['database'] ?? null)
             || trim($settings['database']) === ''
             || ! empty($settings['url'])
@@ -31,7 +44,7 @@ class TenantConnectionManager
         }
 
         $platform = config('database.connections.platform', []);
-        if (is_array($platform) && ($platform['driver'] ?? null) === 'mariadb') {
+        if (is_array($platform) && ($platform['driver'] ?? null) === 'pgsql') {
             if (! empty($platform['url'])) {
                 throw new InvalidArgumentException('A conexao central deve ter destino explicito.');
             }
@@ -43,7 +56,7 @@ class TenantConnectionManager
 
         // Uma configuracao duplicada comprometeria a fronteira entre municipios.
         foreach ($connections as $otherKey => $otherSettings) {
-            if ($otherKey === $key || ! is_array($otherSettings) || ($otherSettings['driver'] ?? null) !== 'mariadb') {
+            if ($otherKey === $key || ! is_array($otherSettings) || ($otherSettings['driver'] ?? null) !== 'pgsql') {
                 continue;
             }
 
@@ -74,13 +87,13 @@ class TenantConnectionManager
     {
         $host = strtolower(trim((string) ($settings['host'] ?? '')));
 
-        if ($host === 'localhost') {
+        if (in_array($host, ['localhost', '::1'], true)) {
             $host = '127.0.0.1';
         }
 
         return [
             $host,
-            (string) ($settings['port'] ?? '3306'),
+            (string) ($settings['port'] ?? '5432'),
             (string) ($settings['unix_socket'] ?? ''),
             strtolower(trim((string) ($settings['database'] ?? ''))),
         ];
