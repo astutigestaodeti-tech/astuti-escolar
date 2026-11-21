@@ -15,12 +15,12 @@ class LocalDemoConfigurationTest extends TestCase
         $settings = (require config_path('tenancy.php'))['connections']['monte_sereno'] ?? null;
 
         $this->assertIsArray($settings);
-        $this->assertSame('mariadb', $settings['driver']);
+        $this->assertSame('pgsql', $settings['driver']);
         $this->assertSame('astuti_monte_sereno_dev', $settings['database']);
         $this->assertSame('127.0.0.1', $settings['host']);
-        $this->assertSame('3307', $settings['port']);
+        $this->assertSame('5432', $settings['port']);
         $this->assertSame('usuario-local', $settings['username']);
-        $this->assertSame('/run/mysqld/mysqld.sock', $settings['unix_socket']);
+        $this->assertArrayNotHasKey('unix_socket', $settings);
     }
 
     public function test_em_producao_a_configuracao_municipal_continua_vazia(): void
@@ -37,7 +37,7 @@ class LocalDemoConfigurationTest extends TestCase
         $this->app['env'] = 'local';
         config()->set('app.env', 'local');
 
-        foreach ([['host' => 'db.example.org'], ['url' => 'mariadb://example.org/demo']] as $unsafe) {
+        foreach ([['host' => 'db.example.org'], ['url' => 'postgresql://example.org/demo']] as $unsafe) {
             config()->set('database.connections.platform', array_replace($this->centralLocal(), $unsafe));
             $this->assertSame([], (require config_path('tenancy.php'))['connections']);
         }
@@ -57,13 +57,12 @@ class LocalDemoConfigurationTest extends TestCase
     private function centralLocal(): array
     {
         return [
-            'driver' => 'mariadb',
+            'driver' => 'pgsql',
             'host' => '127.0.0.1',
-            'port' => '3307',
+            'port' => '5432',
             'database' => 'astuti_platform_dev',
             'username' => 'usuario-local',
             'password' => '',
-            'unix_socket' => '/run/mysqld/mysqld.sock',
             'url' => null,
         ];
     }
