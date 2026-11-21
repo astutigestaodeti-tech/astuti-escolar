@@ -38,7 +38,7 @@
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-vinculos">Histórico de vínculos nesta escola</h2>
             <p>Anos letivos, situações e datas registradas nesta unidade.</p>
-            <ul class="documentos">
+            <ul class="documentos vinculos-aluno">
                 @foreach ($enrollments as $enrollment)
                     @php
                         $situacao = match ($enrollment->status) {
@@ -52,11 +52,15 @@
                     <li>
                         <span class="etiqueta neutra numero">Ano letivo {{ $enrollment->schoolYear?->year ?? 'Não informado' }}</span>
                         <span class="etiqueta {{ $enrollment->status === 'active' ? 'ok' : 'neutra' }}">{{ $situacao }}</span>
-                        @if ($enrollment->started_at)
-                            <small>Início: {{ $enrollment->started_at->format('d/m/Y') }}</small>
-                        @endif
-                        @if ($enrollment->ended_at)
-                            <small>Encerramento: {{ $enrollment->ended_at->format('d/m/Y') }}</small>
+                        @if ($enrollment->started_at || $enrollment->ended_at)
+                            <div class="vinculo-datas">
+                                @if ($enrollment->started_at)
+                                    <small>Início: {{ $enrollment->started_at->format('d/m/Y') }}</small>
+                                @endif
+                                @if ($enrollment->ended_at)
+                                    <small>Encerramento: {{ $enrollment->ended_at->format('d/m/Y') }}</small>
+                                @endif
+                            </div>
                         @endif
                     </li>
                 @endforeach
