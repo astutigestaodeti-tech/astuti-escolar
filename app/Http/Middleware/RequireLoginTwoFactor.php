@@ -16,9 +16,31 @@ class RequireLoginTwoFactor
         if ($user !== null) {
             $user = $user->fresh();
 
+            if ($user === null) {
+                abort(403);
+            }
+
             if ($user->two_factor_confirmed_at !== null
                 && ! app(TwoFactorSession::class)->isVerified($request, $user)) {
-                return redirect()->guest(route('two-factor.challenge'));
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => 'Confirme o segundo fator antes de consultar os dados.',
+                    ], 403);
+                }
+
+                if ($request->isMethod('GET')) {
+                    $path = $request->path();
+                    $destination = $path === '/' ? '/' : '/'.$path;
+                    $query = $request->getQueryString();
+
+                    if ($query !== null && $query !== '') {
+                        $destination .= '?'.$query;
+                    }
+
+                    $request->session()->put('url.intended', $destination);
+                }
+
+                return redirect()->route('two-factor.challenge');
             }
         }
 
