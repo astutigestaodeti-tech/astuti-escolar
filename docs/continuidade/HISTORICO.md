@@ -128,6 +128,16 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Proxima etapa prevista no plano aprovado:** construir/rodar testes de integracao da transferencia MariaDB->PostgreSQL em bancos descartaveis, incluindo sucesso, falha antes dos commits e recuperacao de falha entre commits; conferir permissao, hashes e relacionamentos. Nao usar `--executar` nos destinos principais antes dessas provas e de autorizacao especifica.
 
+## 21/11/2026 - Desenho de testes reais no CI aprovado em principio
+
+**Pedido:** Jefferson aprovou preparar testes automatizados da transferencia MariaDB->PostgreSQL no GitHub antes do ensaio local, mantendo PR #5 draft e notebook preservado.
+
+**Fato distinto de implementacao:** foi **criado somente um documento de desenho**, `docs/superpowers/specs/2026-11-21-testes-integracao-mariadb-postgresql-design.md`, na branch `feature/migracao-postgresql-instalacoes-isoladas`, commit `409b5380d4dfdc7badc76ed35cec418585c4dd0d`. A branch remota passou a esse commit; o notebook foi verificado por ultimo em `a27be7b1` e nao foi sincronizado com essa atualizacao documental.
+
+**Proposta em revisao:** job CI separado com MariaDB+PostgreSQL efemeros e somente bancos `*_test`; fixtures integralmente ficticias; reutilizar a logica de copia sem abrir os bloqueios do comando local; testes de sucesso, rollback, falha entre commits, preservacao de hashes/UUIDs e origem somente leitura. A ideia exige validacao detalhada do desenho antes de gerar o plano de codigo.
+
+**Nao concluido:** nenhum teste novo, servico CI, refatoracao, commit de codigo ou transferencia de dados foi implementado com essa aprovacao inicial. A etapa de desenho segue aguardando validacao de Jefferson e depois planejamento TDD.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
