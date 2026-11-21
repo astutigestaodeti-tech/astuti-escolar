@@ -60,6 +60,9 @@ pg_lsclusters() { return 0; }
 pg_restore() { [[ "$1" == '--list' && -s "$2" ]]; }
 php() {
     printf 'php %s\n' "$*" >> "$ASTUTI_MOCK_LOG"
+    if [[ "$*" == *'astuti:migrar-dados-postgresql --executar'* && "${ASTUTI_MOCK_DIAGNOSTICO_EXIGIDO:-}" == 1 && "${ASTUTI_MIGRATION_DIAGNOSE_ISOLATED:-}" != 1 ]]; then
+        return 47
+    fi
     if [[ "$1" == '-r' && "${ASTUTI_MOCK_CONFIG_INCORRETA:-}" == 1 ]]; then
         return 42
     fi
@@ -116,6 +119,18 @@ grep -q 'php artisan astuti:migrar-dados-postgresql --executar --confirmar=MONTE
 nao_deve_conter 'php artisan config:clear' "$ASTUTI_MOCK_LOG"
 grep -q 'ENSAIO ISOLADO CONCLUIDO' "$tmp/sucesso.out"
 
+# Um erro da copia precisa sair do Laravel com diagnostico sanitizado no cluster isolado.
+# O marcador de diagnostico nao pode ser exportado para o shell do usuario.
+export ASTUTI_MOCK_LOG="$tmp/diagnostico.log"
+export ASTUTI_MOCK_DIAGNOSTICO_EXIGIDO=1
+if ! bash "$script" --backup-dir "$backup" > "$tmp/diagnostico.out" 2>&1; then
+    echo 'FALHA: a copia isolada nao ativou o diagnostico seguro.' >&2
+    tail -n 12 "$tmp/diagnostico.out" >&2
+    exit 1
+fi
+[[ -z "${ASTUTI_MIGRATION_DIAGNOSE_ISOLATED:-}" ]]
+unset ASTUTI_MOCK_DIAGNOSTICO_EXIGIDO
+
 # Falha de simulação deve barrar a cópia, mesmo após restaurar o teste.
 export ASTUTI_MOCK_LOG="$tmp/falha-simulacao.log"
 export ASTUTI_SIMULACAO_FALHA=1
@@ -166,4 +181,4 @@ fi
 nao_deve_conter 'php artisan astuti:migrar-dados-postgresql --executar' "$ASTUTI_MOCK_LOG"
 unset ASTUTI_MOCK_CONFIG_INCORRETA
 
-echo 'PASS: 8 cenarios do ensaio de copia isolada PostgreSQL.'
+echo 'PASS: 9 cenarios do ensaio de copia isolada PostgreSQL.'
