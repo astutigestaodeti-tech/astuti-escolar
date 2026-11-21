@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Tenant\School;
 use App\Models\Tenant\StudentEnrollment;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class SchoolEnrollmentController extends Controller
 {
-    public function index(Request $request, string $municipio, string $escola): View
+    public function index(Request $request, string $municipio, string $escola): View|RedirectResponse
     {
         $municipality = $request->attributes->get('astuti.municipality');
         $school = School::query()->where('status', 'active')->findOrFail($escola);
@@ -37,10 +39,32 @@ class SchoolEnrollmentController extends Controller
             ->map(fn ($year): int => (int) $year)
             ->all();
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->query(), [
             'busca' => ['nullable', 'string', 'max:120'],
             'ano_letivo' => ['nullable', 'integer', Rule::in($availableYears)],
+        ], [
+            'busca.string' => 'Informe um nome válido para pesquisar.',
+            'busca.max' => 'A busca deve conter no máximo 120 caracteres.',
+            'ano_letivo.integer' => 'Escolha um ano letivo disponível para esta escola.',
+            'ano_letivo.in' => 'Escolha um ano letivo disponível para esta escola.',
         ]);
+
+        if ($validator->fails()) {
+            // GET inválido precisa voltar a uma URL válida, para não prender o navegador
+            // num redirecionamento repetido nem afastar a secretaria da sua escola.
+            $searchTerm = $request->query('busca');
+            $safeSearch = is_string($searchTerm) && mb_strlen($searchTerm) <= 120
+                ? trim($searchTerm)
+                : '';
+
+            return redirect()->route('school.enrollments.index', array_filter([
+                'municipio' => $municipality->slug,
+                'escola' => $school->id,
+                'busca' => $safeSearch,
+            ]))->withErrors($validator);
+        }
+
+        $validated = $validator->validated();
         $search = trim((string) ($validated['busca'] ?? ''));
         $selectedYear = isset($validated['ano_letivo']) ? (int) $validated['ano_letivo'] : null;
 
