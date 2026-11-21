@@ -112,7 +112,10 @@ printf '\n===== CRIANDO CLUSTER NOVO EM PORTA EXCLUSIVA =====\n'
 printf 'Cluster: %s; porta: %s\n' "$cluster" "$porta"
 sudo pg_createcluster 17 "$cluster" --port="$porta" --start-conf=manual
 cluster_criado=1
-sudo pg_conftool 17 "$cluster" set listen_addresses '127.0.0.1'
+# PgCommon trata um IP formado apenas por digitos/pontos como numero, nao
+# coloca aspas e gera postgresql.conf invalido. "localhost" e identificador
+# simples valido e continua restrito as interfaces de loopback.
+sudo pg_conftool 17 "$cluster" set listen_addresses localhost
 sudo pg_ctlcluster --skip-systemctl-redirect 17 "$cluster" start
 conexao_isolada=(--host=/var/run/postgresql --port="$porta" --username=postgres)
 sudo -u postgres pg_isready "${conexao_isolada[@]}" -q || erro 'cluster isolado indisponivel.'
