@@ -508,3 +508,13 @@ A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao en
 **Revisão independente do diff:** nenhum problema crítico ou importante. Um aprimoramento menor foi registrado para futura cobertura: aluno com vínculos ativos simultâneos em duas escolas e um vínculo antigo encerrado não deve exibir histórico da outra unidade. O controller já restringe por escola e status; o novo teste de regressão pode ser adicionado posteriormente.
 
 **Pendente no notebook:** atualizar o código da mesma branch de ensaio e conferir visualmente a ficha no ambiente fictício 55436 / interface 8002. Nenhum banco original foi alterado, e a tela não deve receber dados reais de menores.
+
+## 21/11/2026 - Contagem de alunos ativos por escola autorizada
+
+**Nova melhoria na branch de ensaio:** os cartões de `GET /m/{municipio}/escolas` apresentam a contagem de alunos ativos da unidade. A contagem usa subconsulta PostgreSQL correlacionada a cada escola, com `Student::query()->whereHas('enrollments')`, logo considera cada aluno uma única vez mesmo quando tenha duas matrículas ativas na mesma unidade. Vínculos encerrados não contam, alunos sem matrícula ativa não contam e o filtro de escolas autorizadas permanece.
+
+**TDD e evidências:** testes novos no commit `1607d2b` falharam primeiro na execução [44921401296](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44921401296), por ausência dos textos esperados `2 alunos ativos` e `0 alunos ativos` (182 testes prévios passaram). Implementação `5edbad6` (controller) e `b13ea12` (view). Após a correção, [44921547716](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44921547716) ficou verde: **184 testes Laravel passando em duas rodadas, 663 asserções por rodada, 24 testes condicionais ignorados, Pint 134 arquivos, build, 4 testes UI e integração MariaDB → PostgreSQL**.
+
+**Teste local ainda necessário:** ao atualizar a branch no Debian e recarregar a página Escolas da interface fictícia 8002, os cartões devem exibir **45 alunos ativos** na Caminhos do Saber, **40** na Jardim das Flores e **30** na Rio Claro, totalizando 115 alunos fictícios previamente verificados. São expectativas com base no ensaio anterior, não uma nova leitura remota do notebook. A feature não modifica qualquer banco original, arquivo de backup ou `.env`. PR #5 continua draft.
+
+**Próximas frentes:** conferir a tela individual e as novas contagens no notebook, e evoluir o cadastro escolar somente após regras explícitas de gravação auditada e validação de 2FA.
