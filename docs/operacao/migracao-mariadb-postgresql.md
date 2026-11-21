@@ -21,10 +21,10 @@ Siga [instalação no Debian](instalacao-postgresql-debian.md) para criar `astut
 
 ```bash
 php artisan config:clear
-php artisan migrate --database=platform --path=database/migrations/platform
+php artisan astuti:preparar-pg-vazio
 ```
 
-O banco municipal deve receber as migrations com o provisionamento controlado, sem semear a demonstração. Verifique o comando disponível com `php artisan help astuti:municipio-provisionar` e siga o procedimento documentado de provisionamento. **Não rode `astuti:demo-preparar` antes da cópia**.
+O comando acima prepara **ambos** os esquemas PostgreSQL sem criar Prefeituras, usuários ou alunos. **Não rode `astuti:demo-preparar` nem `astuti:municipio-provisionar` antes da cópia**.
 
 O comando de transferência não cria bancos nem apaga registros. Se qualquer tabela de destino já contiver linhas, interrompe a operação. O PostgreSQL só deve conter a estrutura das migrations, e as tabelas escolares, de usuários e auditoria devem estar vazias.
 
