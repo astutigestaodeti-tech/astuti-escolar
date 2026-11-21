@@ -166,9 +166,9 @@ class TransportCsvReader
                 continue;
             }
 
-            $quoted = ! $quoted;
+            $quoted = $quoted === false;
         }
 
-        return ! $quoted;
+        return $quoted === false;
     }
 }
