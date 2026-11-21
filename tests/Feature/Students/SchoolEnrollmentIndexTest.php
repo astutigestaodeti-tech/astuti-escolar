@@ -317,7 +317,7 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
             ->get($base.'?busca=Ana&page=2')
             ->assertOk()
             ->assertSee('Voltar à tela anterior')
-            ->assertSee('href="'.str_replace('&', '&amp;', $origem).'"', false);
+            ->assertSee('class="voltar" href="'.str_replace('&', '&amp;', $origem).'"', false);
 
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
