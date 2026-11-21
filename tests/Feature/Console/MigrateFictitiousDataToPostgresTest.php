@@ -160,6 +160,48 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
     }
 
+    public function test_sete_auditorias_preservam_microssegundos_ao_migrar_de_mariadb_para_postgresql(): void
+    {
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = DisposableMigrationDatabases::create();
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+        $base = (array) $sourcePlatform->table('platform_audit_logs')->sole();
+        $expected = [
+            2 => '2027-02-01 12:00:00.123400',
+            3 => '2027-02-01 12:00:00.120000',
+            4 => '2027-02-01 12:00:00.100000',
+            5 => '2027-02-01 12:00:00.000100',
+            6 => '2027-02-01 12:00:00.000000',
+            7 => '2027-02-01 12:00:00.123450',
+        ];
+
+        foreach ($expected as $number => $occurredAt) {
+            $record = $base;
+            $record['id'] = sprintf('90000000-0000-4000-8000-%012d', $number);
+            $record['request_id'] = sprintf('a0000000-0000-4000-8000-%012d', $number);
+            $record['occurred_at'] = $occurredAt;
+            $sourcePlatform->table('platform_audit_logs')->insert($record);
+        }
+
+        $counts = (new FictitiousDataTransfer)->run(
+            $sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true,
+        );
+
+        $this->assertSame(7, $counts['platform']['platform_audit_logs']);
+        $this->assertSame(7, $targetPlatform->table('platform_audit_logs')->count());
+
+        foreach ($expected as $number => $occurredAt) {
+            $id = sprintf('90000000-0000-4000-8000-%012d', $number);
+            $rendered = $targetPlatform->selectOne(
+                "SELECT to_char(occurred_at, 'YYYY-MM-DD HH24:MI:SS.US') AS value FROM platform_audit_logs WHERE id = ?",
+                [$id],
+            )->value;
+
+            $this->assertSame($occurredAt, $rendered);
+        }
+    }
+
     public function test_diagnostico_informa_etapa_e_tabela_sem_expor_alunos(): void
     {
         ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
