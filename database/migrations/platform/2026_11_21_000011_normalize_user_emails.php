@@ -14,7 +14,7 @@ return new class extends Migration
             $conflicts = $db->selectOne('SELECT COUNT(*) AS total FROM (SELECT lower(btrim(email)) FROM users GROUP BY lower(btrim(email)) HAVING COUNT(*) > 1) AS duplicate_groups');
 
             if ((int) $conflicts->total > 0) {
-                throw new \RuntimeException('Migracao de emails interrompida: existem contas com emails duplicados quando comparados sem maiusculas ou espacos. Revise esses cadastros antes de repetir.');
+                throw new RuntimeException('Migracao de emails interrompida: existem contas com emails duplicados quando comparados sem maiusculas ou espacos. Revise esses cadastros antes de repetir.');
             }
 
             $db->statement('UPDATE users SET email = lower(btrim(email)) WHERE email IS DISTINCT FROM lower(btrim(email))');
