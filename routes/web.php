@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SchoolClassController;
@@ -21,6 +22,15 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+
+Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function (): void {
+    Route::get('/', [TwoFactorController::class, 'show'])->name('two-factor.settings');
+    Route::post('/iniciar', [TwoFactorController::class, 'begin'])->middleware('throttle:astuti-second-factor')->name('two-factor.begin');
+    Route::post('/confirmar', [TwoFactorController::class, 'confirm'])->middleware('throttle:astuti-second-factor')->name('two-factor.confirm');
+    Route::get('/desafio', [TwoFactorController::class, 'challengePage'])->name('two-factor.challenge');
+    Route::post('/desafio', [TwoFactorController::class, 'challenge'])->middleware('throttle:astuti-second-factor')->name('two-factor.verify');
+    Route::post('/desativar', [TwoFactorController::class, 'disable'])->middleware('throttle:astuti-second-factor')->name('two-factor.disable');
+});
 
 Route::prefix('/m/{municipio}')->middleware(['auth', ResolveMunicipality::class])->group(function (): void {
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
