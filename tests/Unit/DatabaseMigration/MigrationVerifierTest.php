@@ -30,7 +30,6 @@ class MigrationVerifierTest extends TestCase
         MigrationVerifier::assertSameIdentity(['a', 'b'], ['a'], 'students');
     }
 
-
     public function test_conferencia_das_linhas_detecta_valor_de_cadastro_adulterado(): void
     {
         MigrationVerifier::assertSameRows(
