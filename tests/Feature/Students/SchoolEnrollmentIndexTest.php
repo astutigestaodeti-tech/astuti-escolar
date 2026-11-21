@@ -204,6 +204,83 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
             ->assertSessionHasErrors('busca');
     }
 
+    public function test_filtro_de_ano_lista_somente_anos_da_escola_autorizada(): void
+    {
+        $user = $this->criarUsuario('matriculas-filtro-anos@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Ana Ano 2027', 'active', 2027);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Bruna Ano 2026', 'active', 2026);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Carlos Ano 2025 Concluído', 'completed', 2025);
+        $this->matricular($this->municipioA, self::ESCOLA_A2, 'Outro Aluno Ano 2024', 'active', 2024);
+        $this->matricular($this->municipioB, self::ESCOLA_B1, 'Outro Município Ano 2023', 'active', 2023);
+
+        $response = $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas');
+        $response->assertOk()
+            ->assertSee('Ana Ano 2027')
+            ->assertSee('Bruna Ano 2026')
+            ->assertSee('name="ano_letivo"', false)
+            ->assertSee('Todos os anos');
+        $this->assertSame([2027, 2026], $response->viewData('availableYears'));
+        $this->assertSame(2, $response->viewData('enrollments')->total());
+
+        $filtered = $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?ano_letivo=2026');
+        $filtered->assertOk()
+            ->assertSee('Bruna Ano 2026')
+            ->assertDontSee('Ana Ano 2027')
+            ->assertDontSee('Carlos Ano 2025 Concluído')
+            ->assertDontSee('Outro Aluno Ano 2024')
+            ->assertDontSee('Outro Município Ano 2023');
+        $this->assertSame(2026, $filtered->viewData('selectedYear'));
+        $this->assertSame(1, $filtered->viewData('enrollments')->total());
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
+    public function test_filtro_de_ano_combina_busca_e_preserva_parametros_na_paginacao(): void
+    {
+        $user = $this->criarUsuario('matriculas-filtro-paginacao@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+
+        foreach (range(1, 26) as $index) {
+            $this->matricular($this->municipioA, self::ESCOLA_A1, sprintf('Aluno Filtrado %02d', $index), 'active', 2027);
+        }
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno de 2026', 'active', 2026);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Outro de 2027', 'active', 2027);
+
+        $first = $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca=Aluno&ano_letivo=2027');
+        $first->assertOk()->assertSee('Aluno Filtrado 01')->assertDontSee('Aluno Filtrado 26')->assertDontSee('Aluno de 2026');
+        $this->assertSame(26, $first->viewData('enrollments')->total());
+        $this->assertSame(2027, $first->viewData('selectedYear'));
+
+        $nextUrl = $first->viewData('enrollments')->nextPageUrl();
+        parse_str((string) parse_url($nextUrl, PHP_URL_QUERY), $params);
+        $this->assertSame('Aluno', $params['busca'] ?? null);
+        $this->assertSame('2027', (string) ($params['ano_letivo'] ?? ''));
+        $this->assertSame('2', (string) ($params['page'] ?? ''));
+
+        $this->get($nextUrl)
+            ->assertOk()
+            ->assertSee('Aluno Filtrado 26')
+            ->assertDontSee('Aluno Filtrado 01')
+            ->assertDontSee('Aluno de 2026');
+    }
+
+    public function test_filtro_de_ano_rejeita_ano_inexistente_na_escola_e_valor_invalido(): void
+    {
+        $user = $this->criarUsuario('matriculas-filtro-invalido@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Atual', 'active', 2027);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Concluído', 'completed', 2025);
+        $this->matricular($this->municipioA, self::ESCOLA_A2, 'Aluno Outra Escola', 'active', 2026);
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?ano_letivo=2026')
+            ->assertRedirect()
+            ->assertSessionHasErrors('ano_letivo');
+
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?ano_letivo=invalido')
+            ->assertRedirect()
+            ->assertSessionHasErrors('ano_letivo');
+    }
+
     private function matricular(
         Municipality $municipio,
         string $escola,
