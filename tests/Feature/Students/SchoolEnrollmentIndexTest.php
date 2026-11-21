@@ -134,6 +134,7 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
                 'deleted_by' => $this->auditFixtureUser->id,
                 'deletion_reason' => 'Simulação de dado legado inconsistente',
             ]);
+            $this->assertTrue(Student::query()->withTrashed()->findOrFail($arquivadoId)->trashed());
             $this->assertTrue(StudentEnrollment::query()
                 ->where('student_id', $arquivadoId)
                 ->where('status', 'active')->exists());
