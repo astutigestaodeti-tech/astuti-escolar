@@ -305,6 +305,23 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
 
+    public function test_voltar_da_paginacao_retorna_a_pagina_anterior_da_mesma_lista(): void
+    {
+        $user = $this->criarUsuario('voltar-matriculas-pagina@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+
+        $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas';
+        $origem = 'http://localhost:8000'.$base.'?busca=Ana&page=1';
+        $this->actingAs($user)
+            ->withHeader('referer', $origem)
+            ->get($base.'?busca=Ana&page=2')
+            ->assertOk()
+            ->assertSee('Voltar à tela anterior')
+            ->assertSee('href="'.str_replace('&', '&amp;', $origem).'"', false);
+
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
     private function matricular(
         Municipality $municipio,
         string $escola,
