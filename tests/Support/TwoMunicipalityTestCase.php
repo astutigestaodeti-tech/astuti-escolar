@@ -187,13 +187,14 @@ abstract class TwoMunicipalityTestCase extends TestCase
 
         return $membership;
     }
+
     private function limparAuditoriaDescartavel(string $connection, string $table, string $trigger): void
     {
         // Exclusivamente nas tres bases *_test: o usuario de migration do CI
         // pode suspender o gatilho por um instante para limpar fixtures.
         // Em producao, o usuario web nao e dono das tabelas e nao pode faze-lo.
         foreach ([(string) getenv('PLATFORM_DB_DATABASE'), (string) getenv('TENANCY_TEST_DB_A'), (string) getenv('TENANCY_TEST_DB_B')] as $name) {
-            if (! preg_match('/\\A[a-z0-9_]+_test\\z/D', $name)) {
+            if (! preg_match('/\A[a-z0-9_]+_test\z/D', $name)) {
                 throw new RuntimeException('Limpeza de auditoria disponivel apenas em bancos descartaveis.');
             }
         }
@@ -207,5 +208,4 @@ abstract class TwoMunicipalityTestCase extends TestCase
             $db->statement("ALTER TABLE {$table} ENABLE TRIGGER {$trigger}");
         }
     }
-
 }
