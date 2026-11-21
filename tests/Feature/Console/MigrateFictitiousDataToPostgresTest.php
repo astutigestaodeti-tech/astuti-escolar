@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Console;
 
+use App\Support\DatabaseMigration\FictitiousDataTransfer;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use InvalidArgumentException;
@@ -112,6 +114,93 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertSame(0, $sourceTenant->table('students')->where('full_name', 'not like', 'Estudante fictício %')->count());
         $this->assertSame(115, $sourceTenant->table('student_enrollments')->distinct()->count('student_id'));
         $this->assertTrue($targetPlatform->getSchemaBuilder()->hasTable('jobs'));
+    }
+
+    public function test_simulacao_nao_escreve_e_copia_preserva_conteudo_uuid_hash_e_contagens(): void
+    {
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = DisposableMigrationDatabases::create();
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+
+        $sourceBefore = $this->snapshot($sourcePlatform, $sourceTenant);
+        $empty = $this->snapshot($targetPlatform, $targetTenant);
+        $transfer = new FictitiousDataTransfer;
+        $counts = [
+            'platform' => [
+                'municipalities' => 1,
+                'users' => 1,
+                'municipality_provision_attempts' => 1,
+                'memberships' => 1,
+                'school_scopes' => 1,
+                'platform_audit_logs' => 1,
+            ],
+            'tenant' => [
+                'schools' => 3,
+                'school_years' => 1,
+                'students' => 115,
+                'school_classes' => 3,
+                'student_enrollments' => 115,
+                'audit_logs' => 1,
+            ],
+        ];
+
+        $this->assertSame($counts, $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, false));
+        $this->assertSame($empty, $this->snapshot($targetPlatform, $targetTenant));
+        $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
+
+        $this->assertSame($counts, $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true));
+
+        $copied = $this->snapshot($targetPlatform, $targetTenant);
+
+        foreach ($sourceBefore as $database => $tables) {
+            foreach ($tables as $table => $rows) {
+                $this->assertEquals($rows, $copied[$database][$table], $table);
+            }
+        }
+
+        $this->assertSame(array_column($sourceBefore['tenant']['students'], 'id'), array_column($copied['tenant']['students'], 'id'));
+        $this->assertSame($sourceBefore['platform']['users'][0]['password'], $copied['platform']['users'][0]['password']);
+        $this->assertTrue(Hash::check('senha-sintetica-apenas-fixture', $copied['platform']['users'][0]['password']));
+        $this->assertSame(2027, (int) $copied['tenant']['school_years'][0]['year']);
+
+        $sequence = $targetPlatform->selectOne("SELECT currval(pg_get_serial_sequence('municipality_provision_attempts', 'id')) AS id");
+        $this->assertSame(27, (int) $sequence->id);
+        $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
+    }
+
+    private function snapshot(Connection $platform, Connection $tenant): array
+    {
+        $snapshot = [];
+
+        foreach ([
+            'platform' => [$platform, ['municipalities', 'users', 'municipality_provision_attempts', 'memberships', 'school_scopes', 'platform_audit_logs']],
+            'tenant' => [$tenant, ['schools', 'school_years', 'students', 'school_classes', 'student_enrollments', 'audit_logs']],
+        ] as $database => [$connection, $tables]) {
+            foreach ($tables as $table) {
+                $query = $connection->table($table);
+
+                if ($table === 'school_scopes') {
+                    $query->orderBy('membership_id')->orderBy('school_id');
+                } else {
+                    $query->orderBy('id');
+                }
+
+                $snapshot[$database][$table] = $query->get()->map(static function (object $row): array {
+                    $values = (array) $row;
+
+                    foreach (['before', 'after'] as $column) {
+                        if (isset($values[$column])) {
+                            $values[$column] = json_decode($values[$column], true, 512, JSON_THROW_ON_ERROR);
+                        }
+                    }
+
+                    return $values;
+                })->all();
+            }
+        }
+
+        return $snapshot;
     }
 
     public static function configuracoesInseguras(): array
