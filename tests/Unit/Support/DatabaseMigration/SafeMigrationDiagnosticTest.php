@@ -86,5 +86,4 @@ final class SafeMigrationDiagnosticTest extends TestCase
             true, $platform, array_replace($tenant, ['port' => '5432']),
         ));
     }
-
 }
