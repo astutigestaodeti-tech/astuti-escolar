@@ -35,12 +35,12 @@ Ordem funcional: alunos atuais, responsaveis, escolas, turmas e matriculas; depo
 | Repositorio | `astutigestaodeti-tech/astuti-escolar`, privado |
 | `main` antes deste registro | `edf52e89` - base antiga do projeto, sem receber ainda os incrementos em PR |
 | Branch de trabalho mais recente | `feature/migracao-postgresql-instalacoes-isoladas` |
-| Cabeca da branch remota verificada nesta etapa | `d5063d9` (Task 1 da integracao CI: helpers, fixture e job MariaDB + PostgreSQL; tarefas 2-4 ainda pendentes) |
+| Cabeca da branch remota verificada nesta etapa | `3e02447d` (Tasks 1 e 2: ambiente CI mais motor da copia real testado; tarefas 3-4 pendentes) |
 | PR #1 | `feature/incremento-01-saude` para `main`, rascunho/aberto |
 | PR #3 | Incremento 02 para Incremento 01, rascunho/aberto |
 | PR #4 | Incremento 03 para Incremento 02, rascunho/aberto |
 | PR #5 | PostgreSQL e VPS por Prefeitura para Incremento 03, rascunho/aberto |
-| CI na branch PostgreSQL | PR run `44867708379` no commit `d5063d9`: integracao 10 testes/90 assercoes; suite geral 165 testes/606 assercoes por rodada, repetida duas vezes, Pint, Vite e interface verdes |
+| CI na branch PostgreSQL | PR run `44868602481` no commit `3e02447d`: copia real sintetica MariaDB para PostgreSQL nos `_test`; 13 testes/157 assercoes; suite geral duas rodadas de 165/606, Pint (127 arquivos), Vite e 4 testes UI verdes |
 
 O sucesso do GitHub Actions comprova as verificacoes automatizadas executadas por aquele workflow, **nao** a transferencia concluida dos bancos do notebook nem a homologacao do sistema para Prefeituras.
 
@@ -90,7 +90,7 @@ As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os doi
 4. **Revisao tecnica pre-corte em 21/11/2026:** comando restringe ambiente, confere conteudo e hashes, mas commits nos dois bancos PG nao sao atomicamente conjuntos. CI do PR #5 passou, porem nao executa transferencia real MariaDB->PG. Nao assumir copia concluida nem prontidao para producao.
 5. **Concluido em captura 71:** `migrate:status` confirmou apenas a migration central `0001_01_01_000002_create_jobs_table` como `Pending` e outras dez como `Ran`. Consulta `to_regclass` ao PostgreSQL central confirmou `jobs`, `job_batches` e `failed_jobs` todas `AUSENTE`; nenhuma tabela foi modificada.
 6. **Concluido em captura 72:** backups PostgreSQL central e municipal criados e conferidos pelo indice do arquivo; aplicacao da migration `jobs` em PostgreSQL central com `DONE`, status `Ran` e tres tabelas fisicamente presentes. **Proximo passo:** preparar e executar testes de integracao de copia MariaDB->PG em destinos descartaveis, ensaiar rollback e falha entre commits e validar relacionamentos, hashes, login e auditoria. Nunca usar os destinos principais como primeiro teste de transferencia.
-7. **Task 1 de integracao executada e revisada em 21/11:** no PR #5 foi implementado ambiente CI MariaDB 11.8 + PostgreSQL 17 descartaveis, quatro bancos exclusivos `_test`, fixture sintetica e 10 testes/90 assercoes verdes (`d5063d9`, run `44867708379`); suite principal verde duas vezes (165 testes/606 assercoes por rodada), Pint, build e interface aprovados. Revisao independente sem criticos/importantes. **Task 2 em andamento:** exercitar copia real entre bancos `_test`, depois rollback, commit parcial e integridade (Tasks 3-4). Os bancos do notebook nao foram acessados e o ultimo HEAD local comprovado segue `a27be7b1`. Ainda nao houve copia.
+7. **Tasks 1 e 2 de integracao implementadas e revisadas em 21/11:** no PR #5 existem quatro bancos CI `_test` descartaveis e fixture sintetica (`d5063d9`), mais motor de copia MariaDB->PostgreSQL em servico separado da CLI (`3e02447d`). O CI `44868602481` aprovou 13 testes/157 assercoes com copia, simulacao sem gravacao, recusa de destino ocupado e FK invalida; suite geral duas vezes (165/606), Pint, build e UI verdes. Revisores independentes aprovaram ambas as etapas sem bloqueios. **Task 3 em andamento:** ensaiar rollback durante a copia, falha entre commits, retry bloqueado e integridade interbancos; depois Task 4 de repetibilidade e revisao global. Os bancos do notebook nao foram acessados e o ultimo HEAD local comprovado segue `a27be7b1`. Nenhuma copia real do notebook foi executada.
 8. **Nao executar `--executar` nos destinos principais nem mesclar PR #5 nesta etapa.** Fazer nova revisao e obter autorizacao especifica depois dos testes. Manter PRs anteriores em rascunho ate os criterios de aceitacao.
 
 ## 7. Como manter este registro util
