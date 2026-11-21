@@ -28,5 +28,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('astuti-login', fn (Request $request) => Limit::perMinute(5)->by(
             hash('sha256', strtolower(trim((string) $request->input('email'))).'|'.(string) $request->ip()),
         ));
+
+        RateLimiter::for('astuti-second-factor', fn (Request $request) => Limit::perMinute(5)->by(
+            hash('sha256', (string) $request->user()?->getAuthIdentifier().'|'.(string) $request->ip()),
+        ));
     }
 }
