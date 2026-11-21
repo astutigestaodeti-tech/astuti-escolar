@@ -12,16 +12,31 @@ Antes de autorizar a cópia no notebook, confira a revisão independente, o comm
 
 ## 1. Preservar a origem antes de começar
 
-No Debian, mantenha as duas bases MariaDB originais `astuti_platform_dev` e `astuti_monte_sereno_dev`. Confira os nomes e o usuário de leitura. Faça dumps separados **fora do Git**:
+No Debian, mantenha as duas bases MariaDB originais `astuti_platform_dev` e `astuti_monte_sereno_dev`. Confira os nomes e o usuário de leitura. Guarde os dois dumps em um diretório novo para cada tentativa, fora do Git e com permissões restritas:
 
 ```bash
-mkdir -p "$HOME/astuti-backups"
-mariadb-dump -u aflora --single-transaction astuti_platform_dev > "$HOME/astuti-backups/platform-mariadb-antes.sql"
-mariadb-dump -u aflora --single-transaction astuti_monte_sereno_dev > "$HOME/astuti-backups/monte-sereno-mariadb-antes.sql"
-sha256sum "$HOME/astuti-backups/"*-mariadb-antes.sql
+(
+    set -eu
+    umask 077
+    backup_root="$HOME/astuti-backups"
+    mkdir -p -- "$backup_root"
+    chmod 700 -- "$backup_root"
+    backup_dir="$(mktemp -d -- "$backup_root/mariadb-pre-copia-XXXXXXXX")"
+    cd -- "$backup_dir"
+
+    mariadb-dump -u aflora --single-transaction astuti_platform_dev > platform-mariadb-antes.sql
+    mariadb-dump -u aflora --single-transaction astuti_monte_sereno_dev > monte-sereno-mariadb-antes.sql
+    test -s platform-mariadb-antes.sql
+    test -s monte-sereno-mariadb-antes.sql
+    sha256sum platform-mariadb-antes.sql monte-sereno-mariadb-antes.sql > SHA256SUMS
+    sha256sum -c SHA256SUMS
+    printf 'Backups MariaDB pré-cópia em %s\n' "$backup_dir"
+)
 ```
 
-Confirme que ambos foram produzidos, têm conteúdo e podem ser restaurados em uma base isolada de teste. Proteja `~/astuti-backups` com permissões restritas; não compartilhe, compacte para GitHub nem envie ao chat. Esses comandos **não** alteram as bases MariaDB; não execute `DROP DATABASE`, `migrate:fresh` ou `db:wipe` na origem.
+Se o bloco falhar, trate o diretório da tentativa como incompleto e preserve os backups anteriores. Após verificar as duas somas, ensaie a restauração supervisionada de cada dump em uma base MariaDB isolada e vazia. Confira as tabelas e as contagens esperadas. Mantenha os arquivos no armazenamento restrito da operação, fora do GitHub e do chat.
+
+Esses comandos **não** alteram as bases MariaDB; não execute `DROP DATABASE`, `migrate:fresh` ou `db:wipe` na origem.
 
 ## 2. Preparar destino PostgreSQL vazio
 
