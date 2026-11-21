@@ -59,7 +59,6 @@ class TwoFactorReadAccessTest extends TwoMunicipalityTestCase
         $this->get('/')->assertOk()->assertSee('Municipio A');
     }
 
-
     public function test_resposta_json_nao_redireciona_para_referer_externo(): void
     {
         $user = $this->criarUsuario('consulta-json-pendente@example.invalid');
