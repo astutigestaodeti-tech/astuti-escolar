@@ -296,3 +296,16 @@ cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-ins
 ```
 
 O script pede sudo e pode levar alguns minutos. Nao executar manualmente `php artisan astuti:migrar-dados-postgresql --executar` sem o roteiro isolado. Se a rotina falhar, registrar mensagem e nao continuar a copia nos destinos originais. Depois de sucesso, conferir linha a linha, hashes, integridade e login no banco de ensaio; apenas entao revisar a futura transferencia principal.
+
+
+## 21/11/2026 - Captura 82: falha de inicializacao do cluster de ensaio e correcao
+
+**Prova no notebook:** Jefferson executou o comando unico da etapa anterior, atualizou a branch de `574401b` para `6a7b012`, validou novamente os dois backups como `OK` e passou pela verificacao `CONFERINDO BANCOS ORIGINAIS, SOMENTE LEITURA`. A rotina criou o cluster PostgreSQL 17 `astuti_ens_20261121_103015_6876` na porta **55432**, com `start-conf=manual`. O PostgreSQL recusou inicializar: `syntax error in file .../postgresql.conf line 60, near token ".0"` e `FATAL: configuration file contains errors`. A rotina interrompeu com mensagem `Ensaio interrompido. Os backups e os bancos originais foram preservados`. **Nenhum banco do cluster foi restaurado e nenhum aluno foi copiado.**
+
+**Causa-raiz confirmada:** o roteiro invocava `pg_conftool set listen_addresses '127.0.0.1'`. Na biblioteca `PgCommon::quote_conf_value` do Debian, o padrao de numero `^-?[\\d.]+$` classifica incorretamente um IPv4 composto de digitos e pontos como numero e o escreve **sem aspas** em `postgresql.conf`. O PostgreSQL exige uma string valida para `listen_addresses` e, por isso, nao iniciou. O script foi corrigido para `pg_conftool ... set listen_addresses localhost`, identificador simples valido com escuta apenas no loopback, de acordo com a documentacao PostgreSQL. O teste shell foi alterado **antes do patch** para simular a falha observada e comprovadamente ficou vermelho; depois da correcao passou.
+
+**Correcoes publicadas na branch:** `0056f65` (teste de regressao) e `cf7a046` (alteracao minima no roteiro); `f908b61` documentou a falha e a recuperacao. A suite shell local retornou: 8 cenarios de ensaio de copia, 6 de backup pre-copia e 8 de restauracao, todos PASS. O workflow GitHub deve ser verificado no HEAD documental antes de confirmar CI.
+
+**Estado material:** o cluster de teste `astuti_ens_20261121_103015_6876` permaneceu parado na porta 55432. Foi preservado para auditoria, **nao deve ser eliminado sem identificar seu alvo explicitamente**. Como o script so escolhe portas nao reservadas, nova execucao devera utilizar uma proxima porta livre, sem sobrescrever o cluster antigo. Origem MariaDB, PostgreSQL originais na porta 5432 e dumps seguem intactos conforme o comando. **A copia real de 115 estudantes ficticios continua pendente**. Nao fazer corte ou merge do PR #5.
+
+**Proximo passo:** apos CI do patch, no Debian, rodar novamente o mesmo comando seguro, que fara um cluster novo para o ensaio. Se houver erro, interromper, registrar saida e depurar sem tocar os bancos originais.
