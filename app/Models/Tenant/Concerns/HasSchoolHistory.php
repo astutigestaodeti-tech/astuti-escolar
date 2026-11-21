@@ -211,6 +211,18 @@ trait HasSchoolHistory
     {
         $this->assertEventsEnabled();
 
+        // Eloquent::save() também aceita alterações diretas dos campos de
+        // exclusão lógica. Essas alterações contornariam deleteWithReason(),
+        // a verificação de dependentes e restoreWithReason().
+        if ($this->isDirty(['deleted_by', 'deletion_reason'])
+            || ($this->isDirty('deleted_at') && ! $this->restorationAuthorized)) {
+            throw new LogicException('Metadados de exclusão não podem ser alterados diretamente.');
+        }
+
+        if ($this->exists && $this->getRawOriginal('deleted_at') !== null && ! $this->restorationAuthorized) {
+            throw new LogicException('Restaure o registro com autoria e motivo antes de alterá-lo.');
+        }
+
         return $this->getConnection()->transaction(function () use ($options): bool {
             if ($this instanceof SchoolClass || $this instanceof StudentEnrollment) {
                 $this->assertActiveParents();
