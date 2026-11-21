@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -178,7 +179,7 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
             app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->create([
                 'id' => (string) Str::uuid(),
                 'full_name' => 'Pessoa Fictícia Com RA Repetido',
-                'ra' => '123456789-0/SP',
+                'ra' => '1234567890/sp',
             ]));
             $this->fail('O banco precisa impedir RA duplicado.');
         } catch (QueryException $exception) {
@@ -226,8 +227,8 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
             return [
                 $student,
                 $enrollment,
-                $student->updated_at->format('Y-m-d H:i:s'),
-                $enrollment->updated_at->format('Y-m-d H:i:s'),
+                DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token,
+                DB::connection('tenant')->table('student_enrollments')->where('id', $enrollment->id)->selectRaw('xmin::text AS token')->first()->token,
             ];
         });
 
@@ -240,6 +241,7 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
             'birth_date' => '2018-04-05',
             'ra' => '987654321-X/SP',
             'school_class_id' => $this->classA1Other,
+            'enrollment_id' => $enrollment->id,
             'versao' => $studentVersion,
             'versao_matricula' => $enrollmentVersion,
         ];
@@ -262,6 +264,143 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
         $this->assertSame('987654321-X/SP', app(TenantContext::class)->runFor($this->municipioA, fn (): string => Student::query()->findOrFail($student->id)->ra));
     }
 
+    public function test_versao_detecta_duas_gravacoes_no_mesmo_segundo(): void
+    {
+        $this->freezeTime();
+        $this->entrar();
+        $this->post($this->url(), $this->dados())->assertRedirect();
+
+        [$id, $token] = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            $student = Student::query()->firstOrFail();
+
+            return [
+                $student->id,
+                DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token,
+            ];
+        });
+
+        $this->put($this->url('/'.$id), [
+            'full_name' => 'Camila Fictícia Primeiro Salvamento',
+            'birth_date' => '2018-04-05',
+            'versao' => $token,
+        ])->assertRedirect();
+
+        $this->put($this->url('/'.$id), [
+            'full_name' => 'Camila Fictícia Segundo Salvamento',
+            'birth_date' => '2018-04-05',
+            'versao' => $token,
+        ])->assertSessionHasErrors('versao');
+
+        $this->assertSame('Camila Fictícia Primeiro Salvamento', app(TenantContext::class)->runFor($this->municipioA, fn (): string => Student::query()->findOrFail($id)->full_name));
+    }
+
+    public function test_versao_da_matricula_recusa_concorrencia_sem_alteracao_do_aluno(): void
+    {
+        $this->entrar();
+        $this->post($this->url(), $this->dados())->assertRedirect();
+
+        [$studentId, $enrollmentId, $studentToken, $enrollmentToken] = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            $student = Student::query()->firstOrFail();
+            $enrollment = StudentEnrollment::query()->firstOrFail();
+            $studentToken = DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token;
+            $enrollmentToken = DB::connection('tenant')->table('student_enrollments')->where('id', $enrollment->id)->selectRaw('xmin::text AS token')->first()->token;
+
+            $enrollment->fill(['school_class_id' => $this->classA1Other])->save();
+
+            return [$student->id, $enrollment->id, $studentToken, $enrollmentToken];
+        });
+
+        $this->put($this->url('/'.$studentId), [
+            'full_name' => 'Camila Fictícia de Oliveira',
+            'birth_date' => '2018-04-05',
+            'ra' => '987654321-0/SP',
+            'school_class_id' => $this->classA1,
+            'enrollment_id' => $enrollmentId,
+            'versao' => $studentToken,
+            'versao_matricula' => $enrollmentToken,
+        ])->assertSessionHasErrors('versao_matricula');
+
+        [$ra, $classId] = app(TenantContext::class)->runFor($this->municipioA, fn (): array => [
+            Student::query()->findOrFail($studentId)->ra,
+            StudentEnrollment::query()->findOrFail($enrollmentId)->school_class_id,
+        ]);
+        $this->assertSame('123456789-0/SP', $ra);
+        $this->assertSame($this->classA1Other, $classId);
+    }
+
+    public function test_matricula_escolhida_no_historico_e_unica_alterada(): void
+    {
+        $this->entrar();
+        $this->post($this->url(), $this->dados())->assertRedirect();
+
+        [$studentId, $firstId, $secondId, $year2028Class, $studentToken, $firstToken] = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            $student = Student::query()->firstOrFail();
+            $first = StudentEnrollment::query()->firstOrFail();
+            $year = SchoolYear::query()->create([
+                'id' => (string) Str::uuid(),
+                'year' => 2028,
+                'start_date' => '2028-02-01',
+                'end_date' => '2028-12-18',
+                'status' => 'planned',
+            ]);
+            $class = SchoolClass::query()->create([
+                'id' => (string) Str::uuid(),
+                'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $year->id,
+                'name' => '2º Ano A',
+                'stage' => 'Ensino Fundamental',
+                'modality' => 'Regular',
+                'shift' => 'Manhã',
+                'status' => 'planned',
+            ]);
+            $second = StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $student->id,
+                'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $year->id,
+                'school_class_id' => $class->id,
+                'status' => 'active',
+                'started_at' => '2028-02-01',
+            ]);
+
+            return [
+                $student->id,
+                $first->id,
+                $second->id,
+                $class->id,
+                DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token,
+                DB::connection('tenant')->table('student_enrollments')->where('id', $first->id)->selectRaw('xmin::text AS token')->first()->token,
+            ];
+        });
+
+        $this->get($this->url('/'.$studentId.'/editar?matricula='.$firstId))
+            ->assertOk()
+            ->assertSee('value="'.$firstId.'"', false)
+            ->assertSee('2027');
+
+        $this->put($this->url('/'.$studentId), [
+            'full_name' => 'Camila Fictícia de Oliveira',
+            'birth_date' => '2018-04-05',
+            'ra' => '123456789-0/SP',
+            'school_class_id' => $this->classA1Other,
+            'enrollment_id' => $firstId,
+            'versao' => $studentToken,
+            'versao_matricula' => $firstToken,
+        ])->assertRedirect();
+
+        [$firstClass, $secondClass] = app(TenantContext::class)->runFor($this->municipioA, fn (): array => [
+            StudentEnrollment::query()->findOrFail($firstId)->school_class_id,
+            StudentEnrollment::query()->findOrFail($secondId)->school_class_id,
+        ]);
+        $this->assertSame($this->classA1Other, $firstClass);
+        $this->assertSame($year2028Class, $secondClass);
+
+        $this->get($this->url('/'.$studentId.'/editar?matricula='.$secondId))
+            ->assertOk()
+            ->assertSee('value="'.$secondId.'"', false)
+            ->assertSee('2028');
+    }
+
     public function test_edicao_de_outro_dado_preserva_turma_ja_encerrada(): void
     {
         $this->entrar();
@@ -274,8 +413,8 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
 
             return [
                 $student->id,
-                $student->updated_at->format('Y-m-d H:i:s'),
-                $enrollment->updated_at->format('Y-m-d H:i:s'),
+                DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token,
+                DB::connection('tenant')->table('student_enrollments')->where('id', $enrollment->id)->selectRaw('xmin::text AS token')->first()->token,
             ];
         });
 
@@ -286,6 +425,7 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
             'birth_date' => '2018-04-05',
             'ra' => '555555555-0/SP',
             'school_class_id' => $this->classA1,
+            'enrollment_id' => app(TenantContext::class)->runFor($this->municipioA, fn (): string => StudentEnrollment::query()->firstOrFail()->id),
             'versao' => $studentVersion,
             'versao_matricula' => $enrollmentVersion,
         ])->assertRedirect();

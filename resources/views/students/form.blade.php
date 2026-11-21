@@ -50,8 +50,15 @@
             @csrf
             @if ($editando)
                 @method('PUT')
-                <input type="hidden" name="versao" value="{{ old('versao', $student->updated_at?->format('Y-m-d H:i:s')) }}">
-                <input type="hidden" name="versao_matricula" value="{{ old('versao_matricula', $enrollment->updated_at?->format('Y-m-d H:i:s')) }}">
+                <input type="hidden" name="enrollment_id" value="{{ $enrollment->id }}">
+                <input type="hidden" name="versao" value="{{ old('versao', $studentVersion) }}">
+                <input type="hidden" name="versao_matricula" value="{{ old('versao_matricula', $enrollmentVersion) }}">
+            @endif
+
+            @if ($editando)
+                <p class="texto-ajuda">Você está editando a matrícula do ano letivo {{ $enrollment->schoolYear?->year ?? 'não informado' }}.
+                    <a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">Veja os outros vínculos na ficha.</a>
+                </p>
             @endif
 
             <div class="formulario-grade">

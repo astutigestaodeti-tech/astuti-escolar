@@ -10,6 +10,7 @@ use App\Models\Tenant\StudentEnrollment;
 use App\Models\User;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -180,7 +181,7 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         [$id, $versao] = $this->noMunicipio($this->municipioA, function (): array {
             $student = Student::query()->firstOrFail();
 
-            return [$student->id, $student->updated_at->format('Y-m-d H:i:s')];
+            return [$student->id, DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token];
         });
 
         $this->get($this->url('/'.$id.'/editar'))->assertOk()->assertSee('Nome Fictício Errado');
@@ -210,7 +211,7 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         [$id, $versaoAntiga] = $this->noMunicipio($this->municipioA, function (): array {
             $student = Student::query()->firstOrFail();
 
-            return [$student->id, $student->updated_at->format('Y-m-d H:i:s')];
+            return [$student->id, DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token];
         });
 
         $this->travel(2)->seconds();

@@ -31,7 +31,7 @@ Leitor próprio, só com as extensões `zip` e `xmlreader` do PHP: sem rede (`LI
 ## Base de persistência para a etapa 2
 
 - A matrícula passou a aceitar `school_class_id` opcional, com chave estrangeira composta: turma, escola e ano letivo devem corresponder, inclusive em inserção SQL direta. Não há exclusão em cascata.
-- O aluno passou a aceitar `ra` opcional com unicidade no banco municipal. O formulário normaliza caixa e hífen, verifica duplicidade e mantém a autoria e a auditoria das mudanças.
-- A edição de turma usa versão própria da matrícula, além da versão do aluno. Em caso de conflito, nenhuma das duas alterações é gravada.
+- O aluno passou a aceitar `ra` opcional com índice único sobre a forma normalizada (maiúsculas e sem hífen), inclusive para SQL direto. O formulário normaliza caixa e hífen, verifica duplicidade e mantém a autoria e a auditoria das mudanças.
+- A edição de turma identifica a matrícula por UUID e usa tokens PostgreSQL `xmin` próprios da matrícula e do aluno, evitando conflitos até quando duas gravações ocorrem no mesmo segundo. Em caso de divergência, nenhuma das duas alterações é gravada.
 - Registros antigos permanecem sem RA ou turma até preenchimento legítimo. A cópia fictícia MariaDB para PostgreSQL compara só colunas existentes na origem e deixa novos campos nulos, sem reescrever dados originais.
 - **Ainda não há gravação de planilhas**. A etapa seguinte exige armazenamento privado do arquivo, conferência humana das duplicidades, autorização por escola, segundo fator e transação auditada antes de persistir qualquer linha.

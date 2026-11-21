@@ -3,7 +3,7 @@
 ## 2026-11-21 | Base do importador: RA e turma da matrícula
 
 - Revisados os PRs #5 a #11 e a cadeia de dependências. CI do ajuste de integridade histórica do PR #10 concluído com sucesso; o vínculo externo da matrícula usa RESTRICT, sem exclusão em cascata.
-- Em PR próprio sobre o #9, acrescentados RA opcional único no município e turma opcional com FK composta escola/ano; cadastro e edição com segundo fator, permissão, concorrência e auditoria; ficha mostra os campos.
+- Em PR próprio sobre o #9, acrescentados RA opcional com índice único sobre forma canônica no município e turma opcional com FK composta escola/ano; cadastro e edição com segundo fator, matrícula explícita, versão segura em gravações no mesmo segundo e auditoria; ficha mostra os campos.
 - A migração de dados fictícios compara colunas legadas sem preencher artificialmente as novas; o importador permanece somente em prévia até a futura conferência humana e gravação segura.
 - Testes de regressão cobrem duplicidade, isolamento de turmas, 403, 2FA e trilha auditada. O CI e Pint devem estar verdes antes do pedido de revisão; nada foi mesclado nem implantado no notebook.
 

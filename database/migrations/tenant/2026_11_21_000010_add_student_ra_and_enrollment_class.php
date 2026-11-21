@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -10,8 +11,11 @@ return new class extends Migration
     {
         Schema::connection('tenant')->table('students', function (Blueprint $table): void {
             // RA pertence ao aluno no municipio. Ausente continua NULL, nunca inventado.
-            $table->string('ra', 32)->nullable()->unique('students_ra_unique');
+            $table->string('ra', 32)->nullable();
         });
+
+        // Evita RAs lógicos repetidos mesmo via SQL/importador com caixa ou hífen diferente.
+        DB::connection('tenant')->statement("CREATE UNIQUE INDEX students_ra_normalized_unique ON students ((replace(upper(ra), '-', ''))) WHERE ra IS NOT NULL");
 
         Schema::connection('tenant')->table('school_classes', function (Blueprint $table): void {
             // A FK composta impede matricula numa turma de outra escola/ano.
@@ -40,8 +44,9 @@ return new class extends Migration
             $table->dropUnique('school_classes_scope_unique');
         });
 
+        DB::connection('tenant')->statement('DROP INDEX IF EXISTS students_ra_normalized_unique');
+
         Schema::connection('tenant')->table('students', function (Blueprint $table): void {
-            $table->dropUnique('students_ra_unique');
             $table->dropColumn('ra');
         });
     }
