@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Audit\AuditActor;
 use App\Models\Tenant\School;
 use App\Policies\SchoolPolicy;
 use App\Tenancy\TenantConnectionManager;
@@ -16,6 +17,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->scoped(AuditActor::class, fn (): AuditActor => new AuditActor);
+
         $this->app->scoped(TenantContext::class, function ($app): TenantContext {
             return new TenantContext($app->make(TenantConnectionManager::class));
         });
