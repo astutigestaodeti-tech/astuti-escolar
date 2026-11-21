@@ -30,6 +30,59 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
 
+    public function test_ficha_exibe_historico_da_mesma_escola_sem_revelar_vinculos_de_outra(): void
+    {
+        $user = $this->criarUsuario('ficha-historico@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $studentId = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluna com histórico');
+
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($studentId): void {
+            $year2026 = SchoolYear::query()->create([
+                'id' => (string) Str::uuid(),
+                'year' => 2026,
+                'start_date' => '2026-02-01',
+                'end_date' => '2026-12-18',
+                'status' => 'completed',
+            ]);
+            $year2025 = SchoolYear::query()->create([
+                'id' => (string) Str::uuid(),
+                'year' => 2025,
+                'start_date' => '2025-02-01',
+                'end_date' => '2025-12-18',
+                'status' => 'completed',
+            ]);
+
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $studentId,
+                'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $year2026->id,
+                'status' => 'completed',
+                'started_at' => '2026-02-03',
+                'ended_at' => '2026-12-12',
+            ]);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $studentId,
+                'school_id' => self::ESCOLA_A2,
+                'school_year_id' => $year2025->id,
+                'status' => 'completed',
+            ]);
+        });
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
+            ->assertOk()
+            ->assertSee('Histórico de vínculos nesta escola')
+            ->assertSee('Ano letivo 2027')
+            ->assertSee('Ano letivo 2026')
+            ->assertSee('Concluído')
+            ->assertSee('03/02/2026')
+            ->assertSee('12/12/2026')
+            ->assertDontSee('Ano letivo 2025');
+
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
     public function test_ficha_nao_expoe_aluno_de_outra_escola_ou_sem_vinculo_ativo(): void
     {
         $user = $this->criarUsuario('ficha-escopo@example.invalid');
