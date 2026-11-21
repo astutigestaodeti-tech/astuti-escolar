@@ -23,11 +23,12 @@ return new class extends Migration
                 SQL);
 
             if ((int) $duplicates->total > 0) {
-                throw new \RuntimeException(
-                    'Migracao de emails interrompida: ha '.(int) $duplicates->total
-                    .' grupo(s) de emails duplicados sem diferenca de caixa. '
-                    .'Revise os cadastros com seguranca antes de repetir.'
+                $message = sprintf(
+                    'Migracao de emails interrompida: ha %d grupo(s) de emails duplicados sem diferenca de caixa. Revise os cadastros com seguranca antes de repetir.',
+                    (int) $duplicates->total,
                 );
+
+                throw new \RuntimeException($message);
             }
 
             $db->statement('UPDATE users SET email = lower(btrim(email)) WHERE email IS DISTINCT FROM lower(btrim(email))');
