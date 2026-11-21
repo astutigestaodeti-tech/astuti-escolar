@@ -30,6 +30,23 @@ class MigrationVerifierTest extends TestCase
         MigrationVerifier::assertSameIdentity(['a', 'b'], ['a'], 'students');
     }
 
+
+    public function test_conferencia_das_linhas_detecta_valor_de_cadastro_adulterado(): void
+    {
+        MigrationVerifier::assertSameRows(
+            [['id' => 'a', 'name' => 'Estudante fictício', 'enabled' => 1, 'before' => '{"x":1,"y":2}']],
+            [['before' => '{"y":2,"x":1}', 'name' => 'Estudante fictício', 'enabled' => true, 'id' => 'a']],
+            'students',
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        MigrationVerifier::assertSameRows(
+            [['id' => 'a', 'name' => 'Estudante fictício']],
+            [['id' => 'a', 'name' => 'Outro nome']],
+            'students',
+        );
+    }
+
     public function test_hash_de_senha_divergente_interrompe_copia(): void
     {
         $this->expectException(InvalidArgumentException::class);
