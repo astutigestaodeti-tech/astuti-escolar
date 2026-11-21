@@ -35,7 +35,7 @@ Ordem funcional: alunos atuais, responsaveis, escolas, turmas e matriculas; depo
 | Repositorio | `astutigestaodeti-tech/astuti-escolar`, privado |
 | `main` antes deste registro | `edf52e89` - base antiga do projeto, sem receber ainda os incrementos em PR |
 | Branch de trabalho mais recente | `feature/migracao-postgresql-instalacoes-isoladas` |
-| Cabeca da branch remota | `a27be7b1` (`refactor(pgsql): retirar migration operacional do caminho raiz`) |
+| Cabeca da branch remota | `409b5380` (somente novo desenho de testes de migracao; codigo continua equivalente a `a27be7b1` nesta etapa) |
 | PR #1 | `feature/incremento-01-saude` para `main`, rascunho/aberto |
 | PR #3 | Incremento 02 para Incremento 01, rascunho/aberto |
 | PR #4 | Incremento 03 para Incremento 02, rascunho/aberto |
@@ -90,7 +90,8 @@ As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os doi
 4. **Revisao tecnica pre-corte em 21/11/2026:** comando restringe ambiente, confere conteudo e hashes, mas commits nos dois bancos PG nao sao atomicamente conjuntos. CI do PR #5 passou, porem nao executa transferencia real MariaDB->PG. Nao assumir copia concluida nem prontidao para producao.
 5. **Concluido em captura 71:** `migrate:status` confirmou apenas a migration central `0001_01_01_000002_create_jobs_table` como `Pending` e outras dez como `Ran`. Consulta `to_regclass` ao PostgreSQL central confirmou `jobs`, `job_batches` e `failed_jobs` todas `AUSENTE`; nenhuma tabela foi modificada.
 6. **Concluido em captura 72:** backups PostgreSQL central e municipal criados e conferidos pelo indice do arquivo; aplicacao da migration `jobs` em PostgreSQL central com `DONE`, status `Ran` e tres tabelas fisicamente presentes. **Proximo passo:** preparar e executar testes de integracao de copia MariaDB->PG em destinos descartaveis, ensaiar rollback e falha entre commits e validar relacionamentos, hashes, login e auditoria. Nunca usar os destinos principais como primeiro teste de transferencia.
-7. **Nao executar `--executar` nos destinos principais nem mesclar PR #5 nesta etapa.** Fazer nova revisao e obter autorizacao especifica depois dos testes. Manter PRs anteriores em rascunho ate os criterios de aceitacao.
+7. **Proposta registrada na branch remota em 21/11:** `docs/superpowers/specs/2026-11-21-testes-integracao-mariadb-postgresql-design.md`, commit `409b5380`. Jefferson aprovou a abordagem geral de CI com bancos descartaveis; o desenho detalhado ainda deve ser validado antes de executar plano TDD. Nenhuma nova cobertura de CI foi implementada ainda; o notebook segue no ultimo HEAD observado `a27be7b1` e nao precisa atualizar apenas por esse documento.
+8. **Nao executar `--executar` nos destinos principais nem mesclar PR #5 nesta etapa.** Fazer nova revisao e obter autorizacao especifica depois dos testes. Manter PRs anteriores em rascunho ate os criterios de aceitacao.
 
 ## 7. Como manter este registro util
 
