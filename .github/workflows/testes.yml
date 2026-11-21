@@ -97,13 +97,18 @@ jobs:
           cp .env.example .env
           php artisan key:generate --force
 
+      - name: Conferir estilo PHP
+        run: |
+          if ! vendor/bin/pint --test; then
+            vendor/bin/pint
+            git diff -- database/migrations/platform
+            exit 1
+          fi
+
       - name: Executar testes
         run: |
           php artisan test
           php artisan test
-
-      - name: Conferir estilo PHP
-        run: vendor/bin/pint --test
 
       - name: Preparar Node 24
         uses: actions/setup-node@v6
