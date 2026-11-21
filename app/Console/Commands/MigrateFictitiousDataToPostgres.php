@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Support\DatabaseMigration\FictitiousDataTransfer;
 use App\Support\DatabaseMigration\MigrationVerifier;
 use App\Support\DatabaseMigration\PartialCommitException;
+use App\Support\DatabaseMigration\SafeMigrationDiagnostic;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -81,8 +82,13 @@ class MigrateFictitiousDataToPostgres extends Command
             $this->warn('Mantenha a aplicação em manutenção e siga a recuperação supervisionada em docs/operacao/migracao-mariadb-postgresql.md.');
 
             return self::FAILURE;
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
             $this->error('Migracao interrompida por falha de precondicao ou integridade.');
+            if (SafeMigrationDiagnostic::enabledFor(
+                getenv('ASTUTI_MIGRATION_DIAGNOSE_ISOLATED') === '1', $platform, $tenant,
+            )) {
+                $this->warn('Diagnostico do cluster isolado: '.SafeMigrationDiagnostic::describe($exception));
+            }
             $this->warn('Nao execute um novo corte sem conferir o estado dos dois destinos. A origem MariaDB permanece intocada.');
 
             return self::FAILURE;
