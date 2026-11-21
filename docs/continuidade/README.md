@@ -129,3 +129,10 @@ Este script prepara um **cluster PostgreSQL distinto**, confere sua identidade e
 - **Próxima ação depois do CI:** executar novamente o comando único documentado na seção 8, que criará um cluster diferente numa nova porta livre. Enviar a saída completa. Não usar `--executar` manualmente nos bancos originais.
 
 Para detalhes técnicos, consulte a última entrada de `HISTORICO.md`.
+
+
+## 10. Captura 83: copia isolada falhou depois da simulacao (21/11/2026)
+
+- Segundo cluster isolado `17/astuti_ens_20261121_103538_6170` na porta **55433** criado e iniciado com sucesso. Dumps restaurados no cluster isolado. Simulacao aprovada, com **115 alunos ficticios** na origem MariaDB.
+- Na tentativa de copia, a CLI exibiu somente erro generico de precondicao/integridade, **sem revelar a excecao causadora**. Nao considerar os dados copiados. O cluster 55433 foi parado e preservado; os bancos PostgreSQL originais e os backups foram mantidos, segundo o script.
+- **Proximo passo substitui temporariamente o comando da secao 8:** realizar apenas **diagnostico de log do cluster parado**, sem novo ensaio. Se nao houver log de erro SQL, corrigir instrumentacao segura do Laravel com TDD antes de nova tentativa. Nao rodar `--executar` manualmente nem eliminar clusters de ensaio. O PR #5 nao deve ser mesclado ainda.
