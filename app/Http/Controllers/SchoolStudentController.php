@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Audit\AuditTrail;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use Illuminate\Contracts\View\View;
@@ -52,6 +53,8 @@ class SchoolStudentController extends Controller
             ->with('schoolYear')
             ->get()
             ->sortByDesc(fn ($enrollment): int => (int) ($enrollment->schoolYear?->year ?? 0));
+
+        app(AuditTrail::class)->record('tenant', 'student.viewed', Student::class, $student->id);
 
         return view('students.show', compact('municipality', 'school', 'student', 'enrollments'));
     }
