@@ -190,5 +190,13 @@ jobs:
           cp .env.example .env
           php artisan key:generate --force
 
-      - name: Executar integração da migração
+      - name: Executar integração da migração (1ª rodada)
+        run: php artisan test --filter=MigrateFictitiousDataToPostgresTest
+
+      - name: Repetir integração da migração (2ª rodada)
+        env:
+          ASTUTI_MIGRATION_SOURCE_PLATFORM_DB: astuti_migration_source_platform_r2_test
+          ASTUTI_MIGRATION_SOURCE_TENANT_DB: astuti_migration_source_tenant_r2_test
+          ASTUTI_MIGRATION_TARGET_PLATFORM_DB: astuti_migration_target_platform_r2_test
+          ASTUTI_MIGRATION_TARGET_TENANT_DB: astuti_migration_target_tenant_r2_test
         run: php artisan test --filter=MigrateFictitiousDataToPostgresTest
