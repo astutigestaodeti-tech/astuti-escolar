@@ -73,7 +73,6 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
             ->assertSee('Não informado');
     }
 
-
     public function test_consulta_autorizada_registra_autoria_sem_dados_pessoais_na_trilha_municipal(): void
     {
         $user = $this->criarUsuario('ficha-auditada@example.invalid');
