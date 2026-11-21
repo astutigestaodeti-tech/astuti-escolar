@@ -3,6 +3,7 @@
 namespace Tests\Feature\Students;
 
 use App\Models\Platform\Municipality;
+use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
@@ -70,6 +71,72 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
             ->assertDontSee('<script>alert(1)</script>', false)
             ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false)
             ->assertSee('Não informado');
+    }
+
+
+    public function test_consulta_autorizada_registra_autoria_sem_dados_pessoais_na_trilha_municipal(): void
+    {
+        $user = $this->criarUsuario('ficha-auditada@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $studentId = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluno com consulta auditada');
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
+            ->assertOk();
+
+        $events = app(TenantContext::class)->runFor($this->municipioA, fn () => AuditLog::query()
+            ->where('action', 'student.viewed')
+            ->where('auditable_id', $studentId)
+            ->get());
+
+        $this->assertCount(1, $events);
+        $this->assertSame($user->id, $events->first()->user_id);
+        $this->assertSame(Student::class, $events->first()->auditable_type);
+        $this->assertNull($events->first()->before);
+        $this->assertNull($events->first()->after);
+
+        $eventsOther = app(TenantContext::class)->runFor($this->municipioB, fn () => AuditLog::query()
+            ->where('action', 'student.viewed')
+            ->where('auditable_id', $studentId)
+            ->count());
+        $this->assertSame(0, $eventsOther);
+    }
+
+    public function test_ficha_negada_nao_registra_consulta_de_aluno(): void
+    {
+        $user = $this->criarUsuario('ficha-auditoria-negada@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $studentId = $this->matricularAluno($this->municipioA, self::ESCOLA_A2, 'Aluno de acesso proibido');
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
+            ->assertNotFound();
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A2.'/alunos/'.$studentId)
+            ->assertForbidden();
+
+        $audits = app(TenantContext::class)->runFor($this->municipioA, fn () => AuditLog::query()
+            ->where('action', 'student.viewed')
+            ->where('auditable_id', $studentId)
+            ->count());
+        $this->assertSame(0, $audits);
+    }
+
+    public function test_segundo_fator_pendente_nao_grava_auditoria_de_ficha(): void
+    {
+        $user = $this->criarUsuario('ficha-auditoria-totp@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $studentId = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluno para TOTP');
+        $user->forceFill([
+            'two_factor_secret' => 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
+            ->assertRedirect(route('two-factor.challenge'));
+
+        $audits = app(TenantContext::class)->runFor($this->municipioA, fn () => AuditLog::query()
+            ->where('action', 'student.viewed')
+            ->where('auditable_id', $studentId)
+            ->count());
+        $this->assertSame(0, $audits);
     }
 
     private function matricularAluno(
