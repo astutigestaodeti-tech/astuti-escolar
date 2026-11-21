@@ -86,6 +86,11 @@ Se houver erro, **pare**. Não force a cópia e não altere a origem para fazê-
 
 ### Backups PostgreSQL antes da cópia
 
+**Rotina automatizada do notebook:** depois de confirmar que o sistema nao esta gravando dados, rode `bash scripts/operacao/criar-backups-pre-copia-postgresql.sh` na branch PostgreSQL atualizada. O script exige a tabela `jobs`, valida que as 12 tabelas-alvo de migracao ainda estao vazias, usa apenas o PostgreSQL local por socket, cria uma pasta nova `~/astuti-backups/pgsql-pre-copia-*` fora do Git, grava dois dumps **completos (estrutura e dados)** em formato customizado, valida indices e checksums e ensaia automaticamente a restauracao em mais dois bancos novos `astuti_restore_pg_*`. As restauracoes anteriores sao preservadas. Se qualquer etapa falhar, o script interrompe sem remover os arquivos ou bancos de teste.
+
+O script recusa guardar dumps dentro de repositorio Git. **A aplicacao deve estar sem escritas durante toda a operacao**, porque dois `pg_dump` em bancos separados nao formam uma transacao global. Este procedimento e especifico do notebook ficticio e nao substitui um backup operacional de cliente.
+
+
 Com a simulação aprovada e as tabelas de destino ainda vazias, faça um `pg_dump -Fc` de cada destino PostgreSQL com o esquema já preparado. O exemplo usa a conexão local do guia de instalação. Confira host, porta, usuário e os nomes dos dois bancos na configuração do notebook. Peça a senha no prompt e mantenha a aplicação sem escritas durante a preparação.
 
 O bloco cria um diretório exclusivo para cada tentativa, fora do Git. Preserve esse diretório e todos os backups anteriores. Use permissões restritas e mantenha os arquivos no armazenamento seguro da operação.
