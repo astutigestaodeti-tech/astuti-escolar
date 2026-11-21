@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+# Testes sem PostgreSQL: o acesso deve falhar fechado antes de qualquer escrita.
+set -Eeuo pipefail
+
+repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+script="$repo/scripts/operacao/testar-login-isolado-postgresql.sh"
+tmp="$(mktemp -d)"
+trap 'rm -rf -- "$tmp"' EXIT
+
+sudo() {
+    printf 'sudo %s\n' "$*" >> "$ASTUTI_MOCK_LOG"
+    if [[ "$*" == *'pg_control_system()'* ]]; then
+        if [[ "$*" == *'--port=5432'* ]]; then
+            printf '11111111111\n'
+        elif [[ "${MOCK_IDENTIDADE_IGUAL:-}" == 1 ]]; then
+            printf '11111111111\n'
+        else
+            printf '22222222222\n'
+        fi
+    elif [[ "$*" == *'--port=55436'* && "$*" == *'--database=astuti_platform_dev'* ]]; then
+        if [[ "$*" == *'COUNT(*) FROM municipalities'* ]]; then
+            printf '1\n'
+        elif [[ "$*" == *'COUNT(*) FROM users WHERE status'* ]]; then
+            printf '1\n'
+        elif [[ "$*" == *'COUNT(*) FROM memberships'* ]]; then
+            printf '1\n'
+        elif [[ "$*" == *'COUNT(*) FROM users'* ]]; then
+            printf '1\n'
+        fi
+    elif [[ "$*" == *'--port=55436'* && "$*" == *'--database=astuti_monte_sereno_dev'* ]]; then
+        if [[ "${MOCK_CONTAGEM_INCORRETA:-}" == 1 ]]; then
+            printf '2|115|115\n'
+        else
+            printf '3|115|115\n'
+        fi
+    fi
+}
+pg_lsclusters() {
+    printf '17 main 5432 online postgres /var/lib/postgresql/17/main /var/log/postgresql/main.log\n'
+    if [[ "${MOCK_CLUSTER_PARADO:-}" == 1 ]]; then
+        printf '17 astuti_ens_20261121_112332_22176 55436 down postgres /var/lib/postgresql/17/ensaio /var/log/postgresql/ensaio.log\n'
+    else
+        printf '17 astuti_ens_20261121_112332_22176 55436 online postgres /var/lib/postgresql/17/ensaio /var/log/postgresql/ensaio.log\n'
+    fi
+}
+psql() { return 0; }
+php() {
+    printf 'php %s\n' "$*" >> "$ASTUTI_MOCK_LOG"
+    if [[ "$1" == '-r' && "${MOCK_LARAVEL_INSEGURO:-}" == 1 ]]; then
+        return 15
+    fi
+    if [[ "$1" == 'artisan' && "$2" == 'serve' ]]; then
+        [[ "${PLATFORM_DB_PORT:-}" == 55436 ]]
+        [[ "${SESSION_COOKIE:-}" == astuti_ensaio_55436 ]]
+        [[ "${APP_CONFIG_CACHE:-}" != "$repo/bootstrap/cache/config.php" ]]
+        [[ -z "${ASTUTI_LOGIN_TEST_PASSWORD:-}" ]]
+    fi
+}
+export -f sudo pg_lsclusters psql php
+
+if [[ ! -f "$script" ]]; then
+    echo 'FALHA ESPERADA (TDD): script de login isolado ainda nao existe.' >&2
+    exit 1
+fi
+
+verificar_ausencia_de_escrita() {
+    if [[ -f "$ASTUTI_MOCK_LOG" ]] && grep -q 'ALTER ROLE\|php -r' "$ASTUTI_MOCK_LOG"; then
+        echo 'FALHA: escrita ou inicializacao Laravel antes de validar identidade.' >&2
+        exit 1
+    fi
+}
+
+export ASTUTI_MOCK_LOG="$tmp/cluster-parado.log"
+export MOCK_CLUSTER_PARADO=1
+if bash "$script" > "$tmp/cluster-parado.out" 2>&1; then
+    echo 'FALHA: aceitou o cluster parado.' >&2
+    exit 1
+fi
+verificar_ausencia_de_escrita
+unset MOCK_CLUSTER_PARADO
+
+export ASTUTI_MOCK_LOG="$tmp/mesma-identidade.log"
+export MOCK_IDENTIDADE_IGUAL=1
+if bash "$script" > "$tmp/mesma-identidade.out" 2>&1; then
+    echo 'FALHA: aceitou a identidade do PostgreSQL original.' >&2
+    exit 1
+fi
+verificar_ausencia_de_escrita
+unset MOCK_IDENTIDADE_IGUAL
+
+export ASTUTI_MOCK_LOG="$tmp/contagem-insegura.log"
+export MOCK_CONTAGEM_INCORRETA=1
+if bash "$script" > "$tmp/contagem-insegura.out" 2>&1; then
+    echo 'FALHA: aceitou contagens de dados inesperadas.' >&2
+    exit 1
+fi
+verificar_ausencia_de_escrita
+unset MOCK_CONTAGEM_INCORRETA
+
+export ASTUTI_MOCK_LOG="$tmp/laravel-inseguro.log"
+export MOCK_LARAVEL_INSEGURO=1
+if bash "$script" > "$tmp/laravel-inseguro.out" 2>&1; then
+    echo 'FALHA: aceitou a configuracao Laravel incorreta.' >&2
+    exit 1
+fi
+if grep -q 'php artisan serve' "$ASTUTI_MOCK_LOG"; then
+    echo 'FALHA: iniciou servidor com configuracao incorreta.' >&2
+    exit 1
+fi
+unset MOCK_LARAVEL_INSEGURO
+
+export ASTUTI_MOCK_LOG="$tmp/sucesso.log"
+if ! bash "$script" > "$tmp/sucesso.out" 2>&1; then
+    echo 'FALHA: nao iniciou servidor no ensaio seguro.' >&2
+    tail -n 20 "$tmp/sucesso.out" >&2
+    exit 1
+fi
+grep -q 'sudo -u postgres psql .*--port=55436 .*--file=-' "$ASTUTI_MOCK_LOG"
+grep -q 'php artisan serve --host=127.0.0.1 --port=8002' "$ASTUTI_MOCK_LOG"
+grep -q 'http://127.0.0.1:8002/login' "$tmp/sucesso.out"
+if grep -q 'config:clear\|migrate\|--port=5432 .*--file=-' "$ASTUTI_MOCK_LOG"; then
+    echo 'FALHA: comando perigoso no acesso de teste.' >&2
+    exit 1
+fi
+
+printf 'PASS: 5 cenarios de acesso seguro ao ensaio PostgreSQL.\n'
