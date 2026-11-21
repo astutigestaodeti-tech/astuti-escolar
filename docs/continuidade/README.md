@@ -119,3 +119,13 @@ cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-ins
 ```
 
 Este script prepara um **cluster PostgreSQL distinto**, confere sua identidade e conexoes Laravel efetivas e so entao faz copia ficticia nele. Preserva todos os backups anteriores, nao modifica a origem MariaDB nem os bancos PostgreSQL originais da porta 5432. Consultar `HISTORICO.md` para evidencias, limites e cuidados antes de qualquer proxima etapa.
+
+
+## 9. Captura 82: correção do cluster de ensaio (21/11/2026)
+
+- A primeira execução do novo roteiro chegou a criar o cluster de ensaio `astuti_ens_20261121_103015_6876` na porta 55432, porém **não iniciou o PostgreSQL** devido a configuração inválida `listen_addresses = 127.0.0.1` sem aspas.
+- Como o erro ocorreu antes da restauração, **nenhuma cópia de alunos foi realizada**, e os bancos PostgreSQL originais e os backups foram preservados. O cluster mal configurado ficou parado, sem exclusão automática.
+- TDD e revisão corrigiram o roteiro para `listen_addresses = localhost` (loopback), com teste de regressão. Commits do patch na branch de trabalho: `0056f65`, `cf7a046`; documentação `f908b61`. Aguardar o CI após essa correção.
+- **Próxima ação depois do CI:** executar novamente o comando único documentado na seção 8, que criará um cluster diferente numa nova porta livre. Enviar a saída completa. Não usar `--executar` manualmente nos bancos originais.
+
+Para detalhes técnicos, consulte a última entrada de `HISTORICO.md`.
