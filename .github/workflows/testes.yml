@@ -67,6 +67,9 @@ jobs:
       - name: Testar backup pre-copia PostgreSQL
         run: bash tests/Shell/CriarBackupsPreCopiaTest.sh
 
+      - name: Testar copia ficticia em PostgreSQL isolado
+        run: bash tests/Shell/EnsaiarCopiaIsoladaPostgresqlTest.sh
+
       - name: Preparar PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
