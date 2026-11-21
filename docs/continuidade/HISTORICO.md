@@ -54,6 +54,22 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Pendencias:** verificar as demais tabelas de destino e as contagens exatas das tabelas MariaDB exigidas pela rotina de transferencia; preparar backups de banco com restauracao ensaiada antes de qualquer comando de copia.
 
+## 21/11/2026 - Historico anterior recuperado: backups e simulacao ja realizados
+
+**Fonte:** exportacao integral da conversa anterior `ChatGPT-Astuti Gestao Escolar1-20261121-0059.md`, enviada por Jefferson. O export contem relatos e capturas referenciadas; nesta retomada ainda e necessario confirmar os arquivos existentes no notebook.
+
+**Backup de 20/11/2026 23h44-23h48:** o procedimento anterior criou uma pasta `~/astuti-backups/mariadb-AAAAMMDD-HHMMSS/` com dois arquivos `astuti_platform_dev.sql.gz` e `astuti_monte_sereno_dev.sql.gz`. A conversa registrou respectivamente cerca de 4,7 KB e 17 KB e `gzip -t` sem erro.
+
+**Origem e teste anteriores:** em 20/11 23h51 o MariaDB foi descrito como contendo 3 escolas, 115 alunos ficticios e ano de 2027; em 23h54, o comando sem `--executar` relatou simulacao aprovada, com 1 municipio, 1 usuario, 3 escolas, 115 alunos, 3 turmas, 115 matriculas e 237 auditorias municipais. Nenhuma transferencia efetiva foi autorizada.
+
+**Restauracao de seguranca:** em 21/11 00h00, o assistente anterior relatou que ambos os dumps foram restaurados em bancos descartaveis `astuti_restore_platform_*` e `astuti_restore_monte_*`, com contagens iguais nas 12 tabelas verificadas. Os bancos originais permaneceram inalterados.
+
+**Revisao posterior:** a transferencia `--executar` foi deliberadamente suspensa para revisar filas, integridade e diferencas entre SGBDs. O codigo foi atualizado no GitHub ate `a27be7b1`, agora sincronizado no notebook. A simulacao anterior precede essas alteracoes e deve ser repetida na versao atual.
+
+**Correcao do registro anterior:** a verificacao que disse nao ter encontrado dumps olhou apenas arquivos diretamente na raiz de `~/astuti-backups`, usando `find -maxdepth 1`. Os dumps documentados ficam numa **subpasta** `mariadb-*`; portanto a ausencia na listagem anterior nao prova ausencia de backup. A existencia e integridade dos arquivos ainda devem ser reconfirmadas no notebook.
+
+**Proximo passo:** localizar e verificar os arquivos compactados sem abrir segredos, conferir os bancos restaurados e repetir a simulacao de migracao atualizada, sem `--executar`. Nao apagar, recriar ou reimportar bancos.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
