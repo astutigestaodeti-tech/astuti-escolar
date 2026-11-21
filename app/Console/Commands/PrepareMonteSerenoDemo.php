@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Audit\AuditActor;
 use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
@@ -122,8 +123,14 @@ class PrepareMonteSerenoDemo extends Command
             }
 
             $municipality->refresh();
-            $context->runFor($municipality, function (): void {
-                DB::connection('tenant')->transaction(fn () => $this->createSyntheticSchoolRecords());
+            // Reservamos a identidade antes de semear, mas criamos a conta só
+            // depois de a transação municipal concluir. Assim uma falha não
+            // deixa usuário sem vínculo nem auditoria com autoria desconhecida.
+            $demoActorId = $user?->id ?? (string) Str::uuid();
+            $context->runFor($municipality, function () use ($demoActorId): void {
+                app(AuditActor::class)->runAs($demoActorId, function (): void {
+                    DB::connection('tenant')->transaction(fn () => $this->createSyntheticSchoolRecords());
+                });
             });
 
             $password = null;
@@ -132,10 +139,10 @@ class PrepareMonteSerenoDemo extends Command
                 $password = Str::random(24);
             }
 
-            DB::connection('platform')->transaction(function () use ($municipality, $user, $password): void {
+            DB::connection('platform')->transaction(function () use ($municipality, $user, $password, $demoActorId): void {
                 if ($user === null) {
                     $user = User::query()->create([
-                        'id' => (string) Str::uuid(),
+                        'id' => $demoActorId,
                         'name' => 'Secretaria Escolar Fictícia',
                         'email' => self::EMAIL,
                         'status' => 'active',
