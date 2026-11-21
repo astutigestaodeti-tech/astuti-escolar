@@ -270,6 +270,12 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
 .documentos p{color:var(--tinta-2);font-size:14.5px;margin-top:2px}
 .documentos small{display:block;margin-top:6px;font-size:13px;color:var(--tinta-3)}
 
+/* Ficha do aluno: as datas ficam abaixo das etiquetas, sem ultrapassar o cartão. */
+.vinculos-aluno{min-width:0;max-width:100%}
+.vinculos-aluno li{flex-wrap:wrap;align-items:center;gap:8px 10px;padding:16px 0}
+.vinculos-aluno .vinculo-datas{display:grid;gap:4px;flex:1 0 100%;min-width:0}
+.vinculos-aluno .vinculo-datas small{margin:0;overflow-wrap:anywhere}
+
 .barras{list-style:none;margin:0;padding:4px 22px 22px}
 .barras li{padding:12px 0}
 .barra-rotulo{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;margin-bottom:8px}
