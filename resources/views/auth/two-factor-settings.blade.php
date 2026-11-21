@@ -12,7 +12,7 @@
 <main class="inicio" id="conteudo">
     <div class="inicio-caixa seguranca-pagina">
         <x-astuti-marca />
-        <a class="voltar" href="{{ route('home') }}">Voltar às redes</a>
+        <x-voltar-anterior :fallback="route('home')" />
         <section class="folha seguranca-folha" aria-labelledby="titulo-seguranca">
             <span class="seguranca-etiqueta">Segurança da conta</span>
             <h1 id="titulo-seguranca">Proteja seu acesso</h1>
