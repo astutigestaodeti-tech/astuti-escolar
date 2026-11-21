@@ -58,6 +58,9 @@ php() {
     if [[ "$1" == '-r' && "${MOCK_LARAVEL_INSEGURO:-}" == 1 ]]; then
         return 15
     fi
+    if [[ "$1" == '-r' && "${MOCK_ESTRUTURA_PENDENTE:-}" == 1 && "$2" == *'$pendentes'* ]]; then
+        return 3
+    fi
     if [[ "$1" == 'artisan' && "$2" == 'serve' ]]; then
         [[ "${PLATFORM_DB_PORT:-}" == 55436 ]]
         [[ "${SESSION_COOKIE:-}" == astuti_ensaio_55436 ]]
@@ -179,4 +182,19 @@ if grep -q -- '--port=5432 .*--file=-\|migrate:fresh\|db:wipe' "$ASTUTI_MOCK_LOG
     exit 1
 fi
 
-printf 'PASS: 8 cenarios de acesso seguro ao ensaio PostgreSQL.\n'
+# Sem a opcao, uma copia com estrutura antiga e recusada antes de abrir o
+# servidor, com instrucao clara, e nada e migrado.
+export ASTUTI_MOCK_LOG="$tmp/estrutura-pendente.log"
+export MOCK_ESTRUTURA_PENDENTE=1
+if bash "$script" > "$tmp/estrutura-pendente.out" 2>&1; then
+    echo 'FALHA: abriu o sistema com a estrutura desatualizada.' >&2
+    exit 1
+fi
+grep -q 'ASTUTI_ATUALIZAR_ESTRUTURA=1' "$tmp/estrutura-pendente.out"
+if grep -q 'php artisan serve\|Artisan::call("migrate"' "$ASTUTI_MOCK_LOG"; then
+    echo 'FALHA: serviu ou migrou com a estrutura desatualizada.' >&2
+    exit 1
+fi
+unset MOCK_ESTRUTURA_PENDENTE
+
+printf 'PASS: 9 cenarios de acesso seguro ao ensaio PostgreSQL.\n'

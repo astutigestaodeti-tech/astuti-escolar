@@ -198,6 +198,44 @@ if [[ "${ASTUTI_ATUALIZAR_ESTRUTURA:-}" == 1 ]]; then
             $migrar("tenant", "tenant");
         });
     ' || erro 'falha ao atualizar a estrutura da copia isolada; o PostgreSQL original nao foi alterado.'
+else
+    # Somente leitura: recusa abrir a interface sobre uma copia com estrutura
+    # antiga, que so falharia na hora de gravar (ex.: f_unaccent ausente).
+    estrutura=0
+    php -r '
+        require "vendor/autoload.php";
+        $app = require "bootstrap/app.php";
+        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        $conferir = function (string $conexao, string $banco): void {
+            $dados = \Illuminate\Support\Facades\DB::connection($conexao)->selectOne(
+                "SELECT current_database() AS banco, current_user AS usuario, inet_server_port() AS porta"
+            );
+            if ($dados->banco !== $banco || $dados->usuario !== "astuti_ensaio" || (int) $dados->porta !== 55436) {
+                throw new \RuntimeException("Conexao efetiva fora do cluster isolado.");
+            }
+        };
+        $pendentes = 0;
+        $contar = function (string $conexao, string $pasta) use (&$pendentes): void {
+            $migrador = app("migrator");
+            $migrador->setConnection($conexao);
+            $feitas = $migrador->repositoryExists() ? $migrador->getRepository()->getRan() : [];
+            $arquivos = array_keys($migrador->getMigrationFiles([database_path("migrations/".$pasta)]));
+            $pendentes += count(array_diff($arquivos, $feitas));
+        };
+        $conferir("platform", "astuti_platform_dev");
+        $contar("platform", "platform");
+        $municipio = \App\Models\Platform\Municipality::query()->sole();
+        app(\App\Tenancy\TenantContext::class)->runFor($municipio, function () use ($conferir, $contar): void {
+            $conferir("tenant", "astuti_monte_sereno_dev");
+            $contar("tenant", "tenant");
+        });
+        exit($pendentes > 0 ? 3 : 0);
+    ' || estrutura=$?
+    if [[ "$estrutura" == 3 ]]; then
+        erro 'a copia isolada 55436 esta com a estrutura desatualizada. Rode de novo com ASTUTI_ATUALIZAR_ESTRUTURA=1 na frente do comando.'
+    elif [[ "$estrutura" != 0 ]]; then
+        erro 'falha ao conferir a estrutura da copia isolada; nenhum banco foi alterado.'
+    fi
 fi
 unset ASTUTI_ATUALIZAR_ESTRUTURA
 
