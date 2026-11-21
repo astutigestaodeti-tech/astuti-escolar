@@ -34,6 +34,8 @@ class HomeMunicipalityTest extends TwoMunicipalityTestCase
         $this->actingAs($user)->get('/')
             ->assertOk()
             ->assertSee('Municipio A')
+            ->assertSee('Segurança da conta')
+            ->assertSee(route('two-factor.settings'))
             ->assertSee(route('schools.index', ['municipio' => 'municipio-a']))
             ->assertDontSee('Municipio B');
     }
