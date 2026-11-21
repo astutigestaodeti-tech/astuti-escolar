@@ -263,3 +263,9 @@ Depois da inicializacao comprovada, abrir `http://127.0.0.1:8002/login` e usar a
 - **Atualização local confirmada:** captura 113 do Debian mostra `git pull --ff-only` concluído em fast-forward de `a890083` até **`b13ea12`**, sem erros e com prompt restaurado.
 - **Próximo teste manual:** em `http://127.0.0.1:8002`, abrir escola > alunos > clicar no nome de um aluno fictício para validar a ficha individual; pesquisar `estudante` em minúsculas para validar a busca PostgreSQL. As capturas ainda **não** comprovam esses dois percursos.
 - Continuar só em ambiente fictício; não tocar PostgreSQL principal 5432, MariaDB, backups ou `.env`. PR #5 permanece draft.
+
+## 25. Ficha individual validada visualmente no notebook (21/11/2026)
+
+- **Confirmado pela captura 114:** `Escolas > EMEF Caminhos do Saber > Alunos > Ficha do aluno` abriu **Estudante fictício 001**, nascimento **2017**, escola correta, **vínculo ativo** e ano letivo **2027**. A ficha oferece retorno à lista e destaca sua natureza **somente leitura**.
+- **Ainda pendente de validação manual:** busca por `estudante` em minúsculas e casos de tentativa de acesso a escola/aluno sem autorização. Os testes automatizados continuam sendo a evidência de segurança.
+- Manter os testes restritos ao cluster fictício e preservar PostgreSQL 5432, MariaDB, backups e `.env`. PR #5 segue draft.
