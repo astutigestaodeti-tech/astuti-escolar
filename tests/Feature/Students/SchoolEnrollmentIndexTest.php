@@ -86,14 +86,96 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
             $this->matricular($this->municipioA, self::ESCOLA_A1, sprintf('Aluno %02d', $index));
         }
 
-        $pageOne = $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas');
+        $pageOne = $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca=Aluno');
         $pageOne->assertOk()->assertSee('Aluno 01')->assertDontSee('Aluno 26');
         $this->assertSame(26, $pageOne->viewData('enrollments')->total());
 
-        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?page=2')
+        parse_str((string) parse_url($pageOne->viewData('enrollments')->nextPageUrl(), PHP_URL_QUERY), $nextQuery);
+        $this->assertSame('Aluno', $nextQuery['busca'] ?? null);
+        $this->assertSame('2', (string) ($nextQuery['page'] ?? ''));
+
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca=Aluno&page=2')
             ->assertOk()
             ->assertSee('Aluno 26')
             ->assertDontSee('Aluno 01');
+    }
+
+    public function test_matricula_e_aluno_arquivados_nao_aparecem_na_consulta(): void
+    {
+        $user = $this->criarUsuario('matriculas-arquivadas@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $arquivadoId = $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Arquivado');
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Preservado');
+
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($arquivadoId): void {
+            StudentEnrollment::query()->where('student_id', $arquivadoId)->firstOrFail()
+                ->deleteWithReason('Teste de arquivamento de matrícula fictícia', $this->auditFixtureUser->id);
+            Student::query()->findOrFail($arquivadoId)
+                ->deleteWithReason('Teste de arquivamento de aluno fictício', $this->auditFixtureUser->id);
+        });
+
+        $response = $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas');
+        $response->assertOk()->assertSee('Aluno Preservado')->assertDontSee('Aluno Arquivado');
+        $this->assertSame(1, $response->viewData('enrollments')->total());
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
+    public function test_matriculas_exigem_confirmacao_do_segundo_fator(): void
+    {
+        $user = $this->criarUsuario('matriculas-totp@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $user->forceFill([
+            'two_factor_secret' => 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas')
+            ->assertRedirect(route('two-factor.challenge'));
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
+    public function test_busca_de_matriculas_trata_sublinhado_e_barra_invertida_como_literais(): void
+    {
+        $user = $this->criarUsuario('matriculas-busca-literal@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno_Com_Sublinhado');
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Com Espaço');
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno\\Com Barra');
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca=%5F')
+            ->assertOk()
+            ->assertSee('Aluno_Com_Sublinhado')
+            ->assertDontSee('Aluno Com Espaço')
+            ->assertDontSee('Aluno\\Com Barra');
+
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca=%5C')
+            ->assertOk()
+            ->assertSee('Aluno\\Com Barra')
+            ->assertDontSee('Aluno_Com_Sublinhado')
+            ->assertDontSee('Aluno Com Espaço');
+    }
+
+    public function test_matriculas_ordenam_ano_decrescente_e_depois_nome(): void
+    {
+        $user = $this->criarUsuario('matriculas-ordenacao@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Zeca do Ano Anterior', 'active', 2026);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Beto do Ano Atual', 'active', 2027);
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Ana do Ano Atual', 'active', 2027);
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas')
+            ->assertOk()
+            ->assertSeeInOrder(['Ana do Ano Atual', 'Beto do Ano Atual', 'Zeca do Ano Anterior']);
+    }
+
+    public function test_matriculas_rejeitam_termo_de_busca_maior_que_cento_e_vinte_caracteres(): void
+    {
+        $user = $this->criarUsuario('matriculas-busca-longa@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca='.str_repeat('x', 121))
+            ->assertRedirect()
+            ->assertSessionHasErrors('busca');
     }
 
     private function matricular(
