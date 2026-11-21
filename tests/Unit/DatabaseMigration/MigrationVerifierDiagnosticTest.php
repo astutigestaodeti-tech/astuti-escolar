@@ -56,6 +56,34 @@ class MigrationVerifierDiagnosticTest extends TestCase
         }
     }
 
+    public function test_linha_ausente_aponta_identidade_sem_atribuir_falsas_diferencas_a_outros_campos(): void
+    {
+        try {
+            MigrationVerifier::assertSameRows(
+                [['id' => 'identidade-a', 'action' => 'evento fictício', 'role' => 'secretaria']],
+                [],
+                'platform_audit_logs',
+            );
+            $this->fail('Uma linha ausente precisa interromper a migração.');
+        } catch (RowContentMismatchException $exception) {
+            $this->assertSame(['id'], $exception->differingColumns());
+        }
+    }
+
+    public function test_json_numericamente_equivalente_nao_e_apontado_quando_outro_campo_difere(): void
+    {
+        try {
+            MigrationVerifier::assertSameRows(
+                [['id' => 'identidade-a', 'ip' => '127.0.0.1', 'after' => '{"valor":1}']],
+                [['id' => 'identidade-a', 'ip' => '127.0.0.2', 'after' => '{"valor":1.0}']],
+                'platform_audit_logs',
+            );
+            $this->fail('O IP divergente precisa interromper a migração.');
+        } catch (RowContentMismatchException $exception) {
+            $this->assertSame(['ip'], $exception->differingColumns());
+        }
+    }
+
     public function test_json_com_chaves_em_ordens_diferentes_nao_e_divergencia(): void
     {
         MigrationVerifier::assertSameRows(
