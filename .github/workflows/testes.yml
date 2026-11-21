@@ -26,12 +26,12 @@ jobs:
         image: postgres:17
         env:
           POSTGRES_PASSWORD: ci_only_user
-          POSTGRES_DB: astuti_platform_test
+          POSTGRES_DB: postgres
           POSTGRES_USER: astuti_ci
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U astuti_ci -d astuti_platform_test"
+          --health-cmd="pg_isready -U astuti_ci -d postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -86,8 +86,9 @@ jobs:
         run: |
           container_id="$(docker ps --filter 'ancestor=postgres:17' --format '{{.ID}}' | head -n 1)"
           test -n "$container_id"
-          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d astuti_platform_test -c "CREATE DATABASE astuti_tenant_a_test;"
-          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d astuti_platform_test -c "CREATE DATABASE astuti_tenant_b_test;"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d postgres -c "CREATE DATABASE astuti_platform_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d postgres -c "CREATE DATABASE astuti_tenant_a_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d postgres -c "CREATE DATABASE astuti_tenant_b_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
 
       - name: Instalar dependencias PHP
         run: composer install --no-interaction --prefer-dist --no-progress
@@ -98,12 +99,7 @@ jobs:
           php artisan key:generate --force
 
       - name: Conferir estilo PHP
-        run: |
-          if ! vendor/bin/pint --test; then
-            vendor/bin/pint
-            git diff -- database/migrations/platform
-            exit 1
-          fi
+        run: vendor/bin/pint --test
 
       - name: Executar testes
         run: |
@@ -136,11 +132,11 @@ jobs:
         env:
           POSTGRES_USER: astuti_migration_ci
           POSTGRES_PASSWORD: astuti_migration_ci_only
-          POSTGRES_DB: astuti_migration_pg_admin_test
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U astuti_migration_ci -d astuti_migration_pg_admin_test"
+          --health-cmd="pg_isready -U astuti_migration_ci -d postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -193,6 +189,12 @@ jobs:
       - name: Conferir drivers MariaDB e PostgreSQL
         run: |
           php -r 'exit(extension_loaded("pdo_mysql") && extension_loaded("pdo_pgsql") ? 0 : 1);'
+
+      - name: Preparar banco administrativo PostgreSQL pt-BR
+        run: |
+          container_id="$(docker ps --filter 'ancestor=postgres:17' --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_migration_ci -d postgres -c "CREATE DATABASE astuti_migration_pg_admin_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
 
       - name: Instalar dependencias PHP
         run: composer install --no-interaction --prefer-dist --no-progress

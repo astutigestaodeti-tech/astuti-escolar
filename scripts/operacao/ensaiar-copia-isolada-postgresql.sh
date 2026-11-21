@@ -131,7 +131,7 @@ sudo -u postgres psql "${conexao_isolada[@]}" -X -v ON_ERROR_STOP=1 -d postgres 
 
 for banco in astuti_platform_dev astuti_monte_sereno_dev; do
     printf '\n===== RESTAURANDO SOMENTE NO CLUSTER ISOLADO: %s =====\n' "$banco"
-    sudo -u postgres createdb "${conexao_isolada[@]}" --template=template0 --owner=astuti_ensaio "$banco"
+    sudo -u postgres createdb "${conexao_isolada[@]}" --locale-provider=icu --icu-locale=pt-BR --template=template0 --owner=astuti_ensaio "$banco"
     sudo -u postgres pg_restore "${conexao_isolada[@]}" --role=astuti_ensaio \
         --no-owner --no-privileges --single-transaction --exit-on-error \
         --dbname="$banco" < "$origem/$banco.dump"

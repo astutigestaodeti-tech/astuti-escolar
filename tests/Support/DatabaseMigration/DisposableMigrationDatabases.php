@@ -70,7 +70,21 @@ final class DisposableMigrationDatabases
         foreach ($plans as $key => [, $driver, $schema]) {
             $database = $databases[$key];
             $admin = $admins[$driver];
-            $admin->statement('CREATE DATABASE '.$admin->getQueryGrammar()->wrap($database));
+            $sql = 'CREATE DATABASE '.$admin->getQueryGrammar()->wrap($database);
+
+            if ($driver === 'pgsql') {
+                $sql .= " WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR'";
+            }
+
+            $admin->statement($sql);
+
+            if ($driver === 'pgsql') {
+                $locale = $admin->selectOne('SELECT datlocprovider, datlocale FROM pg_database WHERE datname = ?', [$database]);
+
+                if ($locale?->datlocprovider !== 'i' || strtolower((string) $locale->datlocale) !== 'pt-br') {
+                    throw new RuntimeException("Banco de teste PostgreSQL sem ordenação ICU pt-BR: {$database}.");
+                }
+            }
 
             $settings = array_replace($servers[$driver], ['database' => $database]);
             self::migrate($schema, $settings);

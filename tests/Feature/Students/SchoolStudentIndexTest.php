@@ -7,6 +7,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -101,6 +102,59 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
             ->assertSee('MARINA dos Lagos')
             ->assertDontSee('Bruno da Unidade')
             ->assertDontSee('Marcos de Outra Escola');
+    }
+
+    public function test_bancos_de_consulta_usam_icu_pt_br_e_indice_de_busca(): void
+    {
+        $platformLocale = DB::connection('platform')->selectOne('SELECT datlocprovider, datlocale FROM pg_database WHERE datname = current_database()');
+        $this->assertSame('i', $platformLocale->datlocprovider);
+        $this->assertSame('pt-br', strtolower((string) $platformLocale->datlocale));
+
+        foreach ([$this->municipioA, $this->municipioB] as $municipio) {
+            app(TenantContext::class)->runFor($municipio, function (): void {
+                $tenantLocale = DB::connection('tenant')->selectOne('SELECT datlocprovider, datlocale FROM pg_database WHERE datname = current_database()');
+                $this->assertSame('i', $tenantLocale->datlocprovider);
+                $this->assertSame('pt-br', strtolower((string) $tenantLocale->datlocale));
+
+                $index = DB::connection('tenant')->selectOne("SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'students' AND indexname = 'students_full_name_unaccent_trgm_idx'");
+                $this->assertNotNull($index);
+                $this->assertStringContainsString('using gin', strtolower($index->indexdef));
+                $this->assertStringContainsString('gin_trgm_ops', strtolower($index->indexdef));
+
+                $function = DB::connection('tenant')->selectOne("SELECT provolatile FROM pg_proc WHERE oid = 'public.f_unaccent(text)'::regprocedure");
+                $this->assertSame('i', $function->provolatile);
+            });
+        }
+    }
+
+    public function test_ordem_alfabetica_portuguesa_coloca_alvaro_antes_de_bruno_e_eder_antes_de_zelia(): void
+    {
+        $user = $this->criarUsuario('alunos-ordenacao-pt@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+
+        foreach (['Ana de Teste', 'Bruno de Teste', 'Zélia de Teste', 'Álvaro de Teste', 'Éder de Teste'] as $nome) {
+            $this->matricularAluno($this->municipioA, self::ESCOLA_A1, $nome);
+        }
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos')
+            ->assertOk()
+            ->assertSeeInOrder(['Álvaro de Teste', 'Ana de Teste', 'Bruno de Teste', 'Éder de Teste', 'Zélia de Teste']);
+    }
+
+    public function test_busca_sem_acentos_encontra_joao_e_preserva_escopo_escolar(): void
+    {
+        $user = $this->criarUsuario('alunos-joao-pt@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'João da Serra');
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Maria da Serra');
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A2, 'Joao de Outra Escola');
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos?busca=joao')
+            ->assertOk()
+            ->assertSee('João da Serra')
+            ->assertDontSee('Maria da Serra')
+            ->assertDontSee('Joao de Outra Escola');
     }
 
     public function test_nome_exibido_e_escapado_no_html(): void

@@ -76,14 +76,14 @@ printf '\n===== NOVOS BANCOS EXCLUSIVOS DE TESTE =====\n'
 printf 'Plataforma: %s\nMonte Sereno: %s\n' "$banco_central" "$banco_municipal"
 
 printf '\n===== RESTAURANDO PLATAFORMA =====\n'
-sudo -u postgres createdb "${conexao_pg[@]}" --template=template0 "$banco_central"
+sudo -u postgres createdb "${conexao_pg[@]}" --locale-provider=icu --icu-locale=pt-BR --template=template0 "$banco_central"
 sudo -u postgres pg_restore \
     "${conexao_pg[@]}" \
     --no-owner --no-privileges --single-transaction --exit-on-error \
     --dbname="$banco_central" < "$central"
 
 printf '\n===== RESTAURANDO MONTE SERENO =====\n'
-sudo -u postgres createdb "${conexao_pg[@]}" --template=template0 "$banco_municipal"
+sudo -u postgres createdb "${conexao_pg[@]}" --locale-provider=icu --icu-locale=pt-BR --template=template0 "$banco_municipal"
 sudo -u postgres pg_restore \
     "${conexao_pg[@]}" \
     --no-owner --no-privileges --single-transaction --exit-on-error \

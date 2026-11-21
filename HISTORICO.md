@@ -1,5 +1,13 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-21 | PR #5 | Bloco 2: ICU pt-BR e busca sem acento
+
+- Bancos PostgreSQL novos do guia Debian, CI e ensaios isolados criados com ICU `pt-BR` e `template0`, mantendo intocados os bancos originais.
+- Testes exigem metadados reais da collation, ordem Á/É correta e busca `joao` encontrando `João` somente na escola autorizada.
+- Migration municipal instala `unaccent`, `pg_trgm`, a função imutável `f_unaccent` e índice GIN; a busca mantém escape de curingas e escopo de permissão.
+- CI volta a usar somente `vendor/bin/pint --test`, sem rotina de depuração; fluxos de cópia e restauração possuem verificações das opções ICU.
+- PR #5 permanece rascunho e sem merge; Bloco 3 de permissões de produção não iniciado. Confirmação dos testes e Pint depende do resultado do CI do commit deste bloco.
+
 ## 2026-11-21 | PR #5 | Normalizacao segura de emails no PostgreSQL
 
 - Login, cadastro e importacao ficticia passaram a normalizar emails em minusculas na plataforma.

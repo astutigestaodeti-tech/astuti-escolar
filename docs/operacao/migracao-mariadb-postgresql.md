@@ -42,6 +42,8 @@ Esses comandos **não** alteram as bases MariaDB; não execute `DROP DATABASE`, 
 
 ## 2. Preparar destino PostgreSQL vazio
 
+**Antes de copiar, crie os destinos novos com `TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR'`.** Confira em `pg_database` que os dois bancos possuem `datlocprovider = i` e `datlocale = pt-BR`. Se já existirem sem ICU pt-BR, não tente alterar a collation por migration nem mexa no PostgreSQL original: interrompa o ensaio e prepare uma restauração supervisionada em novos bancos após preservar os backups.
+
 Siga [instalação no Debian](instalacao-postgresql-debian.md) para criar `astuti_platform_dev` e `astuti_monte_sereno_dev` em PostgreSQL. Configure `PLATFORM_DB_*` em `.env` e rode as migrations **somente nos bancos PG novos**:
 
 ```bash

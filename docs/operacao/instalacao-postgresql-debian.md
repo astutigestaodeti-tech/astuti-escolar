@@ -16,12 +16,22 @@ Abra `sudo -u postgres psql`:
 ```sql
 CREATE ROLE astuti_app LOGIN;
 \password astuti_app
-CREATE DATABASE astuti_platform_dev OWNER astuti_app;
-CREATE DATABASE astuti_monte_sereno_dev OWNER astuti_app;
+CREATE DATABASE astuti_platform_dev OWNER astuti_app TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';
+CREATE DATABASE astuti_monte_sereno_dev OWNER astuti_app TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';
 \q
 ```
 
 O comando `\password` solicita a senha sem colocá-la no histórico do terminal. No WSL, se `postgresql` já estiver instalado, não reinstale: verifique o serviço antes.
+
+**A ordenação ICU pt-BR é definida ao criar o banco, não pela migration.** Os dois bancos novos precisam usar `TEMPLATE template0`, `LOCALE_PROVIDER icu` e `ICU_LOCALE 'pt-BR'`. Confira antes de importar dados:
+
+```sql
+SELECT datname, datlocprovider, datlocale
+FROM pg_database
+WHERE datname IN ('astuti_platform_dev', 'astuti_monte_sereno_dev');
+```
+
+Espere `datlocprovider = i` e `datlocale = pt-BR` para ambos. **Não é possível trocar a ordenação padrão de um banco já criado por uma migration.** Se já existirem bancos `*_dev`, pare e planeje uma restauração supervisionada em bancos novos, após backup verificado. Não apague, renomeie ou altere o PostgreSQL original da porta 5432 por causa deste ajuste.
 
 No diretório `~/astuti-escolar`, configure seu `.env` local, **sem enviá-lo ao GitHub**:
 
@@ -70,6 +80,6 @@ vendor/bin/pint --test
 npm run test:ui
 ```
 
-Os testes de integração exigem bases **separadas** terminadas em `_test` e suas variáveis específicas; nunca reutilize as bases `*_dev` nem credenciais de produção.
+Os testes de integração exigem bases **separadas** terminadas em `_test` e suas variáveis específicas; nunca reutilize as bases `*_dev` nem credenciais de produção. O CI cria as bases centrais e municipais com ICU `pt-BR` explícito e testa os metadados `datlocprovider` e `datlocale` para recusar falsos positivos. A migration municipal habilita `unaccent` e `pg_trgm`, instala a função `public.f_unaccent(text)` e um índice GIN para busca de alunos sem acento. A função usa o dicionário padrão `unaccent` como regra fixa: se o dicionário for alterado, é necessário reconstruir o índice com `REINDEX INDEX students_full_name_unaccent_trgm_idx` em cada base municipal, sob procedimento supervisionado.
 
 No servidor VPS de Prefeitura, consulte o [guia operacional](vps-prefeitura.md): o usuário do processo web **não** deve ser dono dos bancos, possuir privilégio de TRIGGER ou poder remover auditoria. O usuário `astuti_app` com propriedade dos bancos acima é permitido apenas no notebook de desenvolvimento.

@@ -60,6 +60,10 @@ bash "$script" --backup-dir "$tmp/validos" > "$tmp/sucesso.out" 2>&1
     exit 1
 }
 ! grep -E -- '--dbname=astuti_(platform|monte_sereno)_dev' "$ASTUTI_MOCK_LOG"
+[[ "$(grep -c 'createdb .*--locale-provider=icu --icu-locale=pt-BR --template=template0 ' "$ASTUTI_MOCK_LOG")" == '2' ]] || {
+    echo 'FALHA: bancos de restauracao sem ICU pt-BR.' >&2
+    exit 1
+}
 grep -Eq 'createdb .*--template=template0 astuti_restore_pg_platform_[0-9]{8}_[0-9]{6}_[0-9]+$' "$ASTUTI_MOCK_LOG"
 grep -Eq 'createdb .*--template=template0 astuti_restore_pg_monte_[0-9]{8}_[0-9]{6}_[0-9]+$' "$ASTUTI_MOCK_LOG"
 grep -Eq 'pg_restore .*--dbname=astuti_restore_pg_platform_[0-9]{8}_[0-9]{6}_[0-9]+$' "$ASTUTI_MOCK_LOG"

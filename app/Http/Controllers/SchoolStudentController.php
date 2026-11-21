@@ -28,8 +28,11 @@ class SchoolStudentController extends Controller
         if ($search !== '') {
             // Evita que % e _ enviados pelo usuário funcionem como curingas SQL.
             $literalSearch = addcslashes($search, '\\%_');
-            $operator = $query->getModel()->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-            $query->where('full_name', $operator, '%'.$literalSearch.'%');
+            if ($query->getModel()->getConnection()->getDriverName() === 'pgsql') {
+                $query->whereRaw('public.f_unaccent(lower(full_name)) LIKE public.f_unaccent(lower(?))', ['%'.$literalSearch.'%']);
+            } else {
+                $query->where('full_name', 'like', '%'.$literalSearch.'%');
+            }
         }
 
         $students = $query->orderBy('full_name')->orderBy('id')->paginate(25)->withQueryString();
