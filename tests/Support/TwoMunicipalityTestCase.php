@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Audit\AuditActor;
 use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
@@ -20,6 +21,8 @@ abstract class TwoMunicipalityTestCase extends TestCase
     protected Municipality $municipioA;
 
     protected Municipality $municipioB;
+
+    protected User $auditFixtureUser;
 
     protected const ESCOLA_A1 = '11111111-1111-4111-8111-111111111111';
 
@@ -85,6 +88,17 @@ abstract class TwoMunicipalityTestCase extends TestCase
             }
         }
 
+        // Cenários de integração têm sempre uma identidade sintética rastreável;
+        // o teste N3 remove explicitamente esse contexto para simular um job anônimo.
+        $this->auditFixtureUser = User::query()->create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Autor de auditoria sintético',
+            'email' => 'autor-auditoria@astuti.invalid',
+            'password' => Hash::make(Str::random(40)),
+            'status' => 'active',
+        ]);
+        app(AuditActor::class)->enter($this->auditFixtureUser->id);
+
         $this->municipioA = Municipality::query()->updateOrCreate(
             ['slug' => 'municipio-a'],
             ['id' => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'legal_name' => 'Municipio A', 'db_key' => 'municipio_a', 'status' => 'active'],
@@ -134,6 +148,10 @@ abstract class TwoMunicipalityTestCase extends TestCase
 
     protected function tearDown(): void
     {
+        if (isset($this->auditFixtureUser)) {
+            app(AuditActor::class)->leave();
+        }
+
         if (isset($this->municipioA)) {
             app(TenantContext::class)->leave();
         }
