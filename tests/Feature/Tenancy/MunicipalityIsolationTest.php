@@ -33,7 +33,7 @@ class MunicipalityIsolationTest extends TestCase
         parent::setUp();
 
         if (getenv('TENANCY_INTEGRATION') !== '1') {
-            $this->markTestSkipped('Os testes municipais requerem duas bases MariaDB exclusivas de teste.');
+            $this->markTestSkipped('Os testes municipais requerem duas bases PostgreSQL exclusivas de teste.');
         }
 
         $platform = (string) getenv('PLATFORM_DB_DATABASE');
@@ -42,7 +42,7 @@ class MunicipalityIsolationTest extends TestCase
 
         foreach ([$platform, $dbA, $dbB] as $databaseName) {
             if (! preg_match('/\A[a-z0-9_]+_test\z/D', $databaseName)) {
-                throw new RuntimeException('Somente bancos MariaDB terminados em _test podem ser usados.');
+                throw new RuntimeException('Somente bancos PostgreSQL terminados em _test podem ser usados.');
             }
         }
 
@@ -50,7 +50,7 @@ class MunicipalityIsolationTest extends TestCase
             throw new RuntimeException('Os tres bancos de teste devem ser diferentes.');
         }
 
-        $base = config('database.connections.mariadb');
+        $base = config('database.connections.pgsql');
         $host = (string) getenv('TENANCY_TEST_DB_HOST');
         $port = (string) getenv('TENANCY_TEST_DB_PORT');
         $username = (string) getenv('TENANCY_TEST_DB_USER');
@@ -171,7 +171,7 @@ class MunicipalityIsolationTest extends TestCase
 
     public function test_configuracao_municipal_nao_aceita_url_que_sobrescreva_destino(): void
     {
-        config()->set('tenancy.connections.municipio_a.url', 'mariadb://usuario:senha@127.0.0.1/qualquer_banco');
+        config()->set('tenancy.connections.municipio_a.url', 'postgresql://usuario:senha@127.0.0.1/qualquer_banco');
 
         $this->expectException(InvalidArgumentException::class);
         $this->context->enter($this->municipioA);
