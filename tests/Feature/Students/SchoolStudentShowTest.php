@@ -197,6 +197,60 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
         $this->assertSame(0, $audits);
     }
 
+    public function test_ficha_volta_a_pagina_de_origem_com_filtros_preservados(): void
+    {
+        $user = $this->criarUsuario('voltar-ficha-filtros@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $aluno = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluna para retorno');
+
+        $origem = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca=Aluna&ano_letivo=2027&page=2';
+        $this->actingAs($user)
+            ->withHeader('referer', 'http://localhost:8000'.$origem)
+            ->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$aluno)
+            ->assertOk()
+            ->assertSee('Voltar à tela anterior')
+            ->assertSee('href="http://localhost:8000'.str_replace('&', '&amp;', $origem).'"', false);
+
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
+    public function test_voltar_rejeita_origem_externa_e_de_outra_prefeitura(): void
+    {
+        $user = $this->criarUsuario('voltar-isolamento@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $aluno = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluna com retorno seguro');
+
+        $destino = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$aluno;
+        $fallback = route('school.students.index', ['municipio' => 'municipio-a', 'escola' => self::ESCOLA_A1]);
+        $this->actingAs($user)
+            ->withHeader('referer', 'https://outro-site.invalid/externo')
+            ->get($destino)
+            ->assertOk()
+            ->assertSee('href="'.$fallback.'"', false)
+            ->assertDontSee('https://outro-site.invalid/externo', false);
+
+        $this->withHeader('referer', 'http://localhost:8000/m/municipio-b/escolas/'.self::ESCOLA_B1)
+            ->get($destino)
+            ->assertOk()
+            ->assertSee('href="'.$fallback.'"', false)
+            ->assertDontSee('href="http://localhost:8000/m/municipio-b/', false);
+
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
+    public function test_lista_de_escolas_tem_botao_voltar_a_selecao_da_rede(): void
+    {
+        $user = $this->criarUsuario('voltar-lista-escolas@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas')
+            ->assertOk()
+            ->assertSee('Voltar à tela anterior')
+            ->assertSee('href="'.route('home').'"', false);
+
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
     private function matricularAluno(
         Municipality $municipio,
         string $escola,
