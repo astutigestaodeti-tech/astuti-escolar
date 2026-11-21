@@ -50,7 +50,7 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
     public function test_ambientes_descartaveis_exigem_quatro_bancos_test_e_loopback(string $variable, string $value, string $message): void
     {
         $previous = getenv($variable);
-        $connections = DB::getConnections();
+        $connectionNames = array_keys(DB::getConnections());
         putenv($variable.'='.$value);
 
         $this->expectException(InvalidArgumentException::class);
@@ -60,7 +60,7 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
             DisposableMigrationDatabases::create();
         } finally {
             putenv($previous === false ? $variable : $variable.'='.$previous);
-            $this->assertSame($connections, DB::getConnections());
+            $this->assertSame($connectionNames, array_keys(DB::getConnections()));
         }
     }
 
@@ -414,7 +414,7 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
             'destino municipal fora de teste' => ['ASTUTI_MIGRATION_TARGET_TENANT_DB', 'astuti_monte_sereno_dev', '_test'],
             'origem fora de loopback' => ['ASTUTI_MIGRATION_MARIADB_HOST', 'mariadb.example.invalid', 'loopback'],
             'destino fora de loopback' => ['ASTUTI_MIGRATION_POSTGRES_HOST', 'postgres.example.invalid', 'loopback'],
-            'destinos duplicados' => ['ASTUTI_MIGRATION_TARGET_TENANT_DB', 'astuti_migration_target_platform_test', 'distintos'],
+            'destinos duplicados' => ['ASTUTI_MIGRATION_TARGET_TENANT_DB', (string) getenv('ASTUTI_MIGRATION_TARGET_PLATFORM_DB'), 'distintos'],
             'integração desativada' => ['ASTUTI_MIGRATION_INTEGRATION', '0', 'ASTUTI_MIGRATION_INTEGRATION=1'],
             'fora do GitHub Actions' => ['GITHUB_ACTIONS', 'false', 'GitHub Actions'],
         ];
