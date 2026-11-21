@@ -35,4 +35,24 @@ class SchoolStudentController extends Controller
 
         return view('students.index', compact('municipality', 'school', 'students', 'search'));
     }
+
+    public function show(Request $request, string $municipio, string $escola, string $aluno): View
+    {
+        $municipality = $request->attributes->get('astuti.municipality');
+        $school = School::query()->where('status', 'active')->findOrFail($escola);
+        Gate::authorize('view', [$school, $municipality]);
+
+        $student = Student::query()->whereHas('enrollments', function (Builder $enrollments) use ($school): void {
+            $enrollments->where('school_id', $school->id)->where('status', 'active');
+        })->findOrFail($aluno);
+
+        $enrollments = $student->enrollments()
+            ->where('school_id', $school->id)
+            ->where('status', 'active')
+            ->with('schoolYear')
+            ->get()
+            ->sortByDesc(fn ($enrollment): int => (int) ($enrollment->schoolYear?->year ?? 0));
+
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments'));
+    }
 }
