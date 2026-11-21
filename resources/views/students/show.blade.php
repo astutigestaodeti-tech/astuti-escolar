@@ -36,11 +36,29 @@
 
         <section class="folha cartao" aria-labelledby="titulo-vinculos">
             <span class="acao-icone"><x-icon name="turmas" /></span>
-            <h2 id="titulo-vinculos">Vínculos ativos nesta escola</h2>
-            <p>Anos letivos associados à unidade autorizada.</p>
+            <h2 id="titulo-vinculos">Histórico de vínculos nesta escola</h2>
+            <p>Anos letivos, situações e datas registradas nesta unidade.</p>
             <ul class="documentos">
                 @foreach ($enrollments as $enrollment)
-                    <li><span class="etiqueta neutra numero">Ano letivo {{ $enrollment->schoolYear?->year ?? 'Não informado' }}</span></li>
+                    @php
+                        $situacao = match ($enrollment->status) {
+                            'active' => 'Ativo',
+                            'completed' => 'Concluído',
+                            'cancelled' => 'Cancelado',
+                            'transferred' => 'Transferido',
+                            default => 'Outro',
+                        };
+                    @endphp
+                    <li>
+                        <span class="etiqueta neutra numero">Ano letivo {{ $enrollment->schoolYear?->year ?? 'Não informado' }}</span>
+                        <span class="etiqueta {{ $enrollment->status === 'active' ? 'ok' : 'neutra' }}">{{ $situacao }}</span>
+                        @if ($enrollment->started_at)
+                            <small>Início: {{ $enrollment->started_at->format('d/m/Y') }}</small>
+                        @endif
+                        @if ($enrollment->ended_at)
+                            <small>Encerramento: {{ $enrollment->ended_at->format('d/m/Y') }}</small>
+                        @endif
+                    </li>
                 @endforeach
             </ul>
         </section>
