@@ -36,6 +36,7 @@
             <div class="folha-cabecalho"><div><h2 id="titulo-dados-aluno">Dados do aluno</h2><p>Informações disponíveis no cadastro municipal.</p></div></div>
             <dl>
                 <div><dt>Nome completo</dt><dd>{{ $student->full_name }}</dd></div>
+                <div><dt>RA</dt><dd class="numero">{{ $student->ra ?? 'Não informado' }}</dd></div>
                 <div><dt>Ano de nascimento</dt><dd class="numero">{{ $student->birth_date?->format('Y') ?? 'Não informado' }}</dd></div>
                 <div><dt>Escola</dt><dd>{{ $school->name }}</dd></div>
             </dl>
@@ -59,6 +60,7 @@
                     <li>
                         <span class="etiqueta neutra numero">Ano letivo {{ $enrollment->schoolYear?->year ?? 'Não informado' }}</span>
                         <span class="etiqueta {{ $enrollment->status === 'active' ? 'ok' : 'neutra' }}">{{ $situacao }}</span>
+                        <div class="vinculo-datas"><small>Turma: {{ $enrollment->schoolClass?->name ?? 'Não informada' }}</small></div>
                         @if ($enrollment->started_at || $enrollment->ended_at)
                             <div class="vinculo-datas">
                                 @if ($enrollment->started_at)

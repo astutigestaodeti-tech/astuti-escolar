@@ -54,7 +54,7 @@ class SchoolStudentController extends Controller
 
         $enrollments = $student->enrollments()
             ->where('school_id', $school->id)
-            ->with('schoolYear')
+            ->with(['schoolYear', 'schoolClass'])
             ->get()
             ->sortByDesc(fn ($enrollment): int => (int) ($enrollment->schoolYear?->year ?? 0));
 

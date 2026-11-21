@@ -51,6 +51,7 @@
             @if ($editando)
                 @method('PUT')
                 <input type="hidden" name="versao" value="{{ old('versao', $student->updated_at?->format('Y-m-d H:i:s')) }}">
+                <input type="hidden" name="versao_matricula" value="{{ old('versao_matricula', $enrollment->updated_at?->format('Y-m-d H:i:s')) }}">
             @endif
 
             <div class="formulario-grade">
@@ -60,6 +61,14 @@
                            value="{{ old('full_name', $student?->full_name) }}"
                            @error('full_name') aria-invalid="true" aria-describedby="full_name-erro" @enderror>
                     @error('full_name')<p class="campo-erro" id="full_name-erro">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="formulario-campo">
+                    <label class="rotulo" for="ra">RA do aluno</label>
+                    <input class="entrada" id="ra" name="ra" type="text" maxlength="32" autocomplete="off"
+                           placeholder="123456789-0/SP" value="{{ old('ra', $student?->ra) }}"
+                           @error('ra') aria-invalid="true" aria-describedby="ra-erro" @enderror>
+                    @error('ra')<p class="campo-erro" id="ra-erro">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="formulario-campo">
@@ -90,6 +99,19 @@
                         @error('started_at')<p class="campo-erro" id="started_at-erro">{{ $message }}</p>@enderror
                     </div>
                 @endunless
+
+                <div class="formulario-campo largo">
+                    <label class="rotulo" for="school_class_id">Turma da matrícula</label>
+                    <select class="entrada" id="school_class_id" name="school_class_id"
+                            @error('school_class_id') aria-invalid="true" aria-describedby="school_class_id-erro" @enderror>
+                        <option value="">Sem turma definida</option>
+                        @foreach ($classes as $class)
+                            <option value="{{ $class->id }}" @selected(old('school_class_id', $enrollment?->school_class_id) === $class->id)>{{ $class->name }} ({{ $class->schoolYear?->year ?? 'Ano não informado' }})</option>
+                        @endforeach
+                    </select>
+                    @error('school_class_id')<p class="campo-erro" id="school_class_id-erro">{{ $message }}</p>@enderror
+                    <p class="texto-ajuda">A turma deve pertencer a esta escola e ao mesmo ano letivo da matrícula. Se ainda não foi definida, deixe em branco.</p>
+                </div>
             </div>
 
             @if (session('possivel_duplicidade'))

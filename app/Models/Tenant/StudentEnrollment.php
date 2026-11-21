@@ -18,6 +18,7 @@ class StudentEnrollment extends TenantModel
         'student_id',
         'school_id',
         'school_year_id',
+        'school_class_id',
         'status',
         'started_at',
         'ended_at',
@@ -36,6 +37,11 @@ class StudentEnrollment extends TenantModel
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class)->withTrashed();
+    }
+
+    public function schoolClass(): BelongsTo
+    {
+        return $this->belongsTo(SchoolClass::class, 'school_class_id')->withTrashed();
     }
 
     public function schoolYear(): BelongsTo

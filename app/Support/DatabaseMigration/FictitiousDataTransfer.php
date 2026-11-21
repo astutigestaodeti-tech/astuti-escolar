@@ -159,7 +159,8 @@ final class FictitiousDataTransfer
     {
         foreach ($tables as $table) {
             $onStage?->__invoke('inserindo', $table);
-            $rows = $source->table($table)->get()->map(static fn ($row): array => (array) $row)->all();
+            $sourceColumns = $source->getSchemaBuilder()->getColumnListing($table);
+            $rows = $source->table($table)->get($sourceColumns)->map(static fn ($row): array => (array) $row)->all();
 
             // A origem MariaDB pode conter emails mistos. Preservar o hash,
             // os UUIDs e demais campos, mas gravar o email canonico no PostgreSQL.
@@ -178,7 +179,8 @@ final class FictitiousDataTransfer
             $onStage?->__invoke('conferindo', $table);
             MigrationVerifier::assertSameRows(
                 $rows,
-                $target->table($table)->get()->map(static fn ($row): array => (array) $row)->all(),
+                // O destino pode ter campos novos NULL sem correspondente no MariaDB.
+                $target->table($table)->get($sourceColumns)->map(static fn ($row): array => (array) $row)->all(),
                 $table,
             );
 

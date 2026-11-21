@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
+use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -30,6 +32,8 @@ class StudentRecordController extends Controller
 
     private const BIRTH_RULES = ['nullable', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before:today'];
 
+    private const RA_RULES = ['nullable', 'string', 'max:32', 'regex:/\\A\\d{9,12}-[\\dX]\\/[A-Z]{2}\\z/'];
+
     public function create(Request $request, string $municipio, string $escola): View|RedirectResponse
     {
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
@@ -42,7 +46,9 @@ class StudentRecordController extends Controller
             'municipality' => $municipality,
             'school' => $school,
             'student' => null,
+            'enrollment' => null,
             'years' => $this->openYears(),
+            'classes' => $this->classesOf($school),
         ]);
     }
 
@@ -50,10 +56,15 @@ class StudentRecordController extends Controller
     {
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
 
-        $request->merge(['full_name' => $this->normalizeName($request->input('full_name'))]);
+        $request->merge([
+            'full_name' => $this->normalizeName($request->input('full_name')),
+            'ra' => $this->normalizeRa($request->input('ra')),
+        ]);
         $data = $request->validate([
             'full_name' => self::NAME_RULES,
             'birth_date' => self::BIRTH_RULES,
+            'ra' => [...self::RA_RULES, Rule::unique('tenant.students', 'ra')],
+            'school_class_id' => ['nullable', 'uuid'],
             'school_year_id' => ['required', 'uuid'],
             'started_at' => ['nullable', 'date_format:Y-m-d'],
             'confirmar_duplicidade' => ['nullable', 'boolean'],
@@ -63,6 +74,8 @@ class StudentRecordController extends Controller
         if ($year === null) {
             throw ValidationException::withMessages(['school_year_id' => 'Escolha um ano letivo em andamento ou planejado.']);
         }
+
+        $this->assertClassMatches($data['school_class_id'] ?? null, $school, $year->id);
 
         if (! empty($data['started_at'])
             && ($data['started_at'] < $year->start_date->format('Y-m-d') || $data['started_at'] > $year->end_date->format('Y-m-d'))) {
@@ -83,6 +96,7 @@ class StudentRecordController extends Controller
                 'id' => (string) Str::uuid(),
                 'full_name' => $data['full_name'],
                 'birth_date' => $data['birth_date'] ?? null,
+                'ra' => $data['ra'] ?? null,
             ]);
 
             StudentEnrollment::query()->create([
@@ -90,6 +104,7 @@ class StudentRecordController extends Controller
                 'student_id' => $student->id,
                 'school_id' => $school->id,
                 'school_year_id' => $year->id,
+                'school_class_id' => $data['school_class_id'] ?? null,
                 'status' => 'active',
                 'started_at' => $data['started_at'] ?? null,
             ]);
@@ -106,6 +121,7 @@ class StudentRecordController extends Controller
     {
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
         $student = $this->activeStudentOf($school)->findOrFail($aluno);
+        $enrollment = $this->activeEnrollmentOf($school, $student->id)->firstOrFail();
 
         if ($redirect = $this->requireTwoFactor($request)) {
             return $redirect;
@@ -115,7 +131,9 @@ class StudentRecordController extends Controller
             'municipality' => $municipality,
             'school' => $school,
             'student' => $student,
+            'enrollment' => $enrollment,
             'years' => collect(),
+            'classes' => $this->classesOf($school, $enrollment->school_year_id),
         ]);
     }
 
@@ -124,35 +142,61 @@ class StudentRecordController extends Controller
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
         $this->activeStudentOf($school)->findOrFail($aluno);
 
-        $request->merge(['full_name' => $this->normalizeName($request->input('full_name'))]);
+        $raSubmitted = $request->exists('ra');
+        $request->merge([
+            'full_name' => $this->normalizeName($request->input('full_name')),
+            'ra' => $this->normalizeRa($request->input('ra')),
+        ]);
         $data = $request->validate([
             'full_name' => self::NAME_RULES,
             'birth_date' => self::BIRTH_RULES,
+            'ra' => [...self::RA_RULES, Rule::unique('tenant.students', 'ra')->ignore($aluno)],
+            'school_class_id' => ['nullable', 'uuid'],
+            'versao_matricula' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'string', 'max:40'],
             'versao' => ['required', 'string', 'max:40'],
         ]);
 
-        $changed = DB::connection('tenant')->transaction(function () use ($aluno, $data): bool {
+        $changed = DB::connection('tenant')->transaction(function () use ($aluno, $school, $data, $request, $raSubmitted): bool {
             $locked = Student::query()->lockForUpdate()->findOrFail($aluno);
+            $enrollment = $this->activeEnrollmentOf($school, $aluno)->lockForUpdate()->firstOrFail();
 
-            // Outra pessoa salvou depois que este formulário foi aberto.
+            // As duas versões são conferidas antes de qualquer alteração.
             if ((string) $locked->updated_at?->format('Y-m-d H:i:s') !== $data['versao']) {
                 throw ValidationException::withMessages([
                     'versao' => 'Este cadastro foi alterado por outra pessoa enquanto você editava. Abra a ficha de novo e repita a alteração.',
                 ]);
             }
+            if ($request->exists('school_class_id')
+                && (string) $enrollment->updated_at?->format('Y-m-d H:i:s') !== $data['versao_matricula']) {
+                throw ValidationException::withMessages([
+                    'versao_matricula' => 'Esta matrícula foi alterada por outra pessoa. Abra a ficha de novo antes de escolher uma turma.',
+                ]);
+            }
+
+            if ($request->exists('school_class_id')) {
+                $this->assertClassMatches($data['school_class_id'] ?? null, $school, $enrollment->school_year_id);
+            }
 
             $locked->fill([
                 'full_name' => $data['full_name'],
                 'birth_date' => $data['birth_date'] ?? null,
+                'ra' => $raSubmitted ? ($data['ra'] ?? null) : $locked->ra,
             ]);
+            $studentDirty = $locked->isDirty();
 
-            if (! $locked->isDirty()) {
-                return false;
+            if ($request->exists('school_class_id')) {
+                $enrollment->fill(['school_class_id' => $data['school_class_id'] ?? null]);
+            }
+            $classDirty = $enrollment->isDirty();
+
+            if ($studentDirty) {
+                $locked->save();
+            }
+            if ($classDirty) {
+                $enrollment->save();
             }
 
-            $locked->save();
-
-            return true;
+            return $studentDirty || $classDirty;
         });
 
         return redirect()
@@ -185,6 +229,50 @@ class StudentRecordController extends Controller
         return Student::query()->whereHas('enrollments', function (Builder $enrollments) use ($school): void {
             $enrollments->where('school_id', $school->id)->where('status', 'active');
         });
+    }
+
+    private function activeEnrollmentOf(School $school, string $studentId): Builder
+    {
+        return StudentEnrollment::query()->where('student_id', $studentId)
+            ->where('school_id', $school->id)->where('status', 'active')
+            ->orderByDesc('started_at')->orderByDesc('id');
+    }
+
+    private function classesOf(School $school, ?string $yearId = null)
+    {
+        return SchoolClass::query()->where('school_id', $school->id)
+            ->when($yearId, fn (Builder $query) => $query->where('school_year_id', $yearId))
+            ->whereIn('status', ['active', 'planned'])
+            ->with('schoolYear')->orderBy('name')->get();
+    }
+
+    private function assertClassMatches(?string $classId, School $school, string $yearId): void
+    {
+        if ($classId === null) {
+            return;
+        }
+
+        if (! SchoolClass::query()->where('school_id', $school->id)
+            ->where('school_year_id', $yearId)->whereIn('status', ['active', 'planned'])
+            ->whereKey($classId)->exists()) {
+            throw ValidationException::withMessages([
+                'school_class_id' => 'Escolha uma turma ativa ou planejada desta escola e do mesmo ano letivo.',
+            ]);
+        }
+    }
+
+    private function normalizeRa(mixed $ra): mixed
+    {
+        if (! is_string($ra)) {
+            return $ra;
+        }
+
+        $ra = strtoupper(preg_replace('/\\s+/', '', trim($ra)));
+        if (preg_match('/\\A(\\d{9,12})([\\dX]\\/[A-Z]{2})\\z/', $ra, $matches) === 1) {
+            return $matches[1].'-'.$matches[2];
+        }
+
+        return $ra === '' ? null : $ra;
     }
 
     private function openYears()

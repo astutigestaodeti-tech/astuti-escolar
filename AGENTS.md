@@ -3,11 +3,16 @@
 ## Contexto e segurança
 
 - Jefferson Astuti conduz o projeto comercial. Responda em português brasileiro, com linguagem natural, direta e sem travessão longo.
-- Leia o ponto de retomada em `docs/continuidade/README.md`, o registro recente em `docs/continuidade/HISTORICO.md` e confira branch, PR, commits e CI antes de alterar código.
+- Confira o registro existente em `HISTORICO.md` (ou `docs/continuidade/HISTORICO.md`, quando presente), o ponto de retomada disponível, branches, PRs, commits e CI antes de alterar código.
 - Produção: uma VPS, uma aplicação Laravel e dois bancos PostgreSQL locais privados (`platform` e `tenant`) exclusivos por Prefeitura. A instalação fica travada no município configurado. Não há VPS de produção compartilhada.
 - Preserve isolamento entre escolas e perfis, autenticação reforçada, auditoria obrigatória, LGPD e dados de menores. Use somente dados fictícios em testes.
 - Não altere dados, PostgreSQL original do notebook na porta 5432, MariaDB, backups ou `.env` sem aprovação específica. Não execute `DROP DATABASE`, `migrate:fresh`, `db:wipe` ou limpeza destrutiva em bases existentes.
 - Nunca publique segredos, senhas, dumps, documentos de estudantes ou dados reais no Git. Não faça merge nem deploy automaticamente. O usuário mescla os PRs.
+
+## Coordenação de desenvolvimento
+
+- Por decisão de Jefferson em 21/11/2026, o ChatGPT assume a coordenação técnica do Astuti e a execução dos blocos atribuídos. Claude pode revisar independentemente quando Jefferson solicitar. Nenhum assistente aprova merge por conta própria.
+- Antes de programar, faça um inventário dos PRs abertos e de suas bases; não altere branches de outras frentes. Use um PR pequeno por objetivo, com CI, sem merge ou deploy automáticos.
 
 ## Modo de trabalho aprovado em 21/11/2026
 
