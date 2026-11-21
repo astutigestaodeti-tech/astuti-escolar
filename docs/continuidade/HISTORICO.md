@@ -249,3 +249,17 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 **TDD validado em sandbox:** teste novo reproduziu falha anterior por nome com digito `1`, que a primeira versao nao aceitava; outro teste simulou `find` imprimindo resultado parcial antes de sair com erro, que a versao intermediaria aceitava; outro falhou enquanto os comandos nao fixavam host/porta/usuario. Todas as correcoes passaram apos cada etapa. Suite final de shell retornou `PASS: 8 cenarios de seguranca do ensaio PostgreSQL.`, e `bash -n` do script retornou sucesso. Os mocks evitam acessos reais a PostgreSQL e `sudo`. O runbook da migracao foi atualizado.
 
 **GitHub:** script, testes e guia foram atualizados na branch `feature/migracao-postgresql-instalacoes-isoladas`, HEAD `88d2267cb2e5e8762eb2be70d79a44adbf7c8fdb`, PR #5 permanece draft. O sucesso do CI nesse novo HEAD e a restauracao em PostgreSQL real ainda **precisam ser confirmados** antes de registrar a etapa como concluida. Nenhuma copia MariaDB -> PostgreSQL original foi executada.
+
+## 21/11/2026 - Restauracao real dos dois backups PostgreSQL concluida
+
+**Evidencia direta:** captura 80 do terminal Debian enviada por Jefferson. A branch local foi sincronizada por fast-forward de `6280b4f` para `88d2267`. O script `scripts/operacao/ensaiar-restauracao-postgresql.sh` encontrou e aceitou os dois arquivos customizados em `/home/aflora/astuti-backups/pgsql-antes-jobs-2Xqrc91g/`, sem exigir a digitacao do sufixo variavel.
+
+**Dois bancos isolados efetivamente criados e restaurados:**
+- Central: `astuti_restore_pg_platform_20261121_100115_4075`. Contagens mostradas por `psql`: `migrations=10`, `municipalities=0`, `users=0`.
+- Municipal: `astuti_restore_pg_monte_20261121_100115_4075`. Contagens: `migrations=8`, `schools=0`, `students=0`.
+
+**Saida final do roteiro:** `ENSAIO DE RESTAURACAO CONCLUIDO`, com preservacao dos bancos PostgreSQL de origem `*_dev` e dos arquivos. Nenhuma copia MariaDB -> PostgreSQL foi executada. Os arquivos PG sao snapshots **anteriores** a criacao das tabelas de filas `jobs`; portanto o total de migrations da restauracao central (10) e menor que o banco de desenvolvimento atual (11), como previsto. Estes bancos restaurados devem ser preservados por enquanto, sem limpeza automatica.
+
+**GitHub Actions posterior a correcao:** run `44906655873` do HEAD `88d2267` teve os dois jobs marcados `completed / success`: `Testes PHP e interface` e `Integracao MariaDB para PostgreSQL`, incluindo o novo passo de teste shell. O CI usa mocks e servicos sinteticos; a captura 80 e a evidencia independente do ensaio local real.
+
+**Proxima fronteira:** a restauracao PostgreSQL foi demonstrada, mas **os dados ficticios MariaDB ainda nao foram copiados ao PostgreSQL do notebook**. Antes de usar `--executar` nos `*_dev`, preparar backups novos com o esquema PostgreSQL atual (apos a migration de `jobs`) e ensaiar a transferencia dos dados ficticios em bancos-alvo descartaveis locais, comparando linhas, hashes, permissao e login. Nao confundir teste de restauracao de dados vazios com validacao da importacao. PR #5 continua em rascunho, sem merge; sem VPS contratado.
