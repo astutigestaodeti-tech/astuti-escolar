@@ -112,3 +112,82 @@ jobs:
 
       - name: Verificar identidade visual
         run: npm run test:ui
+
+  migracao-integracao:
+    name: Integração MariaDB para PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: astuti_migration_ci
+          POSTGRES_PASSWORD: astuti_migration_ci_only
+          POSTGRES_DB: astuti_migration_pg_admin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U astuti_migration_ci -d astuti_migration_pg_admin_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_HOST: '%'
+          MARIADB_ROOT_PASSWORD: astuti_migration_ci_only
+          MARIADB_DATABASE: astuti_migration_maria_admin_test
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      ASTUTI_MIGRATION_INTEGRATION: '1'
+      ASTUTI_MIGRATION_MARIADB_HOST: 127.0.0.1
+      ASTUTI_MIGRATION_MARIADB_PORT: '3307'
+      ASTUTI_MIGRATION_MARIADB_ADMIN_DB: astuti_migration_maria_admin_test
+      ASTUTI_MIGRATION_MARIADB_USER: root
+      ASTUTI_MIGRATION_MARIADB_PASSWORD: astuti_migration_ci_only
+      ASTUTI_MIGRATION_POSTGRES_HOST: 127.0.0.1
+      ASTUTI_MIGRATION_POSTGRES_PORT: '5432'
+      ASTUTI_MIGRATION_POSTGRES_ADMIN_DB: astuti_migration_pg_admin_test
+      ASTUTI_MIGRATION_POSTGRES_USER: astuti_migration_ci
+      ASTUTI_MIGRATION_POSTGRES_PASSWORD: astuti_migration_ci_only
+      ASTUTI_MIGRATION_SOURCE_PLATFORM_DB: astuti_migration_source_platform_test
+      ASTUTI_MIGRATION_SOURCE_TENANT_DB: astuti_migration_source_tenant_test
+      ASTUTI_MIGRATION_TARGET_PLATFORM_DB: astuti_migration_target_platform_test
+      ASTUTI_MIGRATION_TARGET_TENANT_DB: astuti_migration_target_tenant_test
+
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Preparar PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, pdo_mysql
+          coverage: none
+
+      - name: Conferir drivers MariaDB e PostgreSQL
+        run: php -r 'exit(extension_loaded("pdo_mysql") && extension_loaded("pdo_pgsql") ? 0 : 1);'
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Preparar ambiente de testes
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Executar integração da migração
+        run: php artisan test --filter=MigrateFictitiousDataToPostgresTest
