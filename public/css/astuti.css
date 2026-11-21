@@ -309,6 +309,25 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
 .inicio-caixa{width:min(100%,620px)}
 .inicio-caixa .folha{padding:30px 32px}
 .inicio-caixa .marca{color:var(--tinta);margin-bottom:26px}
+.seguranca-pagina .marca{margin-bottom:14px}
+.seguranca-folha{padding:32px 34px;border-left:3px solid var(--margem)}
+.seguranca-folha h1{font-size:clamp(28px,4vw,36px)}
+.seguranca-folha>p,.seguranca-folha .seguranca-form>p{margin-top:10px;color:var(--tinta-2)}
+.seguranca-etiqueta{display:inline-block;margin-bottom:10px;color:var(--caneta-escura);font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.seguranca-passo{margin-top:22px;padding:8px 12px;border-radius:var(--raio-controle);background:var(--caneta-clara);color:var(--caneta-escura);font-size:14px;font-weight:700}
+.seguranca-form{margin-top:20px}
+.seguranca-form .botao{width:100%;margin-top:20px}
+.seguranca-form h2,.seguranca-recuperacao h2{font-family:var(--serifa);font-size:22px;font-weight:600;margin-top:28px}
+.seguranca-passos{margin:16px 0;padding-left:23px;color:var(--tinta-2)}
+.seguranca-passos li{padding:4px 0}
+.seguranca-chave{margin:18px 0;padding:17px 12px;border:1px dashed #9badd0;border-radius:var(--raio-controle);background:var(--caneta-clara);font-size:17px;font-weight:700;letter-spacing:.1em;text-align:center;overflow-wrap:anywhere}
+.seguranca-sucesso{margin:20px 0;padding:12px 14px;border-radius:var(--raio-controle);border:1px solid #a9cfae;background:var(--verde-claro);color:var(--verde);font-weight:700}
+.seguranca-recuperacao{margin-top:22px;padding:16px 18px;border:1px solid #dcc687;background:var(--ouro-claro);border-radius:var(--raio-controle)}
+.seguranca-recuperacao h2{margin-top:0}
+.seguranca-recuperacao p{margin-top:8px;color:var(--tinta-2)}
+.seguranca-recuperacao ul{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;list-style:none;padding:0;margin:16px 0 0;font-variant-numeric:tabular-nums;font-size:14px;overflow-wrap:anywhere}
+.seguranca-link{display:inline-flex;margin-top:16px}
+.seguranca-rodape{margin-top:18px;color:var(--tinta-3);font-size:13px}
 .inicio-caixa h1{font-family:var(--serifa);font-size:32px;font-weight:600;line-height:1.15}
 .inicio-caixa p{color:var(--tinta-2);margin-top:8px}
 .inicio-acoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
@@ -380,6 +399,7 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
     .aviso-demo{font-size:13.5px;align-items:flex-start}
     .selo-demo{display:none}
     .inicio-caixa .folha{padding:24px 20px}
+    .seguranca-recuperacao ul{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}
