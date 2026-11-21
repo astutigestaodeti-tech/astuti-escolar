@@ -32,25 +32,21 @@ return [
 
     'connections' => [
 
-        // O banco central nunca e alterado ao entrar em outro municipio.
+        // Instancia independente por prefeitura: banco central PostgreSQL local.
+        // Nunca aceitar URL que sobrescreva host e nome do banco explicitamente configurados.
         'platform' => [
-            'driver' => 'mariadb',
-            'url' => env('PLATFORM_DB_URL'),
-            'host' => env('PLATFORM_DB_HOST', env('DB_HOST', '127.0.0.1')),
-            'port' => env('PLATFORM_DB_PORT', env('DB_PORT', '3306')),
-            'database' => env('PLATFORM_DB_DATABASE', env('DB_DATABASE', '')),
-            'username' => env('PLATFORM_DB_USERNAME', env('DB_USERNAME', '')),
-            'password' => env('PLATFORM_DB_PASSWORD', env('DB_PASSWORD', '')),
-            'unix_socket' => env('PLATFORM_DB_SOCKET', env('DB_SOCKET', '')),
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
+            'driver' => 'pgsql',
+            'url' => null,
+            'host' => env('PLATFORM_DB_HOST', '127.0.0.1'),
+            'port' => env('PLATFORM_DB_PORT', '5432'),
+            'database' => env('PLATFORM_DB_DATABASE', ''),
+            'username' => env('PLATFORM_DB_USERNAME', ''),
+            'password' => env('PLATFORM_DB_PASSWORD', ''),
+            'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('PLATFORM_DB_SSL_CA'),
-            ]) : [],
+            'search_path' => 'public',
+            'sslmode' => env('PLATFORM_DB_SSLMODE', 'prefer'),
         ],
 
         // Fora de um contexto autorizado, esta conexao falha fechada.
