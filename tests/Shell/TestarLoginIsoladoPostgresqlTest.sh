@@ -9,6 +9,12 @@ trap 'rm -rf -- "$tmp"' EXIT
 
 sudo() {
     printf 'sudo %s\n' "$*" >> "$ASTUTI_MOCK_LOG"
+    # Regressao real do notebook: psql 17 NAO reconhece --database=.
+    # O comando precisa usar -d ou --dbname, inclusive ao alterar o papel.
+    if [[ "$*" == *' psql '* && "$*" == *'--database='* ]]; then
+        printf "psql: unrecognized option '--database'\n" >&2
+        return 2
+    fi
     if [[ "$*" == *'pg_control_system()'* ]]; then
         if [[ "$*" == *'--port=5432'* ]]; then
             printf '11111111111\n'
@@ -17,7 +23,7 @@ sudo() {
         else
             printf '22222222222\n'
         fi
-    elif [[ "$*" == *'--port=55436'* && "$*" == *'--database=astuti_platform_dev'* ]]; then
+    elif [[ "$*" == *'--port=55436'* && ( "$*" == *'-d astuti_platform_dev'* || "$*" == *'--dbname=astuti_platform_dev'* ) ]]; then
         if [[ "$*" == *'COUNT(*) FROM municipalities'* ]]; then
             printf '1\n'
         elif [[ "$*" == *'COUNT(*) FROM users WHERE status'* ]]; then
@@ -27,7 +33,7 @@ sudo() {
         elif [[ "$*" == *'COUNT(*) FROM users'* ]]; then
             printf '1\n'
         fi
-    elif [[ "$*" == *'--port=55436'* && "$*" == *'--database=astuti_monte_sereno_dev'* ]]; then
+    elif [[ "$*" == *'--port=55436'* && ( "$*" == *'-d astuti_monte_sereno_dev'* || "$*" == *'--dbname=astuti_monte_sereno_dev'* ) ]]; then
         if [[ "${MOCK_CONTAGEM_INCORRETA:-}" == 1 ]]; then
             printf '2|115|115\n'
         else
