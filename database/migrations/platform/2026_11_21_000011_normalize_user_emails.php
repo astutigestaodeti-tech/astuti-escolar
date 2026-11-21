@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 return new class extends Migration
 {
@@ -9,26 +10,12 @@ return new class extends Migration
     {
         $db = DB::connection('platform');
 
-        $db->transaction(static function () use ($db): void {
-            // Inspecionar antes de alterar qualquer conta, inclusive espacos laterais.
-            // Nunca listar emails pessoais no erro da migracao.
-            $duplicates = $db->selectOne(<<<'SQL'
-                SELECT COUNT(*) AS total
-                FROM (
-                    SELECT lower(btrim(email))
-                    FROM users
-                    GROUP BY lower(btrim(email))
-                    HAVING COUNT(*) > 1
-                ) AS duplicated_emails
-                SQL);
+        $db->transaction(function () use ($db): void {
+            // Inspecionar conflitos antes de alterar contas, sem expor emails.
+            $conflicts = $db->selectOne('SELECT COUNT(*) AS total FROM (SELECT lower(btrim(email)) FROM users GROUP BY lower(btrim(email)) HAVING COUNT(*) > 1) AS duplicate_groups');
 
-            if ((int) $duplicates->total > 0) {
-                $message = sprintf(
-                    'Migracao de emails interrompida: ha %d grupo(s) de emails duplicados sem diferenca de caixa. Revise os cadastros com seguranca antes de repetir.',
-                    (int) $duplicates->total,
-                );
-
-                throw new \RuntimeException($message);
+            if ((int) $conflicts->total > 0) {
+                throw new RuntimeException('Migracao de emails interrompida: existem contas com emails duplicados quando comparados sem maiusculas ou espacos. Revise esses cadastros antes de repetir.');
             }
 
             $db->statement('UPDATE users SET email = lower(btrim(email)) WHERE email IS DISTINCT FROM lower(btrim(email))');
