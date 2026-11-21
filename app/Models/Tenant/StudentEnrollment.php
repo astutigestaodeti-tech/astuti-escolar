@@ -22,6 +22,7 @@ class StudentEnrollment extends TenantModel
         'status',
         'started_at',
         'ended_at',
+        'transport_status',
     ];
 
     protected function casts(): array

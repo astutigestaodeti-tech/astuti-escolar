@@ -6,7 +6,8 @@ Objetivo: importar os arquivos que as escolas mandam (pasta 02 do kit Monte Sere
 
 1. **Motor de leitura e prévia (este PR).** Lê a planilha de uma escola, limpa e confere, sem gravar nada. Comando `astuti:importar-alunos-previa`.
 2. **Gravação com conferência (novo PR).** Prévia cifrada no formulário por uma hora, confirmação humana de linhas duplicadas, revalidação de turmas/alunos existentes e gravação transacional com auditoria e segundo fator. Só o recibo sem dados pessoais é guardado. Veja `docs/arquitetura/importacao-assistida-alunos.md`.
-3. **Demais fontes.** Lista de transporte da Secretaria (CSV Windows-1252, só atualiza transporte e não cria aluno; CANCELADO não volta a ficar ativo), responsáveis, quadro do RH e controle do AEE.
+3. **Transporte escolar (PR seguinte).** CSV UTF-8/Windows-1252 por escola e ano, conferência por RA, gravação auditada só da situação do transporte na matrícula ativa, sem criar alunos nem reativar CANCELADO. Veja `docs/arquitetura/importacao-transporte.md`. O arquivo real da Secretaria ainda precisa ser confrontado com o leitor; os testes usam apenas dados fictícios.
+4. **Demais fontes.** Responsáveis, quadro do RH e controle do AEE, com análises de LGPD e conferência específicas.
 
 ## Regras do motor
 

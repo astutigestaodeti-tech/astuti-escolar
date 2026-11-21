@@ -1,5 +1,12 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-21 | Transporte escolar: CSV conferido, atualização auditada
+
+- Novo importador CSV por escola e ano letivo: UTF-8 e Windows-1252, RA obrigatório, conferência antes de gravar e 2FA para gestões autorizadas.
+- Situação de transporte na matrícula (`active`, `not_requested`, `cancelled`), sem criar alunos e sem reativar cancelamentos por importação. Escopo escolar, versão PostgreSQL `xmin`, transação integral e auditoria antes/depois.
+- Recibo sem informações pessoais impede replay; CSV descartado após prévia cifrada por uma hora. Testes fictícios cobrem conversão, permissões, atomicidade, cancelamento e concorrência.
+- Arquivo original da Secretaria não consta no repositório e ainda exige validação de layout. Sem merge automático, deploy ou alteração do notebook.
+
 ## 2026-11-21 | Importação assistida: conferência e gravação no banco municipal
 
 - Novo fluxo de envio de .xlsx por escola e ano letivo, com prévia legível, confirmação expressa de linhas repetidas, autorização escolar e segundo fator.

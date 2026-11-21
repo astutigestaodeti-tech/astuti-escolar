@@ -55,6 +55,12 @@
                 <p>Envie uma planilha, confira repetições e grave os vínculos com auditoria.</p>
                 <a class="botao secundario" style="margin-top:12px" href="{{ route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Importar alunos desta escola <x-icon name="seta" :size="16" /></a>
             </section>
+            <section class="folha cartao" aria-labelledby="titulo-importar-transporte">
+                <span class="acao-icone"><x-icon name="turmas" /></span>
+                <h2 id="titulo-importar-transporte">Transporte escolar</h2>
+                <p>Conferir a lista de transporte e atualizar somente matrículas existentes.</p>
+                <a class="botao secundario" style="margin-top:12px" href="{{ route('school.imports.transport.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Importar lista de transporte <x-icon name="seta" :size="16" /></a>
+            </section>
         @endcan
     </div>
 

@@ -125,7 +125,7 @@ abstract class TwoMunicipalityTestCase extends TestCase
 
                 // Apagar primeiro os vinculos de teste, antes das FKs de
                 // escolas e anos, sem desativar a integridade referencial.
-                foreach (['student_import_receipts', 'student_enrollments', 'students', 'school_classes', 'school_years', 'schools', 'audit_logs'] as $table) {
+                foreach (['transport_import_receipts', 'student_import_receipts', 'student_enrollments', 'students', 'school_classes', 'school_years', 'schools', 'audit_logs'] as $table) {
                     if (Schema::connection('tenant')->hasTable($table)) {
                         if ($table === 'audit_logs') {
                             $this->limparAuditoriaDescartavel('tenant', 'audit_logs', 'audit_logs_block_truncate');

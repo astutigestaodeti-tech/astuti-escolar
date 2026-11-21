@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ConfirmedStudentImportController;
+use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SchoolClassController;
@@ -42,6 +43,9 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
     Route::get('/escolas/{escola}/matriculas', [SchoolEnrollmentController::class, 'index'])->whereUuid('escola')->name('school.enrollments.index');
+    Route::get('/escolas/{escola}/importacoes/transporte', [ConfirmedTransportImportController::class, 'index'])->whereUuid('escola')->name('school.imports.transport.index');
+    Route::post('/escolas/{escola}/importacoes/transporte/previa', [ConfirmedTransportImportController::class, 'preview'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:6,1'])->name('school.imports.transport.preview');
+    Route::post('/escolas/{escola}/importacoes/transporte/confirmar', [ConfirmedTransportImportController::class, 'confirm'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.imports.transport.confirm');
     Route::get('/escolas/{escola}/importacoes/alunos', [ConfirmedStudentImportController::class, 'index'])->whereUuid('escola')->name('school.imports.students.index');
     Route::post('/escolas/{escola}/importacoes/alunos/previa', [ConfirmedStudentImportController::class, 'preview'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:6,1'])->name('school.imports.students.preview');
     Route::post('/escolas/{escola}/importacoes/alunos/confirmar', [ConfirmedStudentImportController::class, 'confirm'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.imports.students.confirm');
