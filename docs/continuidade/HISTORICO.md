@@ -496,3 +496,15 @@ A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao en
 **Limites:** a busca ainda não foi conferida manualmente no notebook pelo Jefferson; testes automáticos de autorização por URL direta já existem, mas a negativa ainda não foi simulada pelo usuário na interface real. Sem gravações nos bancos do notebook, sem acesso a dados reais de menores e sem merge do PR #5, que permanece draft.
 
 **Próximo incremento:** desenvolver ficha individual de consulta do aluno com link pela lista e vínculo autorizado, mantendo a aplicação somente leitura.
+
+## 21/11/2026 - Ficha individual de aluno em consulta segura
+
+**Novo incremento entregue na branch `feature/migracao-postgresql-instalacoes-isoladas`:** `GET /m/{municipio}/escolas/{escola}/alunos/{aluno}` apresenta ficha de aluno com nome, ano de nascimento opcional, escola e anos letivos de vínculos ativos. A listagem de alunos agora contém link por nome. Somente leitura, sem novas migrações, cadastro ou escrita.
+
+**Controle de acesso:** middleware de município e autenticação, autorização da escola ativa via `Gate` e busca do aluno condicionada a matrícula ativa na mesma escola. Acesso de escola não autorizada retorna 403, aluno de outra escola ou vínculo inativo retorna 404, visitante vai ao login. Dados variáveis são escapados por Blade; vínculo de outra escola não é carregado.
+
+**Desenvolvimento TDD:** o commit `7006891` contém quatro testes de integração; a execução [44920622258](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44920622258) falhou como esperado em quatro cenários porque a rota ainda não existia (178 testes anteriores passaram). Implementação nos commits `fd42a5c` (rota), `f625da4` (controller), `7863e42` (view) e `b70cf3b` (link na lista). A execução [44920820454](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44920820454) passou: **182 testes PHP em duas rodadas, 653 asserções por rodada, 24 ignorados por ambiente, Pint 133 arquivos, build, quatro testes UI e integração MariaDB → PostgreSQL**. PR #5 permanece draft.
+
+**Revisão independente do diff:** nenhum problema crítico ou importante. Um aprimoramento menor foi registrado para futura cobertura: aluno com vínculos ativos simultâneos em duas escolas e um vínculo antigo encerrado não deve exibir histórico da outra unidade. O controller já restringe por escola e status; o novo teste de regressão pode ser adicionado posteriormente.
+
+**Pendente no notebook:** atualizar o código da mesma branch de ensaio e conferir visualmente a ficha no ambiente fictício 55436 / interface 8002. Nenhum banco original foi alterado, e a tela não deve receber dados reais de menores.
