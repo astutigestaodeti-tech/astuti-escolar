@@ -19,6 +19,13 @@
     $partes = preg_split('/\s+/u', $nomeCurto) ?: [];
     $monograma = mb_strtoupper(mb_substr($partes[0] ?? '', 0, 1).mb_substr($partes[count($partes) - 1] ?? '', 0, 1));
     $usuario = auth()->user();
+    $nomesPapeis = ['municipal_manager' => 'Gestão municipal', 'school_director' => 'Direção escolar', 'school_secretary' => 'Secretaria escolar', 'teacher' => 'Professor(a)'];
+    $papelUsuario = $usuario
+        ? \App\Models\Platform\Membership::query()
+            ->where('user_id', $usuario->id)->where('municipality_id', $municipality->id)->where('status', 'active')
+            ->pluck('role')->unique()->sortBy(fn ($papel) => array_search($papel, array_keys($nomesPapeis), true))
+            ->map(fn ($papel) => $nomesPapeis[$papel] ?? null)->filter()->first()
+        : null;
     $iniciaisUsuario = mb_strtoupper(collect(preg_split('/\s+/u', trim((string) ($usuario?->name ?? ''))) ?: [])->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
     $escolasAtivo = request()->routeIs('schools.*') || request()->routeIs('school.classes.*') || request()->routeIs('school.students.*');
     $parametrosMunicipio = ['municipio' => $municipality->slug];
@@ -74,7 +81,7 @@
                 @if ($usuario)
                     <span class="usuario">
                         <span class="usuario-iniciais" aria-hidden="true">{{ $iniciaisUsuario }}</span>
-                        <span class="usuario-texto">{{ $usuario->name }}<small>{{ $nomeCurto }}</small></span>
+                        <span class="usuario-texto">{{ $usuario->name }}<small>{{ $papelUsuario ? $papelUsuario.', '.$nomeCurto : $nomeCurto }}</small></span>
                     </span>
                 @endif
                 <a class="botao-sair" href="{{ route('two-factor.settings') }}" aria-label="Segurança da conta"><x-icon name="escudo" :size="17" /><span>Segurança da conta</span></a>
@@ -90,7 +97,9 @@
                 <div class="aviso-demo" role="note"><x-icon name="alerta" /><span><strong>Ambiente de desenvolvimento.</strong> Use somente dados fictícios.</span></div>
             @endif
 
-            <x-voltar-anterior :fallback="$voltarFallback" :municipio="$municipality->slug" />
+            @unless ($ocultarVoltar ?? false)
+                <x-voltar-anterior :fallback="$voltarFallback" :municipio="$municipality->slug" />
+            @endunless
 
             @yield('content')
 

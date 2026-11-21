@@ -22,7 +22,9 @@ use Throwable;
 
 class PrepareMonteSerenoDemo extends Command
 {
-    protected $signature = 'astuti:demo-preparar {--renovar-senha : Gera outra senha para a conta ficticia existente}';
+    protected $signature = 'astuti:demo-preparar
+        {--renovar-senha : Gera outra senha para a conta ficticia existente}
+        {--trocar-pelo-kit : Arquiva as escolas antigas da demonstracao e cria as do kit Monte Sereno (somente no ensaio isolado 55436)}';
 
     protected $description = 'Prepara um municipio ficticio de testes, exclusivamente em bancos locais de desenvolvimento.';
 
@@ -30,10 +32,34 @@ class PrepareMonteSerenoDemo extends Command
 
     private const SCHOOL_YEAR_ID = '88888888-8888-4888-8888-888888888888';
 
-    private const SCHOOLS = [
-        ['id' => '44444444-4444-4444-8444-000000000001', 'name' => 'EMEF Caminhos do Saber', 'count' => 45, 'class' => '1º Ano A', 'stage' => 'Ensino Fundamental', 'shift' => 'Manhã'],
-        ['id' => '44444444-4444-4444-8444-000000000002', 'name' => 'EMEI Jardim das Flores', 'count' => 40, 'class' => 'Infantil IV A', 'stage' => 'Educação Infantil', 'shift' => 'Tarde'],
-        ['id' => '44444444-4444-4444-8444-000000000003', 'name' => 'EMEF Rio Claro', 'count' => 30, 'class' => '2º Ano A', 'stage' => 'Ensino Fundamental', 'shift' => 'Integral'],
+    /** Escolas inventadas da primeira demonstracao; so existem em copias antigas. */
+    private const LEGACY_SCHOOL_IDS = [
+        '44444444-4444-4444-8444-000000000001',
+        '44444444-4444-4444-8444-000000000002',
+        '44444444-4444-4444-8444-000000000003',
+    ];
+
+    private const LEGACY_REASON = 'Troca da demonstracao pelas escolas do kit ficticio Monte Sereno (pedido do Jefferson em 21/11/2026).';
+
+    /** Escolas do kit ficticio Monte Sereno v2 (01_gabarito_dados_limpos/escolas.csv). */
+    public const KIT_SCHOOLS = [
+        'E01' => ['id' => '45000000-0000-4000-8000-000000000001', 'name' => 'EMEI Profª Aurora Benedita Lemes', 'inep' => '99000101'],
+        'E02' => ['id' => '45000000-0000-4000-8000-000000000002', 'name' => 'EMEF Prof. Sebastião Arantes', 'inep' => '99000102'],
+        'E03' => ['id' => '45000000-0000-4000-8000-000000000003', 'name' => 'Escola Municipal Rural Bairro das Palmeiras', 'inep' => '99000103'],
+    ];
+
+    /** Turmas do kit (turmas.csv): o nome e o codigo que as escolas usam nas planilhas. */
+    public const KIT_CLASSES = [
+        ['id' => '51000000-0000-4000-8000-000000000001', 'school' => 'E01', 'name' => 'MII-A', 'stage' => 'Creche - Maternal II', 'shift' => 'Integral', 'capacity' => 16],
+        ['id' => '51000000-0000-4000-8000-000000000002', 'school' => 'E01', 'name' => 'PI-A', 'stage' => 'Pré-escola - Pré I', 'shift' => 'Manhã', 'capacity' => 20],
+        ['id' => '51000000-0000-4000-8000-000000000003', 'school' => 'E01', 'name' => 'PII-A', 'stage' => 'Pré-escola - Pré II', 'shift' => 'Tarde', 'capacity' => 20],
+        ['id' => '51000000-0000-4000-8000-000000000004', 'school' => 'E02', 'name' => '1A', 'stage' => 'Fundamental Anos Iniciais - 1º ano', 'shift' => 'Manhã', 'capacity' => 25],
+        ['id' => '51000000-0000-4000-8000-000000000005', 'school' => 'E02', 'name' => '2A', 'stage' => 'Fundamental Anos Iniciais - 2º ano', 'shift' => 'Manhã', 'capacity' => 25],
+        ['id' => '51000000-0000-4000-8000-000000000006', 'school' => 'E02', 'name' => '3A', 'stage' => 'Fundamental Anos Iniciais - 3º ano', 'shift' => 'Manhã', 'capacity' => 25],
+        ['id' => '51000000-0000-4000-8000-000000000007', 'school' => 'E02', 'name' => '4A', 'stage' => 'Fundamental Anos Iniciais - 4º ano', 'shift' => 'Tarde', 'capacity' => 25],
+        ['id' => '51000000-0000-4000-8000-000000000008', 'school' => 'E02', 'name' => '5A', 'stage' => 'Fundamental Anos Iniciais - 5º ano', 'shift' => 'Tarde', 'capacity' => 25],
+        ['id' => '51000000-0000-4000-8000-000000000009', 'school' => 'E03', 'name' => 'MULTI-1', 'stage' => 'Fundamental Anos Iniciais - 1º, 2º e 3º anos (multisseriada)', 'shift' => 'Manhã', 'capacity' => 15],
+        ['id' => '51000000-0000-4000-8000-000000000010', 'school' => 'E03', 'name' => 'MULTI-2', 'stage' => 'Fundamental Anos Iniciais - 4º e 5º anos (multisseriada)', 'shift' => 'Tarde', 'capacity' => 15],
     ];
 
     public function handle(TenantConnectionManager $connections, TenantContext $context): int
@@ -44,10 +70,17 @@ class PrepareMonteSerenoDemo extends Command
             return self::FAILURE;
         }
 
+        $swap = (bool) $this->option('trocar-pelo-kit');
+
         // Verificar as DUAS conexoes antes de executar qualquer migracao.
         try {
             DB::connection('platform')->getPdo();
             $connections->activate(new Municipality(['db_key' => 'monte_sereno']));
+            if ($swap && ! $this->isolatedRehearsal()) {
+                $this->error('A troca pelo kit so e permitida no ensaio isolado da porta 55436. Nenhuma alteracao foi feita.');
+
+                return self::FAILURE;
+            }
         } catch (Throwable) {
             $this->error('Nao foi possivel conectar as duas bases locais ja existentes. Nenhuma migracao foi iniciada.');
 
@@ -86,6 +119,12 @@ class PrepareMonteSerenoDemo extends Command
             }
 
             $user = User::query()->where('email', self::EMAIL)->first();
+
+            if ($swap && $user === null) {
+                $this->error('A troca pelo kit so vale para uma demonstracao ja existente. Nenhuma alteracao foi feita.');
+
+                return self::FAILURE;
+            }
 
             if ($user !== null && $user->status !== 'active') {
                 $this->error('A conta ficticia esta inativa. Nenhuma permissao sera alterada automaticamente.');
@@ -127,9 +166,21 @@ class PrepareMonteSerenoDemo extends Command
             // depois de a transação municipal concluir. Assim uma falha não
             // deixa usuário sem vínculo nem auditoria com autoria desconhecida.
             $demoActorId = $user?->id ?? (string) Str::uuid();
-            $context->runFor($municipality, function () use ($demoActorId): void {
-                app(AuditActor::class)->runAs($demoActorId, function (): void {
-                    DB::connection('tenant')->transaction(fn () => $this->createSyntheticSchoolRecords());
+            $legacy = $context->runFor($municipality, fn (): bool => School::query()->whereIn('id', self::LEGACY_SCHOOL_IDS)->exists());
+            if ($legacy && ! $swap) {
+                $this->error('Esta copia ainda tem as escolas antigas da demonstracao. Use a troca pelo kit no ensaio isolado. Nenhuma alteracao foi feita.');
+
+                return self::FAILURE;
+            }
+
+            $context->runFor($municipality, function () use ($demoActorId, $swap): void {
+                app(AuditActor::class)->runAs($demoActorId, function () use ($demoActorId, $swap): void {
+                    DB::connection('tenant')->transaction(function () use ($demoActorId, $swap): void {
+                        if ($swap) {
+                            $this->archiveLegacySchools($demoActorId);
+                        }
+                        $this->createSyntheticSchoolRecords();
+                    });
                 });
             });
 
@@ -163,7 +214,7 @@ class PrepareMonteSerenoDemo extends Command
                 );
             });
 
-            $this->info('Monte Sereno pronto: 3 escolas, 115 alunos ficticios e ano letivo 2027.');
+            $this->info('Monte Sereno pronto: 3 escolas e 10 turmas do kit ficticio, ano letivo 2027. Os alunos entram pelo importador.');
             $this->line('Acesse: http://127.0.0.1:8001/login');
             $this->line('Usuario de teste: '.self::EMAIL);
 
@@ -220,55 +271,84 @@ class PrepareMonteSerenoDemo extends Command
             && preg_match('/\A[a-z0-9_]+_test\z/D', $tenantDb) === 1;
     }
 
+    /**
+     * Ensaio isolado: as duas conexoes efetivas na porta 55436, nunca no
+     * PostgreSQL principal. Nos testes de integracao, as bases *_test.
+     */
+    private function isolatedRehearsal(): bool
+    {
+        if (app()->environment('testing')) {
+            return getenv('TENANCY_INTEGRATION') === '1';
+        }
+
+        foreach (['platform', 'tenant'] as $connection) {
+            $port = (int) DB::connection($connection)->selectOne('SELECT inet_server_port() AS porta')->porta;
+            if ($port !== 55436) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Exclusao logica, com motivo e autoria, de tudo o que pertence as escolas
+     * inventadas: matriculas, alunos sem outra matricula, turmas e escolas.
+     * Nada e apagado fisicamente; a auditoria registra cada passo.
+     */
+    private function archiveLegacySchools(string $actorId): void
+    {
+        $enrollments = StudentEnrollment::query()->whereIn('school_id', self::LEGACY_SCHOOL_IDS)->orderBy('id')->get();
+        foreach ($enrollments as $enrollment) {
+            $enrollment->deleteWithReason(self::LEGACY_REASON, $actorId);
+        }
+
+        $students = Student::query()
+            ->whereIn('id', $enrollments->pluck('student_id')->unique()->all())
+            ->whereDoesntHave('enrollments')
+            ->orderBy('id')
+            ->get();
+        foreach ($students as $student) {
+            $student->deleteWithReason(self::LEGACY_REASON, $actorId);
+        }
+
+        foreach (SchoolClass::query()->whereIn('school_id', self::LEGACY_SCHOOL_IDS)->orderBy('id')->get() as $class) {
+            $class->deleteWithReason(self::LEGACY_REASON, $actorId);
+        }
+
+        foreach (School::query()->whereIn('id', self::LEGACY_SCHOOL_IDS)->orderBy('id')->get() as $school) {
+            $school->deleteWithReason(self::LEGACY_REASON, $actorId);
+        }
+    }
+
     private function createSyntheticSchoolRecords(): void
     {
         $year = SchoolYear::query()->firstOrCreate(['year' => 2027], [
             'id' => self::SCHOOL_YEAR_ID,
-            'start_date' => '2027-02-01',
+            'start_date' => '2027-02-08',
             'end_date' => '2027-12-17',
             'status' => 'active',
         ]);
 
-        $studentNumber = 0;
-
-        foreach (self::SCHOOLS as $schoolNumber => $schoolData) {
-            $school = School::query()->firstOrCreate(['id' => $schoolData['id']], [
+        foreach (self::KIT_SCHOOLS as $schoolData) {
+            School::query()->firstOrCreate(['id' => $schoolData['id']], [
                 'name' => $schoolData['name'],
+                'inep_code' => $schoolData['inep'],
                 'status' => 'active',
             ]);
+        }
 
-            SchoolClass::query()->firstOrCreate([
-                'id' => sprintf('50000000-0000-4000-8000-%012d', $schoolNumber + 1),
-            ], [
-                'school_id' => $school->id,
+        foreach (self::KIT_CLASSES as $classData) {
+            SchoolClass::query()->firstOrCreate(['id' => $classData['id']], [
+                'school_id' => self::KIT_SCHOOLS[$classData['school']]['id'],
                 'school_year_id' => $year->id,
-                'name' => $schoolData['class'],
-                'stage' => $schoolData['stage'],
+                'name' => $classData['name'],
+                'stage' => $classData['stage'],
                 'modality' => 'Regular',
-                'shift' => $schoolData['shift'],
-                'capacity' => $schoolData['count'],
+                'shift' => $classData['shift'],
+                'capacity' => $classData['capacity'],
                 'status' => 'active',
             ]);
-
-            for ($index = 0; $index < $schoolData['count']; $index++) {
-                $studentNumber++;
-                $student = Student::query()->firstOrCreate([
-                    'id' => sprintf('60000000-0000-4000-8000-%012d', $studentNumber),
-                ], [
-                    'full_name' => sprintf('Estudante fictício %03d', $studentNumber),
-                    'birth_date' => sprintf('%d-%02d-%02d', 2016 + ($studentNumber % 4), 1 + ($studentNumber % 12), 1 + ($studentNumber % 28)),
-                ]);
-
-                StudentEnrollment::query()->firstOrCreate([
-                    'id' => sprintf('70000000-0000-4000-8000-%012d', $studentNumber),
-                ], [
-                    'student_id' => $student->id,
-                    'school_id' => $school->id,
-                    'school_year_id' => $year->id,
-                    'status' => 'active',
-                    'started_at' => '2027-02-01',
-                ]);
-            }
         }
     }
 }

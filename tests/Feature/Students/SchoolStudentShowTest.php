@@ -238,11 +238,17 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
 
-    public function test_lista_de_escolas_tem_botao_voltar_a_selecao_da_rede(): void
+    public function test_lista_de_escolas_so_tem_voltar_quando_ha_outra_rede_para_escolher(): void
     {
         $user = $this->criarUsuario('voltar-lista-escolas@example.invalid');
         $this->vincular($user, $this->municipioA, 'municipal_manager');
 
+        // Uma Prefeitura so (o caso do VPS): nao ha tela anterior a esta.
+        $this->actingAs($user)->get('/m/municipio-a/escolas')
+            ->assertOk()
+            ->assertDontSee('Voltar à tela anterior');
+
+        $this->vincular($user, $this->municipioB, 'municipal_manager');
         $this->actingAs($user)->get('/m/municipio-a/escolas')
             ->assertOk()
             ->assertSee('Voltar à tela anterior')

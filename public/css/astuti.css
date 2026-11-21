@@ -439,3 +439,10 @@ select.entrada{cursor:pointer}
 .status-sucesso{display:flex;gap:10px;align-items:center;padding:12px 14px;margin-bottom:18px;border-radius:var(--raio-controle);background:#eef7f0;border:1px solid #bfdcc6;color:#1f5a2e;font-size:14.5px}
 .folha-titulo .acoes-titulo{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 @media (max-width:640px){.formulario-grade{grid-template-columns:1fr}.formulario-aluno form{padding:4px 16px 18px}.formulario-aluno .erro{margin:0 16px 8px}}
+
+/* Lista de escolas: ano letivo, INEP e números do ano */
+.marcadores{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;flex-shrink:0}
+.codigo-inep{font-size:13px;font-weight:600;color:var(--tinta-3);font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+@media (max-width:640px){.marcadores{justify-content:flex-start;margin-top:12px}.folha-titulo .marcadores .marcador{margin-top:0}}
+.cartao .cartao-dados{margin-top:auto}
+.cartao .cartao-dados + .cartao-acao{margin-top:4px}

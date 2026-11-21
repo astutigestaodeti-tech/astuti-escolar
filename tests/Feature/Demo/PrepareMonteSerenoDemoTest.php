@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Demo;
 
+use App\Audit\AuditActor;
 use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
+use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
@@ -51,12 +53,13 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
         $this->assertSame('active', $municipality->status);
 
         app(TenantContext::class)->runFor($municipality, function (): void {
-            $this->assertSame(3, School::query()->count());
+            // Escolas e turmas do kit ficticio; os alunos entram pelo importador.
+            $this->assertSame(['99000101', '99000102', '99000103'], School::query()->orderBy('inep_code')->pluck('inep_code')->all());
             $this->assertSame(1, SchoolYear::query()->where('year', 2027)->count());
-            $this->assertSame(3, SchoolClass::query()->count());
-            $this->assertSame(115, Student::query()->count());
-            $this->assertSame(115, StudentEnrollment::query()->count());
-            $this->assertSame(45, StudentEnrollment::query()->where('school_id', '44444444-4444-4444-8444-000000000001')->count());
+            $this->assertSame(10, SchoolClass::query()->count());
+            $this->assertSame(['1A', '2A', '3A', '4A', '5A'], SchoolClass::query()->where('school_id', '45000000-0000-4000-8000-000000000002')->orderBy('name')->pluck('name')->all());
+            $this->assertSame(0, Student::query()->count());
+            $this->assertSame(0, StudentEnrollment::query()->count());
         });
 
         $user = User::query()->where('email', self::EMAIL)->firstOrFail();
@@ -64,9 +67,65 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
 
         $this->post('/login', ['email' => self::EMAIL, 'password' => $password])
             ->assertRedirect('/');
-        $this->get('/m/monte-sereno/escolas')->assertOk()->assertSee('EMEF Caminhos do Saber');
-        $this->get('/m/monte-sereno/escolas/44444444-4444-4444-8444-000000000001/alunos')
-            ->assertOk()->assertSee('Estudante fictício 001')->assertDontSee('Estudante fictício 099');
+        $this->get('/m/monte-sereno/escolas')->assertOk()
+            ->assertSee('EMEF Prof. Sebastião Arantes')
+            ->assertSee('INEP 99000102')
+            ->assertSee('Ano letivo 2027')
+            ->assertSee('Gestão municipal')
+            ->assertDontSee('Voltar à tela anterior');
+    }
+
+    public function test_troca_pelo_kit_arquiva_as_escolas_antigas_com_motivo_e_sem_apagar(): void
+    {
+        $this->assertSame(0, $this->runDemo());
+        $municipality = Municipality::query()->where('slug', 'monte-sereno')->firstOrFail();
+        $actor = User::query()->where('email', self::EMAIL)->firstOrFail()->id;
+
+        // Copia antiga: escola inventada com turma, aluno e matricula ativa.
+        app(TenantContext::class)->runFor($municipality, function () use ($actor): void {
+            app(AuditActor::class)->runAs($actor, function (): void {
+                $year = SchoolYear::query()->where('year', 2027)->firstOrFail();
+                School::query()->create(['id' => '44444444-4444-4444-8444-000000000001', 'name' => 'EMEF Caminhos do Saber', 'status' => 'active']);
+                SchoolClass::query()->create(['id' => '50000000-0000-4000-8000-000000000001', 'school_id' => '44444444-4444-4444-8444-000000000001', 'school_year_id' => $year->id, 'name' => '1º Ano A', 'stage' => 'Ensino Fundamental', 'modality' => 'Regular', 'shift' => 'Manhã', 'status' => 'active']);
+                Student::query()->create(['id' => '60000000-0000-4000-8000-000000000001', 'full_name' => 'Estudante fictício 001']);
+                StudentEnrollment::query()->create(['id' => '70000000-0000-4000-8000-000000000001', 'student_id' => '60000000-0000-4000-8000-000000000001', 'school_id' => '44444444-4444-4444-8444-000000000001', 'school_year_id' => $year->id, 'status' => 'active']);
+            });
+        });
+
+        // Sem a opcao explicita, nada muda.
+        $this->assertSame(1, $this->runDemo());
+        $this->assertStringContainsString('escolas antigas', $this->lastOutput);
+
+        $this->assertSame(0, $this->runDemo(['--trocar-pelo-kit' => true]));
+
+        app(TenantContext::class)->runFor($municipality, function () use ($actor): void {
+            $this->assertSame(3, School::query()->count());
+            $this->assertFalse(School::query()->where('id', '44444444-4444-4444-8444-000000000001')->exists());
+
+            foreach ([
+                School::query()->withTrashed()->findOrFail('44444444-4444-4444-8444-000000000001'),
+                SchoolClass::query()->withTrashed()->findOrFail('50000000-0000-4000-8000-000000000001'),
+                Student::query()->withTrashed()->findOrFail('60000000-0000-4000-8000-000000000001'),
+                StudentEnrollment::query()->withTrashed()->findOrFail('70000000-0000-4000-8000-000000000001'),
+            ] as $archived) {
+                $this->assertNotNull($archived->deleted_at, $archived::class);
+                $this->assertSame($actor, $archived->deleted_by);
+                $this->assertStringContainsString('kit ficticio Monte Sereno', $archived->deletion_reason);
+            }
+
+            $this->assertSame(4, AuditLog::query()->where('action', 'deleted')->count());
+        });
+
+        // Repetir a troca nao duplica nem falha.
+        $this->assertSame(0, $this->runDemo(['--trocar-pelo-kit' => true]));
+        app(TenantContext::class)->runFor($municipality, fn () => $this->assertSame(10, SchoolClass::query()->count()));
+    }
+
+    public function test_troca_pelo_kit_exige_demonstracao_existente(): void
+    {
+        $this->assertSame(1, $this->runDemo(['--trocar-pelo-kit' => true]));
+        $this->assertStringContainsString('demonstracao ja existente', $this->lastOutput);
+        $this->assertNull(User::query()->where('email', self::EMAIL)->first());
     }
 
     public function test_segunda_execucao_nao_duplica_nem_muda_senha(): void
@@ -81,9 +140,8 @@ class PrepareMonteSerenoDemoTest extends TwoMunicipalityTestCase
         $municipality = Municipality::query()->where('slug', 'monte-sereno')->firstOrFail();
         app(TenantContext::class)->runFor($municipality, function (): void {
             $this->assertSame(3, School::query()->count());
-            $this->assertSame(3, SchoolClass::query()->count());
-            $this->assertSame(115, Student::query()->count());
-            $this->assertSame(115, StudentEnrollment::query()->count());
+            $this->assertSame(10, SchoolClass::query()->count());
+            $this->assertSame(0, Student::query()->count());
         });
     }
 

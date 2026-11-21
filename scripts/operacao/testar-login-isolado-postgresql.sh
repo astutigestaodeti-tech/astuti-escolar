@@ -56,8 +56,11 @@ consulta() {
     erro 'conta ficticia de demonstracao nao encontrada ou inativa.'
 [[ "$(consulta astuti_platform_dev "SELECT COUNT(*) FROM memberships WHERE user_id IN (SELECT id FROM users WHERE email = '$email') AND status = 'active';")" == 1 ]] || \
     erro 'vinculo institucional da demonstracao ausente ou ambiguo.'
-[[ "$(consulta astuti_monte_sereno_dev 'SELECT (SELECT COUNT(*) FROM schools), (SELECT COUNT(*) FROM students), (SELECT COUNT(*) FROM student_enrollments);')" == '3|115|115' ]] || \
-    erro 'a copia municipal nao tem as contagens verificadas de 3 escolas e 115 alunos/matriculas.'
+# A copia so pode conter escolas da demonstracao ficticia: as 3 antigas ou as
+# 3 do kit Monte Sereno. A contagem de alunos muda com os testes de cadastro.
+escolas_ficticias="'44444444-4444-4444-8444-000000000001','44444444-4444-4444-8444-000000000002','44444444-4444-4444-8444-000000000003','45000000-0000-4000-8000-000000000001','45000000-0000-4000-8000-000000000002','45000000-0000-4000-8000-000000000003'"
+[[ "$(consulta astuti_monte_sereno_dev "SELECT EXISTS (SELECT 1 FROM schools) AND NOT EXISTS (SELECT 1 FROM schools WHERE id::text NOT IN ($escolas_ficticias));")" == t ]] || \
+    erro 'a copia municipal contem escolas fora da demonstracao ficticia; nenhuma alteracao realizada.'
 
 if [[ ${ASTUTI_DEMO_PASSWORD+x} ]]; then
     # Opcao explicitamente solicitada para o usuario ficticio LOCAL.
@@ -238,6 +241,33 @@ else
     fi
 fi
 unset ASTUTI_ATUALIZAR_ESTRUTURA
+
+# Opcional: troca as escolas inventadas da primeira demonstracao pelas do kit
+# Monte Sereno, SOMENTE na copia 55436. Exclusao logica com motivo e auditoria.
+# Uso: ASTUTI_TROCAR_DEMO_KIT=1 bash scripts/operacao/testar-login-isolado-postgresql.sh
+if [[ "${ASTUTI_TROCAR_DEMO_KIT:-}" == 1 ]]; then
+    printf '===== TROCANDO A DEMONSTRACAO PELAS ESCOLAS DO KIT, APENAS NO ENSAIO 55436 =====\n'
+    php -r '
+        require "vendor/autoload.php";
+        $app = require "bootstrap/app.php";
+        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        $municipal = config("tenancy.connections.monte_sereno", []);
+        config()->set("database.connections.astuti_troca_ensaio_municipal", $municipal);
+        foreach ([["platform", "astuti_platform_dev"], ["astuti_troca_ensaio_municipal", "astuti_monte_sereno_dev"]] as [$conexao, $banco]) {
+            $dados = \Illuminate\Support\Facades\DB::connection($conexao)->selectOne(
+                "SELECT current_database() AS banco, current_user AS usuario, inet_server_port() AS porta"
+            );
+            if ($dados->banco !== $banco || $dados->usuario !== "astuti_ensaio" || (int) $dados->porta !== 55436) {
+                fwrite(STDERR, "ERRO: conexao efetiva fora do cluster isolado.\n");
+                exit(1);
+            }
+        }
+        $codigo = \Illuminate\Support\Facades\Artisan::call("astuti:demo-preparar", ["--trocar-pelo-kit" => true]);
+        echo \Illuminate\Support\Facades\Artisan::output();
+        exit($codigo === 0 ? 0 : 1);
+    ' || erro 'falha ao trocar a demonstracao pelo kit; nada foi apagado fisicamente.'
+fi
+unset ASTUTI_TROCAR_DEMO_KIT
 
 printf '\n===== TESTE DA INTERFACE REAL, APENAS NO CLUSTER ISOLADO =====\n'
 printf 'Endereco: http://127.0.0.1:8002/login\n'

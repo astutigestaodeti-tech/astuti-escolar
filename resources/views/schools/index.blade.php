@@ -15,7 +15,12 @@
             <h1>Escolas autorizadas</h1>
             <p>Você está vendo somente as unidades liberadas para a sua conta.</p>
         </div>
-        <span class="marcador"><x-icon name="escola" :size="16" /> {{ $schools->count() }} {{ $schools->count() === 1 ? 'unidade' : 'unidades' }}</span>
+        <div class="marcadores">
+            @if ($schoolYear)
+                <span class="marcador">Ano letivo {{ $schoolYear->year }}</span>
+            @endif
+            <span class="marcador"><x-icon name="escola" :size="16" /> {{ $schools->count() }} {{ $schools->count() === 1 ? 'unidade' : 'unidades' }}</span>
+        </div>
     </div>
 
     @if ($schools->isEmpty())
@@ -26,9 +31,15 @@
         <div class="grade">
             @foreach ($schools as $school)
                 <a class="folha cartao" href="{{ route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">
-                    <div class="cartao-topo"><x-iniciais :texto="$school->name" /><span class="etiqueta ok">Ativa</span></div>
+                    <div class="cartao-topo">
+                        <x-iniciais :texto="$school->name" />
+                        <span class="codigo-inep">{{ $school->inep_code ? 'INEP '.$school->inep_code : 'INEP não informado' }}</span>
+                    </div>
                     <h2>{{ $school->name }}</h2>
-                    <p class="numero">{{ $school->active_students_count }} {{ (int) $school->active_students_count === 1 ? 'aluno ativo' : 'alunos ativos' }}</p>
+                    <div class="cartao-dados">
+                        <div><strong class="numero">{{ (int) $school->classes_count }}</strong> <span>{{ (int) $school->classes_count === 1 ? 'turma' : 'turmas' }}</span></div>
+                        <div><strong class="numero">{{ (int) $school->active_students_count }}</strong> <span>{{ (int) $school->active_students_count === 1 ? 'aluno ativo' : 'alunos ativos' }}</span></div>
+                    </div>
                     <span class="cartao-acao">Abrir escola <x-icon name="seta" :size="16" /></span>
                 </a>
             @endforeach

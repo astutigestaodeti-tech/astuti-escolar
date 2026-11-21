@@ -34,10 +34,12 @@ sudo() {
             printf '1\n'
         fi
     elif [[ "$*" == *'--port=55436'* && ( "$*" == *'-d astuti_monte_sereno_dev'* || "$*" == *'--dbname=astuti_monte_sereno_dev'* ) ]]; then
+        # Escolas fora da demonstracao ficticia: a consulta devolve f.
+        [[ "$*" == *"45000000-0000-4000-8000-000000000003"* && "$*" == *"44444444-4444-4444-8444-000000000001"* ]] || { printf 'x\n'; return 0; }
         if [[ "${MOCK_CONTAGEM_INCORRETA:-}" == 1 ]]; then
-            printf '2|115|115\n'
+            printf 'f\n'
         else
-            printf '3|115|115\n'
+            printf 't\n'
         fi
     fi
 }
@@ -60,6 +62,9 @@ php() {
     fi
     if [[ "$1" == '-r' && "${MOCK_ESTRUTURA_PENDENTE:-}" == 1 && "$2" == *'$pendentes'* ]]; then
         return 3
+    fi
+    if [[ "$1" == '-r' && "${MOCK_TROCA_FALHA:-}" == 1 && "$2" == *'trocar-pelo-kit'* ]]; then
+        return 1
     fi
     if [[ "$1" == 'artisan' && "$2" == 'serve' ]]; then
         [[ "${PLATFORM_DB_PORT:-}" == 55436 ]]
@@ -197,4 +202,39 @@ if grep -q 'php artisan serve\|Artisan::call("migrate"' "$ASTUTI_MOCK_LOG"; then
 fi
 unset MOCK_ESTRUTURA_PENDENTE
 
-printf 'PASS: 9 cenarios de acesso seguro ao ensaio PostgreSQL.\n'
+# A troca pelo kit so acontece quando pedida, conferindo a porta 55436 antes,
+# depois da conferencia de estrutura e antes de abrir o servidor.
+export ASTUTI_MOCK_LOG="$tmp/troca-kit.log"
+if ! ASTUTI_TROCAR_DEMO_KIT=1 bash "$script" > "$tmp/troca-kit.out" 2>&1; then
+    echo 'FALHA: nao trocou a demonstracao quando pedido.' >&2
+    tail -n 20 "$tmp/troca-kit.out" >&2
+    exit 1
+fi
+grep -q 'TROCANDO A DEMONSTRACAO PELAS ESCOLAS DO KIT, APENAS NO ENSAIO 55436' "$tmp/troca-kit.out"
+grep -q 'trocar-pelo-kit' "$ASTUTI_MOCK_LOG"
+grep -q 'inet_server_port() AS porta' "$ASTUTI_MOCK_LOG"
+linha_troca="$(grep -n 'trocar-pelo-kit' "$ASTUTI_MOCK_LOG" | head -1 | cut -d: -f1)"
+linha_servir="$(grep -n 'php artisan serve' "$ASTUTI_MOCK_LOG" | head -1 | cut -d: -f1)"
+[[ -n "$linha_troca" && -n "$linha_servir" && "$linha_troca" -lt "$linha_servir" ]] || {
+    echo 'FALHA: o servidor abriu antes da troca da demonstracao.' >&2
+    exit 1
+}
+if grep -q 'trocar-pelo-kit' "$tmp/sucesso.log"; then
+    echo 'FALHA: trocou a demonstracao sem pedido explicito.' >&2
+    exit 1
+fi
+
+# Falha na troca interrompe tudo antes de abrir o servidor.
+export ASTUTI_MOCK_LOG="$tmp/troca-falha.log"
+export MOCK_TROCA_FALHA=1
+if ASTUTI_TROCAR_DEMO_KIT=1 bash "$script" > "$tmp/troca-falha.out" 2>&1; then
+    echo 'FALHA: seguiu depois de falhar a troca.' >&2
+    exit 1
+fi
+if grep -q 'php artisan serve' "$ASTUTI_MOCK_LOG"; then
+    echo 'FALHA: abriu o servidor depois de falhar a troca.' >&2
+    exit 1
+fi
+unset MOCK_TROCA_FALHA
+
+printf 'PASS: 11 cenarios de acesso seguro ao ensaio PostgreSQL.\n'

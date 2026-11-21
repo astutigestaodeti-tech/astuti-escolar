@@ -34,7 +34,7 @@ class SchoolActiveStudentCountTest extends TwoMunicipalityTestCase
         $this->actingAs($user)->get('/m/municipio-a/escolas')
             ->assertOk()
             ->assertSee('Unidade A')
-            ->assertSee('2 alunos ativos')
+            ->assertSeeText('2 alunos ativos')
             ->assertDontSee('Outra Unidade A')
             ->assertDontSee('Dora de Outra Escola');
 
@@ -50,7 +50,7 @@ class SchoolActiveStudentCountTest extends TwoMunicipalityTestCase
             ->assertOk()
             ->assertSee('Unidade A')
             ->assertSee('Outra Unidade A')
-            ->assertSee('0 alunos ativos');
+            ->assertSeeText('0 alunos ativos');
     }
 
     private function aluno(string $nome): string
