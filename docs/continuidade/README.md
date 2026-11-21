@@ -105,3 +105,17 @@ A cada marco ou fim de sessao relevante:
 4. Revisar se nenhum segredo, dado escolar real, dump ou informacao pessoal de outros assuntos foi incluido.
 
 **Limite importante:** o ChatGPT nao arquiva automaticamente todas as mensagens de todos os chats no GitHub. Este registro tecnicamente relevante deve ser atualizado pelo assistente quando houver acesso autorizado ao repositorio ou por um processo de sincronizacao que venha a ser implementado e autorizado. Ele nao substitui o historico integral de conversas.
+
+
+## 8. Estado mais recente em 21/11/2026 (prevalece sobre os marcos historicos acima)
+
+1. **No notebook, comprovado pela captura 81:** o codigo local estava no HEAD `574401b1` da branch `feature/migracao-postgresql-instalacoes-isoladas`. Os dois backups PostgreSQL atuais foram criados e validados em `~/astuti-backups/pgsql-pre-copia-hNtsqqkz/` e restaurados em bancos de teste independentes. Central: 11 migrations, 0 municipios e 0 usuarios. Municipal: 8 migrations, 0 escolas e 0 alunos.
+2. **No GitHub, preparado posteriormente:** novo roteiro `scripts/operacao/ensaiar-copia-isolada-postgresql.sh` e respectivos testes. A branch avancou ate o commit documental `6a7b012`; o codigo da rotina e os testes passaram no workflow `44908611752` (ambos os jobs `success`). Instrucoes em `docs/operacao/migracao-mariadb-postgresql.md` e plano em `docs/superpowers/plans/2026-11-21-ensaio-copia-cluster-isolado.md`.
+3. **Nao concluido:** a transferencia real dos 115 estudantes ficticios MariaDB para PostgreSQL ainda nao ocorreu na maquina. Nao ha evidencia de validacao de login no banco de ensaio e nem autorizacao de corte para os PostgreSQL `*_dev` originais. PR #5 permanece em rascunho. Nenhum VPS contratado.
+4. **Proxima acao:** no Debian do notebook, executar um unico comando e enviar a captura do resultado:
+
+```bash
+cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas && bash scripts/operacao/ensaiar-copia-isolada-postgresql.sh
+```
+
+Este script prepara um **cluster PostgreSQL distinto**, confere sua identidade e conexoes Laravel efetivas e so entao faz copia ficticia nele. Preserva todos os backups anteriores, nao modifica a origem MariaDB nem os bancos PostgreSQL originais da porta 5432. Consultar `HISTORICO.md` para evidencias, limites e cuidados antes de qualquer proxima etapa.
