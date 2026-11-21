@@ -213,3 +213,11 @@ cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-ins
 ```
 
 Depois da inicializacao comprovada, abrir `http://127.0.0.1:8002/login` e usar as credenciais exibidas no terminal. Nao enviar a senha. Registrar proxima captura no `HISTORICO.md`. Sem corte, merge ou alteracao dos bancos originais.
+
+## 18. Capturas 94-96: login real, tres escolas e senha de ensaio opcional (21/11/2026)
+
+- **Concluido e observado nas capturas do notebook:** login autenticado como `Secretaria Escolar Ficticia`, selecao da rede Prefeitura Municipal de Monte Sereno e pagina `Escolas autorizadas` exibindo tres escolas ativas: EMEF Caminhos do Saber, EMEF Rio Claro e EMEI Jardim das Flores. Sao telas da aplicacao real de desenvolvimento, nao o painel sintetico de 8001.
+- **Ainda nao concluido:** abrir as telas de uma escola e consultar a listagem de alunos e matriculas para confrontar os **115 alunos ficticios** existentes no PostgreSQL de ensaio 55436; executar testes negativos de permissao por URL/acesso nao autorizado. A tela informa verificacao de permissao, mas isso nao substitui testes de seguranca.
+- **Atualizado e testado na branch de desenvolvimento:** `scripts/operacao/testar-login-isolado-postgresql.sh` aceita `ASTUTI_DEMO_PASSWORD` de 6 a 64 caracteres alfanumericos para a **conta de demonstracao copiada exclusivamente no cluster 55436**. Sem variavel usa senha temporaria aleatoria. Senha do role PostgreSQL permanece aleatoria, e a variavel nao chega ao servidor HTTP. **7 + 9 + 8 + 6** cenarios de teste Shell simulados passaram; ainda nao foi aplicada a nova senha no notebook.
+- **Para trocar a senha local e testar novamente:** interromper com `Ctrl+C` somente o terminal que serve **8002**, atualizar a branch com `git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas` e executar `ASTUTI_DEMO_PASSWORD=<senha-ficticia-escolhida> bash scripts/operacao/testar-login-isolado-postgresql.sh` (substituir o marcador por valor de teste, nao por credencial real). Usar **http://127.0.0.1:8002/login**, depois abrir uma escola e conferir alunos. Senhas fracas nunca em producao.
+- **Protecao obrigatoria:** PostgreSQL original 5432, MariaDB, `.env`, backups e clusters historicos intocados. PR #5 ainda rascunho, sem migracao definitiva ou merge. Detalhes em `HISTORICO.md`, capturas 94-96.
