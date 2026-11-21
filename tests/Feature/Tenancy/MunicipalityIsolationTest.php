@@ -2,13 +2,17 @@
 
 namespace Tests\Feature\Tenancy;
 
+use App\Audit\AuditActor;
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
+use App\Models\User;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
@@ -21,6 +25,8 @@ class MunicipalityIsolationTest extends TestCase
     private Municipality $municipioA;
 
     private Municipality $municipioB;
+
+    private string $fixtureAuditUserId;
 
     protected function setUp(): void
     {
@@ -64,6 +70,18 @@ class MunicipalityIsolationTest extends TestCase
             '--realpath' => true,
             '--force' => true,
         ]);
+
+        // A construção do cenário de escolas é uma gravação auditada,
+        // inclusive nos testes de isolamento que não simulam sessão web.
+        $this->fixtureAuditUserId = User::query()->firstOrCreate(
+            ['email' => 'ator-isolamento@astuti.invalid'],
+            [
+                'id' => (string) Str::uuid(),
+                'name' => 'Responsável de isolamento sintético',
+                'password' => Hash::make(Str::random(40)),
+                'status' => 'active',
+            ],
+        )->id;
 
         // A base de integracao e reutilizada pela segunda rodada de testes.
         // Limpar apenas os registros de provisao descartaveis.
@@ -278,8 +296,10 @@ class MunicipalityIsolationTest extends TestCase
                     }
                 }
                 DB::connection('tenant')->table('schools')->delete();
-                School::create(['id' => $id, 'name' => 'Escola Central']);
-                School::create(['id' => substr_replace($id, '3', 0, 1), 'name' => $name]);
+                app(AuditActor::class)->runAs($this->fixtureAuditUserId, function () use ($id, $name): void {
+                    School::create(['id' => $id, 'name' => 'Escola Central']);
+                    School::create(['id' => substr_replace($id, '3', 0, 1), 'name' => $name]);
+                });
             } finally {
                 $this->context->leave();
             }
