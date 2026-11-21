@@ -251,6 +251,29 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
 
+    public function test_voltar_rejeita_tentativas_de_escapar_do_prefixo_da_prefeitura(): void
+    {
+        $user = $this->criarUsuario('voltar-travessia@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $aluno = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluna com retorno isolado');
+
+        $destino = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$aluno;
+        $fallback = route('school.students.index', ['municipio' => 'municipio-a', 'escola' => self::ESCOLA_A1]);
+
+        foreach (['..', '%2e%2e'] as $escapada) {
+            $origem = 'http://localhost:8000/m/municipio-a/'.$escapada.'/municipio-b/escolas/'.self::ESCOLA_B1;
+
+            $this->actingAs($user)
+                ->withHeader('referer', $origem)
+                ->get($destino)
+                ->assertOk()
+                ->assertSee('href="'.$fallback.'"', false)
+                ->assertDontSee('href="'.$origem.'"', false);
+        }
+
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
     private function matricularAluno(
         Municipality $municipio,
         string $escola,
