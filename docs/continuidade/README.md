@@ -35,12 +35,12 @@ Ordem funcional: alunos atuais, responsaveis, escolas, turmas e matriculas; depo
 | Repositorio | `astutigestaodeti-tech/astuti-escolar`, privado |
 | `main` antes deste registro | `edf52e89` - base antiga do projeto, sem receber ainda os incrementos em PR |
 | Branch de trabalho mais recente | `feature/migracao-postgresql-instalacoes-isoladas` |
-| Cabeca da branch remota | `54a6d2a2` (apenas documentos de desenho e plano de testes; codigo da migracao sem alteracao desde `a27be7b1`) |
+| Cabeca da branch remota verificada nesta etapa | `d5063d9` (Task 1 da integracao CI: helpers, fixture e job MariaDB + PostgreSQL; tarefas 2-4 ainda pendentes) |
 | PR #1 | `feature/incremento-01-saude` para `main`, rascunho/aberto |
 | PR #3 | Incremento 02 para Incremento 01, rascunho/aberto |
 | PR #4 | Incremento 03 para Incremento 02, rascunho/aberto |
 | PR #5 | PostgreSQL e VPS por Prefeitura para Incremento 03, rascunho/aberto |
-| CI na branch PostgreSQL | Duas execucoes Actions sobre `a27be7b1` com conclusao `success` em 21/11/2026 |
+| CI na branch PostgreSQL | PR run `44867708379` no commit `d5063d9`: integracao 10 testes/90 assercoes; suite geral 165 testes/606 assercoes por rodada, repetida duas vezes, Pint, Vite e interface verdes |
 
 O sucesso do GitHub Actions comprova as verificacoes automatizadas executadas por aquele workflow, **nao** a transferencia concluida dos bancos do notebook nem a homologacao do sistema para Prefeituras.
 
@@ -90,7 +90,7 @@ As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os doi
 4. **Revisao tecnica pre-corte em 21/11/2026:** comando restringe ambiente, confere conteudo e hashes, mas commits nos dois bancos PG nao sao atomicamente conjuntos. CI do PR #5 passou, porem nao executa transferencia real MariaDB->PG. Nao assumir copia concluida nem prontidao para producao.
 5. **Concluido em captura 71:** `migrate:status` confirmou apenas a migration central `0001_01_01_000002_create_jobs_table` como `Pending` e outras dez como `Ran`. Consulta `to_regclass` ao PostgreSQL central confirmou `jobs`, `job_batches` e `failed_jobs` todas `AUSENTE`; nenhuma tabela foi modificada.
 6. **Concluido em captura 72:** backups PostgreSQL central e municipal criados e conferidos pelo indice do arquivo; aplicacao da migration `jobs` em PostgreSQL central com `DONE`, status `Ran` e tres tabelas fisicamente presentes. **Proximo passo:** preparar e executar testes de integracao de copia MariaDB->PG em destinos descartaveis, ensaiar rollback e falha entre commits e validar relacionamentos, hashes, login e auditoria. Nunca usar os destinos principais como primeiro teste de transferencia.
-7. **Desenho aprovado e plano preparado em 21/11:** `docs/superpowers/specs/2026-11-21-testes-integracao-mariadb-postgresql-design.md` e `docs/superpowers/plans/2026-11-21-testes-integracao-mariadb-postgresql.md`, ultimo commit documental `54a6d2a2`. Proximo passo e Jefferson revisar o plano com quatro Tasks TDD e escolher forma de execucao. Nenhuma nova cobertura de CI foi implementada nem executada; notebook segue no ultimo HEAD observado `a27be7b1` e nao precisa atualizar somente pelos documentos.
+7. **Task 1 de integracao executada e revisada em 21/11:** no PR #5 foi implementado ambiente CI MariaDB 11.8 + PostgreSQL 17 descartaveis, quatro bancos exclusivos `_test`, fixture sintetica e 10 testes/90 assercoes verdes (`d5063d9`, run `44867708379`); suite principal verde duas vezes (165 testes/606 assercoes por rodada), Pint, build e interface aprovados. Revisao independente sem criticos/importantes. **Task 2 em andamento:** exercitar copia real entre bancos `_test`, depois rollback, commit parcial e integridade (Tasks 3-4). Os bancos do notebook nao foram acessados e o ultimo HEAD local comprovado segue `a27be7b1`. Ainda nao houve copia.
 8. **Nao executar `--executar` nos destinos principais nem mesclar PR #5 nesta etapa.** Fazer nova revisao e obter autorizacao especifica depois dos testes. Manter PRs anteriores em rascunho ate os criterios de aceitacao.
 
 ## 7. Como manter este registro util
