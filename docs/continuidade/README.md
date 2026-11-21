@@ -69,13 +69,14 @@ Evidencia: capturas do terminal Debian enviadas pelo usuario em conversa de cont
 | Branch local no ultimo print | `feature/migracao-postgresql-instalacoes-isoladas`, HEAD `a27be7b1`, arvore limpa |
 | PostgreSQL Laravel | Conexao `platform`, banco `astuti_platform_dev`, host `127.0.0.1`, porta `5432`, usuario `astuti_app` |
 | Banco central | 11 tabelas exibidas por `php artisan db:show` |
-| Migracoes centrais | 10 migracoes especificas de plataforma exibidas como `Ran`; nova migration de `jobs` em `Pending` apos o pull |
+| Migracoes centrais | Captura 72: 11 migrations `Ran`, sendo `jobs` executada em batch 2; tabelas `jobs`, `job_batches`, `failed_jobs` presentes |
 | Banco municipal PostgreSQL | `astuti_monte_sereno_dev` confirmado, com 7 tabelas de estrutura escolar, auditoria e migrations |
 | Contagens PostgreSQL verificadas | Central: `municipalities`, `users`, `memberships` com 0; municipal: escolas, anos, turmas, alunos e matriculas com 0 |
 | MariaDB de origem | 3 bases `astuti_*_dev` confirmadas; 12 tabelas de origem comparadas as restauracoes, com contagens iguais (captura 70) |
 | Bancos restaurados MariaDB | Capturas 69 e 70: `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385`; 12 de 12 tabelas com contagens iguais as origens |
 | Dry-run atual PostgreSQL | Captura 70: `php artisan astuti:migrar-dados-postgresql` sem `--executar` foi aprovado no commit `a27be7b1`; nenhuma gravacao |
 | Backups MariaDB | Captura 68: dois dumps `.sql.gz` localizados em `~/astuti-backups/mariadb-20261120-234757/`, tamanhos 4,7 KB e 17 KB, ambos aprovados em `gzip -t`; sem alteracao |
+| Backups PostgreSQL | Captura 72: dumps `-Fc` dos bancos central e municipal criados fora do Git em `~/astuti-backups/pgsql-antes-jobs-*/`; arquivos legiveis via `pg_restore -l` e com SHA-256; restauracao completa ainda nao ensaiada |
 
 **Sincronizacao concluida em 21/11/2026:** o notebook estava no commit `ec78138`, quatro commits atras do remoto. Jefferson executou `git pull --ff-only` e comprovou HEAD `a27be7b1`, branch correta e arvore limpa. O historico detalhado esta em `HISTORICO.md`.
 
@@ -88,7 +89,7 @@ As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os doi
 3. **Concluido em captura 70:** simulacao `php artisan astuti:migrar-dados-postgresql` sem `--executar` aprovada no codigo `a27be7b1`, com 1 municipio, 1 usuario, 3 escolas, 115 alunos, 3 turmas, 115 matriculas e 237 auditorias municipais. Nenhum dado foi gravado.
 4. **Revisao tecnica pre-corte em 21/11/2026:** comando restringe ambiente, confere conteudo e hashes, mas commits nos dois bancos PG nao sao atomicamente conjuntos. CI do PR #5 passou, porem nao executa transferencia real MariaDB->PG. Nao assumir copia concluida nem prontidao para producao.
 5. **Concluido em captura 71:** `migrate:status` confirmou apenas a migration central `0001_01_01_000002_create_jobs_table` como `Pending` e outras dez como `Ran`. Consulta `to_regclass` ao PostgreSQL central confirmou `jobs`, `job_batches` e `failed_jobs` todas `AUSENTE`; nenhuma tabela foi modificada.
-6. **Proximo passo:** criar backups dos dois bancos PostgreSQL de desenvolvimento com `pg_dump -Fc`, validar os arquivos com `pg_restore -l` e hash, revalidar o estado `Pending` e a ausencia das tres tabelas e, se tudo corresponder, aplicar somente as migrations de plataforma pendentes. Depois comprovar que as tres tabelas existem e `jobs` figura como `Ran`. Isso ainda nao foi executado. Em paralelo, preparar testes de integracao e ensaio de copia/recuperacao em destinos descartaveis, inclusive falha entre commits, e conferir FKs, auditoria, login, hashes e telas.
+6. **Concluido em captura 72:** backups PostgreSQL central e municipal criados e conferidos pelo indice do arquivo; aplicacao da migration `jobs` em PostgreSQL central com `DONE`, status `Ran` e tres tabelas fisicamente presentes. **Proximo passo:** preparar e executar testes de integracao de copia MariaDB->PG em destinos descartaveis, ensaiar rollback e falha entre commits e validar relacionamentos, hashes, login e auditoria. Nunca usar os destinos principais como primeiro teste de transferencia.
 7. **Nao executar `--executar` nos destinos principais nem mesclar PR #5 nesta etapa.** Fazer nova revisao e obter autorizacao especifica depois dos testes. Manter PRs anteriores em rascunho ate os criterios de aceitacao.
 
 ## 7. Como manter este registro util
