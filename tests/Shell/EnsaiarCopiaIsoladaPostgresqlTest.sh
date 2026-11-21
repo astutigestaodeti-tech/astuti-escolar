@@ -18,6 +18,12 @@ printf 'PGDMP-test-monte\n' > "$backup/astuti_monte_sereno_dev.dump"
 
 sudo() {
     printf 'sudo %s\n' "$*" >> "$ASTUTI_MOCK_LOG"
+    # PgCommon::quote_conf_value classifica 127.0.0.1 como numero e o grava
+    # sem aspas no postgresql.conf. O servidor real recusa essa configuracao.
+    if [[ "$*" == *'pg_ctlcluster '*" start" ]] && \
+        grep -q 'pg_conftool .* set listen_addresses 127[.]0[.]0[.]1$' "$ASTUTI_MOCK_LOG"; then
+        return 1
+    fi
     if [[ "$*" == *'pg_control_system()'* ]]; then
         if [[ "$*" == *'--port=5432'* ]]; then
             printf '1234567890\n'
@@ -102,7 +108,7 @@ if ! bash "$script" --backup-dir "$backup" > "$tmp/sucesso.out" 2>&1; then
     exit 1
 fi
 grep -q 'sudo pg_createcluster 17 .*--port=55432 --start-conf=manual$' "$ASTUTI_MOCK_LOG"
-grep -q 'sudo pg_conftool 17 .* set listen_addresses 127.0.0.1$' "$ASTUTI_MOCK_LOG"
+grep -q 'sudo pg_conftool 17 .* set listen_addresses localhost$' "$ASTUTI_MOCK_LOG"
 grep -q 'sudo pg_ctlcluster --skip-systemctl-redirect 17 .* start$' "$ASTUTI_MOCK_LOG"
 grep -q 'sudo pg_ctlcluster --skip-systemctl-redirect 17 .* stop$' "$ASTUTI_MOCK_LOG"
 grep -q 'php artisan astuti:migrar-dados-postgresql$' "$ASTUTI_MOCK_LOG"
