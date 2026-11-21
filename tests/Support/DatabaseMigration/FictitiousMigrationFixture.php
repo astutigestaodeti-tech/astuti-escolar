@@ -67,7 +67,7 @@ final class FictitiousMigrationFixture
         $source->table('municipality_provision_attempts')->insert([
             'id' => 27,
             'municipality_id' => self::MUNICIPALITY_ID,
-            'status' => 'succeeded',
+            'status' => 'completed',
             'started_at' => self::TIMESTAMP,
             'finished_at' => self::TIMESTAMP,
             ...self::TIMESTAMPS,
