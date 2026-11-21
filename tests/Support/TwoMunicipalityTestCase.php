@@ -35,7 +35,7 @@ abstract class TwoMunicipalityTestCase extends TestCase
         parent::setUp();
 
         if (getenv('TENANCY_INTEGRATION') !== '1') {
-            $this->markTestSkipped('Exige tres bases MariaDB descartaveis de teste.');
+            $this->markTestSkipped('Exige tres bases PostgreSQL descartaveis de teste.');
         }
 
         $platformName = (string) getenv('PLATFORM_DB_DATABASE');
@@ -52,7 +52,7 @@ abstract class TwoMunicipalityTestCase extends TestCase
             throw new RuntimeException('Bancos de testes devem ser distintos.');
         }
 
-        $base = config('database.connections.mariadb');
+        $base = config('database.connections.pgsql');
         $settings = [
             'host' => (string) getenv('TENANCY_TEST_DB_HOST'),
             'port' => (string) getenv('TENANCY_TEST_DB_PORT'),
