@@ -21,6 +21,15 @@
     $usuario = auth()->user();
     $iniciaisUsuario = mb_strtoupper(collect(preg_split('/\s+/u', trim((string) ($usuario?->name ?? ''))) ?: [])->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
     $escolasAtivo = request()->routeIs('schools.*') || request()->routeIs('school.classes.*') || request()->routeIs('school.students.*');
+    $parametrosMunicipio = ['municipio' => $municipality->slug];
+    $parametrosEscola = [...$parametrosMunicipio, 'escola' => request()->route('escola')];
+    $voltarFallback = match (request()->route()?->getName()) {
+        'schools.index' => route('home'),
+        'schools.show' => route('schools.index', $parametrosMunicipio),
+        'school.classes.index', 'school.students.index', 'school.enrollments.index' => route('schools.show', $parametrosEscola),
+        'school.students.show' => route('school.students.index', $parametrosEscola),
+        default => route('schools.index', $parametrosMunicipio),
+    };
 @endphp
 <a class="pular" href="#conteudo">Pular para o conteúdo</a>
 
@@ -80,6 +89,8 @@
             @if (app()->environment('local'))
                 <div class="aviso-demo" role="note"><x-icon name="alerta" /><span><strong>Ambiente de desenvolvimento.</strong> Use somente dados fictícios.</span></div>
             @endif
+
+            <x-voltar-anterior :fallback="$voltarFallback" :municipio="$municipality->slug" />
 
             @yield('content')
 
