@@ -34,7 +34,7 @@ sudo -u postgres pg_isready "${principal[@]}" -q || erro 'PostgreSQL principal i
 sudo -u postgres pg_isready "${ensaio[@]}" -q || erro 'PostgreSQL isolado indisponivel.'
 
 identidade() {
-    sudo -u postgres psql "$@" -X -At -v ON_ERROR_STOP=1 --database=postgres \
+    sudo -u postgres psql "$@" -X -At -v ON_ERROR_STOP=1 -d postgres \
         -c 'SELECT system_identifier FROM pg_control_system();'
 }
 id_principal="$(identidade "${principal[@]}")" || erro 'identidade principal indisponivel.'
@@ -45,7 +45,7 @@ id_ensaio="$(identidade "${ensaio[@]}")" || erro 'identidade isolada indisponive
 consulta() {
     local banco="$1" sql="$2"
     sudo -u postgres psql "${ensaio[@]}" -X -At -F '|' -v ON_ERROR_STOP=1 \
-        --database="$banco" -c "$sql"
+        -d "$banco" -c "$sql"
 }
 
 [[ "$(consulta astuti_platform_dev 'SELECT COUNT(*) FROM municipalities;')" == 1 ]] || \
@@ -112,7 +112,7 @@ php -r '
 printf 'Identidade fisica distinta confirmada. 1 usuario, 3 escolas e 115 alunos da copia ficticia.\n'
 printf '===== PREPARANDO CREDENCIAIS APENAS NO ENSAIO 55436 =====\n'
 # Senha chega ao psql via stdin, sem aparecer na lista de processos.
-sudo -u postgres psql "${ensaio[@]}" -X -v ON_ERROR_STOP=1 --database=postgres --file=- >/dev/null <<< \
+sudo -u postgres psql "${ensaio[@]}" -X -v ON_ERROR_STOP=1 -d postgres --file=- >/dev/null <<< \
     "ALTER ROLE astuti_ensaio PASSWORD '$senha_banco';" || erro 'falha ao configurar a conta PostgreSQL isolada.'
 
 # Verifica as conexoes EFETIVAS antes de trocar a senha do unico usuario ficticio.
