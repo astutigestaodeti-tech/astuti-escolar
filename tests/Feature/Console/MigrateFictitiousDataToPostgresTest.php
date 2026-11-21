@@ -160,6 +160,30 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
     }
 
+    public function test_diagnostico_informa_etapa_e_tabela_sem_expor_alunos(): void
+    {
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = DisposableMigrationDatabases::create();
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+
+        $events = [];
+        $onStage = static function (string $stage, string $table) use (&$events): void {
+            $events[] = "{$stage}:{$table}";
+        };
+
+        (new FictitiousDataTransfer)->run(
+            $sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true, null, $onStage,
+        );
+
+        $this->assertContains('inserindo:municipalities', $events);
+        $this->assertContains('conferindo:students', $events);
+        $this->assertContains('conferindo:audit_logs', $events);
+        $this->assertContains('ajustando:municipality_provision_attempts', $events);
+        $this->assertStringNotContainsString('Estudante fictício', implode(' ', $events));
+        $this->assertStringNotContainsString('senha', implode(' ', $events));
+    }
+
     #[DataProvider('obstaculosDaCopia')]
     public function test_destino_nao_vazio_e_fk_invalida_bloqueiam_sem_escrever(bool $preencherDestino): void
     {
