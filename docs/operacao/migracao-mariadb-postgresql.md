@@ -114,7 +114,7 @@ Confira nas duas listagens o banco e o esquema esperados. Registre o horário e 
 
 ### Comando automatizado para ensaiar as restauracoes do notebook
 
-Na branch `feature/migracao-postgresql-instalacoes-isoladas`, o roteiro versionado `scripts/operacao/ensaiar-restauracao-postgresql.sh` restaura os dois backups `~/astuti-backups/pgsql-antes-jobs-2Xqrc9lg/*.dump` em **novos** bancos PostgreSQL com prefixos `astuti_restore_pg_platform_` e `astuti_restore_pg_monte_`. Nunca e apontado para os bancos `*_dev`. Se falhar, interrompe, preserva os bancos de teste ja criados e informa os nomes. As restauracoes nao sao eliminadas automaticamente.
+Na branch `feature/migracao-postgresql-instalacoes-isoladas`, o roteiro versionado `scripts/operacao/ensaiar-restauracao-postgresql.sh` localiza o **unico par completo** de backups em `~/astuti-backups/pgsql-antes-jobs-*` e restaura os dois arquivos em **novos** bancos PostgreSQL com prefixos `astuti_restore_pg_platform_` e `astuti_restore_pg_monte_`. Nunca e apontado para os bancos `*_dev`. Se falhar, interrompe, preserva os bancos de teste ja criados e informa os nomes. As restauracoes nao sao eliminadas automaticamente.
 
 Depois de conferir que a arvore Git esta limpa e sincronizar a branch no notebook:
 
