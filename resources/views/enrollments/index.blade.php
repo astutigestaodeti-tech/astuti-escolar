@@ -43,6 +43,13 @@
             <button class="botao" type="submit"><x-icon name="busca" :size="16" /> Pesquisar</button>
         </form>
 
+        @if ($errors->has('ano_letivo') || $errors->has('busca'))
+            <div class="erro erro-matriculas" role="alert">
+                @error('ano_letivo')<p>{{ $message }}</p>@enderror
+                @error('busca')<p>{{ $message }}</p>@enderror
+            </div>
+        @endif
+
         @if ($enrollments->isEmpty())
             <div class="vazio">Nenhuma matrícula ativa {{ $search !== '' || $selectedYear !== null ? 'encontrada para os filtros informados.' : 'cadastrada nesta escola.' }}</div>
         @else
