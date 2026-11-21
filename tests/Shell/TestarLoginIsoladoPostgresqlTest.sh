@@ -157,4 +157,26 @@ if grep -q -- '--file=-\|php -r' "$ASTUTI_MOCK_LOG"; then
     exit 1
 fi
 
-printf 'PASS: 7 cenarios de acesso seguro ao ensaio PostgreSQL.\n'
+# Atualizar a estrutura so acontece quando pedido, depois das conferencias,
+# com verificacao da conexao efetiva 55436 e antes de abrir o servidor.
+export ASTUTI_MOCK_LOG="$tmp/atualizar-estrutura.log"
+if ! ASTUTI_ATUALIZAR_ESTRUTURA=1 bash "$script" > "$tmp/atualizar-estrutura.out" 2>&1; then
+    echo 'FALHA: nao atualizou a estrutura quando pedido.' >&2
+    tail -n 20 "$tmp/atualizar-estrutura.out" >&2
+    exit 1
+fi
+grep -q 'ATUALIZANDO A ESTRUTURA, APENAS NO ENSAIO 55436' "$tmp/atualizar-estrutura.out"
+grep -q 'Artisan::call("migrate"' "$ASTUTI_MOCK_LOG"
+grep -q 'astuti_monte_sereno_dev' "$ASTUTI_MOCK_LOG"
+linha_migrar="$(grep -n 'Artisan::call("migrate"' "$ASTUTI_MOCK_LOG" | head -1 | cut -d: -f1)"
+linha_servir="$(grep -n 'php artisan serve' "$ASTUTI_MOCK_LOG" | head -1 | cut -d: -f1)"
+[[ -n "$linha_migrar" && -n "$linha_servir" && "$linha_migrar" -lt "$linha_servir" ]] || {
+    echo 'FALHA: o servidor abriu antes da atualizacao da estrutura.' >&2
+    exit 1
+}
+if grep -q -- '--port=5432 .*--file=-\|migrate:fresh\|db:wipe' "$ASTUTI_MOCK_LOG"; then
+    echo 'FALHA: comando perigoso ao atualizar a estrutura.' >&2
+    exit 1
+fi
+
+printf 'PASS: 8 cenarios de acesso seguro ao ensaio PostgreSQL.\n'

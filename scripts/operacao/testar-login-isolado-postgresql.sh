@@ -161,6 +161,46 @@ ASTUTI_LOGIN_TEST_PASSWORD="$senha_login" ASTUTI_LOGIN_TEST_EMAIL="$email" php -
     });
 ' || erro 'falha na configuracao do login ficticio isolado; nenhum banco original foi alterado.'
 
+# Opcional: aplica migracoes pendentes SOMENTE na copia ficticia 55436, para a
+# interface rodar com a estrutura atual do codigo. Uso explicito:
+# ASTUTI_ATUALIZAR_ESTRUTURA=1 bash scripts/operacao/testar-login-isolado-postgresql.sh
+if [[ "${ASTUTI_ATUALIZAR_ESTRUTURA:-}" == 1 ]]; then
+    printf '===== ATUALIZANDO A ESTRUTURA, APENAS NO ENSAIO 55436 =====\n'
+    php -r '
+        require "vendor/autoload.php";
+        $app = require "bootstrap/app.php";
+        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        $conferir = function (string $conexao, string $banco): void {
+            $dados = \Illuminate\Support\Facades\DB::connection($conexao)->selectOne(
+                "SELECT current_database() AS banco, current_user AS usuario, inet_server_port() AS porta"
+            );
+            if ($dados->banco !== $banco || $dados->usuario !== "astuti_ensaio" || (int) $dados->porta !== 55436) {
+                throw new \RuntimeException("Conexao efetiva fora do cluster isolado.");
+            }
+        };
+        $migrar = function (string $conexao, string $pasta): void {
+            $codigo = \Illuminate\Support\Facades\Artisan::call("migrate", [
+                "--database" => $conexao,
+                "--path" => database_path("migrations/".$pasta),
+                "--realpath" => true,
+                "--force" => true,
+            ]);
+            echo \Illuminate\Support\Facades\Artisan::output();
+            if ($codigo !== 0) {
+                throw new \RuntimeException("Migracao recusada em ".$pasta.".");
+            }
+        };
+        $conferir("platform", "astuti_platform_dev");
+        $migrar("platform", "platform");
+        $municipio = \App\Models\Platform\Municipality::query()->sole();
+        app(\App\Tenancy\TenantContext::class)->runFor($municipio, function () use ($conferir, $migrar): void {
+            $conferir("tenant", "astuti_monte_sereno_dev");
+            $migrar("tenant", "tenant");
+        });
+    ' || erro 'falha ao atualizar a estrutura da copia isolada; o PostgreSQL original nao foi alterado.'
+fi
+unset ASTUTI_ATUALIZAR_ESTRUTURA
+
 printf '\n===== TESTE DA INTERFACE REAL, APENAS NO CLUSTER ISOLADO =====\n'
 printf 'Endereco: http://127.0.0.1:8002/login\n'
 printf 'E-mail: %s\n' "$email"
