@@ -43,6 +43,13 @@
             <p>Consulte os alunos com vínculo ativo nesta unidade escolar.</p>
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar alunos desta escola <x-icon name="seta" :size="16" /></a>
         </section>
+
+        <section class="folha cartao" aria-labelledby="titulo-matriculas">
+            <span class="acao-icone"><x-icon name="turmas" /></span>
+            <h2 id="titulo-matriculas">Matrículas</h2>
+            <p>Consulte os vínculos ativos, anos letivos e datas de início desta escola.</p>
+            <a class="botao secundario" style="margin-top:12px" href="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar matrículas desta escola <x-icon name="seta" :size="16" /></a>
+        </section>
     </div>
 
     <div class="nota"><x-icon name="info" /><div><strong>Consulta disponível</strong><p>A inclusão e alteração de alunos e matrículas permanecem indisponíveis até a implantação da autenticação reforçada e da auditoria.</p></div></div>
