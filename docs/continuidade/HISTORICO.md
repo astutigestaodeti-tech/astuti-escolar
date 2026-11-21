@@ -520,3 +520,11 @@ A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao en
 **Próximas frentes:** conferir a tela individual e as novas contagens no notebook, e evoluir o cadastro escolar somente após regras explícitas de gravação auditada e validação de 2FA.
 
 **Revisão independente complementar da contagem:** nenhum achado crítico ou importante; dois pontos menores foram adiados para os próximos testes: (1) gestor que vê simultaneamente duas escolas com contagens diferentes, para proteger a correlação por escola; (2) alunos/matrículas com exclusão lógica (`deleted_at`) para proteger a aplicação dos escopos de `SoftDeletes`. O código atual foi considerado correto, inclusive na correlação SQL e nos índices, mas não houve `EXPLAIN ANALYZE` com base grande nem inspeção visual do notebook. Revisão confirmou que o PR #5 permanece draft.
+
+## 21/11/2026 - Evidência visual no notebook: contagens e sincronização
+
+**Captura 112, enviada pelo usuário:** a tela autenticada de `Escolas autorizadas` em Monte Sereno exibiu **45 alunos ativos** na EMEF Caminhos do Saber, **30** na EMEF Rio Claro e **40** na EMEI Jardim das Flores, totalizando **115 alunos fictícios**. A imagem confirma que a nova contagem por escola está disponível e coerente no notebook, além dos testes automatizados já aprovados. Não valida, por si só, busca sem distinguir maiúsculas, ficha individual de aluno ou tentativas de acesso negado.
+
+**Captura 113, enviada pelo usuário:** terminal Debian executou o procedimento guardado de conferência de branch/árvore limpa seguido de `git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas`. A atualização foi **fast-forward `a890083..b13ea12`**, com 14 arquivos atualizados e retorno ao prompt sem erro. Confirma a atualização local até o commit da interface de contagem.
+
+**Próximo passo de validação no notebook:** abrir uma escola fictícia, consultar os alunos, clicar no nome de um estudante para conferir a ficha individual de leitura e testar pesquisa pelo termo `estudante` em minúsculas. Não usar dados reais de menores. PostgreSQL original 5432, MariaDB, backups e `.env` permanecem fora de escopo; PR #5 continua draft.
