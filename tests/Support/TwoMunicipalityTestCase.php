@@ -79,9 +79,7 @@ abstract class TwoMunicipalityTestCase extends TestCase
         foreach (['platform_audit_logs', 'sessions', 'school_scopes', 'memberships', 'municipality_provision_attempts', 'users'] as $table) {
             if (Schema::connection('platform')->hasTable($table)) {
                 if ($table === 'platform_audit_logs') {
-                    // Só os bancos efêmeros de teste podem usar TRUNCATE;
-                    // os gatilhos bloqueiam DELETE, como devem em produção.
-                    DB::connection('platform')->table($table)->truncate();
+                    $this->limparAuditoriaDescartavel('platform', 'platform_audit_logs', 'platform_audit_logs_block_truncate');
                 } else {
                     DB::connection('platform')->table($table)->delete();
                 }
@@ -130,7 +128,7 @@ abstract class TwoMunicipalityTestCase extends TestCase
                 foreach (['student_enrollments', 'students', 'school_classes', 'school_years', 'schools', 'audit_logs'] as $table) {
                     if (Schema::connection('tenant')->hasTable($table)) {
                         if ($table === 'audit_logs') {
-                            DB::connection('tenant')->table($table)->truncate();
+                            $this->limparAuditoriaDescartavel('tenant', 'audit_logs', 'audit_logs_block_truncate');
                         } else {
                             DB::connection('tenant')->table($table)->delete();
                         }
@@ -189,4 +187,25 @@ abstract class TwoMunicipalityTestCase extends TestCase
 
         return $membership;
     }
+    private function limparAuditoriaDescartavel(string $connection, string $table, string $trigger): void
+    {
+        // Exclusivamente nas tres bases *_test: o usuario de migration do CI
+        // pode suspender o gatilho por um instante para limpar fixtures.
+        // Em producao, o usuario web nao e dono das tabelas e nao pode faze-lo.
+        foreach ([(string) getenv('PLATFORM_DB_DATABASE'), (string) getenv('TENANCY_TEST_DB_A'), (string) getenv('TENANCY_TEST_DB_B')] as $name) {
+            if (! preg_match('/\\A[a-z0-9_]+_test\\z/D', $name)) {
+                throw new RuntimeException('Limpeza de auditoria disponivel apenas em bancos descartaveis.');
+            }
+        }
+
+        $db = DB::connection($connection);
+        $db->statement("ALTER TABLE {$table} DISABLE TRIGGER {$trigger}");
+
+        try {
+            $db->table($table)->truncate();
+        } finally {
+            $db->statement("ALTER TABLE {$table} ENABLE TRIGGER {$trigger}");
+        }
+    }
+
 }
