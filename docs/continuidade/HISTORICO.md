@@ -420,3 +420,19 @@ cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-ins
 ```
 
 Depois, abrir **http://127.0.0.1:8002/login**, usar e-mail e senha impressos no proprio terminal. Deixar terminal aberto; Ctrl+C encerra servidor. **Estado pendente:** o comando ainda nao foi executado no notebook neste chat; login, navegacao em listas reais e permissao autenticada ainda nao estao validados. Os testes automatizados Bash nao equivalem a teste integrado no notebook. PR #5 permanece rascunho; sem corte, merge, alteracao de `.env` ou exclusao dos clusters anteriores.
+
+## 21/11/2026 - Captura 93: incompatibilidade psql corrigida antes de qualquer escrita
+
+**Capturas do notebook:** o usuario executou `git pull --ff-only` na branch `feature/migracao-postgresql-instalacoes-isoladas` e iniciou `bash scripts/operacao/testar-login-isolado-postgresql.sh`. O Git atualizou corretamente quatro arquivos. Na primeira leitura de identidade, o PostgreSQL respondeu literalmente `psql: unrecognized option '--database=postgres'` e o roteiro encerrou com `ERRO: identidade principal indisponivel.`. O navegador em `127.0.0.1:8002/login` mostrou `ERR_CONNECTION_REFUSED` porque o servidor da porta 8002 **nunca chegou a iniciar**. O fluxo parou **antes de alterar** papel PostgreSQL ou senha ficticia.
+
+**Causa confirmada:** o script novo usou `--database=` em tres invocacoes da CLI `psql`; esta opcao nao existe no `psql` 17 do Debian. O projeto ja utilizava corretamente `-d` em outros roteiros. O teste Bash anterior nao reproduzia a incompatibilidade, pois o mock aceitava toda opcao enviada.
+
+**Correcao publicada no GitHub, mesma branch:** teste de regressao passou a rejeitar `--database=` nas chamadas simuladas a `psql` e **falhou antes da alteracao**, reproduzindo o sintoma. Em seguida, as tres chamadas foram corrigidas para `-d`, inclusive a leitura de identidade, contagens e alteracao de role via stdin; commits `cf733b6` (teste) e `ab82dc5` (script). Em nova execucao local, **5 cenarios de login, 9 de copia, 8 de restauracao e 6 de backups passaram**, alem de `bash -n`. Testes locais usam mocks porque o executor nao possui PostgreSQL; nao afirmar login real ate a proxima captura do Debian.
+
+**Comando unico corrigido para o notebook** (cluster 55436 online, outro terminal nao ocupado pelo servidor 8001):
+
+```bash
+cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas && bash scripts/operacao/testar-login-isolado-postgresql.sh
+```
+
+A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao enviar capturas que mostrem credenciais. O PR #5 continua rascunho, sem corte, migracao nos bancos originais 5432 ou exclusao de backups/clusters.
