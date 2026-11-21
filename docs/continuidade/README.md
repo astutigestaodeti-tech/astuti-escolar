@@ -66,18 +66,18 @@ Evidencia: capturas do terminal Debian enviadas pelo usuario em conversa de cont
 | Composer | 2.8.8 |
 | PostgreSQL | 17.12; `127.0.0.1:5432` aceitando conexoes; servico ativo |
 | Nginx | Ausente, o que nao impede desenvolvimento local com `artisan serve` |
-| Branch local no ultimo print | `feature/migracao-postgresql-instalacoes-isoladas`, HEAD `ec78138` |
+| Branch local no ultimo print | `feature/migracao-postgresql-instalacoes-isoladas`, HEAD `a27be7b1`, arvore limpa |
 | PostgreSQL Laravel | Conexao `platform`, banco `astuti_platform_dev`, host `127.0.0.1`, porta `5432`, usuario `astuti_app` |
 | Banco central | 11 tabelas exibidas por `php artisan db:show` |
 | Migracoes centrais | 10 migracoes especificas de plataforma exibidas como `Ran` por `php artisan migrate:status` |
 
-**Divergencia de commits:** no print do notebook, o HEAD e o `origin/...` local estavam em `ec78138`, enquanto o GitHub remoto foi verificado em `a27be7b1`. Nao presumir que a copia local ja recebeu os commits mais recentes. Antes de atualizar, conferir `git status` e executar um `git fetch` de leitura; usar atualizacao fast-forward apenas se a arvore estiver segura.
+**Sincronizacao concluida em 21/11/2026:** o notebook estava no commit `ec78138`, quatro commits atras do remoto. Jefferson executou `git pull --ff-only` e comprovou HEAD `a27be7b1`, branch correta e arvore limpa. O historico detalhado esta em `HISTORICO.md`.
 
 O print **nao** confirma a criacao, integridade, vaziez ou transferencia do banco municipal `astuti_monte_sereno_dev` no PostgreSQL. Tambem nao comprova backup/restauracao das origens MariaDB, transferencia de alunos, uso da senha antiga ou testes locais completos. **Nao executar importacao, `migrate:fresh`, `db:wipe` ou seed de demonstracao antes dessas verificacoes.**
 
 ## 6. Proximo passo seguro
 
-1. No notebook, confirmar `git status` sem alteracoes e comparar a branch local com a remota; baixar os commits novos sem sobrescrever trabalho local.
+1. **Concluido em 21/11/2026:** branch local sincronizada por fast-forward, com HEAD `a27be7b1` e sem alteracoes pendentes.
 2. Verificar, sem modificar dados, as bases MariaDB de origem e as duas bases PostgreSQL de destino; distinguir tabelas vazias de tabelas populadas.
 3. Confirmar dumps MariaDB separados, protegidos fora do Git, com ao menos um ensaio de restauracao em banco isolado de teste.
 4. Seguir o guia `docs/operacao/migracao-mariadb-postgresql.md`: preparar apenas destinos permitidos, executar simulacao, avaliar relatorio e somente apos backup e confirmacao especifica executar a transferencia.
