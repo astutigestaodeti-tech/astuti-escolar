@@ -292,7 +292,8 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
         $invalid->assertRedirect($url.'?busca=Aluno')
             ->assertSessionHasErrors('ano_letivo');
 
-        $this->get($url.'?busca=Aluno')
+        // Segue o 302 como um navegador, preservando o cookie da sessão de teste.
+        $this->followingRedirects()->get($url.'?busca=Aluno&ano_letivo=2025')
             ->assertOk()
             ->assertSee('Escolha um ano letivo disponível para esta escola.')
             ->assertSee('role="alert"', false)
