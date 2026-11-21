@@ -22,8 +22,8 @@ final class FictitiousDataTransfer
     ): array {
         try {
             foreach ([$sourcePlatform, $sourceTenant] as $source) {
-                $source->statement('SET SESSION TRANSACTION READ ONLY');
-                $source->statement('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                // Protege a leitura sem alterar as proximas transacoes da conexao recebida.
+                $source->statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY');
                 $source->beginTransaction();
             }
 
