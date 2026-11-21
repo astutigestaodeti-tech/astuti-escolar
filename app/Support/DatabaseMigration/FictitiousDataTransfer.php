@@ -1,0 +1,171 @@
+<?php
+
+namespace App\Support\DatabaseMigration;
+
+use Closure;
+use Illuminate\Database\Connection;
+use RuntimeException;
+use Throwable;
+
+final class FictitiousDataTransfer
+{
+    /**
+     * @return array{platform: array<string, int>, tenant: array<string, int>}
+     */
+    public function run(
+        Connection $sourcePlatform,
+        Connection $sourceTenant,
+        Connection $targetPlatform,
+        Connection $targetTenant,
+        bool $execute,
+        ?Closure $afterMunicipalCommit = null,
+    ): array {
+        try {
+            foreach ([$sourcePlatform, $sourceTenant] as $source) {
+                $source->statement('SET SESSION TRANSACTION READ ONLY');
+                $source->statement('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                $source->beginTransaction();
+            }
+
+            $this->verifySchemaAndEmptyTarget($sourcePlatform, $targetPlatform, MigrationVerifier::PLATFORM_TABLES);
+            $this->verifySchemaAndEmptyTarget($sourceTenant, $targetTenant, MigrationVerifier::TENANT_TABLES);
+            $this->verifyFictitiousFixture($sourcePlatform, $sourceTenant);
+
+            $counts = [
+                'platform' => $this->counts($sourcePlatform, MigrationVerifier::PLATFORM_TABLES),
+                'tenant' => $this->counts($sourceTenant, MigrationVerifier::TENANT_TABLES),
+            ];
+
+            if (! $execute) {
+                return $counts;
+            }
+
+            $targetPlatform->beginTransaction();
+            $targetTenant->beginTransaction();
+
+            $this->copyAndVerify($sourcePlatform, $targetPlatform, MigrationVerifier::PLATFORM_TABLES);
+            $this->copyAndVerify($sourceTenant, $targetTenant, MigrationVerifier::TENANT_TABLES);
+
+            // A sequencia nao avanca com insercao de IDs explicitos.
+            $targetPlatform->statement("SELECT setval(pg_get_serial_sequence('municipality_provision_attempts', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM municipality_provision_attempts), 0), 1), (SELECT COUNT(*) > 0 FROM municipality_provision_attempts))");
+
+            // Os dois bancos PostgreSQL nao compartilham uma transacao.
+            $targetTenant->commit();
+            $afterMunicipalCommit?->__invoke();
+            $targetPlatform->commit();
+
+            return $counts;
+        } catch (Throwable $exception) {
+            $this->rollback($targetTenant);
+            $this->rollback($targetPlatform);
+
+            throw $exception;
+        } finally {
+            $this->rollback($sourceTenant);
+            $this->rollback($sourcePlatform);
+        }
+    }
+
+    private function rollback(Connection $connection): void
+    {
+        if ($connection->transactionLevel() === 0) {
+            return;
+        }
+
+        try {
+            $connection->rollBack();
+        } catch (Throwable) {
+            // Preserva a falha original para permitir a inspecao dos destinos.
+        }
+    }
+
+    private function counts(Connection $connection, array $tables): array
+    {
+        $counts = [];
+
+        foreach ($tables as $table) {
+            $counts[$table] = $connection->table($table)->count();
+        }
+
+        return $counts;
+    }
+
+    private function verifySchemaAndEmptyTarget(Connection $source, Connection $target, array $tables): void
+    {
+        $sourceSchema = $source->getSchemaBuilder();
+        $targetSchema = $target->getSchemaBuilder();
+
+        foreach ($tables as $table) {
+            if (! $sourceSchema->hasTable($table) || ! $targetSchema->hasTable($table)) {
+                throw new RuntimeException('Tabela esperada nao encontrada.');
+            }
+
+            $from = $sourceSchema->getColumnListing($table);
+            $to = $targetSchema->getColumnListing($table);
+
+            if (array_diff($from, $to) !== []) {
+                throw new RuntimeException('Estruturas de tabela incompatíveis.');
+            }
+
+            if ($target->table($table)->exists()) {
+                throw new RuntimeException('Destino contem registros. Migracao recusada.');
+            }
+        }
+    }
+
+    private function verifyFictitiousFixture(Connection $platform, Connection $tenant): void
+    {
+        if ($platform->table('municipalities')->count() !== 1
+            || ! $platform->table('municipalities')->where('slug', 'monte-sereno')->where('db_key', 'monte_sereno')->exists()
+            || $tenant->table('schools')->count() !== 3
+            || $tenant->table('students')->count() !== 115
+            || $tenant->table('school_years')->where('year', 2027)->count() !== 1
+            || $tenant->table('school_years')->count() !== 1
+            || $tenant->table('students')->where('full_name', 'not like', 'Estudante fictício %')->exists()
+            || $platform->table('users')->where('email', 'not like', '%.invalid')->exists()) {
+            throw new RuntimeException('Origem nao corresponde ao cenario ficticio Monte Sereno v2.');
+        }
+    }
+
+    private function copyAndVerify(Connection $source, Connection $target, array $tables): void
+    {
+        foreach ($tables as $table) {
+            $rows = $source->table($table)->get()->map(static fn ($row): array => (array) $row)->all();
+
+            foreach (array_chunk($rows, 50) as $chunk) {
+                $target->table($table)->insert($chunk);
+            }
+
+            MigrationVerifier::assertSameRows(
+                $rows,
+                $target->table($table)->get()->map(static fn ($row): array => (array) $row)->all(),
+                $table,
+            );
+
+            $keys = $table === 'school_scopes' ? ['membership_id', 'school_id'] : ['id'];
+            $fromIds = $this->identityList($source, $table, $keys);
+            $toIds = $this->identityList($target, $table, $keys);
+            MigrationVerifier::assertSameIdentity($fromIds, $toIds, $table);
+
+            if ($source->table($table)->count() !== $target->table($table)->count()) {
+                throw new RuntimeException('Contagens divergentes apos copia.');
+            }
+        }
+
+        if ($tables === MigrationVerifier::PLATFORM_TABLES) {
+            $from = $source->table('users')->pluck('password', 'id')->all();
+            $to = $target->table('users')->pluck('password', 'id')->all();
+
+            foreach ($from as $userId => $originalHash) {
+                MigrationVerifier::preservePasswordHash((string) $originalHash, (string) ($to[$userId] ?? ''));
+            }
+        }
+    }
+
+    private function identityList(Connection $connection, string $table, array $columns): array
+    {
+        return $connection->table($table)->get($columns)->map(
+            static fn ($row): string => implode('|', array_map(static fn ($column): string => (string) $row->{$column}, $columns)),
+        )->all();
+    }
+}
