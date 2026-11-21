@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - feature/incremento-02-fundacoes
+      - feature/incremento-03-cadastro-importacao
   pull_request:
     branches:
       - main
       - feature/incremento-01-saude
+      - feature/incremento-02-fundacoes
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
