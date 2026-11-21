@@ -71,6 +71,9 @@ Evidencia: capturas do terminal Debian enviadas pelo usuario em conversa de cont
 | Banco central | 11 tabelas exibidas por `php artisan db:show` |
 | Migracoes centrais | 10 migracoes especificas de plataforma exibidas como `Ran`; nova migration de `jobs` em `Pending` apos o pull |
 | Banco municipal PostgreSQL | `astuti_monte_sereno_dev` confirmado, com 7 tabelas de estrutura escolar, auditoria e migrations |
+| Contagens PostgreSQL verificadas | Central: `municipalities`, `users`, `memberships` com 0; municipal: escolas, anos, turmas, alunos e matriculas com 0 |
+| MariaDB de origem | 3 bases `astuti_*_dev` confirmadas; contagens ainda pendentes |
+| Backups identificados no caminho previsto | Apenas arquivo `env-pre-postgresql-*` de configuracao, sem dump de banco identificado |
 
 **Sincronizacao concluida em 21/11/2026:** o notebook estava no commit `ec78138`, quatro commits atras do remoto. Jefferson executou `git pull --ff-only` e comprovou HEAD `a27be7b1`, branch correta e arvore limpa. O historico detalhado esta em `HISTORICO.md`.
 
@@ -79,7 +82,7 @@ O print **confirma a existencia e sete tabelas do banco municipal** `astuti_mont
 ## 6. Proximo passo seguro
 
 1. **Concluido em 21/11/2026:** branch local sincronizada por fast-forward, com HEAD `a27be7b1` e sem alteracoes pendentes.
-2. **Em andamento:** existencia das duas bases PostgreSQL e sete tabelas municipais confirmada. Contar registros nas tabelas centrais e municipais e inventariar as bases MariaDB de origem sem modificar dados.
+2. **Em andamento:** existencia das duas bases PostgreSQL, sete tabelas municipais e 0 registros nas principais tabelas de destino confirmados. Consultar as demais tabelas e contar todos os registros nas bases MariaDB de origem sem modificar dados.
 3. Confirmar dumps MariaDB separados, protegidos fora do Git, com ao menos um ensaio de restauracao em banco isolado de teste.
 4. Seguir o guia `docs/operacao/migracao-mariadb-postgresql.md`: preparar apenas destinos permitidos, executar simulacao, avaliar relatorio e somente apos backup e confirmacao especifica executar a transferencia.
 5. Validar as contagens, relacionamentos, hashes de senha, login do municipio ficticio, autorizacoes, auditoria, testes locais, Pint e build. Comparar 3 escolas, 115 alunos e 2027.
