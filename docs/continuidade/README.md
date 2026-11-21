@@ -35,12 +35,12 @@ Ordem funcional: alunos atuais, responsaveis, escolas, turmas e matriculas; depo
 | Repositorio | `astutigestaodeti-tech/astuti-escolar`, privado |
 | `main` antes deste registro | `edf52e89` - base antiga do projeto, sem receber ainda os incrementos em PR |
 | Branch de trabalho mais recente | `feature/migracao-postgresql-instalacoes-isoladas` |
-| Cabeca da branch remota verificada nesta etapa | `6a3e82c` (Tasks 1-3 implementadas e revisadas: integracao, copia, falhas e recuperacao; Task4 em andamento) |
+| Cabeca da branch remota verificada nesta etapa | `5024059` (Tasks 1-4 concluidas e revisadas: migracao sintetica MariaDB->PG no CI, recuperacao, repetibilidade e runbooks; PR #5 ainda draft) |
 | PR #1 | `feature/incremento-01-saude` para `main`, rascunho/aberto |
 | PR #3 | Incremento 02 para Incremento 01, rascunho/aberto |
 | PR #4 | Incremento 03 para Incremento 02, rascunho/aberto |
 | PR #5 | PostgreSQL e VPS por Prefeitura para Incremento 03, rascunho/aberto |
-| CI na branch PostgreSQL | PR run `44869277017` com codigo Task3 (`d5b551b`): 22 testes/228 assercoes (rollback, parcial, retry e integridade); suite geral 2 x 165/606, Pint (128 arquivos), Vite e UI verdes. Guia de backups atualizado depois em `6a3e82c`, run de revalidacao `44869577490` |
+| CI na branch PostgreSQL | PR run final `44870385911` em `5024059`: integracao MariaDB+PG real sintetica 2 x 22 testes/228 assercoes; suite PHP 2 x 165/606; Pint 128 arquivos, Vite e 4 testes UI verdes. Revisao global PASS |
 
 O sucesso do GitHub Actions comprova as verificacoes automatizadas executadas por aquele workflow, **nao** a transferencia concluida dos bancos do notebook nem a homologacao do sistema para Prefeituras.
 
@@ -90,7 +90,7 @@ As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os doi
 4. **Revisao tecnica pre-corte em 21/11/2026:** comando restringe ambiente, confere conteudo e hashes, mas commits nos dois bancos PG nao sao atomicamente conjuntos. CI do PR #5 passou, porem nao executa transferencia real MariaDB->PG. Nao assumir copia concluida nem prontidao para producao.
 5. **Concluido em captura 71:** `migrate:status` confirmou apenas a migration central `0001_01_01_000002_create_jobs_table` como `Pending` e outras dez como `Ran`. Consulta `to_regclass` ao PostgreSQL central confirmou `jobs`, `job_batches` e `failed_jobs` todas `AUSENTE`; nenhuma tabela foi modificada.
 6. **Concluido em captura 72:** backups PostgreSQL central e municipal criados e conferidos pelo indice do arquivo; aplicacao da migration `jobs` em PostgreSQL central com `DONE`, status `Ran` e tres tabelas fisicamente presentes. **Proximo passo:** preparar e executar testes de integracao de copia MariaDB->PG em destinos descartaveis, ensaiar rollback e falha entre commits e validar relacionamentos, hashes, login e auditoria. Nunca usar os destinos principais como primeiro teste de transferencia.
-7. **Tasks 1-3 implementadas e revisadas em 21/11:** o CI exercita quatro bancos `_test` descartaveis (`d5063d9`), copia real de fixture em motor separado da CLI (`3e02447d`), rollback antes de commit, falha parcial, retry recusado e integridade interbancos (`d5b551b`). A run `44869277017` aprovou 22 testes/228 assercoes de integracao e suite geral duas vezes (165/606), Pint, Vite e UI. O runbook foi corrigido em `6a3e82c` para exigir dois dumps PG com checksum e restauracao supervisionada antes do corte. Revisao Task3: PASS. **Task 4 em andamento:** repetir a integracao duas vezes nos mesmos containers, revisar globalmente e encerrar portao CI. Notebook intacto, ultimo HEAD local comprovado `a27be7b1`; nenhum `--executar` real feito.
+7. **Tasks 1-4 implementadas e revisadas em 21/11:** o CI usa MariaDB 11.8 e PostgreSQL 17 descartaveis com bancos `_test`, realiza copia real de fixture Monte Sereno, compara 12 tabelas, UUIDs, hashes e relacoes, demonstra rollback, falha entre commits, recusa retry e retomada num novo par. O run final `44870385911` aprovou 2 x 22 testes/228 assercoes na integracao e 2 x 165/606 na suite geral, Pint, Vite e UI. Revisao global: PASS, com runbook corrigido para manter dumps MariaDB anteriores e exigir dois dumps PG antes do corte. **Proximo passo: conferencias no notebook e ensaio de restauracao em bancos isolados**, somente apos sincronizar branch com seguranca. O notebook segue no ultimo HEAD comprovado `a27be7b1`, sem copia para PG real. Nao executar `--executar` sem nova verificacao local e autorizacao especifica.
 8. **Nao executar `--executar` nos destinos principais nem mesclar PR #5 nesta etapa.** Fazer nova revisao e obter autorizacao especifica depois dos testes. Manter PRs anteriores em rascunho ate os criterios de aceitacao.
 
 ## 7. Como manter este registro util
