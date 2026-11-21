@@ -34,6 +34,16 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Proximo passo:** verificar por consultas sem escrita se os bancos PostgreSQL central e municipal existem, quais tabelas estao presentes e qual o estado das migracoes; depois conferir a origem MariaDB e os backups antes de qualquer importacao.
 
+## 21/11/2026 - Verificacao dos dois bancos PostgreSQL
+
+**Evidencia:** captura do terminal Debian apos atualizacao para `a27be7b1`. Consulta `pg_database` confirmou a existencia de `astuti_platform_dev` e `astuti_monte_sereno_dev`. Consulta a `pg_tables` no banco municipal mostrou sete tabelas: `audit_logs`, `migrations`, `school_classes`, `school_years`, `schools`, `student_enrollments` e `students`.
+
+**Migracoes centrais:** dez migrations anteriores marcadas como `Ran`; a migration `0001_01_01_000002_create_jobs_table`, recentemente movida para `database/migrations/platform`, aparece como `Pending`.
+
+**Nao verificado:** se as tabelas centrais e municipais possuem registros, se os bancos MariaDB de origem ainda guardam o cenario ficticio completo, se ha backups restauraveis e se os destinos estao vazios para a transferencia. Nenhuma migration nem transferencia foi executada neste passo.
+
+**Proximo passo seguro:** consultas somente de leitura de contagens no PostgreSQL e inventario das bases MariaDB de origem, sem exibir dados pessoais ou credenciais.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
