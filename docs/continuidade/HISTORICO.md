@@ -1,0 +1,39 @@
+# Astuti Gestao Escolar - Historico cronologico de continuidade
+
+Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes com nova data e apontar quais afirmacoes sao comprovadas. Guardar apenas fatos tecnicos do projeto, sem segredos, prints sensiveis ou transcricoes de outros assuntos pessoais.
+
+## 20/11/2026 - Definicao do produto e ambiente inicial
+
+**Decisoes:** criar um software comercial para Prefeituras, com ambiente de homologacao ficticio Monte Sereno; foco inicial em importar alunos atuais, escolas e matriculas com revisao humana. Registrar origem de dados, autorizacao por escola, auditoria e isolamento municipal. Adiar OCR historico, Educacenso e outros modulos para incrementos proprios.
+
+**Ambiente preparado anteriormente:** Windows 11 Pro, Debian/WSL2, Laravel 13, PHP 8.4, Composer, Node/Vite e MariaDB inicial em bancos de desenvolvimento. Progresso tecnico evoluiu depois para autenticacao, auditoria, consultas de escolas, turmas, alunos e telas demonstrativas, conforme commits e PRs.
+
+**Mudanca aprovada na mesma data:** migrar para PostgreSQL e adotar uma instalacao independente por Prefeitura, com um VPS exclusivo quando houver cliente. O desenvolvimento permanece no notebook por enquanto. A arquitetura do VPS e diretriz futura, nao contratacao confirmada.
+
+**Codigo e documentos:** foram organizados PRs encadeados para incrementos funcionais e criada a branch `feature/migracao-postgresql-instalacoes-isoladas`, com guias de migracao e operacao. O processo de migracao deve preservar o MariaDB original.
+
+## 21/11/2026 - CI da migracao e verificacao pos-reinicio
+
+**GitHub verificado:** PR #5 ainda em rascunho contra `feature/incremento-03-cadastro-importacao`. A branch remota PostgreSQL estava no commit `a27be7b1`. As execucoes GitHub Actions `44860110321` e `44860112824` terminaram com `success`. Os PRs #1, #3 e #4 tambem permaneciam abertos, sem merge.
+
+**Notebook, captura de terminal do usuario:** o Linux foi reaberto apos reinicio do Windows. A tentativa de executar `wsl -d Debian` de dentro do proprio Debian retornou `wsl: command not found`, comportamento esperado, sem problema no WSL. `pwd` confirmou `/home/aflora/astuti-escolar`; Debian 13, PHP 8.4.28, Composer 2.8.8, PostgreSQL 17.12 e `pdo_pgsql` estavam disponiveis; `pg_isready` confirmou conexoes em `127.0.0.1:5432`.
+
+**Banco verificado sem alteracao:** `php artisan db:show --database=platform` mostrou `astuti_platform_dev`, usuario `astuti_app`, 11 tabelas e PostgreSQL 17.12. `php artisan migrate:status --database=platform --path=database/migrations/platform` mostrou as dez migrations centrais como `Ran`. O banco municipal nao foi verificado nesse print.
+
+**Diferenca a conferir:** no terminal local o ultimo commit era `ec78138`, enquanto a branch remota ja tinha `a27be7b1`. Nenhum `git pull` ou migracao de dados foi comprovado nesta etapa.
+
+**Novo pedido de Jefferson:** manter no proprio repositorio GitHub um historico tecnico para poder retomar o desenvolvimento em futuros chats. Foram definidos `AGENTS.md`, este diario e `docs/continuidade/README.md` como ponto de retomada permanente. Nao registrar automaticamente conversas pessoais ou segredos.
+
+**Pendencia para a proxima conversa:** comparar branches com seguranca, conferir banco municipal e bancos MariaDB de origem, backups, simulacao de migracao, testes locais e eventual corte autorizado. Nao pressupor VPS contratado nem migracao concluida.
+
+## Modelo para as proximas entradas
+
+### AAAA-MM-DD - Titulo do marco
+
+- **Pedido e objetivo:**
+- **Decisoes aprovadas:**
+- **Arquivos, branch, commits e PRs:**
+- **Evidencias e testes executados:**
+- **Banco e infraestrutura:**
+- **Pendencias e riscos:**
+- **Proxima acao segura:**
