@@ -52,6 +52,10 @@ class MigrateFictitiousDataToPostgres extends Command
         config()->set('database.connections.astuti_source_tenant', $sourceTenant);
         config()->set('database.connections.astuti_target_tenant', $tenant);
 
+        $diagnose = SafeMigrationDiagnostic::enabledFor(
+            getenv('ASTUTI_MIGRATION_DIAGNOSE_ISOLATED') === '1', $platform, $tenant,
+        );
+
         try {
             $counts = (new FictitiousDataTransfer)->run(
                 DB::connection('astuti_source_platform'),
@@ -59,6 +63,10 @@ class MigrateFictitiousDataToPostgres extends Command
                 DB::connection('platform'),
                 DB::connection('astuti_target_tenant'),
                 $execute,
+                null,
+                $execute && $diagnose
+                    ? fn (string $stage, string $table) => $this->line("Etapa do cluster isolado: {$stage} {$table}")
+                    : null,
             );
 
             foreach (['Central' => $counts['platform'], 'Municipal' => $counts['tenant']] as $label => $tables) {
@@ -84,9 +92,7 @@ class MigrateFictitiousDataToPostgres extends Command
             return self::FAILURE;
         } catch (Throwable $exception) {
             $this->error('Migracao interrompida por falha de precondicao ou integridade.');
-            if (SafeMigrationDiagnostic::enabledFor(
-                getenv('ASTUTI_MIGRATION_DIAGNOSE_ISOLATED') === '1', $platform, $tenant,
-            )) {
+            if ($diagnose) {
                 $this->warn('Diagnostico do cluster isolado: '.SafeMigrationDiagnostic::describe($exception));
             }
             $this->warn('Nao execute um novo corte sem conferir o estado dos dois destinos. A origem MariaDB permanece intocada.');
