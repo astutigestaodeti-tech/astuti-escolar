@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Auth\SchoolAccess;
 use App\Models\Tenant\School;
+use App\Models\Tenant\Student;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -16,7 +18,16 @@ class SchoolController extends Controller
         Gate::authorize('viewAny', [School::class, $municipality]);
 
         $visibleSchoolIds = $access->visibleSchoolIds($request->user(), $municipality);
-        $query = School::query()->where('status', 'active');
+        $activeStudents = Student::query()
+            ->selectRaw('COUNT(*)')
+            ->whereHas('enrollments', function (Builder $enrollments): void {
+                $enrollments->whereColumn('student_enrollments.school_id', 'schools.id')
+                    ->where('student_enrollments.status', 'active');
+            });
+
+        $query = School::query()->where('status', 'active')
+            ->select('id', 'name')
+            ->addSelect(['active_students_count' => $activeStudents]);
 
         if ($visibleSchoolIds !== null) {
             $query->whereIn('id', $visibleSchoolIds);
@@ -24,7 +35,7 @@ class SchoolController extends Controller
 
         return view('schools.index', [
             'municipality' => $municipality,
-            'schools' => $query->orderBy('name')->get(['id', 'name']),
+            'schools' => $query->orderBy('name')->get(),
         ]);
     }
 
