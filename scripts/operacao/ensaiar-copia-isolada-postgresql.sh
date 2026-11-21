@@ -148,6 +148,9 @@ done
     export PLATFORM_DB_DATABASE=astuti_platform_dev
     export PLATFORM_DB_USERNAME=astuti_ensaio
     export PLATFORM_DB_PASSWORD="$senha_temporaria"
+    # Apenas este processo Laravel recebe diagnostico sanitizado de falhas.
+    # O comando PHP tambem exige porta exclusiva e usuario de ensaio.
+    export ASTUTI_MIGRATION_DIAGNOSE_ISOLATED=1
     export ASTUTI_SOURCE_MARIADB_HOST=127.0.0.1
     export ASTUTI_SOURCE_MARIADB_PORT=3307
     export ASTUTI_SOURCE_MARIADB_SOCKET=/run/mysqld/mysqld.sock
