@@ -23,11 +23,15 @@
             $mesmaPrefeitura = $baseMunicipal === null
                 || $path === $baseMunicipal
                 || str_starts_with($path, $baseMunicipal.'/');
-            $outraPagina = rtrim($path, '/') !== rtrim(request()->getPathInfo(), '/');
+            // Aceitar somente caminhos literais da aplicação. Rejeitar pontos,
+            // escapes percentuais e barras codificadas antes da normalização no navegador.
+            $caminhoSeguro = preg_match('/\\A\\/[a-zA-Z0-9_\\/-]*\\z/D', $path) === 1;
+            $outraPagina = rtrim($path, '/') !== rtrim(request()->getPathInfo(), '/')
+                || (string) ($url['query'] ?? '') !== (string) (request()->getQueryString() ?? '');
 
             // Referer é controlado pelo cliente: nunca usá-lo para sair do domínio
             // ou retornar a outra Prefeitura. Se faltar, manter a rota autorizada.
-            if ($mesmaOrigem && $mesmaPrefeitura && $outraPagina) {
+            if ($mesmaOrigem && $mesmaPrefeitura && $caminhoSeguro && $outraPagina) {
                 $destino = $origem;
             }
         }
