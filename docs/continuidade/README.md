@@ -186,3 +186,18 @@ cd ~/astuti-escolar && ASTUTI_DEMO_CACHE_DIR="$(mktemp -d)" && APP_CONFIG_CACHE=
 ```
 
 No navegador do notebook, acessar `http://127.0.0.1:8001/saude` e depois `http://127.0.0.1:8001/demonstracao`. Deixar o terminal aberto enquanto navega e encerrar o servidor com `Ctrl+C`. A configuracao temporaria nao altera `.env` e usa arquivos locais para sessao/cache; as telas demonstrativas usam dados sinteticos em memoria, **nao os 115 alunos copiados no cluster 55436**. Se faltar manifest do Vite, verificar/buildar recursos da interface antes de repetir. Testar login com os dados copiados exigira outro roteiro de isolamento.
+
+## 16. Capturas 91-92: pronto o roteiro seguro para testar login real no PostgreSQL isolado (21/11/2026)
+
+- **Confirmado no notebook:** cluster PostgreSQL 17 `astuti_ens_20261121_112332_22176` iniciado na porta **55436**. Consultas `SELECT` retornaram **1 usuario central**, **3 escolas** e **115 alunos ficticios**. Esta e uma copia de ensaio; o PostgreSQL principal continua separado na porta 5432.
+- **Pronto no GitHub, branch `feature/migracao-postgresql-instalacoes-isoladas`:** `scripts/operacao/testar-login-isolado-postgresql.sh` e o teste automatizado `tests/Shell/TestarLoginIsoladoPostgresqlTest.sh`. O roteiro recusa cluster errado ou contagens divergentes, valida a configuracao Laravel, troca credenciais somente na copia ficticia, separa o cookie de sessao e inicia a aplicacao na **porta 8002**. **Nao** altera `.env` nem executa migracoes. Auditoria e registros de login desse teste ficam exclusivamente na copia isolada.
+- **Testes verificados:** os 5 cenarios simulados do novo roteiro e os 23 testes Bash anteriores passaram localmente. GitHub Actions [44915694895](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44915694895) concluiu com `success` para o commit que integrou o roteiro ao CI. Isso **nao substitui** a execucao no notebook.
+- **Com o cluster 55436 online**, em outro terminal Debian (mantenha a demonstracao 8001 como esta):
+
+```bash
+cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas && bash scripts/operacao/testar-login-isolado-postgresql.sh
+```
+
+Depois, acessar `http://127.0.0.1:8002/login`; usar e-mail e senha temporaria mostrados no **terminal local**. Nao enviar a senha nem captura com credencial. Encerre o servidor de teste com `Ctrl+C`. Se o script disser que o cluster esta parado, conferir `pg_lsclusters` e iniciar exclusivamente `17/astuti_ens_20261121_112332_22176` por `sudo pg_ctlcluster --skip-systemctl-redirect 17 astuti_ens_20261121_112332_22176 start`.
+
+**Ainda pendente:** Jefferson executar o comando no notebook e confirmar se o login, as listagens das 3 escolas e dos 115 alunos reais copiados estao corretos. Os 1.284 alunos e 4 escolas do painel em `/demonstracao` **sao apenas indicadores ilustrativos**, nao dados do banco. Manter PR #5 em rascunho; nao fazer corte PostgreSQL, merge ou limpeza dos clusters antigos. Consulte `HISTORICO.md` capturas 91-92 para detalhes e a documentacao operacional na branch.
