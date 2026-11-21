@@ -28,7 +28,24 @@ class LoginController extends Controller
         ]);
 
         if (! Auth::attempt([...$credentials, 'status' => 'active'])) {
-            app(AuditTrail::class)->record('platform', 'auth.failed', User::class);
+            try {
+                // Se o e-mail pertence a uma conta conhecida, a tentativa
+                // precisa ser atribuída a ela, sem revelar sua existência
+                // na resposta nem registrar a senha informada.
+                $knownUserId = User::query()->where('email', $credentials['email'])->value('id');
+                app(AuditTrail::class)->record(
+                    connection: 'platform',
+                    action: 'auth.failed',
+                    auditableType: User::class,
+                    auditableId: $knownUserId,
+                    userId: $knownUserId,
+                );
+            } catch (Throwable $exception) {
+                // Sem auditoria a tentativa não pode aparentar sucesso
+                // operacional; uma falha de infraestrutura vira 503.
+                report($exception);
+                abort(503, 'Acesso temporariamente indisponível. Tente novamente mais tarde.');
+            }
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
