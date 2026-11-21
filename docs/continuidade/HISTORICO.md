@@ -263,3 +263,15 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 **GitHub Actions posterior a correcao:** run `44906655873` do HEAD `88d2267` teve os dois jobs marcados `completed / success`: `Testes PHP e interface` e `Integracao MariaDB para PostgreSQL`, incluindo o novo passo de teste shell. O CI usa mocks e servicos sinteticos; a captura 80 e a evidencia independente do ensaio local real.
 
 **Proxima fronteira:** a restauracao PostgreSQL foi demonstrada, mas **os dados ficticios MariaDB ainda nao foram copiados ao PostgreSQL do notebook**. Antes de usar `--executar` nos `*_dev`, preparar backups novos com o esquema PostgreSQL atual (apos a migration de `jobs`) e ensaiar a transferencia dos dados ficticios em bancos-alvo descartaveis locais, comparando linhas, hashes, permissao e login. Nao confundir teste de restauracao de dados vazios com validacao da importacao. PR #5 continua em rascunho, sem merge; sem VPS contratado.
+
+## 21/11/2026 - Backup do PostgreSQL atual e restauracao novamente aprovados
+
+**Evidencia direta:** captura 81 do Debian. A branch local `feature/migracao-postgresql-instalacoes-isoladas` recebeu fast-forward de `88d2267` para `574401b1`, incorporando `scripts/operacao/criar-backups-pre-copia-postgresql.sh`, testes e workflow CI. O roteiro conferiu PostgreSQL local, existencia da tabela `jobs` e ausencia de linhas nas 12 tabelas de destino antes de gravar backups.
+
+**Backup novo e exclusivo:** em `/home/aflora/astuti-backups/pgsql-pre-copia-hNtsqqkz/` foram criados os dois arquivos `astuti_platform_dev.dump` e `astuti_monte_sereno_dev.dump`, ambos listados como `OK`. `sha256sum -c SHA256SUMS` devolveu `OK` para cada arquivo. O conteudo e completo (estrutura e dados) e foi salvo fora do GitHub.
+
+**Restauração real do esquema ATUAL:** o mesmo roteiro invocou `ensaiar-restauracao-postgresql.sh --backup-dir` e restaurou ambos os arquivos em dois novos bancos locais: `astuti_restore_pg_platform_20261121_101039_3726` e `astuti_restore_pg_monte_20261121_101039_3726`. A captura mostrou, no primeiro, `migrations=11`, `municipalities=0`, `users=0`; no segundo, `migrations=8`, `schools=0`, `students=0`. Saida final: `BACKUPS PRE-COPIA E RESTAURACAO CONFERIDOS`. Os bancos `*_dev` originais e os backups anteriores foram preservados, sem copia MariaDB -> PostgreSQL.
+
+**CI do codigo do roteiro:** GitHub Actions run `44907410354` do HEAD `574401b1` concluiu os dois jobs com `success`, incluindo 6 testes shell simulados de backup pre-copia, 8 testes shell do ensaio isolado, PHP e interface e integracao sintetica MariaDB/PostgreSQL. Os testes simulados nao substituem a captura 81, que comprova a restauracao real.
+
+**Proximo passo e guarda de seguranca:** criar um mecanismo de ensaio LOCAL de transferencia dos dados ficticios MariaDB para PostgreSQL exclusivamente em destinos descartaveis, sem enfraquecer as protecoes da CLI normal (que so aceita nomes exatos `*_dev`). Comparar dados, relacionamentos, hashes e login. Nao executar `php artisan astuti:migrar-dados-postgresql --executar` nos `*_dev` originais ate esse ensaio e uma avaliacao especifica; nao mesclar PR #5 ainda.
