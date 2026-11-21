@@ -98,9 +98,6 @@ class TransportCsvReader
         }
     }
 
-    /** @param list<string> $header
-     *  @return array{ra: int, status: int, name?: int}
-     */
     private function columns(array $header): array
     {
         $columns = [];

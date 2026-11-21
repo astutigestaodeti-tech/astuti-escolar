@@ -88,4 +88,13 @@ class TransportCsvReaderTest extends TestCase
 
         $this->ler("RA;SITUACAO;OBSERVACAO\n999000000001-6/SP;SIM;\"continua\n999000000002-8/SP;CANCELADO;outro aluno\n");
     }
+
+    public function test_aceita_campo_extra_entre_aspas_com_separador_sem_importar_essa_informacao(): void
+    {
+        $rows = $this->ler("RA;SITUACAO;OBSERVACAO\n999000000001-6/SP;SIM;\"uso; eventual\"\n");
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('active', $rows[0]['status']);
+        $this->assertArrayNotHasKey('observacao', $rows[0]);
+    }
 }

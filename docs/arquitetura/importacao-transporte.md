@@ -9,6 +9,8 @@ Este bloco aceita uma lista CSV por escola e ano letivo e atualiza **somente** a
 - Coluna **Nome** opcional, conferida quando presente. Campos adicionais são desconsiderados e não são armazenados.
 - `SIM`/`ATIVO` vira `active`; `NÃO` vira `not_requested`; `CANCELADO` vira `cancelled`. Situações desconhecidas impedem todo o lote.
 - No máximo 500 linhas não vazias por lote. RA inválido, repetido, de outra escola/ano ou sem matrícula ativa recusa o lote inteiro.
+- Cada registro deve estar em uma linha física. Aspas podem proteger separadores dentro de uma coluna, mas aspas abertas que atravessam linhas são recusadas para impedir a omissão silenciosa de alunos.
+- Colunas alternativas duplicadas (por exemplo, `Status` e `Situação do Transporte` no mesmo cabeçalho) são recusadas como ambíguas. Duas matrículas ativas para o mesmo aluno, escola e ano também interrompem a conferência.
 
 ## Passos na interface
 
