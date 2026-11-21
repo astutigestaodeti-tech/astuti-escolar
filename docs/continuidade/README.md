@@ -144,3 +144,11 @@ Para detalhes técnicos, consulte a última entrada de `HISTORICO.md`.
 - Roteiro e Laravel atualizados na branch de trabalho ate o commit **`c762abb3`** para relatar a **ultima etapa/tabela iniciada** e uma causa **sanitizada** do erro somente no cluster isolado autorizado. Nenhuma funcionalidade escolar foi marcada como concluida e a migracao principal nao ocorreu.
 - **CI aprovado no commit `c762abb3`**: run [44911118712](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44911118712), ambos os jobs `success`, incluindo PHP, integracao MariaDB/PostgreSQL, Pint e interface. Houve revisao independente sem achado critico comprovado; ela apontou lacunas de cobertura da CLI e testes de borda do gate como trabalho pendente.
 - **Proxima acao segura:** sincronizar a branch no Debian e executar novamente o roteiro completo de ensaio isolado, com criacao de outro cluster em porta livre; conferir exclusivamente o resultado e diagnostico. Nao executar `--executar` fora do roteiro, nao alterar bancos originais e nao mesclar PR #5. Preservar os clusters 55432 e 55433 para auditoria.
+
+
+## 12. Captura 85: divergencia identificada na auditoria central (21/11/2026)
+
+- Terceiro cluster de ensaio `17/astuti_ens_20261121_105834_239` na porta **55434**. Restauracao de dumps e simulacao MariaDB foram aprovadas.
+- A copia foi interrompida ao **conferir `platform_audit_logs`**, depois de conferir as primeiras cinco tabelas centrais. A divergencia de conteudo dos 7 eventos de auditoria ainda precisa ser identificada por coluna; nao alterar dados ou afrouxar a validacao.
+- Nova instrumentacao tipada e sanitizada foi implementada na branch do PR #5 ate `296db3a`, com teste vermelho no CI `44911879568`. Informa apenas nomes de campos divergentes, quando rodando o roteiro no cluster isolado autorizado. A causa raiz e a copia completa **continuam pendentes**.
+- **CI aprovado:** [44912032171](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44912032171), dois jobs aprovados, 174 testes PHP, duas rodadas de integracao, Pint e interface. A seguir, atualizar a branch no Debian, rodar somente `scripts/operacao/ensaiar-copia-isolada-postgresql.sh` e compartilhar o aviso `Campos divergentes`. Manter clusters 55432, 55433 e 55434, backups e PG originais intactos. Sem corte ou merge.
