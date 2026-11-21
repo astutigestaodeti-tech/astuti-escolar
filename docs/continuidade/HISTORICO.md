@@ -528,3 +528,11 @@ A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao en
 **Captura 113, enviada pelo usuário:** terminal Debian executou o procedimento guardado de conferência de branch/árvore limpa seguido de `git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas`. A atualização foi **fast-forward `a890083..b13ea12`**, com 14 arquivos atualizados e retorno ao prompt sem erro. Confirma a atualização local até o commit da interface de contagem.
 
 **Próximo passo de validação no notebook:** abrir uma escola fictícia, consultar os alunos, clicar no nome de um estudante para conferir a ficha individual de leitura e testar pesquisa pelo termo `estudante` em minúsculas. Não usar dados reais de menores. PostgreSQL original 5432, MariaDB, backups e `.env` permanecem fora de escopo; PR #5 continua draft.
+
+## 21/11/2026 - Validação visual da ficha individual no notebook
+
+**Captura 114, enviada pelo usuário:** a navegação autenticada `Escolas > EMEF Caminhos do Saber > Alunos > Ficha do aluno` abriu a ficha de **Estudante fictício 001** no ambiente de desenvolvimento do notebook. A interface mostra **ano de nascimento 2017**, **escola EMEF Caminhos do Saber**, status **Vínculo ativo** e **Ano letivo 2027**. O retorno à lista de alunos está disponível e a página informa que é **somente consulta**. Portanto, a ficha individual está visualmente validada nesse percurso com dados fictícios.
+
+**Limites da evidência:** a imagem não comprova ainda os cenários negativos de autorização (403/404), nem a busca em minúsculas em PostgreSQL. Esses cenários foram abordados por testes de integração, mas a busca permanece pendente de prova manual no notebook.
+
+**Próximo teste manual:** voltar à lista de alunos e pesquisar `estudante` em minúsculas; conferir o resultado e a paginação. Nenhuma alteração no PostgreSQL principal 5432, MariaDB, backups ou `.env`; PR #5 permanece draft.
