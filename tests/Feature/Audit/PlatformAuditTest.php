@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Audit;
 
+use App\Audit\AuditTrail;
 use App\Models\Platform\PlatformAuditLog;
+use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use LogicException;
 use Tests\Support\TwoMunicipalityTestCase;
@@ -31,6 +33,17 @@ class PlatformAuditTest extends TwoMunicipalityTestCase
     {
         $this->post('/login', ['email' => 'desconhecido@astuti.invalid', 'password' => 'senha-incorreta'])
             ->assertSessionHasErrors('email');
+
+        $log = PlatformAuditLog::query()->where('action', 'auth.failed')->firstOrFail();
+        $this->assertNull($log->user_id);
+    }
+
+    public function test_i6_evento_de_login_falho_nao_herda_identidade_de_sessao_anterior(): void
+    {
+        $other = $this->criarUsuario('outra-conta@astuti.invalid');
+        $this->actingAs($other);
+
+        app(AuditTrail::class)->record('platform', 'auth.failed', User::class);
 
         $log = PlatformAuditLog::query()->where('action', 'auth.failed')->firstOrFail();
         $this->assertNull($log->user_id);
