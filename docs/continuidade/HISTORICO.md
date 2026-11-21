@@ -96,6 +96,18 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Proximo passo:** revisao tecnica do comando de copia, verificacao de riscos de falha parcial entre os bancos e da migration de filas `jobs`; somente depois decidir o proximo comando seguro, sem executar `--executar` prematuramente. PR #5 permanece em rascunho; nenhuma mesclagem ou VPS foi contratado.
 
+## 21/11/2026 - Revisao tecnica pre-transferencia do PR #5
+
+**Revisao somente leitura:** inspecao da branch `feature/migracao-postgresql-instalacoes-isoladas` HEAD `a27be7b1`, incluindo comando de migracao, verificador, migrations, guia e automacao CI. PR #5 segue aberto em rascunho. Nao houve alteracao de codigo nem dos bancos nesta revisao.
+
+**Pontos positivos:** bloqueio de execucao fora do ambiente ficticio local, leitura MariaDB em transacoes somente leitura, exigencia de flags explicitas, destinos vazios, conferencia de linhas/identidades/contagens e preservacao de hashes. O ajuste de sequencia cobre a unica coluna serial copiada (`municipality_provision_attempts.id`).
+
+**Risco comprovado no fluxo de codigo:** os commits dos bancos PostgreSQL central e municipal ocorrem separadamente. Se o primeiro concluir e o segundo falhar, nao existe rollback atomico entre os dois bancos; o procedimento de recuperacao de uma copia parcial ainda precisa de ensaio controlado em destinos descartaveis.
+
+**Pendencias identificadas:** migration `0001_01_01_000002_create_jobs_table` central estava `Pending` no ultimo print, sem verificacao atual da existencia fisica das tabelas `jobs`, `job_batches` e `failed_jobs`; nao foi encontrada cobertura de CI que execute a copia real MariaDB->PG (workflow sem servico MariaDB/`pdo_mysql`); referencias logicas entre bancos e hashes/login exigem validacao funcional. Nao ha evidencia de corrupcao atual ou divergencia de contagens.
+
+**Decisao de seguranca:** NAO liberar `--executar` nos destinos PostgreSQL principais agora e nao mesclar PR #5. Primeiro conferir tabelas fisicas e migrations sem gravacao; depois resolver schema pendente com backup/verificacao, criar testes de integracao e realizar ensaio de corte/recuperacao em bases descartaveis com autorizacao, antes de nova avaliacao. Os dumps e origens MariaDB permanecem preservados.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
