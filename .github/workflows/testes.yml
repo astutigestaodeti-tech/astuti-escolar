@@ -179,7 +179,8 @@ jobs:
           coverage: none
 
       - name: Conferir drivers MariaDB e PostgreSQL
-        run: php -r 'exit(extension_loaded("pdo_mysql") && extension_loaded("pdo_pgsql") ? 0 : 1);'
+        run: |
+          php -r 'exit(extension_loaded("pdo_mysql") && extension_loaded("pdo_pgsql") ? 0 : 1);'
 
       - name: Instalar dependencias PHP
         run: composer install --no-interaction --prefer-dist --no-progress
