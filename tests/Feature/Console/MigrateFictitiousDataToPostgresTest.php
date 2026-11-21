@@ -4,16 +4,37 @@ namespace Tests\Feature\Console;
 
 use App\Support\DatabaseMigration\FictitiousDataTransfer;
 use Illuminate\Database\Connection;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use Tests\Support\DatabaseMigration\DisposableMigrationDatabases;
 use Tests\Support\DatabaseMigration\FictitiousMigrationFixture;
 use Tests\TestCase;
 
 class MigrateFictitiousDataToPostgresTest extends TestCase
 {
+    private const EXPECTED_COUNTS = [
+        'platform' => [
+            'municipalities' => 1,
+            'users' => 1,
+            'municipality_provision_attempts' => 1,
+            'memberships' => 1,
+            'school_scopes' => 1,
+            'platform_audit_logs' => 1,
+        ],
+        'tenant' => [
+            'schools' => 3,
+            'school_years' => 1,
+            'students' => 115,
+            'school_classes' => 3,
+            'student_enrollments' => 115,
+            'audit_logs' => 1,
+        ],
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,22 +87,8 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertCount(4, array_unique($names));
 
         foreach ([
-            [$sourcePlatform, $targetPlatform, [
-                'municipalities' => 1,
-                'users' => 1,
-                'municipality_provision_attempts' => 1,
-                'memberships' => 1,
-                'school_scopes' => 1,
-                'platform_audit_logs' => 1,
-            ]],
-            [$sourceTenant, $targetTenant, [
-                'schools' => 3,
-                'school_years' => 1,
-                'students' => 115,
-                'school_classes' => 3,
-                'student_enrollments' => 115,
-                'audit_logs' => 1,
-            ]],
+            [$sourcePlatform, $targetPlatform, self::EXPECTED_COUNTS['platform']],
+            [$sourceTenant, $targetTenant, self::EXPECTED_COUNTS['tenant']],
         ] as [$source, $target, $counts]) {
             foreach ($counts as $table => $count) {
                 $this->assertEqualsCanonicalizing(
@@ -126,30 +133,12 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $sourceBefore = $this->snapshot($sourcePlatform, $sourceTenant);
         $empty = $this->snapshot($targetPlatform, $targetTenant);
         $transfer = new FictitiousDataTransfer;
-        $counts = [
-            'platform' => [
-                'municipalities' => 1,
-                'users' => 1,
-                'municipality_provision_attempts' => 1,
-                'memberships' => 1,
-                'school_scopes' => 1,
-                'platform_audit_logs' => 1,
-            ],
-            'tenant' => [
-                'schools' => 3,
-                'school_years' => 1,
-                'students' => 115,
-                'school_classes' => 3,
-                'student_enrollments' => 115,
-                'audit_logs' => 1,
-            ],
-        ];
 
-        $this->assertSame($counts, $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, false));
+        $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, false));
         $this->assertSame($empty, $this->snapshot($targetPlatform, $targetTenant));
         $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
 
-        $this->assertSame($counts, $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true));
+        $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true));
 
         $copied = $this->snapshot($targetPlatform, $targetTenant);
 
@@ -169,15 +158,107 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
     }
 
+    #[DataProvider('obstaculosDaCopia')]
+    public function test_destino_nao_vazio_e_fk_invalida_bloqueiam_sem_escrever(bool $preencherDestino): void
+    {
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = DisposableMigrationDatabases::create();
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+
+        if ($preencherDestino) {
+            $targetTenant->table('schools')->insert([
+                'id' => '40000000-0000-4000-8000-000000000099',
+                'name' => 'Escola fictícia já presente',
+                'status' => 'active',
+            ]);
+        } else {
+            $sourcePlatform->statement('SET SESSION FOREIGN_KEY_CHECKS = 0');
+
+            try {
+                $this->assertSame(1, $sourcePlatform->table('memberships')->update([
+                    'user_id' => '20000000-0000-4000-8000-000000000099',
+                ]));
+            } finally {
+                $sourcePlatform->statement('SET SESSION FOREIGN_KEY_CHECKS = 1');
+            }
+        }
+
+        $sources = [$sourcePlatform, $sourceTenant];
+
+        foreach ($sources as $source) {
+            $source->statement('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
+        }
+
+        $sessionBefore = array_map($this->sessionSettings(...), $sources);
+        $sourceBefore = $this->snapshot($sourcePlatform, $sourceTenant);
+        $targetBefore = $this->snapshot($targetPlatform, $targetTenant);
+        $failure = null;
+
+        try {
+            (new FictitiousDataTransfer)->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true);
+        } catch (RuntimeException $exception) {
+            $failure = $exception;
+        }
+
+        if ($preencherDestino) {
+            $this->assertInstanceOf(RuntimeException::class, $failure);
+            $this->assertStringContainsString('Destino contem registros', $failure->getMessage());
+        } else {
+            $this->assertInstanceOf(QueryException::class, $failure);
+            $this->assertSame('23503', $failure->getCode());
+        }
+
+        foreach ([$sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant] as $connection) {
+            $this->assertSame(0, $connection->transactionLevel());
+        }
+
+        foreach (['platform' => $targetPlatform, 'tenant' => $targetTenant] as $database => $connection) {
+            foreach ($targetBefore[$database] as $table => $rows) {
+                $this->assertSame(count($rows), $connection->table($table)->count(), $table);
+            }
+        }
+
+        $this->assertSame($targetBefore, $this->snapshot($targetPlatform, $targetTenant));
+        $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
+        $this->assertSame($sourceBefore['platform']['users'][0]['password'], $sourcePlatform->table('users')->sole()->password);
+        $this->assertSame($sessionBefore, array_map($this->sessionSettings(...), $sources));
+    }
+
+    public static function obstaculosDaCopia(): array
+    {
+        return [
+            'destino municipal com registro prévio' => [true],
+            'chave estrangeira inválida na origem' => [false],
+        ];
+    }
+
+    public static function configuracoesInseguras(): array
+    {
+        return [
+            'origem central fora de teste' => ['ASTUTI_MIGRATION_SOURCE_PLATFORM_DB', 'astuti_platform_dev', '_test'],
+            'origem municipal fora de teste' => ['ASTUTI_MIGRATION_SOURCE_TENANT_DB', 'astuti_monte_sereno_dev', '_test'],
+            'destino central fora de teste' => ['ASTUTI_MIGRATION_TARGET_PLATFORM_DB', 'astuti_platform_dev', '_test'],
+            'destino municipal fora de teste' => ['ASTUTI_MIGRATION_TARGET_TENANT_DB', 'astuti_monte_sereno_dev', '_test'],
+            'origem fora de loopback' => ['ASTUTI_MIGRATION_MARIADB_HOST', 'mariadb.example.invalid', 'loopback'],
+            'destino fora de loopback' => ['ASTUTI_MIGRATION_POSTGRES_HOST', 'postgres.example.invalid', 'loopback'],
+            'destinos duplicados' => ['ASTUTI_MIGRATION_TARGET_TENANT_DB', 'astuti_migration_target_platform_test', 'distintos'],
+            'integração desativada' => ['ASTUTI_MIGRATION_INTEGRATION', '0', 'ASTUTI_MIGRATION_INTEGRATION=1'],
+            'fora do GitHub Actions' => ['GITHUB_ACTIONS', 'false', 'GitHub Actions'],
+        ];
+    }
+
+    private function sessionSettings(Connection $connection): array
+    {
+        return (array) $connection->selectOne('SELECT @@SESSION.transaction_read_only AS read_only, @@SESSION.transaction_isolation AS isolation_level');
+    }
+
     private function snapshot(Connection $platform, Connection $tenant): array
     {
         $snapshot = [];
 
-        foreach ([
-            'platform' => [$platform, ['municipalities', 'users', 'municipality_provision_attempts', 'memberships', 'school_scopes', 'platform_audit_logs']],
-            'tenant' => [$tenant, ['schools', 'school_years', 'students', 'school_classes', 'student_enrollments', 'audit_logs']],
-        ] as $database => [$connection, $tables]) {
-            foreach ($tables as $table) {
+        foreach (['platform' => $platform, 'tenant' => $tenant] as $database => $connection) {
+            foreach (array_keys(self::EXPECTED_COUNTS[$database]) as $table) {
                 $query = $connection->table($table);
 
                 if ($table === 'school_scopes') {
@@ -201,20 +282,5 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         }
 
         return $snapshot;
-    }
-
-    public static function configuracoesInseguras(): array
-    {
-        return [
-            'origem central fora de teste' => ['ASTUTI_MIGRATION_SOURCE_PLATFORM_DB', 'astuti_platform_dev', '_test'],
-            'origem municipal fora de teste' => ['ASTUTI_MIGRATION_SOURCE_TENANT_DB', 'astuti_monte_sereno_dev', '_test'],
-            'destino central fora de teste' => ['ASTUTI_MIGRATION_TARGET_PLATFORM_DB', 'astuti_platform_dev', '_test'],
-            'destino municipal fora de teste' => ['ASTUTI_MIGRATION_TARGET_TENANT_DB', 'astuti_monte_sereno_dev', '_test'],
-            'origem fora de loopback' => ['ASTUTI_MIGRATION_MARIADB_HOST', 'mariadb.example.invalid', 'loopback'],
-            'destino fora de loopback' => ['ASTUTI_MIGRATION_POSTGRES_HOST', 'postgres.example.invalid', 'loopback'],
-            'destinos duplicados' => ['ASTUTI_MIGRATION_TARGET_TENANT_DB', 'astuti_migration_target_platform_test', 'distintos'],
-            'integração desativada' => ['ASTUTI_MIGRATION_INTEGRATION', '0', 'ASTUTI_MIGRATION_INTEGRATION=1'],
-            'fora do GitHub Actions' => ['GITHUB_ACTIONS', 'false', 'GitHub Actions'],
-        ];
     }
 }
