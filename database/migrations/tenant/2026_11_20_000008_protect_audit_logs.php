@@ -7,20 +7,34 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // MariaDB aplica a proteção inclusive a operações via Query Builder e SQL bruto.
-        // IF NOT EXISTS permite retomar uma migração interrompida após o primeiro DDL.
-        DB::connection('tenant')->unprepared("CREATE TRIGGER IF NOT EXISTS audit_logs_block_update
-            BEFORE UPDATE ON audit_logs FOR EACH ROW
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Historico de auditoria imutavel'");
+        $db = DB::connection('tenant');
 
-        DB::connection('tenant')->unprepared("CREATE TRIGGER IF NOT EXISTS audit_logs_block_delete
-            BEFORE DELETE ON audit_logs FOR EACH ROW
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Historico de auditoria nao pode ser excluido'");
+        // A mesma funcao impede UPDATE, DELETE e TRUNCATE, inclusive via SQL bruto.
+        $db->unprepared(<<<'SQL'
+CREATE OR REPLACE FUNCTION astuti_block_tenant_audit_log_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'Historico de auditoria imutavel' USING ERRCODE = 'P0001';
+    RETURN NULL;
+END;
+$$
+SQL);
+
+        $db->unprepared('DROP TRIGGER IF EXISTS audit_logs_block_mutation ON audit_logs');
+        $db->unprepared('CREATE TRIGGER audit_logs_block_mutation BEFORE UPDATE OR DELETE ON audit_logs FOR EACH ROW EXECUTE FUNCTION astuti_block_tenant_audit_log_mutation()');
+
+        $db->unprepared('DROP TRIGGER IF EXISTS audit_logs_block_truncate ON audit_logs');
+        $db->unprepared('CREATE TRIGGER audit_logs_block_truncate BEFORE TRUNCATE ON audit_logs FOR EACH STATEMENT EXECUTE FUNCTION astuti_block_tenant_audit_log_mutation()');
     }
 
     public function down(): void
     {
-        DB::connection('tenant')->unprepared('DROP TRIGGER IF EXISTS audit_logs_block_delete');
-        DB::connection('tenant')->unprepared('DROP TRIGGER IF EXISTS audit_logs_block_update');
+        $db = DB::connection('tenant');
+
+        $db->unprepared('DROP TRIGGER IF EXISTS audit_logs_block_truncate ON audit_logs');
+        $db->unprepared('DROP TRIGGER IF EXISTS audit_logs_block_mutation ON audit_logs');
+        $db->unprepared('DROP FUNCTION IF EXISTS astuti_block_tenant_audit_log_mutation()');
     }
 };
