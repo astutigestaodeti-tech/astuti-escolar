@@ -30,7 +30,7 @@ O comando de transferência não cria bancos nem apaga registros. Se qualquer ta
 
 ## 3. Ler a origem com acesso somente de leitura
 
-Crie, preferencialmente, uma conta MariaDB dedicada com privilégio `SELECT` **somente** nessas duas bases. O comando ainda marca as sessões de origem como `TRANSACTION READ ONLY`. Se já houver conexão via socket, configure-a:
+Crie, preferencialmente, uma conta MariaDB dedicada com privilégio `SELECT` **somente** nessas duas bases. O serviço usa conexões dedicadas, sem transações abertas pelo chamador, e inicia transações MariaDB `READ ONLY` apenas para a transferência. Se já houver conexão via socket, configure-a:
 
 ```dotenv
 ASTUTI_SOURCE_MARIADB_HOST=127.0.0.1
@@ -56,6 +56,7 @@ A simulação verifica:
 - execução em `APP_ENV=local` e destinos PostgreSQL somente em `127.0.0.1`;
 - nomes exatos das bases fictícias, esquema compatível e **destinos sem dados**;
 - município `monte-sereno`, 3 escolas, 115 alunos fictícios e ano letivo 2027;
+- escopos escolares ligados a escolas municipais e autores informados nas auditorias ligados a usuários centrais;
 - contagem por tabela, sem revelar credenciais ou dados de estudantes.
 
 Se houver erro, **pare**. Não force a cópia e não altere a origem para fazê-la passar. Depois do backup testado e da simulação aprovada, a confirmação explícita é:
@@ -66,7 +67,7 @@ php artisan astuti:migrar-dados-postgresql --executar --confirmar=MONTE-SERENO-D
 
 A transferência copia UUIDs, relacionamentos, histórico de exclusão lógica, auditorias e hashes de senha sem renovar credenciais. Confere identidades e contagens por tabela. Não copia sessões ativas, filas ou cache, que devem ser recriados, pois sessões anteriores ao corte não devem continuar válidas.
 
-**Atenção:** PostgreSQL não fornece commit atômico automático entre os dois bancos. Uma falha entre os commits pode deixar um destino copiado e outro pendente; nesse caso, pare, verifique as duas bases e restaure os destinos com supervisão a partir do backup. Nunca apague a origem MariaDB. O comando falha fechado caso encontre destino já preenchido.
+O serviço confirma primeiro o PostgreSQL municipal e depois o central em transações separadas. Para uma falha após o commit municipal, siga o procedimento de recuperação ao final deste guia.
 
 ## 5. Conferir e decidir o corte
 
@@ -78,3 +79,13 @@ A transferência copia UUIDs, relacionamentos, histórico de exclusão lógica, 
 6. Documente resultado, versão Git e horário. Só depois considere a mudança de banco concluída.
 
 O retorno temporário ao MariaDB só é viável enquanto não houver novas escritas no PostgreSQL. Não opere simultaneamente dois bancos como fontes de verdade. Em caso de falha, mantenha o sistema em manutenção e faça restauração supervisionada.
+
+## 6. Recuperar com supervisão após uma falha
+
+Quando a falha ocorre após o commit municipal, o comando retorna falha e informa **commit parcial**. Isso confirma a gravação no destino municipal e indica que o commit central ficou sem confirmação. O diagnóstico da CLI omite credenciais e detalhes de SQL. A conferência de destino vazio recusa uma nova tentativa se encontrar registros.
+
+1. Mantenha a aplicação em manutenção, suspenda escritas e interrompa a tentativa de corte. Registre a etapa, a versão Git, o horário, os nomes das bases envolvidas e a saída da CLI. Proteja os backups e os registros operacionais.
+2. Inspecione **ambos** os destinos PostgreSQL em leitura. Compare esquema, contagens e identificadores nas tabelas migradas com as referências da simulação e do backup. Confira escolas, usuários, vínculos, escopos e auditorias. Na falha simulada do CI, as linhas municipais ficaram gravadas e as tabelas centrais continuaram vazias. Se a conexão falhar durante um commit real, confirme o estado de cada base antes de decidir como recuperá-la.
+3. Identifique as cópias PostgreSQL **de antes da transferência**, uma por base. Confira o horário, a origem e as somas SHA-256 registradas. Confira o conteúdo de cada arquivo no formato customizado com `pg_restore --list`. Ensaiar a restauração em dois destinos isolados exige verificar o esquema e o estado esperado de cada cópia. Valide também a disponibilidade dos dois dumps da origem MariaDB, mantendo as bases de origem intactas.
+4. Com o responsável pela operação, aprove o estado recuperado antes de retomar o corte. Preserve o par parcial para inspeção. Use um novo par de destinos verificados para o ensaio, confirme que as tabelas alvo estão vazias e faça nova simulação antes de autorizar qualquer cópia. Após uma cópia autorizada, confira as referências interbancos, o login e a auditoria.
+5. No GitHub Actions, o teste ensaia a retomada em outro par de bancos descartáveis com esquema novo, usando a origem sintética preservada. Os serviços efêmeros removem os bancos ao encerrar o job. Qualquer limpeza manual desse ensaio fica restrita aos bancos `*_test` identificados na execução, após conferir o servidor CI e os nomes exatos. O ensaio deixa intocados os bancos e as tabelas do notebook e não roda `--executar` em `*_dev`. A restauração dos backups do notebook precisa de ensaio supervisionado separado.

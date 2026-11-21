@@ -10,6 +10,8 @@ use Throwable;
 final class FictitiousDataTransfer
 {
     /**
+     * Use quatro conexões dedicadas, sem transações abertas pelo chamador.
+     *
      * @return array{platform: array<string, int>, tenant: array<string, int>}
      */
     public function run(
@@ -30,6 +32,7 @@ final class FictitiousDataTransfer
             $this->verifySchemaAndEmptyTarget($sourcePlatform, $targetPlatform, MigrationVerifier::PLATFORM_TABLES);
             $this->verifySchemaAndEmptyTarget($sourceTenant, $targetTenant, MigrationVerifier::TENANT_TABLES);
             $this->verifyFictitiousFixture($sourcePlatform, $sourceTenant);
+            $this->verifyInterdatabaseReferences($sourcePlatform, $sourceTenant);
 
             $counts = [
                 'platform' => $this->counts($sourcePlatform, MigrationVerifier::PLATFORM_TABLES),
@@ -51,8 +54,12 @@ final class FictitiousDataTransfer
 
             // Os dois bancos PostgreSQL nao compartilham uma transacao.
             $targetTenant->commit();
-            $afterMunicipalCommit?->__invoke();
-            $targetPlatform->commit();
+            try {
+                $afterMunicipalCommit?->__invoke();
+                $targetPlatform->commit();
+            } catch (Throwable $exception) {
+                throw new PartialCommitException($exception);
+            }
 
             return $counts;
         } catch (Throwable $exception) {
@@ -124,6 +131,24 @@ final class FictitiousDataTransfer
             || $tenant->table('students')->where('full_name', 'not like', 'Estudante fictício %')->exists()
             || $platform->table('users')->where('email', 'not like', '%.invalid')->exists()) {
             throw new RuntimeException('Origem nao corresponde ao cenario ficticio Monte Sereno v2.');
+        }
+    }
+
+    private function verifyInterdatabaseReferences(Connection $platform, Connection $tenant): void
+    {
+        $centralUsers = $platform->table('users')->pluck('id')->all();
+        $municipalSchools = $tenant->table('schools')->pluck('id')->all();
+
+        foreach ([
+            [$platform, 'school_scopes', 'school_id', $municipalSchools],
+            [$platform, 'platform_audit_logs', 'user_id', $centralUsers],
+            [$tenant, 'audit_logs', 'user_id', $centralUsers],
+        ] as [$connection, $table, $column, $validIds]) {
+            $referencedIds = $connection->table($table)->whereNotNull($column)->distinct()->pluck($column)->all();
+
+            if (array_diff($referencedIds, $validIds) !== []) {
+                throw new RuntimeException("Referência inválida em {$table}.{$column}.");
+            }
         }
     }
 

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Support\DatabaseMigration\FictitiousDataTransfer;
 use App\Support\DatabaseMigration\MigrationVerifier;
+use App\Support\DatabaseMigration\PartialCommitException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -75,6 +76,11 @@ class MigrateFictitiousDataToPostgres extends Command
             $this->warn('Antes do corte, confira o login, as telas, os backups e a restauracao em ambiente separado.');
 
             return self::SUCCESS;
+        } catch (PartialCommitException $exception) {
+            $this->error($exception->getMessage());
+            $this->warn('Mantenha a aplicação em manutenção e siga a recuperação supervisionada em docs/operacao/migracao-mariadb-postgresql.md.');
+
+            return self::FAILURE;
         } catch (Throwable) {
             $this->error('Migracao interrompida por falha de precondicao ou integridade.');
             $this->warn('Nao execute um novo corte sem conferir o estado dos dois destinos. A origem MariaDB permanece intocada.');
