@@ -159,3 +159,15 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 - **Banco e infraestrutura:**
 - **Pendencias e riscos:**
 - **Proxima acao segura:**
+
+## 21/11/2026 - Primeira etapa de teste de integracao MariaDB para PostgreSQL implementada
+
+**Autorizacao de Jefferson:** executar automaticamente o maximo das etapas de desenvolvimento, testes, revisao e documentacao no GitHub sem novas solicitacoes para continuar; nao executar qualquer corte nos bancos do notebook sem autorizacao especifica. Foi aplicada a sequencia Superpowers de testes TDD e revisao independente.
+
+**Codigo efetivamente publicado no PR #5 (ainda draft):** commit `d5063d9a2d2580a6ab5fb8b68c329362904166f6`, criado um job independente `migracao-integracao` em `.github/workflows/testes.yml`; adicionados `tests/Support/DatabaseMigration/DisposableMigrationDatabases.php`, `FictitiousMigrationFixture.php` e `tests/Feature/Console/MigrateFictitiousDataToPostgresTest.php`. A implementacao cria quatro bancos descartaveis `*_test` para MariaDB 11.8 e PostgreSQL 17, valida flags de CI, hosts loopback e nomes antes de conectar, aplica as migrations e popula exclusivamente fixtures inventadas.
+
+**Evidencia TDD:** run PR `44867148779` teve RED por helper ausente; run `44867407056` validou nove guardas e teve RED por fixture ausente; run `44867708379` teve GREEN de 10 testes e 90 assercoes no job de integracao, alem de duas execucoes da suite PHP geral (165 testes e 606 assercoes cada), Pint (126 arquivos), build e quatro testes de interface. Ambos jobs concluíram com `success`. Revisao independente Task 1: PASS, sem achado critico/importante; apenas sugestao menor de acrescentar testes para nomes administrativos e variavel `APP_ENV` incorretos.
+
+**Limite do resultado:** esta etapa testou o isolamento e a fixture, nao executou o motor de copia real entre os dois SGBDs. Nenhum banco `*_dev` do notebook foi acessado ou alterado. O ultimo commit local evidenciado no notebook segue `a27be7b1`, e o PR #5 nao foi mesclado.
+
+**Proxima tarefa ja autorizada e iniciada:** Task 2 do plano `docs/superpowers/plans/2026-11-21-testes-integracao-mariadb-postgresql.md`, com extracao do motor de copia e testes reais MariaDB para PostgreSQL nos bancos `*_test`. Apos, Tasks 3-4 para rollback, falha entre commits, referencias e CI repetivel.
