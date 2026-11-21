@@ -21,6 +21,7 @@ final class FictitiousDataTransfer
         Connection $targetTenant,
         bool $execute,
         ?Closure $afterMunicipalCommit = null,
+        ?Closure $onStage = null,
     ): array {
         try {
             foreach ([$sourcePlatform, $sourceTenant] as $source) {
@@ -46,10 +47,11 @@ final class FictitiousDataTransfer
             $targetPlatform->beginTransaction();
             $targetTenant->beginTransaction();
 
-            $this->copyAndVerify($sourcePlatform, $targetPlatform, MigrationVerifier::PLATFORM_TABLES);
-            $this->copyAndVerify($sourceTenant, $targetTenant, MigrationVerifier::TENANT_TABLES);
+            $this->copyAndVerify($sourcePlatform, $targetPlatform, MigrationVerifier::PLATFORM_TABLES, $onStage);
+            $this->copyAndVerify($sourceTenant, $targetTenant, MigrationVerifier::TENANT_TABLES, $onStage);
 
             // A sequencia nao avanca com insercao de IDs explicitos.
+            $onStage?->__invoke('ajustando', 'municipality_provision_attempts');
             $targetPlatform->statement("SELECT setval(pg_get_serial_sequence('municipality_provision_attempts', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM municipality_provision_attempts), 0), 1), (SELECT COUNT(*) > 0 FROM municipality_provision_attempts))");
 
             // Os dois bancos PostgreSQL nao compartilham uma transacao.
@@ -152,15 +154,17 @@ final class FictitiousDataTransfer
         }
     }
 
-    private function copyAndVerify(Connection $source, Connection $target, array $tables): void
+    private function copyAndVerify(Connection $source, Connection $target, array $tables, ?Closure $onStage): void
     {
         foreach ($tables as $table) {
+            $onStage?->__invoke('inserindo', $table);
             $rows = $source->table($table)->get()->map(static fn ($row): array => (array) $row)->all();
 
             foreach (array_chunk($rows, 50) as $chunk) {
                 $target->table($table)->insert($chunk);
             }
 
+            $onStage?->__invoke('conferindo', $table);
             MigrationVerifier::assertSameRows(
                 $rows,
                 $target->table($table)->get()->map(static fn ($row): array => (array) $row)->all(),
