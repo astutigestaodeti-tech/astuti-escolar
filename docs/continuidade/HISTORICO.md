@@ -44,6 +44,16 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Proximo passo seguro:** consultas somente de leitura de contagens no PostgreSQL e inventario das bases MariaDB de origem, sem exibir dados pessoais ou credenciais.
 
+## 21/11/2026 - Contagens iniciais PostgreSQL e inventario MariaDB
+
+**Evidencia:** captura enviada pelo usuario apos consultas somente de leitura. No PostgreSQL `astuti_platform_dev`, `municipalities`, `users` e `memberships` tinham 0 registros. No PostgreSQL `astuti_monte_sereno_dev`, `schools`, `school_years`, `school_classes`, `students` e `student_enrollments` tinham 0 registros.
+
+**MariaDB original:** foram encontradas as bases `astuti_monte_sereno_dev`, `astuti_municipio_b_dev` e `astuti_platform_dev`. A existencia das bases nao comprova as contagens nem a integridade das tabelas de origem.
+
+**Backups:** em `~/astuti-backups` apareceu apenas um arquivo de configuracao com nome iniciado por `env-pre-postgresql-`, tamanho 1.185 bytes. Nao foi identificado dump de banco nessa pasta. O arquivo pode conter segredos e nao deve ser enviado ao chat ou ao GitHub.
+
+**Pendencias:** verificar as demais tabelas de destino e as contagens exatas das tabelas MariaDB exigidas pela rotina de transferencia; preparar backups de banco com restauracao ensaiada antes de qualquer comando de copia.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
