@@ -112,6 +112,24 @@ O bloco cria um diretório exclusivo para cada tentativa, fora do Git. Preserve 
 
 Confira nas duas listagens o banco e o esquema esperados. Registre o horário e o caminho do par de backups. Sob supervisão, restaure cada arquivo em um novo banco isolado e vazio, com `pg_restore --exit-on-error --single-transaction --dbname` apontando para o destino isolado conferido. Verifique as migrations e confirme que as tabelas alvo continuam vazias. O ensaio usa bases distintas dos destinos `*_dev` e preserva os dumps originais.
 
+### Comando automatizado para ensaiar as restauracoes do notebook
+
+Na branch `feature/migracao-postgresql-instalacoes-isoladas`, o roteiro versionado `scripts/operacao/ensaiar-restauracao-postgresql.sh` restaura os dois backups `~/astuti-backups/pgsql-antes-jobs-2Xqrc9lg/*.dump` em **novos** bancos PostgreSQL com prefixos `astuti_restore_pg_platform_` e `astuti_restore_pg_monte_`. Nunca e apontado para os bancos `*_dev`. Se falhar, interrompe, preserva os bancos de teste ja criados e informa os nomes. As restauracoes nao sao eliminadas automaticamente.
+
+Depois de conferir que a arvore Git esta limpa e sincronizar a branch no notebook:
+
+```bash
+bash scripts/operacao/ensaiar-restauracao-postgresql.sh
+```
+
+O teste de simulacao de falhas do roteiro pode ser executado sem PostgreSQL nem `sudo` reais:
+
+```bash
+bash tests/Shell/EnsaiarRestauracaoPostgresqlTest.sh
+```
+
+Aprovacao em testes simulados/CI nao e evidencia de uma restauracao real: registre a saida do notebook, verifique as contagens e preserve todos os bancos e dumps. Os backups usados nessa demonstracao foram criados antes da migration de `jobs`; sua ausencia nos bancos restaurados e esperada.
+
 Prossiga para a confirmação explícita somente depois de verificar os dois backups, as somas SHA-256 e o resultado do ensaio supervisionado:
 
 ```bash
