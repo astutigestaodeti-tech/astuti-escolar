@@ -19,11 +19,21 @@ class PlatformAuditTest extends TwoMunicipalityTestCase
 
         $logs = PlatformAuditLog::query()->whereIn('action', ['auth.failed', 'auth.login', 'auth.logout'])->orderBy('occurred_at')->get();
         $this->assertSame(['auth.failed', 'auth.login', 'auth.logout'], $logs->pluck('action')->all());
+        $this->assertSame($user->id, $logs[0]->user_id);
         $this->assertSame($user->id, $logs[1]->user_id);
         $this->assertSame($user->id, $logs[2]->user_id);
         $this->assertStringNotContainsString('SenhaForteDeTeste123!', $logs->toJson());
         $this->assertStringNotContainsString('errada', $logs->toJson());
         $this->assertStringNotContainsString('token', $logs->toJson());
+    }
+
+    public function test_i6_login_com_email_desconhecido_nao_inventa_autoria(): void
+    {
+        $this->post('/login', ['email' => 'desconhecido@astuti.invalid', 'password' => 'senha-incorreta'])
+            ->assertSessionHasErrors('email');
+
+        $log = PlatformAuditLog::query()->where('action', 'auth.failed')->firstOrFail();
+        $this->assertNull($log->user_id);
     }
 
     public function test_provisionamento_registra_resultado_na_plataforma(): void
