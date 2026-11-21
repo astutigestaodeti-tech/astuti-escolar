@@ -116,6 +116,18 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Proxima acao planejada, ainda nao executada:** criar backups `pg_dump -Fc` dos bancos PostgreSQL de desenvolvimento fora do Git, verificar legibilidade com `pg_restore -l` e checksum; revalidar que apenas a migration `jobs` esta pendente e as tres tabelas seguem ausentes; entao aplicar exclusivamente migrations do caminho de plataforma com `php artisan migrate --database=platform --path=database/migrations/platform` e verificar status/tabelas depois. Nunca rodar `migrate:fresh`/rollback automatico. Ainda falta teste integrado de migracao MariaDB->PostgreSQL em destinos descartaveis, antes de `--executar` nos destinos principais.
 
+## 21/11/2026 - Backup PostgreSQL e migration de filas concluidos
+
+**Evidencia direta:** captura 72 enviada por Jefferson apos execucao automatizada no Debian. O script confirmou primeiro `a27be7b1` e apenas `0001_01_01_000002_create_jobs_table` pendente, com as tres tabelas ausentes.
+
+**Backups anteriores a escrita de esquema:** criados dois arquivos `pg_dump -Fc` em subpasta local `~/astuti-backups/pgsql-antes-jobs-*/`, um para `astuti_platform_dev` e outro para `astuti_monte_sereno_dev`. Ambos passaram por `test -s` e leitura do indice `pg_restore -l`; hashes SHA-256 exibidos. Ainda nao houve ensaio completo de restauracao desses dumps PG; nao publicar arquivos no GitHub.
+
+**Migracao aplicada e conferida:** `php artisan migrate --database=platform --path=database/migrations/platform` executou `0001_01_01_000002_create_jobs_table` com `DONE`. Nova listagem de `migrate:status` mostrou a migration como `[2] Ran` e as outras dez como `[1] Ran`. A verificacao final encontrou as tres tabelas de fila `jobs`, `job_batches` e `failed_jobs` presentes.
+
+**Limites:** houve escrita apenas de estrutura e registro da migration no PostgreSQL central; nao houve copia de dados escolares nem alteracao do MariaDB. Nenhuma importacao real foi testada em PostgreSQL nesta captura. O PR #5 permanece em rascunho.
+
+**Proxima etapa prevista no plano aprovado:** construir/rodar testes de integracao da transferencia MariaDB->PostgreSQL em bancos descartaveis, incluindo sucesso, falha antes dos commits e recuperacao de falha entre commits; conferir permissao, hashes e relacionamentos. Nao usar `--executar` nos destinos principais antes dessas provas e de autorizacao especifica.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
