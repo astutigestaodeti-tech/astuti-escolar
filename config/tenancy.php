@@ -9,7 +9,7 @@ $platform = config('database.connections.platform', []);
 // esta disponivel. Consultar somente app.env, ja carregado neste ponto.
 if (config('app.env') === 'local'
     && is_array($platform)
-    && ($platform['driver'] ?? null) === 'mariadb'
+    && ($platform['driver'] ?? null) === 'pgsql'
     && ($platform['database'] ?? null) === 'astuti_platform_dev'
     && in_array(strtolower((string) ($platform['host'] ?? '')), ['127.0.0.1', 'localhost', '::1'], true)
     && empty($platform['url'])) {
@@ -18,4 +18,8 @@ if (config('app.env') === 'local'
     ]);
 }
 
-return ['connections' => $connections];
+// Em producao, a configuracao privada devera fornecer somente a base daquela prefeitura.
+return [
+    'connections' => $connections,
+    'deployed_db_key' => env('ASTUTI_MUNICIPALITY_DB_KEY'),
+];
