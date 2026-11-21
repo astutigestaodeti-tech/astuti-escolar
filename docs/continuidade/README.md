@@ -83,12 +83,13 @@ As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os doi
 
 ## 6. Proximo passo seguro
 
-1. **Concluido em 21/11/2026:** branch local sincronizada por fast-forward, com HEAD `a27be7b1` e sem alteracoes pendentes.
-2. **Em andamento:** existencia das duas bases PostgreSQL, sete tabelas municipais e 0 registros nas principais tabelas de destino confirmados. Consultar as demais tabelas e contar todos os registros nas bases MariaDB de origem sem modificar dados.
-3. **Concluido nas capturas 68-70:** dois dumps MariaDB na subpasta `mariadb-20261120-234757/`, ambos com GZIP integro; bancos de restauracao preservados `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385`. Todas as 12 tabelas comparadas tiveram contagens iguais entre original e restauracao. Nao recriar nem remover esses arquivos e bancos.
-4. **Concluido em 21/11/2026:** dry-run do comando `astuti:migrar-dados-postgresql` repetido no HEAD `a27be7b1`, aprovando 1 municipio, 1 usuario, 3 escolas, 115 alunos, 3 turmas, 115 matriculas e 237 auditorias municipais. Saida: `Simulacao aprovada. Nenhum dado foi gravado.` **Proximo passo imediato:** revisar a rotina de transferencia real, possivel falha parcial entre dois bancos e a migration de `jobs` ainda pendente. Nao executar `--executar` antes dessa revisao e de autorizacao especifica.
-5. Validar as contagens, relacionamentos, hashes de senha, login do municipio ficticio, autorizacoes, auditoria, testes locais, Pint e build. Comparar 3 escolas, 115 alunos e 2027.
-6. Revisar PR #5 e os PRs precedentes na ordem, sem mesclar automaticamente. Atualizar este ponto de retomada com o resultado real.
+1. **Concluido:** branch local `feature/migracao-postgresql-instalacoes-isoladas` sincronizada em `a27be7b1`; bancos PostgreSQL central e municipal criados, com tabelas de negocio principais vazias.
+2. **Concluido em capturas 68-70:** dois dumps MariaDB GZIP integros, restauracoes `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385` preservadas; contagens iguais nas 12 tabelas comparadas. Nunca recriar, apagar ou sobrescrever origens e backups sem motivo e autorizacao.
+3. **Concluido em captura 70:** simulacao `php artisan astuti:migrar-dados-postgresql` sem `--executar` aprovada no codigo `a27be7b1`, com 1 municipio, 1 usuario, 3 escolas, 115 alunos, 3 turmas, 115 matriculas e 237 auditorias municipais. Nenhum dado foi gravado.
+4. **Revisao tecnica pre-corte em 21/11/2026:** comando restringe ambiente, confere conteudo e hashes, mas commits nos dois bancos PG nao sao atomicamente conjuntos. CI do PR #5 passou, porem nao executa transferencia real MariaDB->PG. Nao assumir copia concluida nem prontidao para producao.
+5. **Proximo comando:** somente consultas para checar fisicamente `jobs`, `job_batches` e `failed_jobs` no PostgreSQL central, alem do `migrate:status --database=platform --path=database/migrations/platform`. A migration de jobs apareceu `Pending` no ultimo print; antes de executar qualquer migration, determinar se essas tabelas ja existem.
+6. **Antes da copia real:** preparar backup verificavel do PG central, resolver migration jobs pendente de forma supervisionada, adicionar testes de integracao e ensaiar copia/recuperacao em destinos PostgreSQL descartaveis, inclusive falha entre commits. Conferir referencias entre bancos, FKs, auditoria, login, hash e telas.
+7. **Nao executar `--executar` nos destinos principais nem mesclar PR #5 nesta etapa.** Fazer nova revisao e obter autorizacao especifica depois dos testes. Manter PRs anteriores em rascunho ate os criterios de aceitacao.
 
 ## 7. Como manter este registro util
 
