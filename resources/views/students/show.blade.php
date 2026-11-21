@@ -13,8 +13,6 @@
 @endsection
 
 @section('content')
-    <a class="voltar" href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="voltar" :size="18" /> Voltar à lista de alunos</a>
-
     <div class="folha-titulo">
         <div>
             <span class="contexto">Consulta individual</span>
