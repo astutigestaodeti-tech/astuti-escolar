@@ -26,6 +26,14 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Pendencia para a proxima conversa:** comparar branches com seguranca, conferir banco municipal e bancos MariaDB de origem, backups, simulacao de migracao, testes locais e eventual corte autorizado. Nao pressupor VPS contratado nem migracao concluida.
 
+## 21/11/2026 - Notebook sincronizado com a branch PostgreSQL
+
+**Evidencia:** nova captura do terminal Debian enviada por Jefferson. Apos `git status --short --branch` sem arquivos modificados, `git fetch origin` mostrou 0 commits locais a frente e 4 commits remotos faltantes. `git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas` aplicou fast-forward de `ec78138` para `a27be7b1`.
+
+**Resultado comprovado:** `git log -1 --oneline` mostrou `a27be7b1`, e `git status --short --branch` voltou a mostrar a branch `feature/migracao-postgresql-instalacoes-isoladas` acompanhando seu remoto, sem alteracoes locais pendentes. A atualizacao mudou arquivos de migrations e testes, nao os bancos de dados.
+
+**Proximo passo:** verificar por consultas sem escrita se os bancos PostgreSQL central e municipal existem, quais tabelas estao presentes e qual o estado das migracoes; depois conferir a origem MariaDB e os backups antes de qualquer importacao.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
