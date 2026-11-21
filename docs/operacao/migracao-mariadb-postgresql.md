@@ -191,3 +191,25 @@ O usuário MariaDB padrão usado pelo roteiro é `aflora`, via socket local, con
 **Situação do processo:** a inclusão do roteiro e os testes no GitHub não provam a cópia real na máquina. A confirmação dependerá da saída do comando no Debian. Não executar `php artisan astuti:migrar-dados-postgresql --executar` diretamente nos PostgreSQL originais, não fazer corte e não mesclar PR #5 enquanto a revisão integral não estiver concluída.
 
 **Correção verificada em 21/11/2026 (captura 82):** a primeira versão criava o cluster, mas o `pg_conftool` gravava `listen_addresses = 127.0.0.1` sem aspas, o que causou erro de sintaxe no `postgresql.conf` e impediu a inicialização. Isso ocorreu **antes de qualquer cópia**. O roteiro foi corrigido para `listen_addresses = localhost`, aceito como identificador simples e limitado ao loopback, com teste de regressão que falha no caso anterior. O cluster anterior `astuti_ens_20261121_103015_6876`, porta 55432, permaneceu **parado e preservado**. Uma nova execução criará outro cluster na próxima porta livre, sem reutilizar ou sobrescrever o anterior; sua limpeza será considerada separadamente depois da conferência.
+
+## Testar login e consultas reais no notebook, sem corte (21/11/2026)
+
+**Contexto validado na captura 91:** o cluster de ensaio `17/astuti_ens_20261121_112332_22176`, porta **55436**, foi iniciado no Debian; consultas de leitura confirmaram **1 usuario central, 3 escolas e 115 alunos ficticios**. Essa confirmacao **nao** prova login funcional nem navegacao no banco copiado.
+
+Com o cluster **55436 online**, em um segundo terminal Debian que nao esteja executando o servidor da demo 8001, rode apenas:
+
+```bash
+cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas && bash scripts/operacao/testar-login-isolado-postgresql.sh
+```
+
+O script de seguranca:
+
+1. Exige o PostgreSQL `17/main` na porta 5432 e o cluster de ensaio de nome **exato** na porta 55436, ambos online; consulta os identificadores fisicos e recusa qualquer coincidencia.
+2. Antes de escrever, confirma no **55436** 1 municipio, uma unica conta ficticia ativa `demo.monte-sereno@astuti.invalid` com vinculo ativo e 3 escolas, 115 alunos e 115 matriculas.
+3. Gera senhas aleatorias temporarias, valida a configuracao real do Laravel e **somente no 55436** troca a senha do papel PostgreSQL `astuti_ensaio` e da **conta ficticia copiada**. Nao executa `migrate`, `astuti:demo-preparar` nem outra transferencia.
+4. Usa `PLATFORM_DB_* ` e cache de configuracao apenas no processo, com `SESSION_COOKIE=astuti_ensaio_55436`; nao altera `.env` nem remove caches globais; confere as conexoes SQL efetivas dos dois bancos antes de atualizar a conta.
+5. Mostra a senha **somente no terminal local** e inicia `http://127.0.0.1:8002/login`. Deixe o terminal aberto durante o teste; encerre com Ctrl+C. Nao envie prints da senha para o chat ou GitHub.
+
+Se o cluster estiver `down`, **nao** execute o script ainda: primeiro confira `pg_lsclusters` e inicie apenas o cluster **55436** por `sudo pg_ctlcluster --skip-systemctl-redirect 17 astuti_ens_20261121_112332_22176 start`. Nao use o teste na porta 8001: a tela `/demonstracao` usa numeros ilustrativos (1.284 alunos, 4 escolas); as listas reais protegidas dependem de login e do cluster 55436 (115 alunos, 3 escolas).
+
+**Escopo das garantias:** cinco cenarios de seguranca do roteiro foram aprovados em teste Bash com dependencias simuladas; o uso contra o Debian/PostgreSQL **ainda requer execucao e captura do usuario**. Os bancos originais 5432, MariaDB e backups devem permanecer intactos. A branch permanece isolada; PR #5 continua rascunho.
