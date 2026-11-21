@@ -61,6 +61,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Testar seguranca do ensaio de restauracao PostgreSQL
+        run: bash tests/Shell/EnsaiarRestauracaoPostgresqlTest.sh
+
       - name: Preparar PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
