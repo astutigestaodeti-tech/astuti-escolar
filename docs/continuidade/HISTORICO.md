@@ -108,6 +108,14 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Decisao de seguranca:** NAO liberar `--executar` nos destinos PostgreSQL principais agora e nao mesclar PR #5. Primeiro conferir tabelas fisicas e migrations sem gravacao; depois resolver schema pendente com backup/verificacao, criar testes de integracao e realizar ensaio de corte/recuperacao em bases descartaveis com autorizacao, antes de nova avaliacao. Os dumps e origens MariaDB permanecem preservados.
 
+## 21/11/2026 - Tabelas de fila PostgreSQL confirmadas ausentes
+
+**Evidencia direta:** captura 71 do terminal Debian. `php artisan migrate:status --database=platform --path=database/migrations/platform` voltou a mostrar a migration `0001_01_01_000002_create_jobs_table` como `Pending`, e as outras dez migrations centrais como `Ran`.
+
+**Verificacao fisica:** consulta read-only ao PostgreSQL `astuti_platform_dev`, com `to_regclass`, confirmou `jobs`, `job_batches` e `failed_jobs` todas `AUSENTE`. Portanto nao ha colisao observada com tabelas previamente criadas. Nao houve qualquer alteracao de banco no passo.
+
+**Proxima acao planejada, ainda nao executada:** criar backups `pg_dump -Fc` dos bancos PostgreSQL de desenvolvimento fora do Git, verificar legibilidade com `pg_restore -l` e checksum; revalidar que apenas a migration `jobs` esta pendente e as tres tabelas seguem ausentes; entao aplicar exclusivamente migrations do caminho de plataforma com `php artisan migrate --database=platform --path=database/migrations/platform` e verificar status/tabelas depois. Nunca rodar `migrate:fresh`/rollback automatico. Ainda falta teste integrado de migracao MariaDB->PostgreSQL em destinos descartaveis, antes de `--executar` nos destinos principais.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
