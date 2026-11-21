@@ -3,7 +3,9 @@
 namespace Tests\Feature\Console;
 
 use App\Support\DatabaseMigration\FictitiousDataTransfer;
+use App\Support\DatabaseMigration\PartialCommitException;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -223,6 +225,176 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
         $this->assertSame($sourceBefore['platform']['users'][0]['password'], $sourcePlatform->table('users')->sole()->password);
         $this->assertSame($sessionBefore, array_map($this->sessionSettings(...), $sources));
+    }
+
+    public function test_falha_antes_do_commit_reverte_ambos_destinos(): void
+    {
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = DisposableMigrationDatabases::create();
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+
+        $sourceTenant->statement('SET SESSION FOREIGN_KEY_CHECKS = 0');
+
+        try {
+            $this->assertSame(1, $sourceTenant->table('student_enrollments')
+                ->where('id', '70000000-0000-4000-8000-000000000115')
+                ->update(['school_year_id' => '80000000-0000-4000-8000-000000000099']));
+        } finally {
+            $sourceTenant->statement('SET SESSION FOREIGN_KEY_CHECKS = 1');
+        }
+
+        $sourceBefore = $this->snapshot($sourcePlatform, $sourceTenant);
+        $targetBefore = $this->snapshot($targetPlatform, $targetTenant);
+        $centralInserted = false;
+        $municipalInserted = false;
+
+        DB::listen(static function (QueryExecuted $query) use ($targetPlatform, $targetTenant, &$centralInserted, &$municipalInserted): void {
+            if ($query->connection === $targetPlatform && str_starts_with($query->sql, 'insert into "platform_audit_logs"')) {
+                $centralInserted = true;
+            }
+
+            if ($query->connection === $targetTenant && str_starts_with($query->sql, 'insert into "students"')) {
+                $municipalInserted = true;
+            }
+        });
+
+        try {
+            (new FictitiousDataTransfer)->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true);
+            $this->fail('A chave estrangeira inválida deveria interromper a cópia municipal.');
+        } catch (QueryException $exception) {
+            $this->assertSame('23503', $exception->getCode());
+        }
+
+        $this->assertTrue($centralInserted);
+        $this->assertTrue($municipalInserted);
+        $this->assertSame($targetBefore, $this->snapshot($targetPlatform, $targetTenant));
+        $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
+
+        foreach ([$sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant] as $connection) {
+            $this->assertSame(0, $connection->transactionLevel());
+        }
+    }
+
+    public function test_falha_entre_commits_explica_estado_parcial_e_recusa_retry(): void
+    {
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = DisposableMigrationDatabases::create();
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+
+        $sourceBefore = $this->snapshot($sourcePlatform, $sourceTenant);
+        $targetBefore = $this->snapshot($targetPlatform, $targetTenant);
+        $transfer = new FictitiousDataTransfer;
+        $cause = new RuntimeException('Detalhe interno da falha simulada.');
+        $failure = null;
+
+        try {
+            $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true, static fn () => throw $cause);
+        } catch (RuntimeException $exception) {
+            $failure = $exception;
+        }
+
+        foreach ([$sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant] as $connection) {
+            $this->assertSame(0, $connection->transactionLevel());
+        }
+
+        $partial = $this->snapshot($targetPlatform, $targetTenant);
+        $this->assertSame($targetBefore['platform'], $partial['platform']);
+        $this->assertEquals($sourceBefore['tenant'], $partial['tenant']);
+        $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
+
+        try {
+            $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true);
+            $this->fail('A tentativa seguinte deveria recusar o destino municipal preenchido.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('Destino contem registros', $exception->getMessage());
+        }
+
+        $this->assertSame($partial, $this->snapshot($targetPlatform, $targetTenant));
+        $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
+
+        $this->assertInstanceOf(PartialCommitException::class, $failure);
+        $this->assertSame($cause, $failure->getPrevious());
+        $this->assertStringContainsString('destino municipal', $failure->getMessage());
+        $this->assertStringContainsString('destino central', $failure->getMessage());
+        $this->assertStringNotContainsString($cause->getMessage(), $failure->getMessage());
+
+        // Ensaia a recuperação usando destinos novos. O par parcial fica preservado para inspeção.
+        ['targetPlatform' => $recoveryPlatform, 'targetTenant' => $recoveryTenant] = DisposableMigrationDatabases::create();
+
+        $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $recoveryPlatform, $recoveryTenant, false));
+        $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $recoveryPlatform, $recoveryTenant, true));
+        $this->assertEquals($sourceBefore, $this->snapshot($recoveryPlatform, $recoveryTenant));
+        $this->assertSame($partial, $this->snapshot($targetPlatform, $targetTenant));
+        $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
+    }
+
+    public function test_escopo_escolar_e_usuarios_auditados_referenciam_registros_existentes(): void
+    {
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = DisposableMigrationDatabases::create();
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+
+        foreach ([[$sourcePlatform, 'platform_audit_logs'], [$sourceTenant, 'audit_logs']] as [$source, $table]) {
+            $audit = (array) $source->table($table)->sole();
+            $audit['id'] = '90000000-0000-4000-8000-000000000099';
+            $audit['user_id'] = null;
+            $audit['role'] = null;
+            $source->table($table)->insert($audit);
+        }
+
+        (new FictitiousDataTransfer)->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true);
+
+        $scope = $targetPlatform->table('school_scopes')->sole();
+        $user = $targetPlatform->table('users')->sole();
+
+        $this->assertTrue($targetTenant->table('schools')->where('id', $scope->school_id)->exists());
+        $this->assertSame($user->id, $targetPlatform->table('platform_audit_logs')->whereNotNull('user_id')->sole()->user_id);
+        $this->assertSame($user->id, $targetTenant->table('audit_logs')->whereNotNull('user_id')->sole()->user_id);
+        $this->assertSame(1, $targetPlatform->table('platform_audit_logs')->whereNull('user_id')->count());
+        $this->assertSame(1, $targetTenant->table('audit_logs')->whereNull('user_id')->count());
+    }
+
+    #[DataProvider('referenciasOrfas')]
+    public function test_referencia_orfa_e_recusada_sem_escrever(string $database, string $table, string $column, bool $execute): void
+    {
+        $databases = DisposableMigrationDatabases::create();
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = $databases;
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+
+        $this->assertSame(1, $databases[$database]->table($table)->update([$column => 'f0000000-0000-4000-8000-000000000099']));
+
+        $sourceBefore = $this->snapshot($sourcePlatform, $sourceTenant);
+        $targetBefore = $this->snapshot($targetPlatform, $targetTenant);
+        $failure = null;
+
+        try {
+            (new FictitiousDataTransfer)->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, $execute);
+        } catch (RuntimeException $exception) {
+            $failure = $exception;
+        }
+
+        $this->assertInstanceOf(RuntimeException::class, $failure);
+        $this->assertStringContainsString("{$table}.{$column}", $failure->getMessage());
+        $this->assertStringNotContainsString('f0000000-0000-4000-8000-000000000099', $failure->getMessage());
+        $this->assertSame($targetBefore, $this->snapshot($targetPlatform, $targetTenant));
+        $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
+    }
+
+    public static function referenciasOrfas(): array
+    {
+        return [
+            'escopo escolar na simulação' => ['sourcePlatform', 'school_scopes', 'school_id', false],
+            'autor da auditoria central na simulação' => ['sourcePlatform', 'platform_audit_logs', 'user_id', false],
+            'autor da auditoria municipal na simulação' => ['sourceTenant', 'audit_logs', 'user_id', false],
+            'escopo escolar na cópia' => ['sourcePlatform', 'school_scopes', 'school_id', true],
+            'autor da auditoria central na cópia' => ['sourcePlatform', 'platform_audit_logs', 'user_id', true],
+            'autor da auditoria municipal na cópia' => ['sourceTenant', 'audit_logs', 'user_id', true],
+        ];
     }
 
     public static function obstaculosDaCopia(): array
