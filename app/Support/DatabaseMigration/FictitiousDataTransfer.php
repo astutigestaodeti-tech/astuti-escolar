@@ -177,6 +177,10 @@ final class FictitiousDataTransfer
             }
 
             $onStage?->__invoke('conferindo', $table);
+            // Comparar somente as colunas da origem: colunas criadas depois da era
+            // MariaDB (como o bloqueio do segundo fator) existem apenas no destino,
+            // com seus valores padrao, e nao fazem parte do que foi copiado.
+            $sourceColumns = $source->getSchemaBuilder()->getColumnListing($table);
             MigrationVerifier::assertSameRows(
                 $rows,
                 // O destino pode ter campos novos NULL sem correspondente no MariaDB.

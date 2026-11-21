@@ -42,6 +42,8 @@ class User extends Authenticatable
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_last_step' => 'integer',
+            'two_factor_failed_attempts' => 'integer',
+            'two_factor_locked_until' => 'datetime',
         ];
     }
 }

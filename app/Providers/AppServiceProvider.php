@@ -32,8 +32,15 @@ class AppServiceProvider extends ServiceProvider
             hash('sha256', strtolower(trim((string) $request->input('email'))).'|'.(string) $request->ip()),
         ));
 
-        RateLimiter::for('astuti-second-factor', fn (Request $request) => Limit::perMinute(5)->by(
-            hash('sha256', (string) $request->user()?->getAuthIdentifier().'|'.(string) $request->ip()),
-        ));
+        // Dois limites somados: por conta e IP, e por conta em qualquer IP.
+        // O segundo impede contornar o primeiro trocando de endereço.
+        RateLimiter::for('astuti-second-factor', fn (Request $request) => [
+            Limit::perMinute(5)->by(
+                hash('sha256', (string) $request->user()?->getAuthIdentifier().'|'.(string) $request->ip()),
+            ),
+            Limit::perMinute(10)->by(
+                hash('sha256', 'conta|'.(string) $request->user()?->getAuthIdentifier()),
+            ),
+        ]);
     }
 }
