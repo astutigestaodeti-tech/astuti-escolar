@@ -136,3 +136,11 @@ Para detalhes técnicos, consulte a última entrada de `HISTORICO.md`.
 - Segundo cluster isolado `17/astuti_ens_20261121_103538_6170` na porta **55433** criado e iniciado com sucesso. Dumps restaurados no cluster isolado. Simulacao aprovada, com **115 alunos ficticios** na origem MariaDB.
 - Na tentativa de copia, a CLI exibiu somente erro generico de precondicao/integridade, **sem revelar a excecao causadora**. Nao considerar os dados copiados. O cluster 55433 foi parado e preservado; os bancos PostgreSQL originais e os backups foram mantidos, segundo o script.
 - **Proximo passo substitui temporariamente o comando da secao 8:** realizar apenas **diagnostico de log do cluster parado**, sem novo ensaio. Se nao houver log de erro SQL, corrigir instrumentacao segura do Laravel com TDD antes de nova tentativa. Nao rodar `--executar` manualmente nem eliminar clusters de ensaio. O PR #5 nao deve ser mesclado ainda.
+
+
+## 11. Captura 84 e diagnostico de excecao seguro (21/11/2026)
+
+- Leitura do log do cluster isolado 55433 exibiu `NENHUM ERRO SQL REGISTRADO`. Isso nao identifica a causa da falha da copia da captura 83 nem prova que nao houve erro SQL; a CLI anterior ocultou o detalhe.
+- Roteiro e Laravel atualizados na branch de trabalho ate o commit **`c762abb3`** para relatar a **ultima etapa/tabela iniciada** e uma causa **sanitizada** do erro somente no cluster isolado autorizado. Nenhuma funcionalidade escolar foi marcada como concluida e a migracao principal nao ocorreu.
+- **CI aprovado no commit `c762abb3`**: run [44911118712](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44911118712), ambos os jobs `success`, incluindo PHP, integracao MariaDB/PostgreSQL, Pint e interface. Houve revisao independente sem achado critico comprovado; ela apontou lacunas de cobertura da CLI e testes de borda do gate como trabalho pendente.
+- **Proxima acao segura:** sincronizar a branch no Debian e executar novamente o roteiro completo de ensaio isolado, com criacao de outro cluster em porta livre; conferir exclusivamente o resultado e diagnostico. Nao executar `--executar` fora do roteiro, nao alterar bancos originais e nao mesclar PR #5. Preservar os clusters 55432 e 55433 para auditoria.
