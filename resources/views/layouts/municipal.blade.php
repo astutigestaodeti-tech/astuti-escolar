@@ -68,6 +68,7 @@
                         <span class="usuario-texto">{{ $usuario->name }}<small>{{ $nomeCurto }}</small></span>
                     </span>
                 @endif
+                <a class="botao-sair" href="{{ route('two-factor.settings') }}" aria-label="Segurança da conta"><x-icon name="escudo" :size="17" /><span>Segurança da conta</span></a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button class="botao-sair" type="submit"><x-icon name="sair" :size="17" /><span>Sair</span></button>
