@@ -7,10 +7,11 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolStudentController;
+use App\Http\Middleware\RequireLoginTwoFactor;
 use App\Http\Middleware\ResolveMunicipality;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', [HomeController::class, 'index'])->middleware(RequireLoginTwoFactor::class)->name('home');
 
 Route::get('/saude', fn () => response()->json(['status' => 'ok']));
 
@@ -32,7 +33,7 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
     Route::post('/desativar', [TwoFactorController::class, 'disable'])->middleware('throttle:astuti-second-factor')->name('two-factor.disable');
 });
 
-Route::prefix('/m/{municipio}')->middleware(['auth', ResolveMunicipality::class])->group(function (): void {
+Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
