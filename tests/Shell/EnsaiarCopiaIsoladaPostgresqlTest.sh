@@ -113,76 +113,7 @@ fi
 grep -q 'sudo pg_createcluster 17 .*--port=55432 --start-conf=manual$' "$ASTUTI_MOCK_LOG"
 grep -q 'sudo pg_conftool 17 .* set listen_addresses localhost$' "$ASTUTI_MOCK_LOG"
 grep -q 'sudo pg_ctlcluster --skip-systemctl-redirect 17 .* start$' "$ASTUTI_MOCK_LOG"
-grep -q 'sudo pg_ctlcluster --skip-systemctl-redirect 17 .* stop
-grep -q 'php artisan astuti:migrar-dados-postgresql$' "$ASTUTI_MOCK_LOG"
-grep -q 'php artisan astuti:migrar-dados-postgresql --executar --confirmar=MONTE-SERENO-DEV$' "$ASTUTI_MOCK_LOG"
-nao_deve_conter 'php artisan config:clear' "$ASTUTI_MOCK_LOG"
-grep -q 'ENSAIO ISOLADO CONCLUIDO' "$tmp/sucesso.out"
-
-# Um erro da copia precisa sair do Laravel com diagnostico sanitizado no cluster isolado.
-# O marcador de diagnostico nao pode ser exportado para o shell do usuario.
-export ASTUTI_MOCK_LOG="$tmp/diagnostico.log"
-export ASTUTI_MOCK_DIAGNOSTICO_EXIGIDO=1
-if ! bash "$script" --backup-dir "$backup" > "$tmp/diagnostico.out" 2>&1; then
-    echo 'FALHA: a copia isolada nao ativou o diagnostico seguro.' >&2
-    tail -n 12 "$tmp/diagnostico.out" >&2
-    exit 1
-fi
-[[ -z "${ASTUTI_MIGRATION_DIAGNOSE_ISOLATED:-}" ]]
-unset ASTUTI_MOCK_DIAGNOSTICO_EXIGIDO
-
-# Falha de simulação deve barrar a cópia, mesmo após restaurar o teste.
-export ASTUTI_MOCK_LOG="$tmp/falha-simulacao.log"
-export ASTUTI_SIMULACAO_FALHA=1
-if bash "$script" --backup-dir "$backup" > "$tmp/falha-simulacao.out" 2>&1; then
-    echo 'FALHA: ignorou erro da simulacao.' >&2
-    exit 1
-fi
-nao_deve_conter 'php artisan astuti:migrar-dados-postgresql --executar' "$ASTUTI_MOCK_LOG"
-unset ASTUTI_SIMULACAO_FALHA
-
-# Recusa uso de porta já ocupada antes de criar outro cluster.
-export ASTUTI_MOCK_LOG="$tmp/porta-ocupada.log"
-export ASTUTI_PORTA_OCUPADA=1
-if bash "$script" --backup-dir "$backup" > "$tmp/porta-ocupada.out" 2>&1; then
-    echo 'FALHA: aceitou porta ocupada.' >&2
-    exit 1
-fi
-nao_deve_conter 'pg_createcluster' "$ASTUTI_MOCK_LOG"
-unset ASTUTI_PORTA_OCUPADA
-
-# Mesmo uma diferença mínima nos bancos originais encerra o ensaio.
-export ASTUTI_MOCK_LOG="$tmp/original-alterado.log"
-export ASTUTI_ORIGINAL_ALTERADO=1
-if bash "$script" --backup-dir "$backup" > "$tmp/original-alterado.out" 2>&1; then
-    echo 'FALHA: permitiu dados em PostgreSQL original.' >&2
-    exit 1
-fi
-nao_deve_conter 'php artisan astuti:migrar-dados-postgresql --executar' "$ASTUTI_MOCK_LOG"
-unset ASTUTI_ORIGINAL_ALTERADO
-
-# Se a identidade do cluster for a do original, aborta antes de executar Artisan.
-export ASTUTI_MOCK_LOG="$tmp/id-repetido.log"
-export ASTUTI_MOCK_SAME_SYSID=1
-if bash "$script" --backup-dir "$backup" > "$tmp/id-repetido.out" 2>&1; then
-    echo 'FALHA: aceitou cluster sem isolamento fisico.' >&2
-    exit 1
-fi
-nao_deve_conter 'php artisan astuti:migrar-dados-postgresql --executar' "$ASTUTI_MOCK_LOG"
-unset ASTUTI_MOCK_SAME_SYSID
-
-# Configuração Laravel divergente deve impedir até a simulação.
-export ASTUTI_MOCK_LOG="$tmp/config-insegura.log"
-export ASTUTI_MOCK_CONFIG_INCORRETA=1
-if bash "$script" --backup-dir "$backup" > "$tmp/config-insegura.out" 2>&1; then
-    echo 'FALHA: aceitou configuracao Laravel insegura.' >&2
-    exit 1
-fi
-nao_deve_conter 'php artisan astuti:migrar-dados-postgresql --executar' "$ASTUTI_MOCK_LOG"
-unset ASTUTI_MOCK_CONFIG_INCORRETA
-
-echo 'PASS: 9 cenarios do ensaio de copia isolada PostgreSQL.'
- "$ASTUTI_MOCK_LOG"
+grep -q 'sudo pg_ctlcluster --skip-systemctl-redirect 17 .* stop$' "$ASTUTI_MOCK_LOG"
 [[ "$(grep -c 'createdb .*--locale-provider=icu --icu-locale=pt-BR --template=template0 --owner=astuti_ensaio ' "$ASTUTI_MOCK_LOG")" == '2' ]] || {
     echo 'FALHA: bancos de copia isolada sem ICU pt-BR.' >&2
     exit 1
