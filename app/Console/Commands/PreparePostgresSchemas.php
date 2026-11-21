@@ -48,7 +48,7 @@ class PreparePostgresSchemas extends Command
             $manager->activate(new Municipality(['db_key' => 'monte_sereno']));
 
             if (Schema::connection('tenant')->hasTable('students')
-                && DB::connection('tenant')->table('students')->exists()) {
+                && (int) DB::connection('tenant')->selectOne('SELECT COUNT(*) AS total FROM students')->total > 0) {
                 $this->error('Banco municipal ja possui alunos. Preparacao recusada.');
 
                 return self::FAILURE;
