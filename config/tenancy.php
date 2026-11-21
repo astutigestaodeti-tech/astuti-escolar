@@ -31,6 +31,7 @@ if (config('app.env') === 'production') {
         'password' => env('TENANT_DB_PASSWORD'),
     ]);
 }
+
 return [
     'connections' => $connections,
     'deployed_db_key' => env('ASTUTI_MUNICIPALITY_DB_KEY'),
