@@ -5,7 +5,7 @@ Objetivo: importar os arquivos que as escolas mandam (pasta 02 do kit Monte Sere
 ## Etapas
 
 1. **Motor de leitura e prévia (este PR).** Lê a planilha de uma escola, limpa e confere, sem gravar nada. Comando `astuti:importar-alunos-previa`.
-2. **Gravação com conferência.** Lote de importação guardado, tela de conferência por escola, confirmação das duplicidades e gravação de aluno e matrícula na turma, com auditoria e segundo fator. Exige vínculo da matrícula com a turma e o campo RA no aluno.
+2. **Gravação com conferência (novo PR).** Prévia cifrada no formulário por uma hora, confirmação humana de linhas duplicadas, revalidação de turmas/alunos existentes e gravação transacional com auditoria e segundo fator. Só o recibo sem dados pessoais é guardado. Veja `docs/arquitetura/importacao-assistida-alunos.md`.
 3. **Demais fontes.** Lista de transporte da Secretaria (CSV Windows-1252, só atualiza transporte e não cria aluno; CANCELADO não volta a ficar ativo), responsáveis, quadro do RH e controle do AEE.
 
 ## Regras do motor
@@ -34,4 +34,4 @@ Leitor próprio, só com as extensões `zip` e `xmlreader` do PHP: sem rede (`LI
 - O aluno passou a aceitar `ra` opcional com índice único sobre a forma normalizada (maiúsculas e sem hífen), inclusive para SQL direto. O formulário normaliza caixa e hífen, verifica duplicidade e mantém a autoria e a auditoria das mudanças.
 - A edição de turma identifica a matrícula por UUID e usa tokens PostgreSQL `xmin` próprios da matrícula e do aluno, evitando conflitos até quando duas gravações ocorrem no mesmo segundo. Em caso de divergência, nenhuma das duas alterações é gravada.
 - Registros antigos permanecem sem RA ou turma até preenchimento legítimo. A cópia fictícia MariaDB para PostgreSQL compara só colunas existentes na origem e deixa novos campos nulos, sem reescrever dados originais.
-- **Ainda não há gravação de planilhas**. A etapa seguinte exige armazenamento privado do arquivo, conferência humana das duplicidades, autorização por escola, segundo fator e transação auditada antes de persistir qualquer linha.
+- **A gravação assistida de planilhas está implementada neste bloco** após a conferência humana e segundo fator. O arquivo original nunca é armazenado; ficam pendentes apenas os dados que a fonte não informou e que não integram ainda o cadastro de alunos.

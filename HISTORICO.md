@@ -1,5 +1,12 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-21 | Importação assistida: conferência e gravação no banco municipal
+
+- Novo fluxo de envio de .xlsx por escola e ano letivo, com prévia legível, confirmação expressa de linhas repetidas, autorização escolar e segundo fator.
+- O arquivo não é armazenado: a prévia mínima fica cifrada por uma hora no próprio formulário e vinculada à conta/escola. Recibo municipal sem PII impede repetição do lote.
+- Gravação de alunos e matrículas com RA e turma em uma transação PostgreSQL; datas de matrícula ausentes não são inventadas. Duplicidade existente, turma inválida ou falha de auditoria desfaz o lote inteiro.
+- Testes do kit fictício E01/E02/E03, 115 alunos e matrículas, seis nascimentos pendentes, auditoria, replay, alteração de token e matriz de permissões. Sem merge automático, deploy ou bancos reais.
+
 ## 2026-11-21 | Base do importador: RA e turma da matrícula
 
 - Revisados os PRs #5 a #11 e a cadeia de dependências. CI do ajuste de integridade histórica do PR #10 concluído com sucesso; o vínculo externo da matrícula usa RESTRICT, sem exclusão em cascata.

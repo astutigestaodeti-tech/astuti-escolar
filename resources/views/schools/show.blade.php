@@ -48,6 +48,14 @@
             <p>Consulte os vínculos ativos, anos letivos e datas de início desta escola.</p>
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar matrículas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
+        @can('manageStudents', [$school, $municipality])
+            <section class="folha cartao" aria-labelledby="titulo-importar-alunos">
+                <span class="acao-icone"><x-icon name="alunos" /></span>
+                <h2 id="titulo-importar-alunos">Importar alunos</h2>
+                <p>Envie uma planilha, confira repetições e grave os vínculos com auditoria.</p>
+                <a class="botao secundario" style="margin-top:12px" href="{{ route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Importar alunos desta escola <x-icon name="seta" :size="16" /></a>
+            </section>
+        @endcan
     </div>
 
     <div class="nota"><x-icon name="info" /><div><strong>Consulta disponível</strong><p>A inclusão e alteração de alunos e matrículas permanecem indisponíveis até a implantação da autenticação reforçada e da auditoria.</p></div></div>
