@@ -1,5 +1,7 @@
 # Migração controlada: MariaDB local para PostgreSQL local
 
+> **Correção de e-mails antes de um novo ensaio (21/11/2026):** o PostgreSQL distingue maiúsculas em `users.email`. A migration `database/migrations/platform/2026_11_21_000011_normalize_user_emails.php` converte e-mails existentes para minúsculas e cria índice único em `lower(email)`. Ela aborta com aviso e preserva os registros se já houver e-mails duplicados ignorando maiúsculas e espaços. Em novos destinos de ensaio, o preparo normal das migrations deve incluí-la antes da cópia. A transferência normaliza e-mails de origem para o destino sem alterar o MariaDB ou os hashes. **Não execute migrations diretamente no PostgreSQL original 5432 nem altere o `.env` do notebook por causa desta nota.** A conferência local do cluster isolado será orientada separadamente após os testes do PR.
+
 **Somente Monte Sereno v2 fictício**, no notebook Debian/WSL. O comando não usa dados reais e não é uma ferramenta de migração de Prefeituras contratantes. As bases MariaDB permanecem legíveis e **inalteradas**. O código está no PR de migração e deve passar pela revisão independente antes de qualquer execução com `--executar`.
 
 ## Validação no GitHub Actions

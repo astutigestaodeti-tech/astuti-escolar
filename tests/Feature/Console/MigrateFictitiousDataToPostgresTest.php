@@ -125,6 +125,24 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertTrue($targetPlatform->getSchemaBuilder()->hasTable('jobs'));
     }
 
+    public function test_copia_normaliza_email_misto_sem_alterar_a_origem_nem_o_hash(): void
+    {
+        ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,
+            'targetPlatform' => $targetPlatform, 'targetTenant' => $targetTenant] = DisposableMigrationDatabases::create();
+
+        FictitiousMigrationFixture::seed($sourcePlatform, $sourceTenant);
+        $sourcePlatform->table('users')->update(['email' => 'Fixture.Monte-Sereno@astuti.invalid']);
+        $originalHash = $sourcePlatform->table('users')->sole()->password;
+
+        (new FictitiousDataTransfer)->run(
+            $sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true,
+        );
+
+        $this->assertSame('Fixture.Monte-Sereno@astuti.invalid', $sourcePlatform->table('users')->sole()->email);
+        $this->assertSame('fixture.monte-sereno@astuti.invalid', $targetPlatform->table('users')->sole()->email);
+        $this->assertSame($originalHash, $targetPlatform->table('users')->sole()->password);
+    }
+
     public function test_simulacao_nao_escreve_e_copia_preserva_conteudo_uuid_hash_e_contagens(): void
     {
         ['sourcePlatform' => $sourcePlatform, 'sourceTenant' => $sourceTenant,

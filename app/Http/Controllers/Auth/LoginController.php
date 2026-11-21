@@ -6,6 +6,7 @@ use App\Audit\AuditTrail;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Security\TwoFactorSession;
+use App\Support\EmailNormalizer;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,10 @@ class LoginController extends Controller
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string'],
         ]);
+
+        // PostgreSQL compara varchar com distincao de caixa. Normalizar antes
+        // da autenticacao e da atribuicao de tentativas falhas na auditoria.
+        $credentials['email'] = EmailNormalizer::normalize($credentials['email']);
 
         if (! Auth::attempt([...$credentials, 'status' => 'active'])) {
             try {

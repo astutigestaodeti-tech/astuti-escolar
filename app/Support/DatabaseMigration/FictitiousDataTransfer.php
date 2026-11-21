@@ -2,6 +2,7 @@
 
 namespace App\Support\DatabaseMigration;
 
+use App\Support\EmailNormalizer;
 use Closure;
 use Illuminate\Database\Connection;
 use RuntimeException;
@@ -159,6 +160,16 @@ final class FictitiousDataTransfer
         foreach ($tables as $table) {
             $onStage?->__invoke('inserindo', $table);
             $rows = $source->table($table)->get()->map(static fn ($row): array => (array) $row)->all();
+
+            // A origem MariaDB pode conter emails mistos. Preservar o hash,
+            // os UUIDs e demais campos, mas gravar o email canonico no PostgreSQL.
+            if ($table === 'users') {
+                $rows = array_map(static function (array $row): array {
+                    $row['email'] = EmailNormalizer::normalize((string) $row['email']);
+
+                    return $row;
+                }, $rows);
+            }
 
             foreach (array_chunk($rows, 50) as $chunk) {
                 $target->table($table)->insert($chunk);

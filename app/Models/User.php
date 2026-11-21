@@ -3,9 +3,11 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\EmailNormalizer;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -22,6 +24,13 @@ class User extends Authenticatable
     protected $keyType = 'string';
 
     public $incrementing = false;
+
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: static fn (string $value): string => EmailNormalizer::normalize($value),
+        );
+    }
 
     protected function casts(): array
     {
