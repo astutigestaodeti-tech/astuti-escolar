@@ -160,6 +160,11 @@ button,input,select{font:inherit;color:inherit}
 .campo:focus-within{border-color:var(--caneta);box-shadow:0 0 0 3px var(--caneta-clara)}
 .campo input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:10px 0;color:var(--tinta)}
 .busca{display:flex;gap:10px;padding:0 22px 18px}
+.busca-matriculas{flex-wrap:wrap}
+.busca-matriculas .campo{flex:1 1 260px}
+.busca-matriculas .filtro-ano{flex:0 1 180px;min-width:150px}
+.busca-matriculas .filtro-ano select{display:block;width:100%;min-height:42px;padding:8px 12px;border:1px solid #c8d2de;border-radius:var(--raio-controle);background:var(--folha);color:var(--tinta);cursor:pointer}
+.busca-matriculas .filtro-ano select:focus-visible{border-color:var(--caneta);box-shadow:0 0 0 3px var(--caneta-clara)}
 .paginacao{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--pauta);padding:14px 22px}
 .paginacao-resumo{font-size:13px;color:var(--tinta-2)}
 .paginacao-acoes{display:flex;align-items:center;gap:8px}
@@ -396,6 +401,7 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
     .acao{padding:14px 16px}
     .folha-cabecalho{padding:16px 16px 12px}
     .busca{padding:0 16px 16px;flex-direction:column}
+    .busca-matriculas .campo,.busca-matriculas .filtro-ano{flex:0 0 auto;width:100%}
     .paginacao{padding:14px 16px}
     .tabela th,.tabela td{padding-left:16px;padding-right:16px}
     .etapas-linha{grid-template-columns:1fr 1fr;row-gap:20px}
