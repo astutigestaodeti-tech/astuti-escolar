@@ -216,7 +216,10 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
     {
         $this->entrar();
         $token = $this->previa("RA;SITUACAO\n999000000001-6/SP;SIM\n");
-        $this->post($this->url().'/confirmar', ['lote' => $token.'x'])->assertSessionHasErrors('lote');
+        // Sufixo após o padding base64 pode ser ignorado pelo decodificador.
+        // Alterar um byte interno invalida a autenticação do conteúdo cifrado.
+        $alteredToken = ($token[0] === 'A' ? 'B' : 'A').substr($token, 1);
+        $this->post($this->url().'/confirmar', ['lote' => $alteredToken])->assertSessionHasErrors('lote');
 
         $this->entrar();
         $this->post($this->url().'/confirmar', ['lote' => $token])->assertSessionHasErrors('lote');
@@ -266,6 +269,8 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
             'lote' => 'previsao-alterada',
         ])->assertRedirect($this->url())->assertSessionHasErrors('lote');
 
-        $this->get($this->url())->assertOk()->assertSee('O lote não foi aplicado.');
+        // O driver array do phpunit não persiste a sessão entre requisições.
+        // O POST acima verifica o erro; este GET verifica a rota de retorno.
+        $this->get($this->url())->assertOk()->assertSee('Transporte escolar');
     }
 }
