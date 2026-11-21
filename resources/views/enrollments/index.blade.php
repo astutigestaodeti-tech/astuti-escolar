@@ -25,17 +25,26 @@
     <section class="folha" aria-labelledby="titulo-matriculas">
         <div class="folha-cabecalho"><div><h2 id="titulo-matriculas">Matrículas ativas</h2><p>Pesquise pelo nome para localizar um vínculo desta unidade.</p></div></div>
 
-        <form class="busca" method="GET" action="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}" role="search">
+        <form class="busca busca-matriculas" method="GET" action="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}" role="search">
             <div class="campo">
                 <x-icon name="busca" :size="18" />
                 <label class="sr-only" for="busca-matricula">Nome do aluno</label>
                 <input id="busca-matricula" type="search" name="busca" value="{{ $search }}" placeholder="Buscar matrícula pelo nome do aluno" maxlength="120" autocomplete="off">
             </div>
+            <div class="filtro-ano">
+                <label class="sr-only" for="ano-letivo-matricula">Ano letivo</label>
+                <select id="ano-letivo-matricula" name="ano_letivo">
+                    <option value="">Todos os anos</option>
+                    @foreach ($availableYears as $year)
+                        <option value="{{ $year }}" @selected($selectedYear === $year)>Ano letivo {{ $year }}</option>
+                    @endforeach
+                </select>
+            </div>
             <button class="botao" type="submit"><x-icon name="busca" :size="16" /> Pesquisar</button>
         </form>
 
         @if ($enrollments->isEmpty())
-            <div class="vazio">Nenhuma matrícula ativa {{ $search !== '' ? 'encontrada para esta pesquisa.' : 'cadastrada nesta escola.' }}</div>
+            <div class="vazio">Nenhuma matrícula ativa {{ $search !== '' || $selectedYear !== null ? 'encontrada para os filtros informados.' : 'cadastrada nesta escola.' }}</div>
         @else
             <div class="rolagem">
                 <table class="tabela">
