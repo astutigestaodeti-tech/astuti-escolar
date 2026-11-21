@@ -312,6 +312,7 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
 .entrada:focus-visible{outline:3px solid var(--caneta);outline-offset:2px}
 .acesso-caixa .botao{width:100%;margin-top:24px;min-height:48px;font-size:16px}
 .erro{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--raio-controle);border:1px solid #efc5bf;background:#fdf1ef;color:#8a2c22;font-size:14.5px;margin-bottom:6px}
+.erro-matriculas{margin:0 22px 18px}
 .acesso-rodape{margin-top:28px;font-size:13px;color:var(--tinta-3)}
 .acesso-marca-movel{display:none}
 
