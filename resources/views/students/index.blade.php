@@ -48,7 +48,7 @@
                     <tbody>
                     @foreach ($students as $student)
                         <tr>
-                            <td><strong>{{ $student->full_name }}</strong></td>
+                            <td><a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}" aria-label="Abrir ficha de {{ $student->full_name }}"><strong>{{ $student->full_name }}</strong></a></td>
                             <td class="numero">{{ $student->birth_date?->format('Y') ?? 'Não informado' }}</td>
                         </tr>
                     @endforeach
