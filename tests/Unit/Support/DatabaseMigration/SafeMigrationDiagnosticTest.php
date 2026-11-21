@@ -61,4 +61,30 @@ final class SafeMigrationDiagnosticTest extends TestCase
             )),
         );
     }
+
+    public function test_habilita_diagnostico_somente_em_cluster_isolado_verificado(): void
+    {
+        $platform = [
+            'driver' => 'pgsql',
+            'url' => null,
+            'host' => '127.0.0.1',
+            'port' => '55433',
+            'database' => 'astuti_platform_dev',
+            'username' => 'astuti_ensaio',
+        ];
+        $tenant = array_replace($platform, ['database' => 'astuti_monte_sereno_dev']);
+
+        $this->assertTrue(SafeMigrationDiagnostic::enabledFor(true, $platform, $tenant));
+        $this->assertFalse(SafeMigrationDiagnostic::enabledFor(false, $platform, $tenant));
+        $this->assertFalse(SafeMigrationDiagnostic::enabledFor(
+            true, array_replace($platform, ['port' => '5432']), $tenant,
+        ));
+        $this->assertFalse(SafeMigrationDiagnostic::enabledFor(
+            true, $platform, array_replace($tenant, ['username' => 'astuti_app']),
+        ));
+        $this->assertFalse(SafeMigrationDiagnostic::enabledFor(
+            true, $platform, array_replace($tenant, ['port' => '5432']),
+        ));
+    }
+
 }
