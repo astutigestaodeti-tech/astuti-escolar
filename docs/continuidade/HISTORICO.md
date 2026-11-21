@@ -70,6 +70,18 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Proximo passo:** localizar e verificar os arquivos compactados sem abrir segredos, conferir os bancos restaurados e repetir a simulacao de migracao atualizada, sem `--executar`. Nao apagar, recriar ou reimportar bancos.
 
+## 21/11/2026 - Backups GZIP e bancos restaurados encontrados apos reinicio
+
+**Evidencia direta:** captura 68 do terminal local mostra os dumps em `/home/aflora/astuti-backups/mariadb-20261120-234757/` com 4,7 KB (plataforma) e 17 KB (Monte Sereno). Ambos passaram por `test -s` e `gzip -t`; foram exibidos hashes SHA-256. Isso confirma integridade da compactacao, nao equivale a restauracao/contagem atual.
+
+**Divergencia resolvida:** a primeira consulta `SHOW DATABASES LIKE 'astuti_restore_%'` foi feita com `mariadb -u aflora` e nao listou os bancos de teste. No procedimento de restauracao do chat anterior, eles foram criados com `sudo mariadb`, que possui visibilidade administrativa.
+
+**Evidencia direta:** na captura 69, `sudo mariadb -NBe "SHOW DATABASES LIKE 'astuti_restore_%';"` encontrou ambos os bancos preservados: `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385`. Portanto nao estavam ausentes, apenas invisiveis para a primeira consulta sem permissao. Nao foram recriados nem modificados.
+
+**Nao concluido nesta retomada:** a verificacao atual das contagens das 12 tabelas nos bancos de restauracao e o novo dry-run do comando `astuti:migrar-dados-postgresql` com codigo `a27be7b1` ainda nao aconteceram. O script anterior interrompeu antes da simulacao, por cautela.
+
+**Proxima acao:** conferir por `SELECT COUNT(*)`, via `sudo mariadb`, as seis tabelas centrais e seis municipais entre origens e restauracoes; somente se todas conferirem, repetir a simulacao sem `--executar`. Preservar os bancos de origem, dumps, bancos restaurados e destinos PostgreSQL.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
