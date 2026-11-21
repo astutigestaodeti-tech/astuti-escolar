@@ -25,6 +25,19 @@ final class SafeMigrationDiagnostic
             return "Falha SQL (SQLSTATE {$state}).";
         }
 
+        if ($exception instanceof RowContentMismatchException
+            && in_array($exception->table(), ['platform_audit_logs', 'audit_logs'], true)) {
+            $allowed = [
+                'id', 'occurred_at', 'user_id', 'role', 'action', 'auditable_type',
+                'auditable_id', 'before', 'after', 'ip', 'user_agent', 'request_id',
+            ];
+            $columns = array_values(array_intersect($exception->differingColumns(), $allowed));
+
+            if ($columns !== []) {
+                return $exception->getMessage().' Campos divergentes: '.implode(', ', $columns).'.';
+            }
+        }
+
         if ($exception instanceof InvalidArgumentException || $exception instanceof RuntimeException) {
             $reason = $exception->getMessage();
             if (in_array($reason, [
