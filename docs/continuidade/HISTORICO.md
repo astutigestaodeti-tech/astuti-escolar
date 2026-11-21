@@ -436,3 +436,19 @@ cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-ins
 ```
 
 A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao enviar capturas que mostrem credenciais. O PR #5 continua rascunho, sem corte, migracao nos bancos originais 5432 ou exclusao de backups/clusters.
+
+## 21/11/2026 - Captura 94: autenticacao concluida no Laravel real (porta 8002)
+
+**Evidencia visual enviada pelo usuario:** a pagina autenticada mostra `Ola, Secretaria Escolar Ficticia` e a selecao da rede `Prefeitura Municipal de Monte Sereno`, incluindo as opcoes de seguranca da conta e sair. O ensaio anterior de PostgreSQL isolado havia confirmado 1 usuario na plataforma, 3 escolas e 115 alunos no banco municipal. **Agora o login foi efetivamente demonstrado na interface**, no ambiente de desenvolvimento com dados ficticios. Essa tela nao comprova ainda todos os controles de permissao por acesso direto, nem a abertura da lista dos 115 alunos.
+
+## 21/11/2026 - Captura 95: listagem autenticada de tres escolas autorizadas
+
+**Evidencia visual enviada pelo usuario:** a tela `Escolas autorizadas` da Prefeitura Municipal de Monte Sereno apresenta `3 unidades`, todas com selo `Ativa`: **EMEF Caminhos do Saber**, **EMEF Rio Claro** e **EMEI Jardim das Flores**. A interface identifica a sessao `Secretaria Escolar Ficticia`, ambiente de desenvolvimento e dados ficticios. A mensagem da pagina informa verificacao de permissoes em cada abertura, mas a imagem **nao constitui teste de tentativa de acesso nao autorizado**. A listagem das escolas no fluxo autenticado esta visualmente concluida. Permanecem pendentes a abertura de uma unidade, consulta aos alunos e matriculas reais do cluster copiado e testes negativos de autorizacao.
+
+## 21/11/2026 - Captura 96: senha de demonstracao escolhida, apenas no ensaio isolado
+
+**Mudanca implementada na branch `feature/migracao-postgresql-instalacoes-isoladas`:** o roteiro `scripts/operacao/testar-login-isolado-postgresql.sh` agora aceita opcionalmente `ASTUTI_DEMO_PASSWORD` como senha alfanumerica de 6 a 64 caracteres **somente para o usuario ficticio do cluster PostgreSQL de ensaio 55436**. Sem essa variavel, gera senha temporaria aleatoria como antes. A senha do role PostgreSQL continua independente e aleatoria. A variavel escolhida e removida do ambiente antes do `php artisan serve`. Preflight de identidade fisica, municipio, usuario, vinculo, escolas e alunos permanece obrigatorio e recusa gravacoes fora do cluster copiado. Nao altera `.env`, banco principal 5432, MariaDB original, backups ou clusters antigos.
+
+**Verificacao local concluida:** regressao introduzida antes da alteracao e observada falhando, depois **7 cenarios de login + 9 de copia isolada + 8 de restauracao + 6 de backups** passaram em mocks, alem de `bash -n`. A alteracao foi publicada na branch; **a senha solicitada ainda nao foi aplicada no notebook** e nao se deve publicar senhas reais no repositorio.
+
+**Proxima acao operacional:** no terminal do servidor real da porta 8002, pressionar `Ctrl+C`, atualizar com `git pull --ff-only` a branch e reiniciar exclusivamente o roteiro de login com `ASTUTI_DEMO_PASSWORD` definida para a senha ficticia desejada. Conferir novo login e depois navegar por `Escolas -> Abrir escola -> Alunos`, comparando com 3 escolas/115 alunos no banco isolado. O PR #5 permanece rascunho, sem corte/merge nem alteracao dos bancos originais.
