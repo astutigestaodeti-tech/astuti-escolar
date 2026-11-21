@@ -93,7 +93,7 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         return $match[1];
     }
 
-    private function status(string $id): ?string
+    private function transportStatus(string $id): ?string
     {
         return app(TenantContext::class)->runFor($this->municipioA, fn (): ?string => StudentEnrollment::query()->findOrFail($id)->transport_status);
     }
@@ -103,12 +103,12 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         $user = $this->entrar();
         $csv = "RA;NOME;SITUAÇÃO\n999000000001-6/SP;João Ferreira;SIM\n";
         $token = $this->previa(iconv('UTF-8', 'Windows-1252', $csv));
-        $this->assertNull($this->status($this->enrollmentA));
+        $this->assertNull($this->transportStatus($this->enrollmentA));
 
         $this->post($this->url().'/confirmar', ['lote' => $token])
             ->assertRedirect($this->url())->assertSessionHas('status');
-        $this->assertSame('active', $this->status($this->enrollmentA));
-        $this->assertNull($this->status($this->enrollmentB));
+        $this->assertSame('active', $this->transportStatus($this->enrollmentA));
+        $this->assertNull($this->transportStatus($this->enrollmentB));
 
         $results = app(TenantContext::class)->runFor($this->municipioA, fn (): array => [
             Student::query()->count(),
@@ -118,9 +118,15 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
             AuditLog::query()->where('action', 'transport_import.completed')->count(),
         ]);
         $this->assertSame([2, 1, 1, 1], $results);
+        $audit = app(TenantContext::class)->runFor($this->municipioA, fn (): AuditLog => AuditLog::query()
+            ->where('auditable_type', StudentEnrollment::class)->where('action', 'updated')
+            ->where('user_id', $user->id)->firstOrFail());
+        $this->assertArrayHasKey('transport_status', $audit->before);
+        $this->assertNull($audit->before['transport_status']);
+        $this->assertSame('active', $audit->after['transport_status']);
 
         $this->post($this->url().'/confirmar', ['lote' => $token])->assertSessionHasErrors('lote');
-        $this->assertSame('active', $this->status($this->enrollmentA));
+        $this->assertSame('active', $this->transportStatus($this->enrollmentA));
     }
 
     public function test_cancelamento_impede_reativacao_pela_importacao(): void
@@ -128,13 +134,13 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         $this->entrar();
         $token = $this->previa("RA;SITUACAO\n999000000001-6/SP;CANCELADO\n");
         $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
-        $this->assertSame('cancelled', $this->status($this->enrollmentA));
+        $this->assertSame('cancelled', $this->transportStatus($this->enrollmentA));
 
         $this->post($this->url().'/previa', [
             'arquivo' => $this->csv("RA;SITUACAO\n999000000001-6/SP;ATIVO\n"),
             'school_year_id' => $this->yearId,
         ])->assertSessionHasErrors('arquivo');
-        $this->assertSame('cancelled', $this->status($this->enrollmentA));
+        $this->assertSame('cancelled', $this->transportStatus($this->enrollmentA));
     }
 
     public function test_ra_de_outra_escola_impede_gravacao_e_nao_revela_nome(): void
@@ -145,8 +151,8 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
             'school_year_id' => $this->yearId,
         ]);
         $response->assertSessionHasErrors('arquivo');
-        $this->assertNull($this->status($this->enrollmentA));
-        $this->assertNull($this->status($this->enrollmentB));
+        $this->assertNull($this->transportStatus($this->enrollmentA));
+        $this->assertNull($this->transportStatus($this->enrollmentB));
     }
 
     public function test_sem_permissao_ou_segundo_fator_confirmado_nao_importa(): void
@@ -162,7 +168,7 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
         $this->actingAs($user)->get($this->url())->assertRedirect('/seguranca/segundo-fator/desafio');
         $this->actingAs($user)->post($this->url().'/confirmar', ['lote' => 'x'])->assertForbidden();
-        $this->assertNull($this->status($this->enrollmentA));
+        $this->assertNull($this->transportStatus($this->enrollmentA));
     }
 
     public function test_alteracao_concorrente_da_matricula_recusa_lote_inteiro(): void
@@ -174,7 +180,7 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         });
 
         $this->post($this->url().'/confirmar', ['lote' => $token])->assertSessionHasErrors('lote');
-        $this->assertNull($this->status($this->enrollmentA));
+        $this->assertNull($this->transportStatus($this->enrollmentA));
     }
 
     public function test_conflito_na_segunda_linha_desfaz_alteracao_da_primeira(): void
@@ -197,10 +203,13 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         });
 
         $this->post($this->url().'/confirmar', ['lote' => $token])->assertSessionHasErrors('lote');
-        $this->assertNull($this->status($this->enrollmentA));
-        $this->assertNull($this->status($third));
+        $this->assertNull($this->transportStatus($this->enrollmentA));
+        $this->assertNull($this->transportStatus($third));
         $receipts = app(TenantContext::class)->runFor($this->municipioA, fn (): int => DB::connection('tenant')->table('transport_import_receipts')->count());
         $this->assertSame(0, $receipts);
+        $this->assertSame(0, app(TenantContext::class)->runFor($this->municipioA, fn (): int => AuditLog::query()
+            ->where('auditable_type', StudentEnrollment::class)->where('action', 'updated')
+            ->where('auditable_id', $this->enrollmentA)->count()));
     }
 
     public function test_token_alterado_e_token_de_outra_conta_sao_recusados(): void
@@ -211,7 +220,7 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
 
         $this->entrar();
         $this->post($this->url().'/confirmar', ['lote' => $token])->assertSessionHasErrors('lote');
-        $this->assertNull($this->status($this->enrollmentA));
+        $this->assertNull($this->transportStatus($this->enrollmentA));
     }
 
     public function test_csv_com_ra_repetido_nao_atualiza_registros(): void
@@ -221,6 +230,42 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
             'arquivo' => $this->csv("RA;SITUACAO\n999000000001-6/SP;SIM\n999000000001-6/SP;CANCELADO\n"),
             'school_year_id' => $this->yearId,
         ])->assertSessionHasErrors('arquivo');
-        $this->assertNull($this->status($this->enrollmentA));
+        $this->assertNull($this->transportStatus($this->enrollmentA));
+    }
+
+    public function test_matriculas_ativas_ambiguas_sao_bloqueadas_na_previa_e_na_confirmacao(): void
+    {
+        $this->entrar();
+        $token = $this->previa("RA;SITUACAO\n999000000001-6/SP;SIM\n");
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $this->studentA,
+                'school_id' => self::ESCOLA_A1, 'school_year_id' => $this->yearId, 'status' => 'active',
+            ]);
+        });
+
+        $this->from($this->url().'/previa')->post($this->url().'/confirmar', ['lote' => $token])
+            ->assertRedirect($this->url())->assertSessionHasErrors('lote');
+        $this->from($this->url().'/previa')->post($this->url().'/previa', [
+            'arquivo' => $this->csv("RA;SITUACAO\n999000000001-6/SP;SIM\n"),
+            'school_year_id' => $this->yearId,
+        ])->assertRedirect($this->url())->assertSessionHasErrors('arquivo');
+        $this->assertNull($this->transportStatus($this->enrollmentA));
+    }
+
+    public function test_erros_de_validacao_voltam_ao_formulario_get_em_vez_de_rota_post(): void
+    {
+        $this->entrar();
+
+        $this->from($this->url().'/previa')->post($this->url().'/previa', [
+            'arquivo' => $this->csv("RA;Status;Situação do Transporte\n999000000001-6/SP;ATIVO;CANCELADO\n"),
+            'school_year_id' => $this->yearId,
+        ])->assertRedirect($this->url())->assertSessionHasErrors('arquivo');
+
+        $this->from($this->url().'/previa')->post($this->url().'/confirmar', [
+            'lote' => 'previsao-alterada',
+        ])->assertRedirect($this->url())->assertSessionHasErrors('lote');
+
+        $this->get($this->url())->assertOk()->assertSee('O lote não foi aplicado.');
     }
 }

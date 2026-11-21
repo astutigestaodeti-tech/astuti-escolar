@@ -6,6 +6,7 @@ use App\Audit\AuditTrail;
 use App\Import\Students\ImportText;
 use App\Import\Transport\TransportCsvException;
 use App\Import\Transport\TransportCsvReader;
+use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
@@ -42,6 +43,16 @@ class ConfirmedTransportImportController extends Controller
     public function preview(Request $request, string $municipio, string $escola, TransportCsvReader $reader): View
     {
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
+
+        try {
+            return $this->previewValidated($request, $municipality, $school, $reader);
+        } catch (ValidationException $exception) {
+            throw $exception->redirectTo($this->uploadUrl($municipality, $school));
+        }
+    }
+
+    private function previewValidated(Request $request, Municipality $municipality, School $school, TransportCsvReader $reader): View
+    {
         $data = $request->validate([
             'arquivo' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
             'school_year_id' => ['required', 'uuid'],
@@ -61,9 +72,10 @@ class ConfirmedTransportImportController extends Controller
         $payloadRows = [];
         foreach ($inputRows as $entry) {
             $student = Student::query()->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$entry['ra']])->first();
-            $enrollment = $student === null ? null : StudentEnrollment::query()
+            $enrollments = $student === null ? collect() : StudentEnrollment::query()
                 ->where('student_id', $student->id)->where('school_id', $school->id)
-                ->where('school_year_id', $year->id)->where('status', 'active')->first();
+                ->where('school_year_id', $year->id)->where('status', 'active')->limit(2)->get();
+            $enrollment = $enrollments->count() === 1 ? $enrollments->first() : null;
 
             // A mensagem evita revelar se o RA pertence a outra escola.
             if ($enrollment === null || $student === null) {
@@ -111,6 +123,16 @@ class ConfirmedTransportImportController extends Controller
     public function confirm(Request $request, string $municipio, string $escola): RedirectResponse
     {
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
+
+        try {
+            return $this->confirmValidated($request, $municipality, $school);
+        } catch (ValidationException $exception) {
+            throw $exception->redirectTo($this->uploadUrl($municipality, $school));
+        }
+    }
+
+    private function confirmValidated(Request $request, Municipality $municipality, School $school): RedirectResponse
+    {
         $data = $request->validate(['lote' => ['required', 'string', 'max:500000']]);
 
         try {
@@ -146,10 +168,11 @@ class ConfirmedTransportImportController extends Controller
 
         try {
             $changed = DB::connection('tenant')->transaction(function () use ($payload, $request, $school): int {
+                $lockedSchool = School::query()->whereKey($school->id)
+                    ->where('status', 'active')->lockForUpdate()->first();
                 $year = SchoolYear::query()->whereIn('status', ['active', 'planned'])
                     ->lockForUpdate()->find($payload['year_id'] ?? null);
-                if ($year === null || School::query()->whereKey($school->id)
-                    ->where('status', 'active')->lockForUpdate()->first() === null) {
+                if ($lockedSchool === null || $year === null) {
                     throw ValidationException::withMessages(['lote' => 'Escola ou ano letivo indisponível. Refaça a conferência.']);
                 }
 
@@ -159,11 +182,11 @@ class ConfirmedTransportImportController extends Controller
 
                 $changed = 0;
                 foreach ($payload['rows'] as $row) {
-                    $enrollment = StudentEnrollment::query()->whereKey($row['enrollment_id'])
-                        ->where('school_id', $school->id)->where('school_year_id', $year->id)
-                        ->where('student_id', $row['student_id'])->where('status', 'active')
-                        ->lockForUpdate()->first();
-                    if ($enrollment === null) {
+                    $enrollments = StudentEnrollment::query()->where('school_id', $school->id)
+                        ->where('school_year_id', $year->id)->where('student_id', $row['student_id'])
+                        ->where('status', 'active')->lockForUpdate()->limit(2)->get();
+                    $enrollment = $enrollments->count() === 1 ? $enrollments->first() : null;
+                    if ($enrollment === null || $enrollment->id !== $row['enrollment_id']) {
                         throw ValidationException::withMessages(['lote' => 'Uma matrícula deixou de estar ativa nesta escola. Nenhuma alteração foi gravada.']);
                     }
 
@@ -214,6 +237,11 @@ class ConfirmedTransportImportController extends Controller
 
         return redirect()->route('school.imports.transport.index', ['municipio' => $municipality->slug, 'escola' => $school->id])
             ->with('status', $changed.' matrícula(s) atualizada(s) com auditoria.');
+    }
+
+    private function uploadUrl(Municipality $municipality, School $school): string
+    {
+        return route('school.imports.transport.index', ['municipio' => $municipality->slug, 'escola' => $school->id]);
     }
 
     /** @return array{0: mixed, 1: School} */

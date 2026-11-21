@@ -64,4 +64,28 @@ class TransportCsvReaderTest extends TestCase
 
         $this->ler("ALUNO;TELEFONE\nEstudante fictício;000000000\n");
     }
+
+    public function test_rejeita_duas_colunas_de_status_sem_escolher_uma_arbitrariamente(): void
+    {
+        $this->expectException(TransportCsvException::class);
+        $this->expectExceptionMessage('Cabeçalho ambíguo');
+
+        $this->ler("RA;Status;Situação do Transporte\n999000000001-6/SP;ATIVO;CANCELADO\n");
+    }
+
+    public function test_rejeita_byte_indefinido_do_windows_1252_com_erro_de_validacao(): void
+    {
+        $this->expectException(TransportCsvException::class);
+        $this->expectExceptionMessage('caracteres inválidos');
+
+        $this->ler("RA;SITUAÇÃO\n999000000001-6/SP;SIM\x81\n");
+    }
+
+    public function test_rejeita_aspas_abertas_que_poderiam_ocultar_linhas_seguidas(): void
+    {
+        $this->expectException(TransportCsvException::class);
+        $this->expectExceptionMessage('Aspas não fechadas');
+
+        $this->ler("RA;SITUACAO;OBSERVACAO\n999000000001-6/SP;SIM;\"continua\n999000000002-8/SP;CANCELADO;outro aluno\n");
+    }
 }
