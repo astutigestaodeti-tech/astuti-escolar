@@ -59,9 +59,18 @@ consulta() {
 [[ "$(consulta astuti_monte_sereno_dev 'SELECT (SELECT COUNT(*) FROM schools), (SELECT COUNT(*) FROM students), (SELECT COUNT(*) FROM student_enrollments);')" == '3|115|115' ]] || \
     erro 'a copia municipal nao tem as contagens verificadas de 3 escolas e 115 alunos/matriculas.'
 
+if [[ ${ASTUTI_DEMO_PASSWORD+x} ]]; then
+    # Opcao explicitamente solicitada para o usuario ficticio LOCAL.
+    # Nunca repassar esta variavel ao servidor de desenvolvimento.
+    senha_login="$ASTUTI_DEMO_PASSWORD"
+    unset ASTUTI_DEMO_PASSWORD
+    [[ "$senha_login" =~ ^[A-Za-z0-9]{6,64}$ ]] || \
+        erro 'senha de demonstracao deve ter de 6 a 64 caracteres alfanumericos.'
+else
+    senha_login="$(openssl rand -hex 12)" || erro 'nao foi possivel gerar a senha de login.'
+fi
 senha_banco="$(openssl rand -hex 24)" || erro 'nao foi possivel gerar a senha PostgreSQL.'
-senha_login="$(openssl rand -hex 12)" || erro 'nao foi possivel gerar a senha de login.'
-[[ "$senha_banco" =~ ^[a-f0-9]{48}$ && "$senha_login" =~ ^[a-f0-9]{24}$ ]] || \
+[[ "$senha_banco" =~ ^[a-f0-9]{48}$ && "$senha_login" =~ ^[A-Za-z0-9]{6,64}$ ]] || \
     erro 'senha temporaria invalida.'
 
 # Cache de configuracao dedicado a este processo: nao apaga configuracoes do notebook.
@@ -141,7 +150,7 @@ ASTUTI_LOGIN_TEST_PASSWORD="$senha_login" ASTUTI_LOGIN_TEST_EMAIL="$email" php -
             ->where("status", "active")
             ->sole();
         $senha = getenv("ASTUTI_LOGIN_TEST_PASSWORD");
-        if (!is_string($senha) || !preg_match("/^[a-f0-9]{24}$/", $senha)) {
+        if (!is_string($senha) || !preg_match("/^[A-Za-z0-9]{6,64}$/", $senha)) {
             throw new \RuntimeException("Senha de teste invalida.");
         }
         $usuario->password = \Illuminate\Support\Facades\Hash::make($senha);
