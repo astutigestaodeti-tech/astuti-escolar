@@ -1,5 +1,7 @@
 <?php
 
+use App\Tenancy\ConfiguredTenantConnections;
+
 // As credenciais por municipio devem vir de configuracao privada do ambiente.
 // A excecao abaixo existe SOMENTE para o cenario ficticio de desenvolvimento.
 $connections = [];
@@ -18,7 +20,17 @@ if (config('app.env') === 'local'
     ]);
 }
 
-// Em producao, a configuracao privada devera fornecer somente a base daquela prefeitura.
+// Uma instalacao de producao nunca recebe um catalogo com multiplos clientes.
+if (config('app.env') === 'production') {
+    $connections = ConfiguredTenantConnections::forOneMunicipality([
+        'db_key' => env('ASTUTI_MUNICIPALITY_DB_KEY'),
+        'host' => env('TENANT_DB_HOST', '127.0.0.1'),
+        'port' => env('TENANT_DB_PORT', '5432'),
+        'database' => env('TENANT_DB_DATABASE'),
+        'username' => env('TENANT_DB_USERNAME'),
+        'password' => env('TENANT_DB_PASSWORD'),
+    ]);
+}
 return [
     'connections' => $connections,
     'deployed_db_key' => env('ASTUTI_MUNICIPALITY_DB_KEY'),
