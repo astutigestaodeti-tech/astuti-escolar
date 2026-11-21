@@ -178,3 +178,11 @@ Para detalhes técnicos, consulte a última entrada de `HISTORICO.md`.
 - O script preserva o cluster de ensaio e o **para ao finalizar**. Os bancos PostgreSQL originais da porta **5432**, o MariaDB e os backups nao foram alterados pelo ensaio, segundo a saida. **Nao ocorreu migracao definitiva.**
 - **Proximo teste funcional, ainda pendente:** servir o Laravel localmente e visitar `http://127.0.0.1:8001/saude` e `http://127.0.0.1:8001/demonstracao`. A demonstracao usa memoria/sinteticos; para login real e listagens com 115 alunos, e necessario preparar uma sessao isolada com conexao ao cluster 55436, verificando identidade e sem reutilizar a porta 5432 ou reescrever `.env`.
 - **Nao fazer:** nova transferencia sem necessidade, `astuti:demo-preparar` ou migracao destrutiva nas bases originais, excluir os clusters anteriores, promover o PR #5 a producao antes dos testes completos. Detalhes em `HISTORICO.md`.
+
+**Abrir agora a demonstracao no notebook, sem conectar a sessao ao banco central:** em uma janela Debian, executar:
+
+```bash
+cd ~/astuti-escolar && ASTUTI_DEMO_CACHE_DIR="$(mktemp -d)" && APP_CONFIG_CACHE="$ASTUTI_DEMO_CACHE_DIR/config.php" APP_ENV=local SESSION_DRIVER=file CACHE_STORE=file QUEUE_CONNECTION=sync php artisan serve --host=127.0.0.1 --port=8001
+```
+
+No navegador do notebook, acessar `http://127.0.0.1:8001/saude` e depois `http://127.0.0.1:8001/demonstracao`. Deixar o terminal aberto enquanto navega e encerrar o servidor com `Ctrl+C`. A configuracao temporaria nao altera `.env` e usa arquivos locais para sessao/cache; as telas demonstrativas usam dados sinteticos em memoria, **nao os 115 alunos copiados no cluster 55436**. Se faltar manifest do Vite, verificar/buildar recursos da interface antes de repetir. Testar login com os dados copiados exigira outro roteiro de isolamento.
