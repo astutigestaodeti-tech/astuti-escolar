@@ -84,6 +84,22 @@ class MigrationVerifierDiagnosticTest extends TestCase
         }
     }
 
+    public function test_precisao_de_microssegundos_igual_nao_dispara_divergencia(): void
+    {
+        MigrationVerifier::assertSameRows(
+            [['id' => 'ficticio', 'occurred_at' => '2027-02-01 12:00:00.123400']],
+            [['id' => 'ficticio', 'occurred_at' => '2027-02-01 12:00:00.1234']],
+            'platform_audit_logs',
+        );
+
+        $this->expectException(RowContentMismatchException::class);
+        MigrationVerifier::assertSameRows(
+            [['id' => 'ficticio', 'occurred_at' => '2027-02-01 12:00:00.123401']],
+            [['id' => 'ficticio', 'occurred_at' => '2027-02-01 12:00:00.1234']],
+            'platform_audit_logs',
+        );
+    }
+
     public function test_json_com_chaves_em_ordens_diferentes_nao_e_divergencia(): void
     {
         MigrationVerifier::assertSameRows(
