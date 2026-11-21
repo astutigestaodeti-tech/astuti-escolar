@@ -32,4 +32,16 @@ class LoginAuditFailureTest extends TwoMunicipalityTestCase
         $this->post('/logout')->assertRedirect('/login');
         $this->assertGuest();
     }
+
+    public function test_i6_senha_incorreta_com_auditoria_indisponivel_retorna_503_sem_autenticar(): void
+    {
+        $user = $this->criarUsuario('auditoraindisponivelfalha@astuti.invalid');
+        $mock = Mockery::mock(AuditTrail::class);
+        $mock->shouldReceive('record')->once()->andThrow(new RuntimeException('Falha de auditoria simulada'));
+        app()->instance(AuditTrail::class, $mock);
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'SenhaIncorretaDeTeste123!'])
+            ->assertStatus(503);
+        $this->assertGuest();
+    }
 }
