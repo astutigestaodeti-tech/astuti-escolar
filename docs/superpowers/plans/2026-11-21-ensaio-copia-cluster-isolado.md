@@ -56,8 +56,8 @@
 - Produces: CI reproduzível e instrução única para teste real no notebook.
 
 - [x] Incluir testes do roteiro no workflow.
-- [ ] Conferir CI completo da branch após publicação.
-- [ ] Registrar comando único e evidências sem credenciais.
+- [x] Conferir CI completo: GitHub Actions run 44908611752, dois jobs concluídos com sucesso.
+- [x] Registrar comando único e evidências sem credenciais em docs/operacao/migracao-mariadb-postgresql.md.
 - [ ] Aguardar captura do ensaio real do notebook para confirmar 115 alunos de fato copiados no cluster descartável.
 
 ## Estado de conclusão
