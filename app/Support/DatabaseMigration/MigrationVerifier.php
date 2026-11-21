@@ -88,13 +88,28 @@ final class MigrationVerifier
         $different = [];
 
         foreach (array_unique([...array_keys($source), ...array_keys($target)]) as $identity) {
-            $from = $source[$identity] ?? [];
-            $to = $target[$identity] ?? [];
+            if (! array_key_exists($identity, $source) || ! array_key_exists($identity, $target)) {
+                // Registros ausentes/novos sao falhas de identidade, nao divergencia
+                // de todos os demais atributos que estavam naquele registro.
+                $row = $source[$identity] ?? $target[$identity];
+
+                if (array_key_exists('id', $row)) {
+                    $different['id'] = true;
+                } elseif (isset($row['membership_id'], $row['school_id'])) {
+                    $different['membership_id'] = true;
+                    $different['school_id'] = true;
+                }
+
+                continue;
+            }
+
+            $from = $source[$identity];
+            $to = $target[$identity];
 
             foreach (array_unique([...array_keys($from), ...array_keys($to)]) as $column) {
                 if (! array_key_exists($column, $from)
                     || ! array_key_exists($column, $to)
-                    || self::normalizedValue($column, $from[$column]) !== self::normalizedValue($column, $to[$column])) {
+                    || self::canonicalValue($column, $from[$column]) !== self::canonicalValue($column, $to[$column])) {
                     $different[$column] = true;
                 }
             }
@@ -124,6 +139,14 @@ final class MigrationVerifier
         sort($canonical, SORT_STRING);
 
         return $canonical;
+    }
+
+    private static function canonicalValue(string $column, mixed $value): string
+    {
+        return json_encode(
+            self::normalizedValue($column, $value),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        );
     }
 
     private static function normalizedValue(string $column, mixed $value): mixed
