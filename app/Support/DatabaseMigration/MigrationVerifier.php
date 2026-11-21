@@ -57,6 +57,63 @@ final class MigrationVerifier
         return $copied;
     }
 
+    public static function assertSameRows(array $sourceRows, array $targetRows, string $table): void
+    {
+        $normalize = static function (array $rows): array {
+            $canonical = [];
+
+            foreach ($rows as $row) {
+                $attributes = (array) $row;
+                ksort($attributes);
+
+                foreach ($attributes as $column => $value) {
+                    if (in_array($column, ['before', 'after'], true) && is_string($value)) {
+                        $decoded = json_decode($value, true);
+
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $value = self::sortedJson($decoded);
+                        }
+                    }
+
+                    if (is_bool($value)) {
+                        $value = $value ? '1' : '0';
+                    }
+
+                    if (is_string($value) && preg_match('/\\A\\d{4}-\\d{2}-\\d{2} /', $value) === 1) {
+                        $value = preg_replace('/\\.0+\\z/', '', $value);
+                    }
+
+                    $attributes[$column] = $value;
+                }
+
+                $canonical[] = json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+            }
+
+            sort($canonical, SORT_STRING);
+
+            return $canonical;
+        };
+
+        if ($normalize($sourceRows) !== $normalize($targetRows)) {
+            throw new InvalidArgumentException("Conteudo da tabela {$table} divergiu apos copia.");
+        }
+    }
+
+    private static function sortedJson(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (array_is_list($value)) {
+            return array_map(self::sortedJson(...), $value);
+        }
+
+        ksort($value);
+
+        return array_map(self::sortedJson(...), $value);
+    }
+
     private static function isLocalPostgres(array $settings, string $name): bool
     {
         return ($settings['driver'] ?? null) === 'pgsql'
