@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Audit\AuditTrail;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Security\TwoFactorSession;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ class LoginController extends Controller
         }
 
         $request->session()->regenerate();
+        app(TwoFactorSession::class)->clear($request);
         try {
             app(AuditTrail::class)->record('platform', 'auth.login', User::class, (string) Auth::id());
         } catch (Throwable $exception) {
@@ -44,6 +46,10 @@ class LoginController extends Controller
             $request->session()->regenerateToken();
             report($exception);
             abort(503, 'Acesso temporariamente indisponível. Tente novamente mais tarde.');
+        }
+
+        if (Auth::user()->two_factor_confirmed_at !== null) {
+            return redirect()->route('two-factor.challenge');
         }
 
         return redirect()->intended('/');
