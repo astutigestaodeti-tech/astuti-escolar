@@ -7,6 +7,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -94,28 +95,52 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
         $this->assertSame('Aluno', $nextQuery['busca'] ?? null);
         $this->assertSame('2', (string) ($nextQuery['page'] ?? ''));
 
-        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca=Aluno&page=2')
+        $this->get($pageOne->viewData('enrollments')->nextPageUrl())
             ->assertOk()
             ->assertSee('Aluno 26')
             ->assertDontSee('Aluno 01');
     }
 
-    public function test_matricula_e_aluno_arquivados_nao_aparecem_na_consulta(): void
+    public function test_matricula_arquivada_nao_aparece_na_consulta(): void
     {
         $user = $this->criarUsuario('matriculas-arquivadas@example.invalid');
         $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
-        $arquivadoId = $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Arquivado');
+        $arquivadoId = $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno com Matrícula Arquivada');
         $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Preservado');
 
         app(TenantContext::class)->runFor($this->municipioA, function () use ($arquivadoId): void {
             StudentEnrollment::query()->where('student_id', $arquivadoId)->firstOrFail()
                 ->deleteWithReason('Teste de arquivamento de matrícula fictícia', $this->auditFixtureUser->id);
-            Student::query()->findOrFail($arquivadoId)
-                ->deleteWithReason('Teste de arquivamento de aluno fictício', $this->auditFixtureUser->id);
         });
 
         $response = $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas');
-        $response->assertOk()->assertSee('Aluno Preservado')->assertDontSee('Aluno Arquivado');
+        $response->assertOk()->assertSee('Aluno Preservado')->assertDontSee('Aluno com Matrícula Arquivada');
+        $this->assertSame(1, $response->viewData('enrollments')->total());
+        $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
+    public function test_aluno_arquivado_com_matricula_ativa_legada_nao_aparece_na_consulta(): void
+    {
+        $user = $this->criarUsuario('matriculas-aluno-arquivado@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $arquivadoId = $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Arquivado com Vínculo Legado');
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Aluno Preservado');
+
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($arquivadoId): void {
+            // Simula dado legado inconsistente SOMENTE na base PostgreSQL descartável *_test.
+            // O fluxo normal proíbe arquivar um aluno enquanto houver matrícula ativa.
+            DB::connection('tenant')->table('students')->where('id', $arquivadoId)->update([
+                'deleted_at' => now(),
+                'deleted_by' => $this->auditFixtureUser->id,
+                'deletion_reason' => 'Simulação de dado legado inconsistente',
+            ]);
+            $this->assertTrue(StudentEnrollment::query()
+                ->where('student_id', $arquivadoId)
+                ->where('status', 'active')->exists());
+        });
+
+        $response = $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas');
+        $response->assertOk()->assertSee('Aluno Preservado')->assertDontSee('Aluno Arquivado com Vínculo Legado');
         $this->assertSame(1, $response->viewData('enrollments')->total());
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
