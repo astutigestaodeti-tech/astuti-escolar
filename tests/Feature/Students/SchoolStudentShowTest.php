@@ -70,7 +70,7 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
             ]);
         });
 
-        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
+        $response = $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
             ->assertOk()
             ->assertSee('Histórico de vínculos nesta escola')
             ->assertSee('Ano letivo 2027')
@@ -79,6 +79,12 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
             ->assertSee('03/02/2026')
             ->assertSee('12/12/2026')
             ->assertDontSee('Ano letivo 2025');
+
+        $this->assertMatchesRegularExpression(
+            '/<div class="vinculo-datas">\\s*<small>Início: 03\\/02\\/2026<\\/small>\\s*<small>Encerramento: 12\\/12\\/2026<\\/small>\\s*<\\/div>/',
+            $response->getContent(),
+            'As datas do histórico devem ocupar um bloco abaixo das etiquetas, dentro do cartão.',
+        );
 
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
