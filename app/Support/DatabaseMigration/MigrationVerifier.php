@@ -166,6 +166,9 @@ final class MigrationVerifier
         }
 
         if (is_string($value) && preg_match('/\\A\\d{4}-\\d{2}-\\d{2} /', $value) === 1) {
+            // MariaDB devolve seis casas, enquanto PostgreSQL omite zeros finais.
+            // A comparacao ignora apenas a apresentacao, nunca microssegundos nao nulos.
+            $value = preg_replace('/(\\.\\d*[1-9])0+\\z/', '$1', $value);
             $value = preg_replace('/\\.0+\\z/', '', $value);
         }
 
