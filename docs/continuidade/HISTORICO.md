@@ -389,3 +389,10 @@ A revisao independente das quatro alteracoes encontrou **nenhuma falha critica**
 **Numeros da demonstracao:** 1.284 alunos, 4 escolas, 48 turmas e 26 registros para conferir sao indicadores ilustrativos gerados para a interface; **nao** correspondem ao banco PostgreSQL de ensaio, que teve 115 alunos ficticios e 3 escolas copiados no cluster `17/astuti_ens_20261121_112332_22176`, porta 55436.
 
 **Proxima etapa tecnica:** validar inicio de sessao e consultas reais exclusivamente no cluster isolado 55436, com prechecagens de identidade, contagens e credenciais temporarias somente em processo local; preservar arquivos `.env`, bancos PostgreSQL originais 5432, MariaDB, backups e clusters antigos. O PR #5 continua sem corte ou merge.
+
+
+## 21/11/2026 - Captura 90: inventario local confirma o ensaio 55436 desligado
+
+**Evidencia do comando `pg_lsclusters` no segundo terminal Debian:** PostgreSQL 17 `main` na porta **5432** esta `online`. Os cinco clusters de ensaio estao presentes e `down`: `astuti_ens_20261121_103015_6876` (55432), `astuti_ens_20261121_103538_6170` (55433), `astuti_ens_20261121_105834_239` (55434), `astuti_ens_20261121_111614_25474` (55435) e **`astuti_ens_20261121_112332_22176` (55436)**. Os diretórios de dados e logs de cada um aparecem individualmente. O servidor Laravel demonstrativo segue em outro terminal; a imagem confirma a existencia dos clusters, **nao** a conectividade ao 55436 ou o login.
+
+**Proximo passo nao destrutivo:** iniciar especificamente o cluster de ensaio 55436 por `sudo pg_ctlcluster --skip-systemctl-redirect 17 astuti_ens_20261121_112332_22176 start` e fazer consultas `SELECT` via socket com `psql -p 55436` para verificar `users`, `schools` e `students` antes de configurar um teste de login vinculado so a esse cluster. Nao executar operacoes nos demais clusters nem modificar `.env`; o `main` 5432 permanece separado.
