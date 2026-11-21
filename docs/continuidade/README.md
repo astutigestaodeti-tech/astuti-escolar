@@ -269,3 +269,10 @@ Depois da inicializacao comprovada, abrir `http://127.0.0.1:8002/login` e usar a
 - **Confirmado pela captura 114:** `Escolas > EMEF Caminhos do Saber > Alunos > Ficha do aluno` abriu **Estudante fictício 001**, nascimento **2017**, escola correta, **vínculo ativo** e ano letivo **2027**. A ficha oferece retorno à lista e destaca sua natureza **somente leitura**.
 - **Ainda pendente de validação manual:** busca por `estudante` em minúsculas e casos de tentativa de acesso a escola/aluno sem autorização. Os testes automatizados continuam sendo a evidência de segurança.
 - Manter os testes restritos ao cluster fictício e preservar PostgreSQL 5432, MariaDB, backups e `.env`. PR #5 segue draft.
+
+## 26. Busca de alunos em minúsculas observada no notebook (21/11/2026)
+
+- **Captura 115:** na escola fictícia EMEF Caminhos do Saber, campo de pesquisa preenchido com `estudante` em minúsculas; nomes `Estudante fictício 001` etc. aparecem normalmente e o cabeçalho informa **45 alunos**.
+- A imagem é **consistente** com a correção PostgreSQL `ILIKE` já coberta por testes, mas não exibe a URL/parâmetro submetido. Para prova manual mais seletiva, pode-se buscar `fictício 04` e conferir somente nomes correspondentes.
+- **Marco concluído em interface:** cartões com contagens das três escolas fictícias (45/30/40), ficha de aluno individual (`Estudante fictício 001`, vínculo 2027) e lista com termo de busca em minúsculas. As verificações negativas de autorização seguem respaldadas por testes automatizados, não por capturas.
+- O próximo desenvolvimento deverá preservar o modo somente consulta até implantação de autenticação reforçada e auditoria. Sem alterações nos bancos originais ou backups; PR #5 draft.
