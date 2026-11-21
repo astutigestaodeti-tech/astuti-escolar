@@ -275,3 +275,24 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 **CI do codigo do roteiro:** GitHub Actions run `44907410354` do HEAD `574401b1` concluiu os dois jobs com `success`, incluindo 6 testes shell simulados de backup pre-copia, 8 testes shell do ensaio isolado, PHP e interface e integracao sintetica MariaDB/PostgreSQL. Os testes simulados nao substituem a captura 81, que comprova a restauracao real.
 
 **Proximo passo e guarda de seguranca:** criar um mecanismo de ensaio LOCAL de transferencia dos dados ficticios MariaDB para PostgreSQL exclusivamente em destinos descartaveis, sem enfraquecer as protecoes da CLI normal (que so aceita nomes exatos `*_dev`). Comparar dados, relacionamentos, hashes e login. Nao executar `php artisan astuti:migrar-dados-postgresql --executar` nos `*_dev` originais ate esse ensaio e uma avaliacao especifica; nao mesclar PR #5 ainda.
+
+
+## 21/11/2026 - Roteiro de transferencia ficticia em cluster PostgreSQL isolado preparado
+
+**Contexto:** a captura 81 confirmou o backup atual e a restauracao das duas bases PostgreSQL com `migrations=11` no central e `migrations=8` no municipal, sem importar alunos. Nao reexecutar essas etapas desnecessariamente.
+
+**Acao no codigo:** criado `scripts/operacao/ensaiar-copia-isolada-postgresql.sh` na branch `feature/migracao-postgresql-instalacoes-isoladas`, acompanhado de `tests/Shell/EnsaiarCopiaIsoladaPostgresqlTest.sh`, passo de CI e plano curto `docs/superpowers/plans/2026-11-21-ensaio-copia-cluster-isolado.md`. O roteiro reaproveita a CLI original e cria um **cluster PostgreSQL 17 novo**, com porta exclusiva entre 55432 e 55531, nome unico, escuta apenas 127.0.0.1, usuario de banco temporario e `start.conf=manual`. Restaura apenas dumps PostgreSQL atuais nesse outro cluster; evita editar .env, usar a porta 5432 como destino ou limpar o cache global Laravel. Antes de permitir copia, confere SHA-256 dos dois dumps, identidade fisica diferente do servidor original, contagens originais vazias, nomes/porta/usuario de ambas as conexoes SQL reais do Laravel e simula a migracao. Somente depois executa `--executar` no cluster de ensaio. Ao sair tenta desligar o cluster, preservando a configuracao e as bases temporarias para auditoria.
+
+**TDD e revisao:** teste shell escrito e observado falhar antes de criar o roteiro. Oito cenarios simulados de seguranca passaram localmente. Revisao independente identificou e motivou correcoes de manifesto incompleto, parada de cluster, falsa seguranca de testes com `! grep`, cache global, verificacao SQL de conexoes e inicializacao adequada no Debian/WSL. A conta MariaDB `aflora` tem privilegios locais amplos, mas o servico ja abre transacoes de origem explicitamente `READ ONLY` e termina com rollback; conta exclusiva `SELECT` sera exigencia antes de qualquer operacao com dados reais ou piloto. A rotina nao modifica usuarios ou permissoes MariaDB.
+
+**CI comprovado:** no commit `c0333a409970dda71f9f5183ffb96c9f8578ff42`, o GitHub Actions run [44908611752](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44908611752) terminou com **ambos os jobs `success`**: `Testes PHP e interface`, incluindo os novos testes do roteiro, e `Integracao MariaDB para PostgreSQL`. Em seguida, commit documental `6a7b012` atualizou o plano e nao alterou o codigo. A branch segue no PR #5 em rascunho, sem merge.
+
+**Status efetivo em 21/11/2026:** o roteiro esta versionado e testado, mas **a copia real dos 115 alunos ficticios do MariaDB do notebook ainda NAO foi executada nem comprovada**. Os bancos PostgreSQL `astuti_platform_dev` e `astuti_monte_sereno_dev` originais continuam sem dados, conforme a ultima captura 81. Nao alegar validacao funcional do login nem produto pronto.
+
+**Proximo comando unico no Debian do notebook** (aguardar a captura da saida):
+
+```bash
+cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas && bash scripts/operacao/ensaiar-copia-isolada-postgresql.sh
+```
+
+O script pede sudo e pode levar alguns minutos. Nao executar manualmente `php artisan astuti:migrar-dados-postgresql --executar` sem o roteiro isolado. Se a rotina falhar, registrar mensagem e nao continuar a copia nos destinos originais. Depois de sucesso, conferir linha a linha, hashes, integridade e login no banco de ensaio; apenas entao revisar a futura transferencia principal.
