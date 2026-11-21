@@ -19,6 +19,8 @@ class TenantAccessTest extends TwoMunicipalityTestCase
         $this->actingAs($user)->get('/m/municipio-a/escolas')
             ->assertOk()
             ->assertSee('Unidade A')
+            ->assertSee('Segurança da conta')
+            ->assertSee(route('two-factor.settings'))
             ->assertDontSee('Unidade B');
 
         $this->get('/m/municipio-b/escolas')->assertForbidden();
