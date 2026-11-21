@@ -8,6 +8,7 @@ on:
       - feature/incremento-02-fundacoes
       - feature/incremento-03-cadastro-importacao
       - feature/migracao-postgresql-instalacoes-isoladas
+      - feature/cadastro-aluno-gravacao
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
