@@ -27,7 +27,10 @@
                 <input class="entrada" id="code" name="code" type="text" inputmode="text" autocomplete="one-time-code" minlength="6" maxlength="16" required autofocus>
                 <button class="botao" type="submit">Confirmar acesso</button>
             </form>
-            <a class="voltar seguranca-link" href="{{ route('home') }}">Voltar ao início (sem liberar alterações)</a>
+            <form method="POST" action="{{ route('logout') }}" class="seguranca-form">
+                @csrf
+                <button type="submit" class="botao secundario">Sair da conta</button>
+            </form>
         </section>
     </div>
 </main>
