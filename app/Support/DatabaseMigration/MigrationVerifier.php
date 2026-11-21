@@ -59,46 +59,94 @@ final class MigrationVerifier
 
     public static function assertSameRows(array $sourceRows, array $targetRows, string $table): void
     {
-        $normalize = static function (array $rows): array {
-            $canonical = [];
+        if (self::canonicalRows($sourceRows) !== self::canonicalRows($targetRows)) {
+            throw new RowContentMismatchException($table, self::differingColumns($sourceRows, $targetRows));
+        }
+    }
 
-            foreach ($rows as $row) {
-                $attributes = (array) $row;
-                ksort($attributes);
+    /** @return list<string> */
+    private static function differingColumns(array $sourceRows, array $targetRows): array
+    {
+        $indexByIdentity = static function (array $rows): array {
+            $indexed = [];
 
-                foreach ($attributes as $column => $value) {
-                    if (in_array($column, ['before', 'after'], true) && is_string($value)) {
-                        $decoded = json_decode($value, true);
+            foreach ($rows as $position => $row) {
+                $values = (array) $row;
+                $identity = isset($values['id']) ? 'id:'.$values['id']
+                    : (isset($values['membership_id'], $values['school_id'])
+                        ? 'scope:'.$values['membership_id'].'|'.$values['school_id']
+                        : 'position:'.$position);
 
-                        if (json_last_error() === JSON_ERROR_NONE) {
-                            $value = self::sortedJson($decoded);
-                        }
-                    }
-
-                    if (is_bool($value)) {
-                        $value = $value ? '1' : '0';
-                    } elseif (is_int($value) || is_float($value)) {
-                        $value = (string) $value;
-                    }
-
-                    if (is_string($value) && preg_match('/\\A\\d{4}-\\d{2}-\\d{2} /', $value) === 1) {
-                        $value = preg_replace('/\\.0+\\z/', '', $value);
-                    }
-
-                    $attributes[$column] = $value;
-                }
-
-                $canonical[] = json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+                $indexed[$identity] = $values;
             }
 
-            sort($canonical, SORT_STRING);
-
-            return $canonical;
+            return $indexed;
         };
 
-        if ($normalize($sourceRows) !== $normalize($targetRows)) {
-            throw new InvalidArgumentException("Conteudo da tabela {$table} divergiu apos copia.");
+        $source = $indexByIdentity($sourceRows);
+        $target = $indexByIdentity($targetRows);
+        $different = [];
+
+        foreach (array_unique([...array_keys($source), ...array_keys($target)]) as $identity) {
+            $from = $source[$identity] ?? [];
+            $to = $target[$identity] ?? [];
+
+            foreach (array_unique([...array_keys($from), ...array_keys($to)]) as $column) {
+                if (! array_key_exists($column, $from)
+                    || ! array_key_exists($column, $to)
+                    || self::normalizedValue($column, $from[$column]) !== self::normalizedValue($column, $to[$column])) {
+                    $different[$column] = true;
+                }
+            }
         }
+
+        $columns = array_keys($different);
+        sort($columns, SORT_STRING);
+
+        return $columns;
+    }
+
+    private static function canonicalRows(array $rows): array
+    {
+        $canonical = [];
+
+        foreach ($rows as $row) {
+            $attributes = (array) $row;
+            ksort($attributes);
+
+            foreach ($attributes as $column => $value) {
+                $attributes[$column] = self::normalizedValue($column, $value);
+            }
+
+            $canonical[] = json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        }
+
+        sort($canonical, SORT_STRING);
+
+        return $canonical;
+    }
+
+    private static function normalizedValue(string $column, mixed $value): mixed
+    {
+        if (in_array($column, ['before', 'after'], true) && is_string($value)) {
+            $decoded = json_decode($value, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $value = self::sortedJson($decoded);
+            }
+        }
+
+        if (is_bool($value)) {
+            $value = $value ? '1' : '0';
+        } elseif (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+
+        if (is_string($value) && preg_match('/\\A\\d{4}-\\d{2}-\\d{2} /', $value) === 1) {
+            $value = preg_replace('/\\.0+\\z/', '', $value);
+        }
+
+        return $value;
     }
 
     private static function sortedJson(mixed $value): mixed
