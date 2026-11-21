@@ -165,3 +165,27 @@ Quando a falha ocorre após o commit municipal, o comando retorna falha e inform
 3. Identifique o par de cópias PostgreSQL **de antes da transferência** preparado na seção 4. Confira o horário, a origem e as somas SHA-256 registradas. Confira o conteúdo de cada arquivo no formato customizado com `pg_restore --list`. Ensaiar a restauração em dois destinos isolados exige verificar o esquema e o estado esperado de cada cópia. Valide também a disponibilidade dos dois dumps da origem MariaDB, mantendo as bases de origem intactas.
 4. Com o responsável pela operação, aprove o estado recuperado antes de retomar o corte. Preserve o par parcial para inspeção. Use um novo par de destinos verificados para o ensaio, confirme que as tabelas alvo estão vazias e faça nova simulação antes de autorizar qualquer cópia. Após uma cópia autorizada, confira as referências interbancos, o login e a auditoria.
 5. No GitHub Actions, o teste ensaia a retomada em outro par de bancos descartáveis com esquema novo, usando a origem sintética preservada. Os serviços efêmeros removem os bancos ao encerrar o job. Qualquer limpeza manual desse ensaio fica restrita aos bancos `*_test` identificados na execução, após conferir o servidor CI e os nomes exatos. O ensaio deixa intocados os bancos e as tabelas do notebook e não roda `--executar` em `*_dev`. A restauração dos backups do notebook precisa de ensaio supervisionado separado.
+
+
+## Ensaio local de cópia em cluster PostgreSQL independente
+
+Depois do backup pré-cópia e da restauração validados na captura 81 (21/11/2026), a etapa seguinte é **testar a transferência MariaDB para um cluster PostgreSQL exclusivo de ensaio**, sem modificar os dois destinos PostgreSQL originais. O roteiro abaixo **usa a opção `--executar` somente no cluster separado**, com porta própria e bancos novos, depois de verificar a conexão efetiva do Laravel.
+
+No Debian do notebook, na branch `feature/migracao-postgresql-instalacoes-isoladas`, execute:
+
+```bash
+cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas && bash scripts/operacao/ensaiar-copia-isolada-postgresql.sh
+```
+
+O roteiro automatizado:
+
+1. Localiza a única pasta `~/astuti-backups/pgsql-pre-copia-*` (ou aceita `--backup-dir PASTA` se houver múltiplas), confere os **dois** dumps e os checksums, e verifica que as 12 tabelas de dados dos bancos PostgreSQL **originais** estão vazias.
+2. Cria um novo cluster PostgreSQL 17 com nome e porta próprios (na faixa 55432 a 55531), autenticação temporária e interface TCP limitada a `127.0.0.1`. A identidade física do cluster deve diferir da original. Ele não inicia automaticamente na reinicialização.
+3. Restaura os dois backups em `astuti_platform_dev` e `astuti_monte_sereno_dev` **dentro do novo cluster**. Os nomes coincidem porque a CLI original possui proteções de segurança por nome; o cluster e a porta são distintos e validados.
+4. Redireciona temporariamente `PLATFORM_DB_*` e `APP_CONFIG_CACHE` somente para os processos deste ensaio, sem editar `.env` ou limpar o cache global. Valida com conexões SQL reais o banco, usuário e porta usados pelo Laravel.
+5. Executa a simulação; somente se ela passar copia a demo fictícia, confere 1 município, 3 escolas e 115 alunos e revalida os bancos originais.
+6. Para o cluster ao sair, preservando suas bases para auditoria. Se houver erro, **não continue manualmente com `--executar`**: verifique a mensagem e as evidências.
+
+O usuário MariaDB padrão usado pelo roteiro é `aflora`, via socket local, conforme o cenário fictício anteriormente conferido. O serviço Laravel abre a origem em transações `READ ONLY` e desfaz as transações de leitura ao final. O usuário `aflora` ainda possui outros privilégios locais; para processos reais deverá ser substituído por uma conta com somente `SELECT`, sem replicar dados de estudantes reais. O ensaio **não altera permissões ou usuários MariaDB**.
+
+**Situação do processo:** a inclusão do roteiro e os testes no GitHub não provam a cópia real na máquina. A confirmação dependerá da saída do comando no Debian. Não executar `php artisan astuti:migrar-dados-postgresql --executar` diretamente nos PostgreSQL originais, não fazer corte e não mesclar PR #5 enquanto a revisão integral não estiver concluída.
