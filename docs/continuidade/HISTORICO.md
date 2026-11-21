@@ -536,3 +536,13 @@ A senha temporaria, quando aparecer, deve permanecer somente no notebook. Nao en
 **Limites da evidência:** a imagem não comprova ainda os cenários negativos de autorização (403/404), nem a busca em minúsculas em PostgreSQL. Esses cenários foram abordados por testes de integração, mas a busca permanece pendente de prova manual no notebook.
 
 **Próximo teste manual:** voltar à lista de alunos e pesquisar `estudante` em minúsculas; conferir o resultado e a paginação. Nenhuma alteração no PostgreSQL principal 5432, MariaDB, backups ou `.env`; PR #5 permanece draft.
+
+## 21/11/2026 - Conferência visual da busca de alunos em minúsculas
+
+**Captura 115, enviada pelo usuário:** na tela autenticada `Escolas > EMEF Caminhos do Saber > Alunos`, o campo de pesquisa contém `estudante` (todas as letras minúsculas), enquanto os resultados exibem `Estudante fictício 001`, `Estudante fictício 002` e demais nomes iniciados por letra maiúscula. O contador indica **45 alunos** da escola. Evidência visual consistente com a correção `ILIKE` da busca no PostgreSQL e com a ficha individual já validada pela captura 114.
+
+**Limite da captura:** não mostra a URL com os parâmetros de busca nem a ação de submissão; portanto é evidência da interface com o termo e resultados visíveis, complementando os testes automatizados da consulta. Para conferência manual discriminante futura, pesquisar um termo que restrinja os resultados, como `fictício 04`, e comparar a contagem da lista.
+
+**Marco funcional:** cartões com contagens por escola (captura 112), ficha individual com vínculo ativo (captura 114) e pesquisa por texto em minúsculas (captura 115) demonstrados visualmente no ambiente fictício de notebook, com os testes automatizados aprovados. Nenhuma mudança em dados reais, PostgreSQL principal 5432, MariaDB, backups ou `.env`; PR #5 continua draft.
+
+**Próxima frente:** planejar e desenvolver as próximas funcionalidades de consulta e o alicerce de autenticação reforçada/auditoria antes de liberar cadastro ou alteração de alunos.
