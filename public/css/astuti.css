@@ -118,8 +118,9 @@ button,input,select{font:inherit;color:inherit}
 .folha-titulo p{margin-top:6px;color:var(--tinta-2);max-width:62ch}
 .folha-titulo .contexto{display:block;font-size:14px;color:var(--tinta-3);margin-bottom:4px}
 .marcador{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--tinta-2);background:var(--folha);border:1px solid var(--linha);border-radius:999px;padding:5px 12px}
-.voltar{display:inline-flex;align-items:center;gap:4px;margin-bottom:18px;font-size:14px;font-weight:700;color:var(--caneta);text-decoration:none}
-.voltar:hover{text-decoration:underline}
+.voltar{display:inline-flex;align-items:center;gap:8px;min-height:40px;margin-bottom:18px;padding:8px 13px;border:1px solid #b4c6de;border-radius:var(--raio-controle);background:var(--folha);font-size:14px;font-weight:700;color:var(--caneta);text-decoration:none}
+.voltar:hover{background:var(--caneta-clara);text-decoration:none}
+.voltar:focus-visible{outline:3px solid var(--caneta);outline-offset:2px}
 
 /* ---------- Folhas (painéis) ---------- */
 .folha{background:var(--folha);border:1px solid var(--linha);border-radius:var(--raio-folha);box-shadow:var(--sombra-folha)}
