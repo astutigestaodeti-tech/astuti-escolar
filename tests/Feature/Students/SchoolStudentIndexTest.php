@@ -85,6 +85,24 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
             ->assertDontSee('BeatrizXA');
     }
 
+    public function test_busca_por_nome_parcial_nao_diferencia_maiusculas_de_minusculas_no_postgresql(): void
+    {
+        $user = $this->criarUsuario('alunos-busca-caixa@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Maria do Campo');
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'MARINA dos Lagos');
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Bruno da Unidade');
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A2, 'Marcos de Outra Escola');
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos?busca=mari')
+            ->assertOk()
+            ->assertSee('Maria do Campo')
+            ->assertSee('MARINA dos Lagos')
+            ->assertDontSee('Bruno da Unidade')
+            ->assertDontSee('Marcos de Outra Escola');
+    }
+
     public function test_nome_exibido_e_escapado_no_html(): void
     {
         $user = $this->criarUsuario('alunos-escape@example.invalid');
