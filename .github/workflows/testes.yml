@@ -64,6 +64,9 @@ jobs:
       - name: Testar seguranca do ensaio de restauracao PostgreSQL
         run: bash tests/Shell/EnsaiarRestauracaoPostgresqlTest.sh
 
+      - name: Testar backup pre-copia PostgreSQL
+        run: bash tests/Shell/CriarBackupsPreCopiaTest.sh
+
       - name: Preparar PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
