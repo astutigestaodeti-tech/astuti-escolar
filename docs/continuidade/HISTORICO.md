@@ -82,6 +82,20 @@ Este diario e **aditivo**: preservar entradas anteriores, registrar correcoes co
 
 **Proxima acao:** conferir por `SELECT COUNT(*)`, via `sudo mariadb`, as seis tabelas centrais e seis municipais entre origens e restauracoes; somente se todas conferirem, repetir a simulacao sem `--executar`. Preservar os bancos de origem, dumps, bancos restaurados e destinos PostgreSQL.
 
+## 21/11/2026 - Restauracoes comparadas e dry-run atual aprovado
+
+**Evidencia direta:** captura 70 do terminal Debian enviada por Jefferson, HEAD local `a27be7b1`. O script comparou as 12 tabelas nas bases MariaDB originais e nas duas restauracoes por `SELECT COUNT(*)` e todas as comparacoes retornaram `OK`.
+
+**Contagens centrais iguais entre original e restauracao:** `municipalities=1`, `users=1`, `municipality_provision_attempts=2`, `memberships=1`, `school_scopes=0`, `platform_audit_logs=7`.
+
+**Contagens municipais iguais entre original e restauracao:** `schools=3`, `school_years=1`, `students=115`, `school_classes=3`, `student_enrollments=115`, `audit_logs=237`. O cenario ficticio Monte Sereno continua preservado.
+
+**Simulacao atualizada:** apos as doze comparacoes, foi executado `php artisan astuti:migrar-dados-postgresql` **sem `--executar`**, no codigo `a27be7b1`, com conexao local a origem MariaDB. A rotina listou as contagens esperadas de seis tabelas centrais e seis municipais e terminou com `Simulacao aprovada. Nenhum dado foi gravado.` O script externo tambem terminou com `Nenhum dado foi transferido ou alterado.`
+
+**Limites da evidencia:** comparacao de contagens nao significa verificacao linha a linha, de hashes ou integridade referencial completa. A simulacao e somente leitura. Nao houve copia definitiva dos dados para os bancos PostgreSQL, nem revalidacao de login, painel ou build local nesta etapa. A migration `jobs` central continua documentada como `Pending` ate nova verificacao.
+
+**Proximo passo:** revisao tecnica do comando de copia, verificacao de riscos de falha parcial entre os bancos e da migration de filas `jobs`; somente depois decidir o proximo comando seguro, sem executar `--executar` prematuramente. PR #5 permanece em rascunho; nenhuma mesclagem ou VPS foi contratado.
+
 ## Modelo para as proximas entradas
 
 ### AAAA-MM-DD - Titulo do marco
