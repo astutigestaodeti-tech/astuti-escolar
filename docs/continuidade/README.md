@@ -72,20 +72,21 @@ Evidencia: capturas do terminal Debian enviadas pelo usuario em conversa de cont
 | Migracoes centrais | 10 migracoes especificas de plataforma exibidas como `Ran`; nova migration de `jobs` em `Pending` apos o pull |
 | Banco municipal PostgreSQL | `astuti_monte_sereno_dev` confirmado, com 7 tabelas de estrutura escolar, auditoria e migrations |
 | Contagens PostgreSQL verificadas | Central: `municipalities`, `users`, `memberships` com 0; municipal: escolas, anos, turmas, alunos e matriculas com 0 |
-| MariaDB de origem | 3 bases `astuti_*_dev` confirmadas; contagens ainda pendentes |
-| Bancos restaurados MariaDB | Captura 69: `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385` visiveis via `sudo mariadb`; contagens atuais ainda nao confrontadas |
+| MariaDB de origem | 3 bases `astuti_*_dev` confirmadas; 12 tabelas de origem comparadas as restauracoes, com contagens iguais (captura 70) |
+| Bancos restaurados MariaDB | Capturas 69 e 70: `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385`; 12 de 12 tabelas com contagens iguais as origens |
+| Dry-run atual PostgreSQL | Captura 70: `php artisan astuti:migrar-dados-postgresql` sem `--executar` foi aprovado no commit `a27be7b1`; nenhuma gravacao |
 | Backups MariaDB | Captura 68: dois dumps `.sql.gz` localizados em `~/astuti-backups/mariadb-20261120-234757/`, tamanhos 4,7 KB e 17 KB, ambos aprovados em `gzip -t`; sem alteracao |
 
 **Sincronizacao concluida em 21/11/2026:** o notebook estava no commit `ec78138`, quatro commits atras do remoto. Jefferson executou `git pull --ff-only` e comprovou HEAD `a27be7b1`, branch correta e arvore limpa. O historico detalhado esta em `HISTORICO.md`.
 
-As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os dois dumps GZIP e a existencia de dois bancos de restauracao MariaDB; ainda faltam a conferencia atual das contagens das tabelas restauradas e o dry-run com codigo atualizado. Nao foi comprovada a transferencia de dados ao PostgreSQL, a validacao do login ou a execucao de testes locais completos. **Nao executar importacao efetiva, `migrate:fresh`, `db:wipe` ou seed de demonstracao antes dessas verificacoes.**
+As capturas confirmam a estrutura das sete tabelas municipais PostgreSQL, os dois dumps GZIP, a existencia das restauracoes MariaDB e a igualdade de contagens em 12 tabelas. **A simulacao de migracao sem `--executar` no commit `a27be7b1` foi aprovada em 21/11/2026, sem gravacoes.** Nao foi comprovada a copia efetiva para o PostgreSQL, a validacao linha a linha, o login ou os testes locais completos. **Nao executar importacao efetiva, `migrate:fresh`, `db:wipe` ou seed de demonstracao antes da revisao tecnica e autorizacao.**
 
 ## 6. Proximo passo seguro
 
 1. **Concluido em 21/11/2026:** branch local sincronizada por fast-forward, com HEAD `a27be7b1` e sem alteracoes pendentes.
 2. **Em andamento:** existencia das duas bases PostgreSQL, sete tabelas municipais e 0 registros nas principais tabelas de destino confirmados. Consultar as demais tabelas e contar todos os registros nas bases MariaDB de origem sem modificar dados.
-3. **Confirmado em capturas 68 e 69:** dois dumps MariaDB na subpasta `mariadb-20261120-234757/`, ambos com GZIP integro; bancos de restauracao preservados `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385`. Foram criados anteriormente por `sudo mariadb` e nao aparecem para o usuario limitado `aflora`. Nao recriar nem remover. Conferir as contagens das 12 tabelas dos backups restaurados contra as origens sem modificar dados.
-4. **Simulacao anterior aprovada:** 1 municipio, 1 usuario, 3 escolas, 115 alunos, 3 turmas, 115 matriculas e 237 auditorias municipais. O novo roteiro parou antes de repetir a simulacao porque consultou os bancos restaurados com usuario sem visibilidade. **Depois de conferir as 12 contagens**, repetir o dry-run na versao `a27be7b1` sem `--executar`; somente apos revisao e autorizacao especifica considerar a transferencia.
+3. **Concluido nas capturas 68-70:** dois dumps MariaDB na subpasta `mariadb-20261120-234757/`, ambos com GZIP integro; bancos de restauracao preservados `astuti_restore_platform_20261120_235929_30385` e `astuti_restore_monte_20261120_235929_30385`. Todas as 12 tabelas comparadas tiveram contagens iguais entre original e restauracao. Nao recriar nem remover esses arquivos e bancos.
+4. **Concluido em 21/11/2026:** dry-run do comando `astuti:migrar-dados-postgresql` repetido no HEAD `a27be7b1`, aprovando 1 municipio, 1 usuario, 3 escolas, 115 alunos, 3 turmas, 115 matriculas e 237 auditorias municipais. Saida: `Simulacao aprovada. Nenhum dado foi gravado.` **Proximo passo imediato:** revisar a rotina de transferencia real, possivel falha parcial entre dois bancos e a migration de `jobs` ainda pendente. Nao executar `--executar` antes dessa revisao e de autorizacao especifica.
 5. Validar as contagens, relacionamentos, hashes de senha, login do municipio ficticio, autorizacoes, auditoria, testes locais, Pint e build. Comparar 3 escolas, 115 alunos e 2027.
 6. Revisar PR #5 e os PRs precedentes na ordem, sem mesclar automaticamente. Atualizar este ponto de retomada com o resultado real.
 
