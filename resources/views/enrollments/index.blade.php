@@ -11,8 +11,6 @@
 @endsection
 
 @section('content')
-    <a class="voltar" href="{{ route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="voltar" :size="18" /> Voltar à escola</a>
-
     <div class="folha-titulo">
         <div>
             <span class="contexto">Secretaria escolar</span>
