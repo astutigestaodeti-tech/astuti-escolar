@@ -19,8 +19,17 @@
             <h1>Ficha do aluno</h1>
             <p>Informações de consulta da unidade {{ $school->name }}.</p>
         </div>
-        <span class="etiqueta ok">Vínculo ativo</span>
+        <div class="acoes-titulo">
+            <span class="etiqueta ok">Vínculo ativo</span>
+            @if ($canManage)
+                <a class="botao secundario" href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}"><x-icon name="ficha" :size="16" /> Editar dados</a>
+            @endif
+        </div>
     </div>
+
+    @if (session('status'))
+        <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
+    @endif
 
     <div class="ficha-escola">
         <section class="folha" aria-labelledby="titulo-dados-aluno">
@@ -66,5 +75,9 @@
         </section>
     </div>
 
-    <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta, por enquanto</strong><p>A inclusão e alteração de dados escolares continuam indisponíveis neste ambiente de desenvolvimento. Utilize apenas informações fictícias.</p></div></div>
+    @if ($canManage)
+        <div class="nota"><x-icon name="escudo" /><div><strong>Alterações exigem o segundo fator</strong><p>Para editar, confirme o código do seu aplicativo autenticador. Toda alteração fica registrada no histórico. Utilize apenas informações fictícias.</p></div></div>
+    @else
+        <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta</strong><p>Sua conta pode consultar esta ficha, mas não alterar dados escolares. Utilize apenas informações fictícias.</p></div></div>
+    @endif
 @endsection

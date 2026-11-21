@@ -21,6 +21,11 @@ class SchoolPolicy
         return $this->access->maySeeSchool($user, $municipality, $school->id);
     }
 
+    public function manageStudents(User $user, School $school, Municipality $municipality): bool
+    {
+        return $this->access->mayManageSchool($user, $municipality, $school->id);
+    }
+
     // A criacao so sera liberada apos 2FA e implementacao auditada da tarefa 4.
     public function create(User $user, Municipality $municipality): bool
     {

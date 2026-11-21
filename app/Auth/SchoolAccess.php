@@ -44,6 +44,38 @@ class SchoolAccess
         return $this->visibleSchoolIds($user, $municipality) !== [];
     }
 
+    /**
+     * Quem pode incluir e alterar alunos da escola: o gestor municipal, ou a
+     * direção e a secretaria com escopo nesta escola. Professores não gravam.
+     * O segundo fator confirmado é exigido à parte, na rota.
+     */
+    public function mayManageSchool(User $user, Municipality $municipality, string $schoolId): bool
+    {
+        if ($user->status !== 'active' || $municipality->status !== 'active') {
+            return false;
+        }
+
+        $memberships = Membership::query()
+            ->where('user_id', $user->id)
+            ->where('municipality_id', $municipality->id)
+            ->where('status', 'active')
+            ->whereIn('role', ['municipal_manager', 'school_director', 'school_secretary'])
+            ->get();
+
+        if ($memberships->contains('role', 'municipal_manager')) {
+            return true;
+        }
+
+        if ($memberships->isEmpty()) {
+            return false;
+        }
+
+        return DB::connection('platform')->table('school_scopes')
+            ->whereIn('membership_id', $memberships->pluck('id')->all())
+            ->where('school_id', $schoolId)
+            ->exists();
+    }
+
     public function maySeeSchool(User $user, Municipality $municipality, string $schoolId): bool
     {
         $schoolIds = $this->visibleSchoolIds($user, $municipality);

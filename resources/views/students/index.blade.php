@@ -17,7 +17,12 @@
             <h1>Alunos de {{ $school->name }}</h1>
             <p>Consulta de alunos com vínculo ativo nesta unidade. A lista respeita as permissões da sua conta.</p>
         </div>
-        <span class="marcador"><x-icon name="alunos" :size="16" /> {{ $students->total() }} {{ $students->total() === 1 ? 'aluno' : 'alunos' }}</span>
+        <div class="acoes-titulo">
+            <span class="marcador"><x-icon name="alunos" :size="16" /> {{ $students->total() }} {{ $students->total() === 1 ? 'aluno' : 'alunos' }}</span>
+            @if ($canManage)
+                <a class="botao" href="{{ route('school.students.create', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="alunos" :size="16" /> Novo aluno</a>
+            @endif
+        </div>
     </div>
 
     <section class="folha" aria-labelledby="titulo-lista-alunos">
@@ -74,5 +79,9 @@
         @endif
     </section>
 
-    <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta, por enquanto</strong><p>A criação e alteração de cadastros, a importação de documentos e a emissão de registros escolares serão liberadas em etapas, com conferência humana, autenticação reforçada e trilha de auditoria. Não utilize dados reais de alunos neste ambiente de desenvolvimento.</p></div></div>
+    @if ($canManage)
+        <div class="nota"><x-icon name="escudo" /><div><strong>Cadastro manual liberado para sua conta</strong><p>Incluir e alterar alunos exige o segundo fator confirmado, e cada alteração fica no histórico. A importação de planilhas e documentos virá em etapa própria, com conferência humana. Não utilize dados reais de alunos neste ambiente de desenvolvimento.</p></div></div>
+    @else
+        <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta</strong><p>Sua conta pode consultar os alunos desta escola, mas não incluir nem alterar cadastros. Não utilize dados reais de alunos neste ambiente de desenvolvimento.</p></div></div>
+    @endif
 @endsection

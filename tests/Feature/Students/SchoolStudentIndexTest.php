@@ -29,7 +29,7 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
             ->assertDontSee('Bruno da Outra Unidade A')
             ->assertDontSee('Carlos da Unidade B')
             ->assertDontSee('Dora com vínculo encerrado')
-            ->assertSee('Somente consulta');
+            ->assertSee('Novo aluno');
 
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
@@ -226,14 +226,16 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
             ->assertDontSee('Aluno 01 de Teste');
     }
 
-    public function test_nao_existe_rota_publica_para_gravar_aluno(): void
+    public function test_gravacao_de_aluno_sem_segundo_fator_confirmado_e_recusada(): void
     {
         $user = $this->criarUsuario('alunos-gravacao@example.invalid');
         $this->vincular($user, $this->municipioA, 'municipal_manager');
 
         $this->actingAs($user)->post('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos', [
             'full_name' => 'Não pode ser gravado',
-        ])->assertStatus(405);
+        ])->assertForbidden();
+
+        $this->assertSame(0, app(TenantContext::class)->runFor($this->municipioA, fn (): int => Student::query()->count()));
     }
 
     public function test_ficha_da_escola_oferece_acesso_a_consulta_de_alunos(): void

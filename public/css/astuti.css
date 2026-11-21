@@ -423,3 +423,19 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
     .app{display:block}
     .folha{box-shadow:none}
 }
+
+/* ---------- Formulário de aluno ---------- */
+.formulario-aluno form{padding:4px 22px 22px}
+.formulario-aluno .erro{margin:0 22px 8px}
+.formulario-aluno .erro ul{margin:4px 0 0;padding-left:18px}
+.formulario-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
+.formulario-campo.largo{grid-column:1/-1}
+.campo-erro{margin:6px 0 0;color:#8a2c22;font-size:14px}
+.entrada[aria-invalid="true"]{border-color:#c9493b}
+select.entrada{cursor:pointer}
+.confirmacao{display:flex;gap:10px;align-items:flex-start;margin-top:18px;padding:12px 14px;border-radius:var(--raio-controle);background:var(--ouro-claro);border:1px solid #ead7a6;color:#5f4410;font-size:14.5px;cursor:pointer}
+.confirmacao input{margin-top:3px;width:18px;height:18px;flex:none}
+.formulario-acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+.status-sucesso{display:flex;gap:10px;align-items:center;padding:12px 14px;margin-bottom:18px;border-radius:var(--raio-controle);background:#eef7f0;border:1px solid #bfdcc6;color:#1f5a2e;font-size:14.5px}
+.folha-titulo .acoes-titulo{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+@media (max-width:640px){.formulario-grade{grid-template-columns:1fr}.formulario-aluno form{padding:4px 16px 18px}.formulario-aluno .erro{margin:0 16px 8px}}

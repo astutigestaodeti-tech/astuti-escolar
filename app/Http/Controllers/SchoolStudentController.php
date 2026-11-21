@@ -37,7 +37,9 @@ class SchoolStudentController extends Controller
 
         $students = $query->orderBy('full_name')->orderBy('id')->paginate(25)->withQueryString();
 
-        return view('students.index', compact('municipality', 'school', 'students', 'search'));
+        $canManage = Gate::allows('manageStudents', [$school, $municipality]);
+
+        return view('students.index', compact('municipality', 'school', 'students', 'search', 'canManage'));
     }
 
     public function show(Request $request, string $municipio, string $escola, string $aluno): View
@@ -58,6 +60,8 @@ class SchoolStudentController extends Controller
 
         app(AuditTrail::class)->record('tenant', 'student.viewed', Student::class, $student->id);
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments'));
+        $canManage = Gate::allows('manageStudents', [$school, $municipality]);
+
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage'));
     }
 }

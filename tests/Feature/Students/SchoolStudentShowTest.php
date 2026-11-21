@@ -25,7 +25,7 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
             ->assertSee('2017')
             ->assertSee('2027')
             ->assertSee('Unidade A')
-            ->assertSee('Somente consulta');
+            ->assertSee('Editar dados');
 
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
