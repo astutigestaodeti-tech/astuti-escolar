@@ -5,6 +5,7 @@ Este guia usa somente o município **fictício** Monte Sereno v2. Não execute o
 ## Pré-requisitos
 
 - Debian no WSL2, PHP **8.4.1+** com extensões `pdo_pgsql`, `mbstring`, `xml` e `pgsql`; Composer e Node conforme o `package.json`.
+- **PostgreSQL 17 ou superior, obrigatório**: os testes e a conferência de ICU usam `pg_database.datlocale`, disponível a partir da versão 17. Debian 12 costuma fornecer PostgreSQL 15, enquanto Debian 13 fornece PostgreSQL 17; confirme a versão do servidor com `sudo -u postgres psql -c 'SHOW server_version'` e instale a versão 17+ antes de criar os bancos.
 - PostgreSQL com serviço ativo: `sudo apt update`, `sudo apt install postgresql postgresql-client php8.4-pgsql`, `sudo service postgresql start`. O nome do pacote PHP pode mudar conforme a versão de seu repositório.
 - Acesso local somente a `127.0.0.1:5432`. Confirme com `pg_isready -h 127.0.0.1`.
 - Uma cópia de segurança das duas bases MariaDB e confirmação de que o backup pode ser lido. Nunca use `migrate:fresh` nem apague a origem.

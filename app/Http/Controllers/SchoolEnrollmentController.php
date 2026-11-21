@@ -77,8 +77,11 @@ class SchoolEnrollmentController extends Controller
         if ($search !== '') {
             // Evita que % e _ enviados pelo usuário sejam interpretados como curingas SQL.
             $literalSearch = addcslashes($search, '\\%_');
-            $operator = $query->getModel()->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-            $query->where('students.full_name', $operator, '%'.$literalSearch.'%');
+            if ($query->getModel()->getConnection()->getDriverName() === 'pgsql') {
+                $query->whereRaw('public.f_unaccent(lower(students.full_name)) LIKE public.f_unaccent(lower(?))', ['%'.$literalSearch.'%']);
+            } else {
+                $query->where('students.full_name', 'like', '%'.$literalSearch.'%');
+            }
         }
 
         $enrollments = $query

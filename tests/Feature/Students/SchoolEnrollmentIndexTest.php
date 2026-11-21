@@ -78,6 +78,22 @@ class SchoolEnrollmentIndexTest extends TwoMunicipalityTestCase
             ->assertDontSee('Mauro Fictício');
     }
 
+    public function test_busca_de_matriculas_sem_acento_encontra_joao_apenas_na_escola_autorizada(): void
+    {
+        $user = $this->criarUsuario('matriculas-joao@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'João da Serra');
+        $this->matricular($this->municipioA, self::ESCOLA_A1, 'Maria da Serra');
+        $this->matricular($this->municipioA, self::ESCOLA_A2, 'Joao da Outra Escola');
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?busca=joao')
+            ->assertOk()
+            ->assertSee('João da Serra')
+            ->assertDontSee('Maria da Serra')
+            ->assertDontSee('Joao da Outra Escola');
+    }
+
     public function test_paginacao_de_matriculas_mostra_vinte_e_cinco_por_pagina(): void
     {
         $user = $this->criarUsuario('matriculas-paginacao@example.invalid');

@@ -7,6 +7,7 @@ on:
       - feature/incremento-01-saude
       - feature/incremento-02-fundacoes
       - feature/incremento-03-cadastro-importacao
+      - feature/migracao-postgresql-instalacoes-isoladas
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

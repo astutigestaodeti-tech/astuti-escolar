@@ -2,6 +2,12 @@
 
 **Arquitetura aprovada:** cada Prefeitura contratante recebe um VPS virtual exclusivo em datacenter, **uma aplicação Astuti**, **dois bancos PostgreSQL locais** (`platform` e `tenant`), suas próprias contas, domínio, arquivos, logs e backups. Outro cliente nunca é cadastrado no mesmo VPS. Hardware físico dedicado fica reservado aos editais que o exigirem. Contratar uma VPS não foi autorizado e nenhuma foi criada nesta etapa.
 
+## Versão do banco e extensões
+
+- **PostgreSQL 17 ou superior é obrigatório.** As verificações de localização ICU pt-BR consultam `pg_database.datlocale`. Debian 12 oferece PostgreSQL 15 por padrão e Debian 13 oferece PostgreSQL 17; confira a versão do servidor com `SHOW server_version` antes de provisionar a VPS.
+- Criar os dois bancos com `TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR'`.
+- Instalar `unaccent` e `pg_trgm` e executar todas as migrations **pela conta exclusiva de migração**, dona do esquema e dos objetos. A conta web não deve instalar extensões nem ser proprietária de tabelas ou funções.
+
 ## Separar desenvolvimento e produção
 
 - Notebook Debian/WSL: desenvolvimento com dados fictícios, Git, testes.
