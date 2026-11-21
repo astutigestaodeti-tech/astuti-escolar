@@ -57,11 +57,13 @@ class SchoolEnrollmentController extends Controller
                 ? trim($searchTerm)
                 : '';
 
-            return redirect()->route('school.enrollments.index', array_filter([
-                'municipio' => $municipality->slug,
-                'escola' => $school->id,
-                'busca' => $safeSearch,
-            ]))->withErrors($validator);
+            $filters = ['municipio' => $municipality->slug, 'escola' => $school->id];
+            if ($safeSearch !== '') {
+                $filters['busca'] = $safeSearch;
+            }
+
+            return redirect()->route('school.enrollments.index', $filters)
+                ->withErrors($validator);
         }
 
         $validated = $validator->validated();
