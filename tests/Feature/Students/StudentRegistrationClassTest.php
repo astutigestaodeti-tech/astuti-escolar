@@ -219,10 +219,17 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
         $this->entrar('school_director');
         $this->post($this->url(), $this->dados())->assertRedirect();
 
-        [$student, $enrollment] = app(TenantContext::class)->runFor($this->municipioA, fn (): array => [
-            Student::query()->firstOrFail(),
-            StudentEnrollment::query()->firstOrFail(),
-        ]);
+        [$student, $enrollment, $studentVersion, $enrollmentVersion] = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            $student = Student::query()->firstOrFail();
+            $enrollment = StudentEnrollment::query()->firstOrFail();
+
+            return [
+                $student,
+                $enrollment,
+                $student->updated_at->format('Y-m-d H:i:s'),
+                $enrollment->updated_at->format('Y-m-d H:i:s'),
+            ];
+        });
 
         $this->get($this->url('/'.$student->id.'/editar'))
             ->assertOk()
@@ -233,8 +240,8 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
             'birth_date' => '2018-04-05',
             'ra' => '987654321-X/SP',
             'school_class_id' => $this->classA1Other,
-            'versao' => $student->updated_at->format('Y-m-d H:i:s'),
-            'versao_matricula' => $enrollment->updated_at->format('Y-m-d H:i:s'),
+            'versao' => $studentVersion,
+            'versao_matricula' => $enrollmentVersion,
         ];
 
         $this->travel(2)->seconds();
@@ -253,6 +260,37 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
             ->assertSessionHasErrors('versao');
 
         $this->assertSame('987654321-X/SP', app(TenantContext::class)->runFor($this->municipioA, fn (): string => Student::query()->findOrFail($student->id)->ra));
+    }
+
+    public function test_edicao_de_outro_dado_preserva_turma_ja_encerrada(): void
+    {
+        $this->entrar();
+        $this->post($this->url(), $this->dados())->assertRedirect();
+
+        [$studentId, $studentVersion, $enrollmentVersion] = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            SchoolClass::query()->findOrFail($this->classA1)->update(['status' => 'closed']);
+            $student = Student::query()->firstOrFail();
+            $enrollment = StudentEnrollment::query()->firstOrFail();
+
+            return [
+                $student->id,
+                $student->updated_at->format('Y-m-d H:i:s'),
+                $enrollment->updated_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        $this->get($this->url('/'.$studentId.'/editar'))->assertOk()->assertSee($this->classA1);
+
+        $this->put($this->url('/'.$studentId), [
+            'full_name' => 'Camila Fictícia de Oliveira',
+            'birth_date' => '2018-04-05',
+            'ra' => '555555555-0/SP',
+            'school_class_id' => $this->classA1,
+            'versao' => $studentVersion,
+            'versao_matricula' => $enrollmentVersion,
+        ])->assertRedirect();
+
+        $this->assertSame($this->classA1, app(TenantContext::class)->runFor($this->municipioA, fn (): string => StudentEnrollment::query()->firstOrFail()->school_class_id));
     }
 
     public function test_sem_permissao_ou_segundo_fator_nao_atribui_turma(): void

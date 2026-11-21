@@ -133,7 +133,7 @@ class StudentRecordController extends Controller
             'student' => $student,
             'enrollment' => $enrollment,
             'years' => collect(),
-            'classes' => $this->classesOf($school, $enrollment->school_year_id),
+            'classes' => $this->classesOf($school, $enrollment->school_year_id, $enrollment->school_class_id),
         ]);
     }
 
@@ -174,7 +174,11 @@ class StudentRecordController extends Controller
             }
 
             if ($request->exists('school_class_id')) {
-                $this->assertClassMatches($data['school_class_id'] ?? null, $school, $enrollment->school_year_id);
+                // A turma já vinculada pode ter sido encerrada; não se apaga
+                // seu histórico ao editar apenas outro dado do aluno.
+                if (($data['school_class_id'] ?? null) !== $enrollment->school_class_id) {
+                    $this->assertClassMatches($data['school_class_id'] ?? null, $school, $enrollment->school_year_id);
+                }
             }
 
             $locked->fill([
@@ -238,11 +242,17 @@ class StudentRecordController extends Controller
             ->orderByDesc('started_at')->orderByDesc('id');
     }
 
-    private function classesOf(School $school, ?string $yearId = null)
+    private function classesOf(School $school, ?string $yearId = null, ?string $selectedClassId = null)
     {
         return SchoolClass::query()->where('school_id', $school->id)
             ->when($yearId, fn (Builder $query) => $query->where('school_year_id', $yearId))
-            ->whereIn('status', ['active', 'planned'])
+            ->where(function (Builder $query) use ($selectedClassId): void {
+                $query->whereIn('status', ['active', 'planned']);
+                if ($selectedClassId !== null) {
+                    // Uma turma encerrada continua visível no histórico da matrícula.
+                    $query->orWhere('id', $selectedClassId);
+                }
+            })
             ->with('schoolYear')->orderBy('name')->get();
     }
 

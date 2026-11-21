@@ -93,9 +93,16 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
             [$sourceTenant, $targetTenant, self::EXPECTED_COUNTS['tenant']],
         ] as [$source, $target, $counts]) {
             foreach ($counts as $table => $count) {
+                $sourceColumns = $source->getSchemaBuilder()->getColumnListing($table);
+                $targetColumns = $target->getSchemaBuilder()->getColumnListing($table);
+                $this->assertSame([], array_diff($sourceColumns, $targetColumns), $table);
                 $this->assertEqualsCanonicalizing(
-                    $source->getSchemaBuilder()->getColumnListing($table),
-                    $target->getSchemaBuilder()->getColumnListing($table),
+                    match ($table) {
+                        'students' => ['ra'],
+                        'student_enrollments' => ['school_class_id'],
+                        default => [],
+                    },
+                    array_values(array_diff($targetColumns, $sourceColumns)),
                     $table,
                 );
                 $this->assertSame($count, $source->table($table)->count(), $table);
@@ -164,7 +171,7 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
 
         foreach ($sourceBefore as $database => $tables) {
             foreach ($tables as $table => $rows) {
-                $this->assertEquals($rows, $copied[$database][$table], $table);
+                $this->assertCopiedRowsMatch($rows, $copied[$database][$table], $table);
             }
         }
 
@@ -385,7 +392,9 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
 
         $partial = $this->snapshot($targetPlatform, $targetTenant);
         $this->assertSame($targetBefore['platform'], $partial['platform']);
-        $this->assertEquals($sourceBefore['tenant'], $partial['tenant']);
+        foreach ($sourceBefore['tenant'] as $table => $rows) {
+            $this->assertCopiedRowsMatch($rows, $partial['tenant'][$table], $table);
+        }
         $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
 
         try {
@@ -409,7 +418,12 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
 
         $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $recoveryPlatform, $recoveryTenant, false));
         $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $recoveryPlatform, $recoveryTenant, true));
-        $this->assertEquals($sourceBefore, $this->snapshot($recoveryPlatform, $recoveryTenant));
+        $recovered = $this->snapshot($recoveryPlatform, $recoveryTenant);
+        foreach ($sourceBefore as $database => $tables) {
+            foreach ($tables as $table => $rows) {
+                $this->assertCopiedRowsMatch($rows, $recovered[$database][$table], $table);
+            }
+        }
         $this->assertSame($partial, $this->snapshot($targetPlatform, $targetTenant));
         $this->assertSame($sourceBefore, $this->snapshot($sourcePlatform, $sourceTenant));
     }
@@ -507,6 +521,32 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
     private function sessionSettings(Connection $connection): array
     {
         return (array) $connection->selectOne('SELECT @@SESSION.transaction_read_only AS read_only, @@SESSION.transaction_isolation AS isolation_level');
+    }
+
+    /**
+     * Um esquema PostgreSQL atualizado pode ter colunas opcionais ausentes da
+     * origem MariaDB. Os dados legados devem ser idênticos, e cada campo novo
+     * precisa ficar NULL, nunca preenchido por inferência.
+     *
+     * @param  list<array<string, mixed>>  $sourceRows
+     * @param  list<array<string, mixed>>  $targetRows
+     */
+    private function assertCopiedRowsMatch(array $sourceRows, array $targetRows, string $table): void
+    {
+        $this->assertCount(count($sourceRows), $targetRows, $table);
+        $columns = array_keys($sourceRows[0] ?? []);
+        $columnSet = array_fill_keys($columns, true);
+        $projected = [];
+
+        foreach ($targetRows as $row) {
+            $projected[] = array_intersect_key($row, $columnSet);
+
+            foreach (array_diff(array_keys($row), $columns) as $newColumn) {
+                $this->assertNull($row[$newColumn], $table.'.'.$newColumn.' deve permanecer NULL na cópia.');
+            }
+        }
+
+        $this->assertEquals($sourceRows, $projected, $table);
     }
 
     private function snapshot(Connection $platform, Connection $tenant): array
