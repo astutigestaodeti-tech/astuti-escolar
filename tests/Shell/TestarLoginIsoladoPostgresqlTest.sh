@@ -52,6 +52,9 @@ pg_lsclusters() {
 psql() { return 0; }
 php() {
     printf 'php %s\n' "$*" >> "$ASTUTI_MOCK_LOG"
+    if [[ "$1" == '-r' && -n "${ASTUTI_LOGIN_TEST_PASSWORD:-}" && -n "${MOCK_PASSWORD_ESPERADA:-}" ]]; then
+        [[ "$ASTUTI_LOGIN_TEST_PASSWORD" == "$MOCK_PASSWORD_ESPERADA" ]] || return 88
+    fi
     if [[ "$1" == '-r' && "${MOCK_LARAVEL_INSEGURO:-}" == 1 ]]; then
         return 15
     fi
@@ -60,6 +63,7 @@ php() {
         [[ "${SESSION_COOKIE:-}" == astuti_ensaio_55436 ]]
         [[ "${APP_CONFIG_CACHE:-}" != "$repo/bootstrap/cache/config.php" ]]
         [[ -z "${ASTUTI_LOGIN_TEST_PASSWORD:-}" ]]
+        [[ -z "${ASTUTI_DEMO_PASSWORD:-}" ]]
     fi
 }
 export -f sudo pg_lsclusters psql php
@@ -129,4 +133,28 @@ if grep -q 'config:clear\|migrate\|--port=5432 .*--file=-' "$ASTUTI_MOCK_LOG"; t
     exit 1
 fi
 
-printf 'PASS: 5 cenarios de acesso seguro ao ensaio PostgreSQL.\n'
+# O operador pode escolher uma senha simples SOMENTE para a conta ficticia
+# neste cluster isolado. O Laravel deve receber exatamente esse valor.
+export ASTUTI_MOCK_LOG="$tmp/senha-definida.log"
+export MOCK_PASSWORD_ESPERADA='123456'
+if ! ASTUTI_DEMO_PASSWORD=123456 bash "$script" > "$tmp/senha-definida.out" 2>&1; then
+    echo 'FALHA: nao aceitou senha explicita na demonstracao isolada.' >&2
+    tail -n 20 "$tmp/senha-definida.out" >&2
+    exit 1
+fi
+grep -q 'Senha temporaria SOMENTE DO ENSAIO: 123456' "$tmp/senha-definida.out"
+grep -q 'php artisan serve --host=127.0.0.1 --port=8002' "$ASTUTI_MOCK_LOG"
+unset MOCK_PASSWORD_ESPERADA
+
+# Senhas malformadas nao podem alcançar ALTER ROLE nem o Laravel.
+export ASTUTI_MOCK_LOG="$tmp/senha-invalida.log"
+if ASTUTI_DEMO_PASSWORD='12345' bash "$script" > "$tmp/senha-invalida.out" 2>&1; then
+    echo 'FALHA: aceitou senha inferior ao limite previsto para demonstracao.' >&2
+    exit 1
+fi
+if grep -q -- '--file=-\|php -r' "$ASTUTI_MOCK_LOG"; then
+    echo 'FALHA: senha invalida nao interrompeu o fluxo antes da escrita.' >&2
+    exit 1
+fi
+
+printf 'PASS: 7 cenarios de acesso seguro ao ensaio PostgreSQL.\n'
