@@ -201,3 +201,15 @@ cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-ins
 Depois, acessar `http://127.0.0.1:8002/login`; usar e-mail e senha temporaria mostrados no **terminal local**. Nao enviar a senha nem captura com credencial. Encerre o servidor de teste com `Ctrl+C`. Se o script disser que o cluster esta parado, conferir `pg_lsclusters` e iniciar exclusivamente `17/astuti_ens_20261121_112332_22176` por `sudo pg_ctlcluster --skip-systemctl-redirect 17 astuti_ens_20261121_112332_22176 start`.
 
 **Ainda pendente:** Jefferson executar o comando no notebook e confirmar se o login, as listagens das 3 escolas e dos 115 alunos reais copiados estao corretos. Os 1.284 alunos e 4 escolas do painel em `/demonstracao` **sao apenas indicadores ilustrativos**, nao dados do banco. Manter PR #5 em rascunho; nao fazer corte PostgreSQL, merge ou limpeza dos clusters antigos. Consulte `HISTORICO.md` capturas 91-92 para detalhes e a documentacao operacional na branch.
+
+## 17. Captura 93: corrigida opcao `psql` do roteiro de login (21/11/2026)
+
+- A primeira tentativa real no notebook falhou em **`psql: unrecognized option '--database=postgres'`**, antes de qualquer atualizacao de usuario/senha. O acesso `http://127.0.0.1:8002/login` recusou conexao porque o servidor Laravel nao iniciou; isto **nao e problema do navegador**.
+- Os tres usos invalidos de `--database=` foram substituidos por **`-d`** no roteiro da branch `feature/migracao-postgresql-instalacoes-isoladas`, commit **`ab82dc5`**, e adicionada regressao que falhou antes do patch, commit **`cf733b6`**. Reexecutados localmente: **5 + 9 + 8 + 6** cenarios Bash aprovados. Teste no Debian com PostgreSQL real **ainda pendente**.
+- Basta repetir, **sem qualquer edicao manual**, com o cluster 55436 ainda online:
+
+```bash
+cd ~/astuti-escolar && git pull --ff-only origin feature/migracao-postgresql-instalacoes-isoladas && bash scripts/operacao/testar-login-isolado-postgresql.sh
+```
+
+Depois da inicializacao comprovada, abrir `http://127.0.0.1:8002/login` e usar as credenciais exibidas no terminal. Nao enviar a senha. Registrar proxima captura no `HISTORICO.md`. Sem corte, merge ou alteracao dos bancos originais.
