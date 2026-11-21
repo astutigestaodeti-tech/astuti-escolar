@@ -59,6 +59,62 @@ class TwoFactorReadAccessTest extends TwoMunicipalityTestCase
         $this->get('/')->assertOk()->assertSee('Municipio A');
     }
 
+
+    public function test_resposta_json_nao_redireciona_para_referer_externo(): void
+    {
+        $user = $this->criarUsuario('consulta-json-pendente@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $user->forceFill(['two_factor_secret' => self::SECRET, 'two_factor_confirmed_at' => now()])->save();
+
+        $this->actingAs($user)
+            ->withHeader('Referer', 'https://externo.example.invalid/retorno')
+            ->getJson('/m/municipio-a/escolas')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Confirme o segundo fator antes de consultar os dados.');
+
+        $this->assertNull(session('url.intended'));
+    }
+
+    public function test_retorno_html_e_local_e_desafio_permite_sair(): void
+    {
+        $user = $this->criarUsuario('consulta-retorno-seguro@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $user->forceFill(['two_factor_secret' => self::SECRET, 'two_factor_confirmed_at' => now()])->save();
+
+        $target = '/m/municipio-a/escolas?pesquisa=teste';
+        $this->actingAs($user)
+            ->withHeader('Referer', 'https://externo.example.invalid/retorno')
+            ->get($target)
+            ->assertRedirect(route('two-factor.challenge'));
+
+        $this->assertSame($target, session('url.intended'));
+        $this->get(route('two-factor.challenge'))->assertOk()->assertSee('Sair da conta');
+    }
+
+    public function test_head_sem_codigo_nao_grava_referer_externo_no_retorno(): void
+    {
+        $user = $this->criarUsuario('consulta-head-pendente@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $user->forceFill(['two_factor_secret' => self::SECRET, 'two_factor_confirmed_at' => now()])->save();
+
+        $this->actingAs($user)
+            ->withHeader('Referer', 'https://externo.example.invalid/retorno')
+            ->call('HEAD', '/m/municipio-a/escolas')
+            ->assertRedirect(route('two-factor.challenge'));
+
+        $this->assertNull(session('url.intended'));
+    }
+
+    public function test_municipio_inexistente_aguarda_segundo_fator_sem_consulta_antecipada(): void
+    {
+        $user = $this->criarUsuario('consulta-ordem-middleware@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $user->forceFill(['two_factor_secret' => self::SECRET, 'two_factor_confirmed_at' => now()])->save();
+
+        $this->actingAs($user)->get('/m/municipio-inexistente/escolas')
+            ->assertRedirect(route('two-factor.challenge'));
+    }
+
     public function test_confirmacao_expirada_volta_a_exigir_codigo_para_ler_dados_escolares(): void
     {
         $user = $this->criarUsuario('consulta-expirada@example.invalid');
