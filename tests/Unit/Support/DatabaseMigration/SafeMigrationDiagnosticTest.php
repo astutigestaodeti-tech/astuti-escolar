@@ -32,7 +32,7 @@ final class SafeMigrationDiagnosticTest extends TestCase
 
     public function test_nao_expoe_sql_ou_credenciais_em_falhas_do_driver(): void
     {
-        $exception = new PDOException("SQL com credencial-super-secreta e nome de estudante", 0);
+        $exception = new PDOException('SQL com credencial-super-secreta e nome de estudante', 0);
         $exception->errorInfo = ['23505', 7, 'detalhe privado do banco'];
 
         $description = SafeMigrationDiagnostic::describe($exception);
