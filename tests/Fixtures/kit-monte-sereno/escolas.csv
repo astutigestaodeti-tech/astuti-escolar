@@ -1,0 +1,4 @@
+escola_id,inep_ficticio,nome,tipo,zona,endereco,cep,telefone,aviso
+E01,99000101,EMEI Profª Aurora Benedita Lemes,Educação Infantil - Pré-escola e Maternal II,Urbana,"Rua das Hortênsias, 210 - Jardim Primavera",00990-301,(00) 3400-1001,fictícia
+E02,99000102,EMEF Prof. Sebastião Arantes,Ensino Fundamental - Anos Iniciais,Urbana,"Avenida Serena, 1.050 - Centro",00990-110,(00) 3400-1002,fictícia
+E03,99000103,Escola Municipal Rural Bairro das Palmeiras,Ensino Fundamental - Anos Iniciais (multisseriada),Rural,"Estrada Municipal MSR-020, km 7 - Bairro das Palmeiras",00990-900,(00) 3400-1003,fictícia

@@ -1,0 +1,11 @@
+turma_id,escola_id,codigo,etapa,serie,turno,vagas,ano_letivo,sala
+E01-MII-A,E01,MII-A,Creche,Maternal II,Integral,16,2027,Sala 6
+E01-PI-A,E01,PI-A,Pré-escola,Pré I,Manhã,20,2027,Sala 3
+E01-PII-A,E01,PII-A,Pré-escola,Pré II,Tarde,20,2027,Sala 1
+E02-1A,E02,1A,Fundamental Anos Iniciais,1º ano,Manhã,25,2027,Sala 6
+E02-2A,E02,2A,Fundamental Anos Iniciais,2º ano,Manhã,25,2027,Sala 6
+E02-3A,E02,3A,Fundamental Anos Iniciais,3º ano,Manhã,25,2027,Sala 5
+E02-4A,E02,4A,Fundamental Anos Iniciais,4º ano,Tarde,25,2027,Sala 3
+E02-5A,E02,5A,Fundamental Anos Iniciais,5º ano,Tarde,25,2027,Sala 1
+E03-MULTI-1,E03,MULTI-1,Fundamental Anos Iniciais,"1º, 2º e 3º anos (multisseriada)",Manhã,15,2027,Sala 4
+E03-MULTI-2,E03,MULTI-2,Fundamental Anos Iniciais,4º e 5º anos (multisseriada),Tarde,15,2027,Sala 5
