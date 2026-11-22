@@ -13,6 +13,7 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
 use App\Http\Controllers\SchoolStudentController;
+use App\Http\Controllers\StudentPickupAuthorizationController;
 use App\Http\Controllers\StudentRecordController;
 use App\Http\Middleware\RequireConfirmedTwoFactor;
 use App\Http\Middleware\RequireLoginTwoFactor;
@@ -76,6 +77,20 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->name('school.students.guardians.unlink.form');
     Route::post('/escolas/{escola}/alunos/{aluno}/responsaveis/{vinculo}/desvincular', [GuardianController::class, 'unlink'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.students.guardians.unlink');
+
+    // Pessoas adicionais para retirada: responsáveis já autorizados por vínculo familiar.
+    Route::get('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/nova', [StudentPickupAuthorizationController::class, 'create'])
+        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.pickups.create');
+    Route::post('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas', [StudentPickupAuthorizationController::class, 'store'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.pickups.store');
+    Route::get('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/{autorizacao}/editar', [StudentPickupAuthorizationController::class, 'edit'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('autorizacao')->name('school.students.pickups.edit');
+    Route::put('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/{autorizacao}', [StudentPickupAuthorizationController::class, 'update'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('autorizacao')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.pickups.update');
+    Route::get('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/{autorizacao}/remover', [StudentPickupAuthorizationController::class, 'removeForm'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('autorizacao')->name('school.students.pickups.remove.form');
+    Route::post('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/{autorizacao}/remover', [StudentPickupAuthorizationController::class, 'remove'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('autorizacao')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.students.pickups.remove');
 
     // Gravação: permissão de gestão na escola (no controlador) e segundo fator confirmado.
     Route::get('/escolas/{escola}/alunos/novo', [StudentRecordController::class, 'create'])->whereUuid('escola')->name('school.students.create');

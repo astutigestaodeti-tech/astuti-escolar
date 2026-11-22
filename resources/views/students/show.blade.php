@@ -99,6 +99,8 @@
 
         @include('guardians.panel')
 
+        @include('pickups.panel')
+
         <section class="folha cartao ficha-historico" aria-labelledby="titulo-vinculos">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-vinculos">Histórico de vínculos nesta escola</h2>

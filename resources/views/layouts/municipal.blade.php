@@ -39,6 +39,8 @@
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
         'school.students.edit',
         'school.students.guardians.unlink.form', 'school.students.guardians.unlink',
+        'school.students.pickups.create', 'school.students.pickups.store', 'school.students.pickups.edit', 'school.students.pickups.update',
+        'school.students.pickups.remove.form', 'school.students.pickups.remove',
         'school.enrollments.transfer.form', 'school.enrollments.end.form', 'school.enrollments.delete-registration.form'
             => route('school.students.show', [...$parametrosEscola, 'aluno' => request()->route('aluno')]),
         'school.imports.students.index', 'school.imports.transport.index' => route('schools.show', $parametrosEscola),

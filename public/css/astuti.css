@@ -580,3 +580,21 @@ select.entrada{cursor:pointer}
 .turma-alerta{margin:0 22px 18px;background:var(--ouro-claro);color:var(--tinta)}
 .turma-telefone{display:block;white-space:nowrap}
 @media (max-width:640px){.turma-dados{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Retirada: apenas a seção específica da ficha, sem seletor global de cartões. */
+.ficha-escola>.ficha-retiradas{grid-column:1}
+.retirada-grupo{padding:0 22px 20px}
+.retirada-grupo+.retirada-grupo{border-top:1px solid var(--pauta);padding-top:14px}
+.retirada-subtitulo{font-size:15px;margin:0 0 6px;color:var(--tinta)}
+.retirada-ajuda{font-size:13px;color:var(--tinta-3);margin:0 0 12px}
+.retiradas-lista{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.retirada-pessoa{border:1px solid var(--pauta);border-radius:var(--raio-controle);padding:14px;display:flex;flex-direction:column;gap:7px}
+.retirada-identificacao{display:flex;align-items:start;flex-wrap:wrap;gap:8px}
+.retirada-identificacao strong{font-size:15px;color:var(--tinta)}
+.retirada-pessoa p{margin:0;color:var(--tinta-2);font-size:14px;overflow-wrap:anywhere}
+.retirada-pessoa p a{color:var(--caneta)}
+.retirada-pessoa .responsavel-acoes{margin-top:auto;padding-top:8px}
+.retirada-vencida{background:#f5f5f5;border-color:#b8c0cb}
+.retirada-vencida .retirada-identificacao strong,.retirada-vencida .retirada-dados{text-decoration:line-through;text-decoration-color:#768292}
+.retirada-vencida .etiqueta{text-decoration:none}
+@media (max-width:960px){.ficha-escola>.ficha-retiradas{grid-column:auto;grid-row:auto}}
