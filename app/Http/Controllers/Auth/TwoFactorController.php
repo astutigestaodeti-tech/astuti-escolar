@@ -100,8 +100,11 @@ class TwoFactorController extends Controller
             return redirect()->route('two-factor.settings');
         }
 
+        $lockedUntil = app(TwoFactorLockout::class)->lockedUntil($request->user()->fresh());
+
         return view('auth.two-factor-challenge', [
             'reason' => app(TwoFactorSession::class)->reason($request),
+            'lockedMessage' => $lockedUntil === null ? null : TwoFactorLockout::lockedMessage($lockedUntil),
         ]);
     }
 
@@ -148,7 +151,7 @@ class TwoFactorController extends Controller
             });
         } catch (ValidationException $exception) {
             if ($wrongCode) {
-                $lockout->registerFailure($user->id);
+                throw ValidationException::withMessages(['code' => $lockout->registerFailure($user->id)]);
             }
 
             throw $exception;
