@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Attendance\AttendanceSummary;
+use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
@@ -90,7 +92,22 @@ class SchoolClassController extends Controller
             ->sortBy(fn (StudentEnrollment $enrollment): string => Str::lower(Str::ascii((string) $enrollment->student?->full_name)).'|'.$enrollment->id)
             ->values();
 
-        $roster = $enrollments->map(function (StudentEnrollment $enrollment) use ($cutoff, $allowedAges): array {
+        $frequency = app(AttendanceSummary::class)->forStudents($class, $enrollments->pluck('student_id'), today());
+        $canManage = Gate::allows('manageStudents', [$school, $municipality]);
+        $recentDates = AttendanceSession::query()
+            ->where('school_class_id', $class->id)
+            ->whereDate('attendance_date', '<=', today())
+            ->orderByDesc('attendance_date')
+            ->limit(11)
+            ->get(['attendance_date']);
+        $todaySessionExists = $recentDates->contains(
+            fn (AttendanceSession $session): bool => $session->attendance_date->isToday()
+        );
+        $previousDates = $recentDates->filter(
+            fn (AttendanceSession $session): bool => $session->attendance_date->lt(today())
+        )->take(10);
+
+        $roster = $enrollments->map(function (StudentEnrollment $enrollment) use ($cutoff, $allowedAges, $frequency): array {
             $student = $enrollment->student;
             $age = $student?->ageOn($cutoff);
 
@@ -99,6 +116,7 @@ class SchoolClassController extends Controller
                 'age' => $age,
                 'needsAgeReview' => $age !== null && $allowedAges !== null && ! in_array($age, $allowedAges, true),
                 'primaryContact' => $student?->primaryGuardianLink?->guardian,
+                'frequency' => $frequency[$student->id] ?? ['percentage' => null, 'sessions' => 0, 'present' => 0, 'alert' => null],
             ];
         });
 
@@ -113,6 +131,7 @@ class SchoolClassController extends Controller
         return view('classes.show', compact(
             'municipality', 'school', 'class', 'roster', 'cutoff',
             'occupied', 'capacity', 'occupancyPercentage', 'visualPercentage', 'aboveCapacity',
+            'canManage', 'todaySessionExists', 'previousDates',
         ));
     }
 

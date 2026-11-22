@@ -26,6 +26,7 @@
         </div>
         <div class="acoes-titulo">
             <span class="marcador"><x-icon name="turmas" :size="16" /> {{ $occupied }} {{ $occupied === 1 ? 'aluno' : 'alunos' }}</span>
+            <a class="botao" href="{{ route('school.classes.attendance.index', $parametrosTurma) }}">{{ $todaySessionExists ? 'Corrigir chamada de hoje' : 'Fazer chamada de hoje' }}</a>
             <a class="botao secundario" href="{{ route('school.classes.index', $parametrosEscola) }}">Todas as turmas</a>
         </div>
     </div>
@@ -65,6 +66,29 @@
         @endif
     </section>
 
+    @if ($canManage)
+        <section class="folha chamada-historico" aria-labelledby="titulo-chamadas-anteriores">
+            <div class="folha-cabecalho">
+                <div>
+                    <h2 id="titulo-chamadas-anteriores">Chamadas anteriores</h2>
+                    <p>Para corrigir uma chamada anterior, informe o motivo e confirme novamente o segundo fator.</p>
+                </div>
+            </div>
+            <form class="chamada-consulta-data" method="GET" action="{{ route('school.classes.attendance.index', $parametrosTurma) }}">
+                <label for="chamada-data">Consultar data</label>
+                <input id="chamada-data" type="date" name="data" max="{{ today()->toDateString() }}" required>
+                <button class="botao secundario" type="submit">Abrir chamada</button>
+            </form>
+            @if ($previousDates->isNotEmpty())
+                <div class="chamada-datas">
+                    @foreach ($previousDates as $day)
+                        <a href="{{ route('school.classes.attendance.index', [...$parametrosTurma, 'data' => $day->attendance_date->toDateString()]) }}">{{ $day->attendance_date->format('d/m/Y') }}</a>
+                    @endforeach
+                </div>
+            @endif
+        </section>
+    @endif
+
     <section class="folha" aria-labelledby="titulo-alunos-turma">
         <div class="folha-cabecalho">
             <div>
@@ -82,6 +106,7 @@
                             <th scope="col">Aluno</th>
                             <th scope="col">Nascimento</th>
                             <th scope="col">Idade em {{ $cutoff->format('d/m/Y') }}</th>
+                            <th scope="col">Frequência no mês</th>
                             <th scope="col">Contato principal</th>
                             <th scope="col">Ficha</th>
                         </tr>
@@ -97,6 +122,17 @@
                                     <span class="numero">{{ $entry['age'] !== null ? $entry['age'].' anos' : 'Não calculada' }}</span>
                                     @if ($entry['needsAgeReview'])
                                         <span class="etiqueta conferir">Conferir idade</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($entry['frequency']['percentage'] !== null)
+                                        <strong class="numero">{{ $entry['frequency']['percentage'] }}%</strong>
+                                        <span class="turma-frequencia-detalhe">{{ $entry['frequency']['present'] }} de {{ $entry['frequency']['sessions'] }} chamadas</span>
+                                        @if ($entry['frequency']['alert'])
+                                            <span class="etiqueta conferir">{{ $entry['frequency']['alert'] }}</span>
+                                        @endif
+                                    @else
+                                        <span class="turma-frequencia-detalhe">Sem chamadas</span>
                                     @endif
                                 </td>
                                 <td>

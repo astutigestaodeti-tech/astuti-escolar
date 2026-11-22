@@ -645,3 +645,30 @@ select.entrada{cursor:pointer}
 .formulario-grade .formulario-campo-largo{grid-column:1/-1}
 
 .campo-rg{display:grid;grid-template-columns:1fr 96px;gap:8px}
+
+/* Chamada diária: toque confortável e leitura no celular, sem seletores genéricos. */
+.chamada-painel .folha-cabecalho{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.chamada-resumo{font-weight:700;color:var(--caneta-escura);background:var(--caneta-clara)}
+.chamada-lista{display:grid;gap:12px;margin:16px 0 20px}
+.chamada-aluno{border:1px solid var(--pauta);border-radius:var(--raio-controle);padding:14px;display:grid;grid-template-columns:minmax(190px,1fr) minmax(0,2fr);gap:16px}
+.chamada-identificacao{display:flex;align-items:center;gap:12px;min-width:0}
+.chamada-identificacao strong{color:var(--tinta);overflow-wrap:anywhere}
+.chamada-opcoes{border:0;margin:0;padding:0;min-width:0;display:flex;align-content:start;align-items:flex-start;flex-wrap:wrap;gap:8px}
+.chamada-opcao{display:inline-flex;align-items:center;gap:6px;padding:9px 10px;border:1px solid var(--pauta);border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;color:var(--tinta)}
+.chamada-opcao:has(input:checked){background:var(--caneta-clara);border-color:var(--caneta);color:var(--caneta-escura)}
+.chamada-opcao input{width:16px;height:16px;accent-color:var(--caneta)}
+.chamada-observacao{flex:1 1 100%;display:grid;gap:5px}
+.chamada-observacao label{font-size:13px;color:var(--tinta-2)}
+.chamada-opcoes:has(input[value="present"]:checked) .chamada-observacao{display:none}
+.chamada-observacao input,.chamada-motivo textarea,.chamada-consulta-data input{width:100%;border:1px solid var(--pauta);border-radius:8px;padding:9px 10px;color:var(--tinta);background:var(--folha);font:inherit}
+.chamada-opcoes:disabled .chamada-opcao{cursor:default;opacity:.85}
+.chamada-motivo{display:grid;gap:8px;margin:16px 0}
+.chamada-ajuda{font-size:14px;color:var(--tinta-2);margin:14px 0}
+.chamada-aviso,.chamada-erros{margin:14px 0}
+.chamada-consulta-data{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:12px 0}
+.chamada-consulta-data label{font-weight:700}
+.chamada-consulta-data input{max-width:190px}
+.chamada-datas{display:flex;flex-wrap:wrap;gap:8px}
+.chamada-datas a{display:inline-block;padding:7px 10px;background:var(--caneta-clara);border-radius:8px;color:var(--caneta-escura);font-weight:700}
+.turma-frequencia-detalhe{display:block;font-size:13px;color:var(--tinta-2)}
+@media(max-width:780px){.chamada-aluno{grid-template-columns:1fr;gap:10px}.chamada-opcoes{gap:6px}.chamada-opcao{padding:10px}.chamada-consulta-data{align-items:stretch}.chamada-consulta-data input{max-width:none}}
