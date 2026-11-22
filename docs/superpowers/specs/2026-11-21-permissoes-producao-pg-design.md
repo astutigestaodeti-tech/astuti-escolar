@@ -12,13 +12,14 @@ O papel de migracao e dono dos dois bancos, schema e objetos da aplicacao, inclu
 
 | Objeto | Migracao | Aplicacao |
 | --- | --- | --- |
-| Tabelas operacionais existentes | Dona; migrations | SELECT, INSERT, UPDATE |
+| Tabelas operacionais existentes | Dona; migrations | SELECT, INSERT, UPDATE; sem DELETE |
 | Auditorias `platform_audit_logs` e `audit_logs` | Dona; administracao excepcional | SELECT, INSERT |
+| Infraestrutura na base `platform`: `sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `password_reset_tokens` (se existentes) | Dona; migrations | SELECT, INSERT, UPDATE, DELETE |
 | Novas tabelas antes do comando ser reaplicado | Dona | SELECT, INSERT via default privileges |
 | Sequencias | Dona | USAGE, SELECT |
 | Schema `public`, funcoes e gatilhos | Dona | USAGE; sem CREATE, ALTER, DROP ou TRIGGER |
 
-Nao conceder DELETE nem TRUNCATE. Aplicacao usa sessao/cache e filas fora do PostgreSQL quando essas operacoes requerem DELETE. O comando preserva senhas existentes e nao recebe senha em argumentos; psql `\\password` inicializa os dois segredos.
+Nao conceder TRUNCATE em nenhuma tabela. DELETE se limita a lista fixa de infraestrutura Laravel existente na base central, nunca na base municipal, usuarios, vinculos escolares ou auditoria. Sessoes, cache e filas podem permanecer em PostgreSQL com suas conexoes centralizadas. O comando preserva senhas existentes e nao recebe senha em argumentos; psql `\\password` inicializa os dois segredos.
 
 ## Ordem de implantacao
 
@@ -30,4 +31,4 @@ Nao conceder DELETE nem TRUNCATE. Aplicacao usa sessao/cache e filas fora do Pos
 
 ## Prova
 
-Job proprio no CI, conectado com login e senha do papel web a bases descartaveis; recusas por falta de privilegio (`SQLSTATE 42501`) para UPDATE, DELETE e TRUNCATE nas auditorias, desativacao e remocao de gatilhos, ALTER TABLE e CREATE TABLE. Confirmar titularidade, default privileges, idempotencia, login Laravel e escrita auditada em cada banco. Parar apos PR e CI, para revisao do Claude.
+Job proprio no CI, conectado com login e senha do papel web a bases descartaveis; recusas por falta de privilegio (`SQLSTATE 42501`) para UPDATE, DELETE e TRUNCATE nas auditorias, desativacao e remocao de gatilhos, ALTER TABLE e CREATE TABLE. Confirmar titularidade, default privileges, idempotencia, login Laravel, requisicao autenticada, logout removendo a sessao de `sessions`, Cache::forget com drivers de banco e escrita auditada em cada banco. Parar apos PR e CI, para revisao do Claude.

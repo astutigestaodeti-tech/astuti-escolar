@@ -215,6 +215,18 @@ class ProvisionPostgresProductionRoles extends Command
                 $db->exec("GRANT SELECT, INSERT ON TABLE public.{$audit} TO {$application}");
             }
 
+            // Apenas a base central mantem as tabelas efemeras do Laravel.
+            // Logout, limpeza de sessoes, cache e filas precisam de DELETE,
+            // mas isso nunca se estende a usuarios, matriculas ou auditoria.
+            if ($auditTable === 'platform_audit_logs') {
+                foreach (['sessions', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'password_reset_tokens'] as $table) {
+                    $check->execute(['public.'.$table]);
+                    if ($check->fetchColumn() !== null) {
+                        $db->exec('GRANT DELETE ON TABLE public.'.$this->ident($table)." TO {$application}");
+                    }
+                }
+            }
+
             $db->exec('REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC');
             $db->exec("REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {$application}");
             $db->exec("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO {$application}");

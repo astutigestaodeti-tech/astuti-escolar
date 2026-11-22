@@ -149,6 +149,10 @@ jobs:
     env:
       APP_ENV: testing
       ASTUTI_PG_ROLE_INTEGRATION: '1'
+      SESSION_DRIVER: database
+      SESSION_CONNECTION: platform
+      CACHE_STORE: database
+      DB_CACHE_CONNECTION: platform
       ASTUTI_PG_ADMIN_HOST: 127.0.0.1
       ASTUTI_PG_ADMIN_PORT: '5432'
       ASTUTI_PG_ADMIN_USER: astuti_roles_ci_admin

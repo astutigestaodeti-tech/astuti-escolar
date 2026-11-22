@@ -6,7 +6,10 @@ use App\Audit\AuditTrail;
 use App\Models\Platform\Municipality;
 use App\Models\User;
 use App\Tenancy\TenantContext;
+use Illuminate\Cache\DatabaseStore;
+use Illuminate\Session\DatabaseSessionHandler;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PDO;
@@ -88,6 +91,21 @@ class PostgresProductionRolesTest extends TestCase
             $this->assertSame('astuti_migracao', $owner);
         }
 
+        foreach (['memberships', 'users'] as $table) {
+            $this->assertDenied($appPlatform, "DELETE FROM public.{$table} WHERE false");
+        }
+        foreach (['students', 'schools'] as $table) {
+            $this->assertDenied($appTenant, "DELETE FROM public.{$table} WHERE false");
+        }
+
+        // Somente estas tabelas operacionais efemeras podem receber DELETE.
+        foreach (['sessions', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'password_reset_tokens'] as $table) {
+            $exists = $appPlatform->query("SELECT to_regclass('public.{$table}')")->fetchColumn();
+            if ($exists !== null) {
+                $this->assertSame(1, (int) $appPlatform->query("SELECT CASE WHEN has_table_privilege(current_user, 'public.{$table}', 'DELETE') THEN 1 ELSE 0 END")->fetchColumn());
+            }
+        }
+
         // Default privileges: nova tabela permite leitura e inclusao, mas
         // so recebe UPDATE apos uma reaplicacao explicita dos grants.
         $migrationPdo = $this->connectAsMigration($platformName);
@@ -110,14 +128,46 @@ class PostgresProductionRolesTest extends TestCase
         ]));
         DB::purge('platform');
 
+        // O middleware HTTP e o cache devem usar o banco, nao os drivers
+        // array do phpunit.xml, para reproduzir a exclusao real de sessoes.
+        $this->assertSame('database', config('session.driver'));
+        $this->assertSame('database', config('cache.default'));
+        $this->assertInstanceOf(DatabaseSessionHandler::class, app('session')->driver()->getHandler());
+        $this->assertInstanceOf(DatabaseStore::class, Cache::store()->getStore());
+
         // O Laravel agora usa a mesma credencial web que os SQLs proibidos.
-        $this->post('/login', [
+        $login = $this->post('/login', [
             'email' => strtoupper($email),
             'password' => 'SenhaForteFicticia2026!',
-        ])->assertRedirect('/');
+        ]);
+        $login->assertRedirect('/');
         $this->assertAuthenticatedAs($user);
         $this->assertSame(1, DB::connection('platform')->table('platform_audit_logs')
             ->where('action', 'auth.login')->where('user_id', $user->id)->count());
+
+        $sessionId = DB::connection('platform')->table('sessions')->where('user_id', $user->id)->value('id');
+        $this->assertNotNull($sessionId, 'O login precisa persistir a sessao no PostgreSQL.');
+        $sessionCookie = collect($login->headers->getCookies())->first(
+            fn ($cookie): bool => $cookie->getName() === config('session.cookie'),
+        );
+        $this->assertNotNull($sessionCookie);
+
+        $this->withCookie(config('session.cookie'), $sessionCookie->getValue())
+            ->get('/seguranca/segundo-fator')->assertOk();
+        $this->assertAuthenticatedAs($user);
+
+        $cacheKey = 'papel-web-ci-'.strtolower(Str::random(10));
+        Cache::put($cacheKey, 'dado-ficticio', 60);
+        $this->assertSame('dado-ficticio', Cache::get($cacheKey));
+        $this->assertTrue(Cache::forget($cacheKey));
+        $this->assertNull(Cache::get($cacheKey));
+
+        $this->withCookie(config('session.cookie'), $sessionCookie->getValue())
+            ->post('/logout')->assertRedirect('/login');
+        $this->assertGuest();
+        $this->assertSame(0, DB::connection('platform')->table('sessions')->where('id', $sessionId)->count());
+        $this->assertSame(1, DB::connection('platform')->table('platform_audit_logs')
+            ->where('action', 'auth.logout')->where('user_id', $user->id)->count());
 
         $dbKey = 'municipio_papeis_'.strtolower(Str::random(8));
         $municipality = Municipality::query()->create([
