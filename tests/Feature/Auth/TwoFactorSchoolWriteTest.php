@@ -105,11 +105,25 @@ class TwoFactorSchoolWriteTest extends TwoMunicipalityTestCase
         $this->assertNotEmpty($user->two_factor_pending_secret);
         $this->assertNull($user->two_factor_secret);
 
+        // QR Code desenhado no servidor, sem servico externo, e a chave manual como alternativa.
+        $this->get('/seguranca/segundo-fator')->assertOk()
+            ->assertSee('<svg xmlns="http://www.w3.org/2000/svg"', false)
+            ->assertSee('aria-label="QR Code para cadastrar no aplicativo autenticador"', false)
+            ->assertSee($user->two_factor_pending_secret)
+            ->assertSee('Apague só a conta Astuti antiga')
+            ->assertDontSee('chart.googleapis', false)
+            ->assertDontSee('api.qrserver', false);
+
         $code = app(Totp::class)->at($user->two_factor_pending_secret, now()->getTimestamp());
         $this->post('/seguranca/segundo-fator/confirmar', ['code' => $code])
             ->assertRedirect('/seguranca/segundo-fator');
         $this->assertNotNull($user->fresh()->two_factor_confirmed_at);
         $this->post('/_teste/escrita-escolar')->assertOk();
+
+        // Depois de ativado, o QR Code e a chave nao aparecem mais.
+        $this->get('/seguranca/segundo-fator')->assertOk()
+            ->assertDontSee('QR Code para cadastrar', false)
+            ->assertDontSee($code.'');
     }
 
     public function test_nao_existe_cadastro_publico_de_contas(): void

@@ -6,6 +6,7 @@ use App\Audit\AuditTrail;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Security\Totp;
+use App\Security\TotpQrCode;
 use App\Security\TwoFactorSession;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +19,14 @@ class TwoFactorController extends Controller
 {
     public function show(Request $request): View
     {
-        return view('auth.two-factor-settings', ['user' => $request->user()->fresh()]);
+        $user = $request->user()->fresh();
+        $qrCode = null;
+        if ($user->two_factor_pending_secret && ! $user->two_factor_confirmed_at) {
+            $totpQr = app(TotpQrCode::class);
+            $qrCode = $totpQr->svg($totpQr->uri($user->email, $user->two_factor_pending_secret));
+        }
+
+        return view('auth.two-factor-settings', ['user' => $user, 'qrCode' => $qrCode]);
     }
 
     public function begin(Request $request, Totp $totp): RedirectResponse
