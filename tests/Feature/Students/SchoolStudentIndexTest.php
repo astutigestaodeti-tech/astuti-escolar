@@ -248,6 +248,23 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
             ->assertSee('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos');
     }
 
+    public function test_cartoes_da_escola_nao_sao_empilhados_pela_regra_da_ficha_do_aluno(): void
+    {
+        // A regra de grade que leva o histórico para a coluna lateral vale só
+        // para a ficha do aluno; aplicada a todo ".cartao", empilhava os
+        // cartões da escola uns sobre os outros.
+        $css = (string) file_get_contents(public_path('css/astuti.css'));
+        $this->assertStringNotContainsString('.ficha-escola>.cartao{', $css);
+        $this->assertStringContainsString('.ficha-escola>.ficha-historico{grid-column:2', $css);
+
+        $user = $this->criarUsuario('cartoes-escola@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1)
+            ->assertOk()
+            ->assertSeeInOrder(['Turmas', 'Alunos', 'Matrículas'])
+            ->assertDontSee('permanecem indisponíveis');
+    }
+
     private function matricularAluno(Municipality $municipio, string $escola, string $nome, string $status = 'active'): void
     {
         app(TenantContext::class)->runFor($municipio, function () use ($escola, $nome, $status): void {

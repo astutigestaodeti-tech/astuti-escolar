@@ -64,5 +64,9 @@
         @endcan
     </div>
 
-    <div class="nota"><x-icon name="info" /><div><strong>Consulta disponível</strong><p>A inclusão e alteração de alunos e matrículas permanecem indisponíveis até a implantação da autenticação reforçada e da auditoria.</p></div></div>
+    @can('manageStudents', [$school, $municipality])
+        <div class="nota"><x-icon name="escudo" /><div><strong>Alterações protegidas</strong><p>Importações e alterações de alunos e matrículas pedem o código do segundo fator e ficam registradas no histórico.</p></div></div>
+    @else
+        <div class="nota"><x-icon name="info" /><div><strong>Somente consulta</strong><p>Sua conta pode consultar os dados desta escola, mas não alterar alunos e matrículas.</p></div></div>
+    @endcan
 @endsection
