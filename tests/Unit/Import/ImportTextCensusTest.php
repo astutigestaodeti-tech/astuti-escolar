@@ -45,4 +45,13 @@ class ImportTextCensusTest extends TestCase
         $this->assertSame('social_name', StudentSpreadsheetPreview::fieldForHeader('Nome social'));
         $this->assertSame('name', StudentSpreadsheetPreview::fieldForHeader('Nome'));
     }
+
+    public function test_telefone_so_com_ddd(): void
+    {
+        $this->assertSame('11940238059', ImportText::phone('(11) 94023-8059'));
+        $this->assertSame('1133334444', ImportText::phone('11 3333-4444'));
+        $this->assertSame('11940238059', ImportText::phone('+55 (11) 94023-8059'));
+        $this->assertNull(ImportText::phone('94023-8059'));
+        $this->assertNull(ImportText::phone(''));
+    }
 }

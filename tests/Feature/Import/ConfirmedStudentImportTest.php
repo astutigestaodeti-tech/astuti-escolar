@@ -3,11 +3,13 @@
 namespace Tests\Feature\Import;
 
 use App\Models\Tenant\AuditLog;
+use App\Models\Tenant\Guardian;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
+use App\Models\Tenant\StudentGuardian;
 use App\Models\User;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
@@ -740,7 +742,7 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertSame('529.982.247-25', $ana['census']['cpf']);
         $this->assertArrayNotHasKey('cpf', $eva['census']);
         $this->assertContains('Este CPF já está no cadastro de outro aluno da rede; não foi importado. Confira o documento.', array_column($eva['pending'], 'message'));
-        $this->assertStringContainsString('endereço e dados do Censo', $html);
+        $this->assertStringContainsString('endereço, dados do Censo e responsável', $html);
 
         $indice = array_search('Ana Clara Fictícia', array_column($rows, 'name'), true);
         $this->post($this->url().'/confirmar', ['lote' => $token, 'completar_enderecos' => [$indice]])
@@ -762,6 +764,112 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         // A auditoria registra que a cor/raça mudou, sem guardar o valor.
         $this->assertNotNull($auditoria);
         $this->assertSame('[REDACTED]', $auditoria->after['race_color'] ?? null);
+    }
+
+    private const CABECALHO_RESPONSAVEL = ['Nome', 'Data de nascimento', 'Turma', 'Mãe', 'Telefone', 'CPF Resp.'];
+
+    public function test_importacao_cadastra_responsaveis_sem_duplicar_irmaos_e_deixa_pendentes_os_incompletos(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Irmã Fictícia', '01/02/2020', '1A', 'Aline Bueno Alves', '(11) 94023-8059', ''],
+            ['Bruno Irmão Fictício', '01/03/2018', '1A', 'ALINE BUENO ALVES', '11940238059', ''],
+            ['Carla Sem Telefone', '05/06/2020', '1A', 'Rita Fictícia Souza', '94023-8059', ''],
+            ['Daniel Só Com CPF', '07/08/2020', '1A', 'Sandra Fictícia Lima', '', '529.982.247-25'],
+            ['Eva Com Tudo', '09/10/2020', '1A', 'Paula Fictícia Reis', '(11) 3333-4444', '111.444.777-35'],
+        ]);
+        try {
+            [$token, , $html] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $this->assertStringContainsString('Responsável: Aline Bueno Alves (Mãe) · (11) 94023-8059', $html);
+        $this->assertStringNotContainsString('111.444.777-35', $html);
+        $rows = $this->linhasDoLote($token);
+        $this->assertNull($this->linhaDe($rows, 'Carla Sem Telefone')['guardian']);
+        $this->assertContains('Rita Fictícia Souza não foi cadastrado como responsável porque falta telefone com DDD. Cadastre na ficha.', array_column($this->linhaDe($rows, 'Carla Sem Telefone')['pending'], 'message'));
+        $this->assertNull($this->linhaDe($rows, 'Daniel Só Com CPF')['guardian']);
+
+        $this->post($this->url().'/confirmar', ['lote' => $token])
+            ->assertRedirect($this->url())
+            ->assertSessionHas('status', fn (string $message): bool => str_contains($message, '3 responsáveis vinculados'));
+
+        [$guardians, $links, $ana, $bruno, $audit] = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            $ana = Student::query()->where('full_name', 'Ana Irmã Fictícia')->firstOrFail();
+
+            return [
+                Guardian::query()->orderBy('full_name')->get(),
+                StudentGuardian::query()->count(),
+                StudentGuardian::query()->where('student_id', $ana->id)->sole(),
+                StudentGuardian::query()->whereHas('student', fn ($query) => $query->where('full_name', 'Bruno Irmão Fictício'))->sole(),
+                AuditLog::query()->where('auditable_type', Guardian::class)->where('action', 'created')->get(),
+            ];
+        });
+
+        // Irmãos com a mesma mãe e o mesmo telefone: um cadastro só.
+        $this->assertSame(['Aline Bueno Alves', 'Paula Fictícia Reis'], $guardians->pluck('full_name')->all());
+        $this->assertSame(['11940238059', '1133334444'], $guardians->pluck('phone')->all());
+        $this->assertSame([null, '111.444.777-35'], $guardians->pluck('cpf')->all());
+        $this->assertSame(3, $links);
+        $this->assertSame($ana->guardian_id, $bruno->guardian_id);
+        $this->assertSame(['mother', true, false], [$ana->relationship, $ana->is_primary_contact, $ana->is_legal_guardian]);
+        $this->assertCount(2, $audit);
+        $this->assertTrue($audit->every(fn ($log): bool => ($log->after['phone'] ?? null) === '[REDACTED]'));
+    }
+
+    public function test_reimportacao_vincula_responsavel_so_a_quem_nao_tem_e_recusa_cpf_com_outro_nome(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $primeira = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Carla Sem Telefone', '05/06/2020', '1A', 'Rita Fictícia Souza', '94023-8059', ''],
+            ['Eva Com Tudo', '09/10/2020', '1A', 'Paula Fictícia Reis', '(11) 3333-4444', '111.444.777-35'],
+        ]);
+        try {
+            [$token] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $primeira);
+        } finally {
+            unlink($primeira);
+        }
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+
+        $segunda = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            // Já cadastrada e sem responsável: agora a lista traz o telefone com DDD.
+            ['Carla Sem Telefone', '05/06/2020', '1A', 'Rita Fictícia Souza', '(11) 95555-1234', ''],
+            // Já tem responsável: nada muda, mesmo com outro nome na lista.
+            ['Eva Com Tudo', '09/10/2020', '1A', 'Outra Mãe Fictícia', '(11) 97777-0000', ''],
+            // Novo aluno com o CPF da Paula, mas outro nome: não vincula.
+            ['Fábio Novo Fictício', '11/11/2020', '1A', 'Pessoa Diferente Fictícia', '(11) 98888-1111', '111.444.777-35'],
+        ]);
+        try {
+            [$token] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $segunda);
+        } finally {
+            unlink($segunda);
+        }
+
+        $rows = $this->linhasDoLote($token);
+        $this->assertNotNull($this->linhaDe($rows, 'Carla Sem Telefone')['address_target_id']);
+        $this->assertNull($this->linhaDe($rows, 'Eva Com Tudo')['address_target_id']);
+        $this->assertNull($this->linhaDe($rows, 'Fábio Novo Fictício')['guardian']);
+        $this->assertContains('O CPF informado para Pessoa Diferente Fictícia já está cadastrado na rede com outro nome; o responsável não foi vinculado. Confira o documento.', array_column($this->linhaDe($rows, 'Fábio Novo Fictício')['pending'], 'message'));
+
+        $indice = array_search('Carla Sem Telefone', array_column($rows, 'name'), true);
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'completar_enderecos' => [$indice]])
+            ->assertRedirect($this->url())
+            ->assertSessionHas('status', fn (string $message): bool => str_contains($message, '1 responsável vinculado'));
+
+        $porAluno = app(TenantContext::class)->runFor($this->municipioA, fn (): array => StudentGuardian::query()->with(['student', 'guardian'])->get()
+            ->mapWithKeys(fn ($link): array => [$link->student->full_name => $link->guardian->full_name])->sortKeys()->all());
+        $this->assertSame([
+            'Carla Sem Telefone' => 'Rita Fictícia Souza',
+            'Eva Com Tudo' => 'Paula Fictícia Reis',
+        ], $porAluno);
     }
 
     public function test_conferencia_com_dado_do_censo_fora_das_opcoes_e_recusada(): void

@@ -22,3 +22,14 @@ Etapa seguinte à prévia do PR #9 e à base de RA/turma do PR #12. Arquivos `.x
 ## Conferência no notebook
 
 Somente após revisão e merge das dependências, no PostgreSQL isolado do ensaio, nunca no banco original 5432: executar as migrations municipais; abrir Monte Sereno com as três escolas e dez turmas fictícias; subir E01, E02, E03; confirmar Laura e Heitor na E02; conferir 115 alunos e 115 matrículas nas turmas do gabarito, seis nascimentos pendentes e trilha de auditoria. Tentar confirmar o mesmo token uma segunda vez deve ser recusado; reenviar o mesmo arquivo gera uma nova conferência com 58 linhas ignoradas e recibo de zero inclusões.
+
+## Responsáveis vindos da planilha (22/11/2026)
+
+- Colunas "Mãe", "Pai", "Responsável", "Telefone" e "CPF Resp." passam a criar o cadastro do responsável e o vínculo com o aluno na confirmação. O parentesco vem do título da coluna: "Mãe" vira mãe, "Pai" vira pai, "Responsável" ou "Pai ou mãe" vira "Outro".
+- Telefone só com DDD (10 ou 11 dígitos; o 55 na frente é ignorado). Telefone sem DDD vira pendência e não é completado por adivinhação.
+- CPF do responsável só se os dígitos conferirem; inválido, o responsável entra sem CPF e a pendência avisa.
+- Sem telefone com DDD, o responsável só é vinculado se o CPF já existir na rede. CPF que já pertence a outra pessoa (nome diferente) nunca é usado: o vínculo não é feito e a pendência pede para conferir o documento.
+- Irmãos não duplicam o responsável: mesmo CPF, ou, sem CPF, mesmo nome (sem acentos e maiúsculas) e mesmo telefone, inclusive com cadastros de importações anteriores.
+- O primeiro responsável do aluno vira o contato principal. "Responsável legal" não é deduzido da planilha.
+- Aluno já cadastrado só recebe responsável se ainda não tiver nenhum, e só com a marcação "Completar somente o que está vazio".
+- Cadastro e vínculo entram na auditoria, com CPF e telefone como `[REDACTED]`.
