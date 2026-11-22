@@ -37,6 +37,8 @@
         'school.classes.index', 'school.students.index', 'school.enrollments.index' => route('schools.show', $parametrosEscola),
         'school.classes.show', 'school.classes.create', 'school.classes.store', 'school.classes.edit', 'school.classes.update'
             => route('school.classes.index', $parametrosEscola),
+        'school.classes.attendance.index', 'school.classes.attendance.store', 'school.classes.attendance.correct'
+            => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
         'school.students.edit',
         'school.students.guardians.unlink.form', 'school.students.guardians.unlink',

@@ -644,3 +644,9 @@ Implementado em PR independente derivado do main consolidado o fluxo de desvincu
 ## 22/11/2026 - Consulta da turma com data de corte e ocupação
 
 Nova ficha somente de consulta da turma ligada à lista da escola. Apresenta ano, etapa, turno, vagas preenchidas e alerta acima da capacidade; alunos com matrícula ativa no próprio contexto escolar são ordenados sem efeito de acentos, com nascimento, idade em 31/03 do ano letivo, vínculo com a ficha e contato principal carregado em lote. A regra pedagógica conservadora marca "Conferir idade" somente em Pré I/II e 1º a 9º ano reconhecíveis, sem tolerância, e não marca turmas ambíguas nem estudantes sem nascimento. Sem migração nem alterações em importadores; testes apenas fictícios. Resultados do CI e commit disponíveis no PR correspondente.
+
+## 22/11/2026 - Frequência: chamada diária por turma (issue #54)
+
+Implementada a chamada de alunos com matrícula ativa por turma e data, usando as novas tabelas tenant `attendance_sessions` e `attendance_marks` (migração 000025). Professores com acesso de consulta à escola podem marcar faltas e salvar a chamada de hoje; a gestão pode corrigir chamadas já registradas de datas anteriores, com motivo de 10 a 500 caracteres e segundo fator recente. Dados e alunos são validados sob bloqueio transacional, respeitando o isolamento escolar.
+
+A tela utiliza as fotos internas de identificação apenas para consulta, com todos presentes inicialmente. A lista da turma recebe percentual mensal e alertas de três faltas consecutivas ou frequência abaixo de 75%, carregados em lote. Observações e motivo de correção não aparecem em claro nos registros de auditoria; o histórico registra os status alterados, responsáveis e horários. Sem alterações nos arquivos de importação, saída ou ficha individual, sem dados reais ou operações no notebook. Implementação e testes ficam no PR vinculado à issue #54; resultados do CI são verificados no próprio GitHub.
