@@ -214,6 +214,68 @@ class GuardianController extends Controller
         ])->with('status', $message);
     }
 
+    public function unlinkForm(Request $request, string $municipio, string $escola, string $aluno, string $vinculo): View
+    {
+        [$municipality, $school, $student] = $this->authorizedStudent($request, $escola, $aluno);
+        $link = StudentGuardian::query()->where('student_id', $student->id)->with('guardian')->findOrFail($vinculo);
+
+        return view('guardians.unlink', [
+            'municipality' => $municipality,
+            'school' => $school,
+            'student' => $student,
+            'link' => $link,
+            'guardian' => $link->guardian,
+            'relationship' => self::RELATIONSHIPS[$link->relationship] ?? 'Outro',
+        ]);
+    }
+
+    public function unlink(Request $request, string $municipio, string $escola, string $aluno, string $vinculo): RedirectResponse
+    {
+        [$municipality, $school] = $this->authorizedStudent($request, $escola, $aluno);
+        $reason = $request->input('motivo');
+        $request->merge(['motivo' => is_string($reason) ? trim($reason) : $reason]);
+
+        $data = $request->validate([
+            'motivo' => ['required', 'string', 'min:10', 'max:500'],
+        ], [
+            'motivo.required' => 'Informe o motivo do desvínculo.',
+            'motivo.string' => 'Informe um motivo válido para o desvínculo.',
+            'motivo.min' => 'O motivo deve ter pelo menos 10 caracteres.',
+            'motivo.max' => 'O motivo deve ter no máximo 500 caracteres.',
+        ], ['motivo' => 'Motivo']);
+
+        [$guardianName, $stillLinked] = DB::connection('tenant')->transaction(function () use ($aluno, $school, $vinculo, $data): array {
+            $this->lockedStudent($aluno, $school);
+            $link = StudentGuardian::query()->where('student_id', $aluno)->lockForUpdate()->findOrFail($vinculo);
+            $guardian = Guardian::query()->findOrFail($link->guardian_id);
+            $before = $this->linkSnapshot($link);
+
+            $link->delete();
+
+            app(AuditTrail::class)->record(
+                'tenant',
+                'deleted',
+                StudentGuardian::class,
+                $link->id,
+                $before,
+                ['motivo' => $data['motivo']],
+            );
+
+            $stillLinked = StudentGuardian::query()->where('guardian_id', $guardian->id)->exists();
+
+            return [$guardian->full_name, $stillLinked];
+        });
+
+        $message = "{$guardianName} foi desvinculada do aluno.";
+        if ($stillLinked) {
+            $message .= ' O cadastro dela continua disponível para os irmãos.';
+        }
+
+        return redirect()->to(route('school.students.show', [
+            'municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $aluno,
+        ]).'#responsaveis')->with('status', $message);
+    }
+
     private function authorizedStudent(Request $request, string $escola, string $aluno): array
     {
         $municipality = $request->attributes->get('astuti.municipality');

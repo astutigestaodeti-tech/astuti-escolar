@@ -11,6 +11,13 @@
         @endif
     </div>
 
+    @if ($guardianLinks->isNotEmpty() && ! $guardianLinks->contains('is_primary_contact', true))
+        <div class="nota responsaveis-sem-principal" role="status">
+            <x-icon name="info" :size="18" />
+            <p>Este aluno está sem contato principal. Edite um responsável para marcar.</p>
+        </div>
+    @endif
+
     @if ($guardianLinks->isEmpty())
         <div class="responsaveis-vazio">
             <p class="ficha-vazio">Nenhum responsável cadastrado.
@@ -43,7 +50,10 @@
                         <div><dt>E-mail</dt><dd>@if ($responsavel->email)<a href="mailto:{{ $responsavel->email }}">{{ $responsavel->email }}</a>@else Não informado @endif</dd></div>
                     </dl>
                     @if ($canManage)
-                        <a class="responsavel-editar" href="{{ route('school.students.guardians.edit', [...$parametrosResponsaveis, 'vinculo' => $vinculoResponsavel->id]) }}" aria-label="Editar dados de {{ $responsavel->full_name }}">Editar</a>
+                        <div class="responsavel-acoes">
+                            <a class="responsavel-editar" href="{{ route('school.students.guardians.edit', [...$parametrosResponsaveis, 'vinculo' => $vinculoResponsavel->id]) }}" aria-label="Editar dados de {{ $responsavel->full_name }}">Editar</a>
+                            <a class="responsavel-editar responsavel-desvincular" href="{{ route('school.students.guardians.unlink.form', [...$parametrosResponsaveis, 'vinculo' => $vinculoResponsavel->id]) }}" aria-label="Desvincular {{ $responsavel->full_name }} do aluno">Desvincular</a>
+                        </div>
                     @endif
                 </li>
             @endforeach
