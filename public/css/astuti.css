@@ -501,3 +501,18 @@ select.entrada{cursor:pointer}
 .nota ul{margin:6px 0 0;padding-left:18px}
 .conf-confirmacao{margin-top:16px}
 .conf-fora{margin-top:22px}
+
+/* Ficha do aluno: identificação e endereço lado a lado no mesmo quadro */
+.ficha-grupos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;padding:0 22px 14px}
+.ficha-grupo h3{margin:4px 0 0;font-size:13px;font-weight:700;color:var(--tinta-3);text-transform:none}
+.ficha-escola .ficha-grupo dl{padding:2px 0 6px}
+.ficha-escola .ficha-grupo dd{max-width:62%;overflow-wrap:anywhere}
+.ficha-vazio{margin:10px 0 0;padding:12px 14px;border:1px dashed var(--pauta);border-radius:var(--raio-controle);color:var(--tinta-3);font-size:14px}
+.ficha-vazio a{display:inline-block;margin-left:4px;font-weight:700;color:var(--caneta)}
+@media (max-width:960px){.ficha-grupos{grid-template-columns:1fr}}
+/* Endereço no formulário: logradouro e número na mesma linha; bairro, CEP e zona na seguinte */
+@media (min-width:641px){
+    .grade-endereco{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .grade-endereco .end-logradouro{grid-column:span 3}
+    .grade-endereco .end-bairro{grid-column:span 2}
+}

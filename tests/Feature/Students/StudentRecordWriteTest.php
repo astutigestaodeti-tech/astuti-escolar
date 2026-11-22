@@ -361,9 +361,11 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
 
         $this->get($this->url('/'.$id))
             ->assertOk()
-            ->assertSee('Rua das Acácias')
+            ->assertSee('Rua das Acácias, 12B')
             ->assertSee('01234-567')
-            ->assertSee('Urbana');
+            ->assertSee('Urbana')
+            ->assertSee('Identificação')
+            ->assertDontSee('Endereço ainda não informado');
 
         $this->get($this->url('/'.$id.'/editar'))
             ->assertOk()
@@ -486,5 +488,23 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         ])->assertNotFound();
 
         $this->assertSame('Rua Fictícia Protegida', $this->noMunicipio($this->municipioA, fn (): ?string => Student::query()->findOrFail($id)->address_street));
+    }
+
+    public function test_ficha_sem_endereco_mostra_aviso_unico_e_atalho_para_informar(): void
+    {
+        $user = $this->conta('ficha-sem-endereco@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+        $this->post($this->url(), $this->dados())->assertRedirect();
+        $id = $this->noMunicipio($this->municipioA, fn (): string => Student::query()->firstOrFail()->id);
+
+        $html = $this->get($this->url('/'.$id))->assertOk()->getContent();
+        $this->assertStringContainsString('Endereço ainda não informado.', $html);
+        $this->assertStringContainsString('href="'.url($this->url('/'.$id.'/editar')).'#endereco"', $html);
+        $this->assertStringNotContainsString('Logradouro e número', $html, 'Sem endereço, nao repete "Nao informado" em cada campo.');
+
+        $this->get($this->url('/'.$id.'/editar'))->assertOk()->assertSee('id="endereco"', false);
+        $css = file_get_contents(public_path('css/astuti.css'));
+        $this->assertStringContainsString('.ficha-grupos{', $css);
+        $this->assertStringContainsString('.grade-endereco .end-logradouro{grid-column:span 3}', $css);
     }
 }

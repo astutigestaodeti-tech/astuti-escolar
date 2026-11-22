@@ -32,25 +32,42 @@
     @endif
 
     <div class="ficha-escola">
+        @php
+            $logradouro = trim(implode(', ', array_filter([$student->address_street, $student->address_number])));
+            $zona = ['urban' => 'Urbana', 'rural' => 'Rural'][$student->residence_zone ?? ''] ?? null;
+            $temEndereco = $logradouro !== '' || $student->address_district || $student->postal_code || $zona;
+            $editarEndereco = route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]).'#endereco';
+        @endphp
         <section class="folha" aria-labelledby="titulo-dados-aluno">
             <div class="folha-cabecalho"><div><h2 id="titulo-dados-aluno">Dados do aluno</h2><p>Informações disponíveis no cadastro municipal.</p></div></div>
-            <dl>
-                <div><dt>Nome completo</dt><dd>{{ $student->full_name }}</dd></div>
-                <div><dt>RA</dt><dd class="numero">{{ $student->ra ?? 'Não informado' }}</dd></div>
-                <div><dt>Ano de nascimento</dt><dd class="numero">{{ $student->birth_date?->format('Y') ?? 'Não informado' }}</dd></div>
-                <div><dt>Escola</dt><dd>{{ $school->name }}</dd></div>
-            </dl>
-        </section>
-
-        <section class="folha" aria-labelledby="titulo-endereco-aluno">
-            <div class="folha-cabecalho"><div><h2 id="titulo-endereco-aluno">Endereço</h2><p>Dados informados no cadastro municipal.</p></div></div>
-            <dl>
-                <div><dt>Logradouro</dt><dd>{{ $student->address_street ?? 'Não informado' }}</dd></div>
-                <div><dt>Número</dt><dd>{{ $student->address_number ?? 'Não informado' }}</dd></div>
-                <div><dt>Bairro</dt><dd>{{ $student->address_district ?? 'Não informado' }}</dd></div>
-                <div><dt>CEP</dt><dd class="numero">{{ $student->postal_code ?? 'Não informado' }}</dd></div>
-                <div><dt>Zona de residência</dt><dd>{{ ['urban' => 'Urbana', 'rural' => 'Rural'][$student->residence_zone] ?? 'Não informada' }}</dd></div>
-            </dl>
+            <div class="ficha-grupos">
+                <div class="ficha-grupo" aria-labelledby="titulo-identificacao">
+                    <h3 id="titulo-identificacao">Identificação</h3>
+                    <dl>
+                        <div><dt>Nome completo</dt><dd>{{ $student->full_name }}</dd></div>
+                        <div><dt>RA</dt><dd class="numero">{{ $student->ra ?? 'Não informado' }}</dd></div>
+                        <div><dt>Ano de nascimento</dt><dd class="numero">{{ $student->birth_date?->format('Y') ?? 'Não informado' }}</dd></div>
+                        <div><dt>Escola</dt><dd>{{ $school->name }}</dd></div>
+                    </dl>
+                </div>
+                <div class="ficha-grupo" aria-labelledby="titulo-endereco-aluno">
+                    <h3 id="titulo-endereco-aluno">Endereço</h3>
+                    @if ($temEndereco)
+                        <dl>
+                            <div><dt>Logradouro e número</dt><dd>{{ $logradouro !== '' ? $logradouro : 'Não informado' }}</dd></div>
+                            <div><dt>Bairro</dt><dd>{{ $student->address_district ?? 'Não informado' }}</dd></div>
+                            <div><dt>CEP</dt><dd class="numero">{{ $student->postal_code ?? 'Não informado' }}</dd></div>
+                            <div><dt>Zona</dt><dd>{{ $zona ?? 'Não informada' }}</dd></div>
+                        </dl>
+                    @else
+                        <p class="ficha-vazio">Endereço ainda não informado.
+                            @if ($canManage)
+                                <a href="{{ $editarEndereco }}">Informar endereço</a>
+                            @endif
+                        </p>
+                    @endif
+                </div>
+            </div>
         </section>
 
         <section class="folha cartao" aria-labelledby="titulo-vinculos">
