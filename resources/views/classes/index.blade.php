@@ -40,7 +40,7 @@
                     <tbody>
                     @foreach ($classes as $class)
                         <tr>
-                            <td><strong>{{ $class->name }}</strong></td>
+                            <td><a class="turma-link" href="{{ route('school.classes.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $class->id]) }}"><strong>{{ $class->name }}</strong></a></td>
                             <td>{{ $class->stage }}</td>
                             <td>{{ $class->modality }}</td>
                             <td>{{ $class->shift }}</td>
