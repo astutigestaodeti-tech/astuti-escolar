@@ -1,5 +1,11 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-22 | Cadastro manual | Explicação para CEP geral do município
+
+- Consulta de CEP sem logradouro e bairro, mas com cidade e UF, informa que é um CEP geral e orienta a preencher os campos restantes. O aviso de cache antigo e a consulta de CEP específico são preservados.
+- Testes de interface simulam o CEP geral de Santa Isabel/SP, a consulta específica, cache desatualizado e a manutenção dos campos manuais. Nenhuma migração, controlador ou dado foi alterado.
+
+
 ## 2026-11-21 | Cadastro manual | CEP primeiro e endereço assistido
 
 - CEP passa a abrir o grupo de endereço; consulta ViaCEP pelo servidor, com cache PostgreSQL próprio do município (30 dias), limite de requisições, autorização escolar e segundo fator confirmado.

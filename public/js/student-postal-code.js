@@ -14,6 +14,18 @@ export function shouldApplySuggestion(current, valueAtLookup, suggestion) {
     return typeof suggestion === 'string' && suggestion.trim() !== '' && current === valueAtLookup;
 }
 
+export function postalLookupMessage(data) {
+    if (data.source === 'stale') {
+        return 'Endereço sugerido com dados salvos anteriormente. Confirme antes de gravar.';
+    }
+
+    if (!data.street?.trim() && !data.district?.trim() && data.city?.trim() && data.state?.trim()) {
+        return `CEP geral do município. Encontramos ${data.city}/${data.state}. Como este CEP não identifica uma rua específica, informe o logradouro, número e bairro para completar o endereço.`;
+    }
+
+    return 'Endereço encontrado. Confira os dados e complete o número, se necessário.';
+}
+
 function bootPostalLookup() {
     const group = document.querySelector('[data-postal-lookup-url]');
     if (!group) return;
@@ -77,9 +89,7 @@ function bootPostalLookup() {
             });
             cep.value = formatPostalCode(cep.value);
             lastSuccess = digits;
-            status.textContent = data.source === 'stale'
-                ? 'Endereço sugerido com dados salvos anteriormente. Confirme antes de gravar.'
-                : 'Endereço encontrado. Confira os dados e complete o número, se necessário.';
+            status.textContent = postalLookupMessage(data);
         } catch (error) {
             if (error.name !== 'AbortError' && thisSequence === sequence) {
                 status.textContent = 'Consulta indisponível. Você pode preencher o endereço manualmente.';
