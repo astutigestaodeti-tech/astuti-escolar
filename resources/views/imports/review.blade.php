@@ -18,7 +18,7 @@
             'homonimo' => ['name' => 'homonimos[]', 'label' => 'É outra pessoa. Autorizo cadastrar um novo aluno.'],
             'leitura' => ['name' => 'leituras[]', 'label' => 'Conferi nome, data e RA com o documento.'],
         ];
-        // Dados que esta etapa não grava: ficam para completar no cadastro de cada aluno.
+        // Dados que esta etapa não grava (o transporte tem importação própria).
         $laterLabels = [
             'cep' => 'CEP',
             'endereco' => 'endereço completo',
@@ -80,7 +80,7 @@
     @if ($later !== [])
         <div class="nota conf-depois"><x-icon name="info" /><div>
             <strong>Fica para completar depois</strong>
-            <p>A importação grava nome, data de nascimento, RA e turma. Estes dados não vêm no arquivo ou não são gravados nesta etapa, e podem ser completados depois no cadastro de cada aluno:
+            <p>A importação grava nome, data de nascimento, RA e turma. Os dados abaixo não vêm no arquivo ou ainda não são gravados pelo sistema, e não impedem a importação:
                 @foreach ($later as $field => $total)
                     {{ $laterLabels[$field] }} ({{ $total }} {{ $total === 1 ? 'aluno' : 'alunos' }}){{ $loop->last ? '.' : ';' }}
                 @endforeach
