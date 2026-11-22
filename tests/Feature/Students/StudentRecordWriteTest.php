@@ -585,4 +585,63 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         $this->assertStringContainsString('.ficha-grupos{', $css);
         $this->assertStringContainsString('.grade-endereco .end-logradouro{grid-column:span 3}', $css);
     }
+
+    public function test_dados_do_censo_gravam_com_cpf_validado_e_auditoria_sem_valores_sensiveis(): void
+    {
+        $user = $this->conta('censo@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->post($this->url(), $this->dados([
+            'social_name' => '  Alex   Fictício ', 'sex' => 'male', 'race_color' => 'parda', 'nationality' => 'brasileira',
+            'birthplace_city' => 'Monte Sereno', 'birthplace_state' => 'sp', 'cpf' => '12345678909',
+        ]))->assertRedirect();
+
+        $aluno = $this->noMunicipio($this->municipioA, fn (): Student => Student::query()->firstOrFail());
+        $this->assertSame(
+            ['Alex Fictício', 'male', 'parda', 'brasileira', 'Monte Sereno', 'SP', '123.456.789-09'],
+            [$aluno->social_name, $aluno->sex, $aluno->race_color, $aluno->nationality, $aluno->birthplace_city, $aluno->birthplace_state, $aluno->cpf],
+        );
+
+        // A auditoria registra que cor/raça e CPF foram informados, sem guardar os valores.
+        $after = $this->noMunicipio($this->municipioA, fn (): array => AuditLog::query()
+            ->where('auditable_type', Student::class)->where('auditable_id', $aluno->id)->where('action', 'created')->firstOrFail()->after);
+        $this->assertSame('[REDACTED]', $after['race_color']);
+        $this->assertSame('[REDACTED]', $after['cpf']);
+        $this->assertSame('male', $after['sex']);
+
+        $this->get($this->url('/'.$aluno->id))->assertOk()
+            ->assertSee('Alex Fictício')->assertSee('Masculino')->assertSee('Parda')
+            ->assertSee('Monte Sereno/SP')->assertSee('123.456.789-09');
+    }
+
+    public function test_dados_do_censo_invalidos_ou_cpf_repetido_sao_recusados_com_mensagem_clara(): void
+    {
+        $user = $this->conta('censo-erros@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->post($this->url(), $this->dados(['cpf' => '123.456.789-00']))
+            ->assertSessionHasErrors(['cpf' => 'CPF inválido: os dígitos verificadores não conferem. Confira com o documento.']);
+        $this->post($this->url(), $this->dados(['cpf' => '111.111.111-11']))->assertSessionHasErrors('cpf');
+        $this->post($this->url(), $this->dados(['cpf' => '1234']))
+            ->assertSessionHasErrors(['cpf' => 'O CPF tem 11 números. Exemplo: 123.456.789-09.']);
+        $this->post($this->url(), $this->dados(['sex' => 'x', 'race_color' => 'azul', 'nationality' => 'marciana', 'birthplace_state' => 'XX']))
+            ->assertSessionHasErrors(['sex', 'race_color', 'nationality', 'birthplace_state']);
+
+        $this->post($this->url(), $this->dados(['cpf' => '529.982.247-25']))->assertRedirect();
+        $this->post($this->url(), $this->dados(['full_name' => 'Outra Criança Fictícia', 'ra' => null, 'cpf' => '52998224725']))
+            ->assertSessionHasErrors(['cpf' => 'Este CPF já está no cadastro de outro aluno da rede. Confira o documento.']);
+        $this->assertSame(1, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+    }
+
+    public function test_formulario_tem_o_grupo_do_censo_com_as_opcoes_do_educacenso(): void
+    {
+        $user = $this->conta('censo-form@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->get($this->url('/novo'))->assertOk()
+            ->assertSee('Dados do Censo Escolar')
+            ->assertSeeInOrder(['Branca', 'Preta', 'Parda', 'Amarela', 'Indígena', 'Não declarada'])
+            ->assertSee('Brasileira nascida no exterior ou naturalizada')
+            ->assertSee('id="cpf"', false);
+    }
 }
