@@ -2,8 +2,10 @@
 
 namespace App\Import\Students;
 
+use App\Address\BrazilianStates;
 use App\Import\Xlsx\XlsxReader;
 use App\Import\Xlsx\XlsxSheet;
+use App\Validation\Cpf;
 
 /**
  * Le a planilha de alunos de UMA escola e monta a previa da importacao.
@@ -290,7 +292,7 @@ final class StudentSpreadsheetPreview
             $place = ImportText::birthplace($raw);
             if (isset($columns['birthplace_state']) && $place['state'] === null) {
                 $uf = strtoupper((string) ImportText::clean($cell('birthplace_state')));
-                $place['state'] = isset(\App\Address\BrazilianStates::NAMES[$uf]) ? $uf : null;
+                $place['state'] = isset(BrazilianStates::NAMES[$uf]) ? $uf : null;
             }
             if ($place['city'] !== null) {
                 $census['birthplace_city'] = $place['city'];
@@ -305,8 +307,8 @@ final class StudentSpreadsheetPreview
 
         if (isset($columns['student_cpf'])) {
             $raw = ImportText::clean($cell('student_cpf'));
-            $cpf = $raw === null ? null : \App\Validation\Cpf::normalize($raw);
-            if ($cpf !== null && \App\Validation\Cpf::isValid($cpf)) {
+            $cpf = $raw === null ? null : Cpf::normalize($raw);
+            if ($cpf !== null && Cpf::isValid($cpf)) {
                 $census['cpf'] = $cpf;
             } elseif ($raw !== null) {
                 $student->addIssue(ImportIssue::PENDING, 'cpf', $cpf === null
