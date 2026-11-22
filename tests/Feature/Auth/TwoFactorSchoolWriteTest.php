@@ -141,4 +141,16 @@ class TwoFactorSchoolWriteTest extends TwoMunicipalityTestCase
             ->assertRedirect('/seguranca/segundo-fator');
         $this->assertNull($user->fresh()->two_factor_confirmed_at);
     }
+
+    public function test_voltar_da_seguranca_nao_aponta_para_endereco_de_envio(): void
+    {
+        $user = $this->criarUsuario('voltar-seguranca@example.invalid');
+        $iniciar = 'http://localhost/seguranca/segundo-fator/iniciar';
+
+        $this->actingAs($user)->withHeader('referer', $iniciar)
+            ->get('/seguranca/segundo-fator')
+            ->assertOk()
+            ->assertSee('href="'.route('home').'"', false)
+            ->assertDontSee('href="'.$iniciar.'"', false);
+    }
 }

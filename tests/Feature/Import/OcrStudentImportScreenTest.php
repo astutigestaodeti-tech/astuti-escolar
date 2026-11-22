@@ -119,6 +119,15 @@ class OcrStudentImportScreenTest extends TwoMunicipalityTestCase
 
         $this->post($this->url(self::ESCOLA_EMEI).'/confirmar', ['lote' => $token])->assertRedirect();
         $this->assertSame(40, $this->alunos());
+
+        // Depois de gravar, o navegador informa a conferencia (.../previa, so POST)
+        // como pagina anterior. O botao voltar nao pode levar para ela (erro 405).
+        $previa = 'http://localhost'.$this->url(self::ESCOLA_EMEI).'/previa';
+        $escola = route('schools.show', ['municipio' => 'municipio-a', 'escola' => self::ESCOLA_EMEI]);
+        $this->withHeader('referer', $previa)->get($this->url(self::ESCOLA_EMEI))
+            ->assertOk()
+            ->assertSee('href="'.$escola.'"', false)
+            ->assertDontSee('href="'.$previa.'"', false);
     }
 
     public function test_lista_escaneada_so_grava_depois_de_conferir_cada_leitura_duvidosa(): void
@@ -194,7 +203,9 @@ class OcrStudentImportScreenTest extends TwoMunicipalityTestCase
             ->assertOk()
             ->assertSee('Não foi possível concluir.')
             ->assertSee('Confirme explicitamente cada repetição de aluno antes de gravar.');
-        $this->get($this->url(self::ESCOLA_A1).'/previa')->assertStatus(405);
+        $this->get($this->url(self::ESCOLA_A1).'/previa')->assertStatus(405)
+            ->assertSee('Esta página não abre pelo endereço')
+            ->assertDontSee('MethodNotAllowedHttpException');
     }
 
     public function test_arquivo_com_extensao_trocada_e_recusado(): void

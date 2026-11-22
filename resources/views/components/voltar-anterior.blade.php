@@ -29,9 +29,21 @@
             $outraPagina = rtrim($path, '/') !== rtrim(request()->getPathInfo(), '/')
                 || (string) ($url['query'] ?? '') !== (string) (request()->getQueryString() ?? '');
 
+            // A página anterior pode ter sido resposta a um envio (POST), como a
+            // conferência da importação em .../previa. Abrir esse endereço com GET
+            // dá erro 405; só voltar para endereços que existem como página.
+            $abrePorGet = false;
+            if ($mesmaOrigem && $mesmaPrefeitura && $caminhoSeguro && $outraPagina) {
+                try {
+                    $abrePorGet = app('router')->getRoutes()->match(\Illuminate\Http\Request::create($path, 'GET')) !== null;
+                } catch (\Symfony\Component\HttpKernel\Exception\HttpException) {
+                    $abrePorGet = false;
+                }
+            }
+
             // Referer é controlado pelo cliente: nunca usá-lo para sair do domínio
             // ou retornar a outra Prefeitura. Se faltar, manter a rota autorizada.
-            if ($mesmaOrigem && $mesmaPrefeitura && $caminhoSeguro && $outraPagina) {
+            if ($mesmaOrigem && $mesmaPrefeitura && $caminhoSeguro && $outraPagina && $abrePorGet) {
                 $destino = $origem;
             }
         }
