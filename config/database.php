@@ -32,6 +32,28 @@ return [
 
     'connections' => [
 
+        // Instancia independente por prefeitura: banco central PostgreSQL local.
+        // Nunca aceitar URL que sobrescreva host e nome do banco explicitamente configurados.
+        'platform' => [
+            'driver' => 'pgsql',
+            'url' => null,
+            'host' => env('PLATFORM_DB_HOST', '127.0.0.1'),
+            'port' => env('PLATFORM_DB_PORT', '5432'),
+            'database' => env('PLATFORM_DB_DATABASE', ''),
+            'username' => env('PLATFORM_DB_USERNAME', ''),
+            'password' => env('PLATFORM_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('PLATFORM_DB_SSLMODE', 'prefer'),
+        ],
+
+        // Fora de um contexto autorizado, esta conexao falha fechada.
+        'tenant' => [
+            'driver' => 'astuti_tenant_disabled',
+        ],
+
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),

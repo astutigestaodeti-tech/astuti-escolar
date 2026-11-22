@@ -1,18 +1,38 @@
 *.log
 .DS_Store
+
+# Segredos e configuracoes locais
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
+!.env.testing.example
+.npmrc
 .phpactor.json
 .phpunit.result.cache
+/auth.json
+
+# Bases de desenvolvimento, backups e exportacoes privadas
+*.sqlite
+*.sqlite-*
+*.sql
+*.sql.gz
+*.bak
+/backups/
+/database/backups/
+/storage/app/private/*
+!/storage/app/private/.gitignore
+
+# Dependencias, caches e arquivos gerados
 /.codex
+/.superpowers/
+/.worktrees/
 /.cursor/
 /.idea
 /.nova
 /.phpunit.cache
 /.vscode
 /.zed
-/auth.json
+/bootstrap/cache/*.php
 /node_modules
 /public/build
 /public/fonts-manifest.dev.json

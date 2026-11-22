@@ -1,26 +1,31 @@
-# Instrucoes para agentes - Astuti Gestao Escolar
+# Regras do projeto Astuti Gestão Escolar
 
-Este repositorio pertence ao projeto comercial Astuti Gestao Escolar, da Astuti Gestao de TI, conduzido por Jefferson Astuti.
+## Contexto e segurança
 
-## Retomada obrigatoria
+- Jefferson Astuti conduz o projeto comercial. Responda em português brasileiro, com linguagem natural, direta e sem travessão longo.
+- Confira o registro existente em `HISTORICO.md` (ou `docs/continuidade/HISTORICO.md`, quando presente), o ponto de retomada disponível, branches, PRs, commits e CI antes de alterar código.
+- Produção: uma VPS, uma aplicação Laravel e dois bancos PostgreSQL locais privados (`platform` e `tenant`) exclusivos por Prefeitura. A instalação fica travada no município configurado. Não há VPS de produção compartilhada.
+- Preserve isolamento entre escolas e perfis, autenticação reforçada, auditoria obrigatória, LGPD e dados de menores. Use somente dados fictícios em testes.
+- Não altere dados, PostgreSQL original do notebook na porta 5432, MariaDB, backups ou `.env` sem aprovação específica. Não execute `DROP DATABASE`, `migrate:fresh`, `db:wipe` ou limpeza destrutiva em bases existentes.
+- Nunca publique segredos, senhas, dumps, documentos de estudantes ou dados reais no Git. Não faça merge nem deploy automaticamente. O usuário mescla os PRs.
 
-1. Antes de planejar, diagnosticar ou alterar o projeto, leia integralmente `docs/continuidade/README.md` e a entrada mais recente de `docs/continuidade/HISTORICO.md`.
-2. Confira a branch realmente em uso, os pull requests, os commits recentes, as alteracoes locais nao commitadas e a situacao dos testes. A branch `main` pode estar atras das branches de desenvolvimento.
-3. Use as especificacoes e os planos do repositorio como fonte tecnica, mas diferencie o que foi apenas planejado, o que existe no codigo e o que foi comprovado no notebook do usuario.
-4. Se o estado atual contradizer o registro anterior, apresente a divergencia, confirme com evidencias e atualize o historico. Nunca declare uma etapa concluida com base apenas em um plano ou em sucesso de CI.
-5. Ao final de cada marco de desenvolvimento ou sessao relevante, atualize o ponto de retomada e acrescente uma entrada datada em `HISTORICO.md`: pedido, decisoes, arquivos/commits/PRs, testes com resultado, estado do banco, pendencias e proxima acao segura.
+## Coordenação de desenvolvimento
 
-## Limites permanentes
+- Por decisão de Jefferson em 21/11/2026, o ChatGPT assume a coordenação técnica do Astuti e a execução dos blocos atribuídos. Claude pode revisar independentemente quando Jefferson solicitar. Nenhum assistente aprova merge por conta própria.
+- Antes de programar, faça um inventário dos PRs abertos e de suas bases; não altere branches de outras frentes. Use um PR pequeno por objetivo, com CI, sem merge ou deploy automáticos.
 
-- Escreva para Jefferson em portugues brasileiro, com clareza, naturalidade e sem travessao longo.
-- Preserve dados e configuracoes existentes. Nunca execute `migrate:fresh`, `db:wipe`, `DROP DATABASE`, limpeza de arquivos ou comandos equivalentes sem identificar o alvo e obter autorizacao especifica.
-- O MariaDB local e a origem preservada da migracao. Os bancos PostgreSQL de desenvolvimento e de teste nao devem ser confundidos.
-- Nao grave no Git segredos, `.env`, tokens, senhas, dumps, dados escolares reais, documentos de criancas, prints com credenciais ou conversas pessoais alheias ao projeto.
-- Uma instalacao de producao por Prefeitura contratante, em VPS exclusivo quando contratado. No estado registrado em 21/11/2026 nao havia VPS contratado.
-- O ambiente atual e o notebook Windows 11 Pro com Debian/WSL2. Nao presumir que uma ferramenta executada pelo agente tenha acesso direto a esse notebook.
-- Respeite a cadeia de PRs ainda nao integrados e nao faca merges ou deployments automaticamente.
-- Priorize testes, isolamento, auditoria, LGPD, revisao humana das importacoes e uso de dados ficticios em desenvolvimento.
+## Modo de trabalho aprovado em 21/11/2026
 
-## Limite deste registro
+1. **Processo proporcional ao risco.** Correções pequenas de consulta, filtro, visual e texto dispensam novas especificações e planos em `docs/superpowers`. Entregue código e teste juntos em uma unidade lógica. Use o ciclo completo de análise, desenho, testes e revisão para importadores, integração SED, auditoria, permissões, segundo fator, exclusão, restauração e migrações de banco.
+2. **Commits por unidade lógica.** Teste, implementação e formatação do mesmo objetivo vão no mesmo commit. Não grave commits isolados de teste vermelho, estilo ou espaçamento. Execute Pint e testes antes de cada commit quando houver ambiente local; se isso não for possível, declare o limite e não afirme aprovação até o CI.
+3. **Somente código aprovado.** CI em `pull_request`, não em `push` para branches com PR aberto. Não anuncie conclusão com testes pendentes ou falhando. Corrija falhas antes de apresentar o bloco como pronto.
+4. **Histórico uma vez por sessão.** Faça uma entrada consolidada em `docs/continuidade/HISTORICO.md` no encerramento da sessão, em um único commit. Não atualize `main` a cada pequena etapa.
+5. **PR por objetivo.** Prefira PRs pequenos e revisáveis no mesmo dia. O PR #5 recebe apenas correções da migração PostgreSQL; telas e funções novas seguem em PRs próprios. Preserve a sequência de PRs existentes.
+6. **Isolamento de Prefeitura.** Mantenha a estrutura municipal e a trava no município configurado, sem ampliar artificialmente proteções nem criar novos testes cruzados entre Prefeituras. Continuam obrigatórios os testes de isolamento entre escolas e perfis.
+7. **Ordem funcional.** Após os ajustes críticos de migração: Incremento 03 com inclusão, edição, matrícula, transferência e exclusão justificada, tudo auditado e com segundo fator; em seguida importador até a pasta 02 do kit fictício Monte Sereno corresponder ao gabarito. Não priorize refinamentos de consultas.
+8. **Entregas em blocos.** Conclua um bloco funcional, valide-o e envie um único resumo com o que Jefferson deve testar no notebook.
 
-O historico e um resumo tecnico verificavel, nao uma copia automatica e integral dos chats. Atualize-o de forma deliberada apos cada sessao relevante. Nao prometa sincronizacao continua de mensagens sem existir uma integracao especifica.
+## Regras de implantação
+
+- Homologação e produção exigem configuração e contas próprias, verificação de permissões e backup/restauração testados. Não confunda o cluster fictício `55436` com o PostgreSQL original `5432`.
+- O PR #5 permanece rascunho até decisão expressa do usuário. A aprovação de CI não autoriza migração no Acer nem operação com dados reais.
