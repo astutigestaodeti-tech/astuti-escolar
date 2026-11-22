@@ -7,11 +7,13 @@
 - Produção: uma VPS, uma aplicação Laravel e dois bancos PostgreSQL locais privados (`platform` e `tenant`) exclusivos por Prefeitura. A instalação fica travada no município configurado. Não há VPS de produção compartilhada.
 - Preserve isolamento entre escolas e perfis, autenticação reforçada, auditoria obrigatória, LGPD e dados de menores. Use somente dados fictícios em testes.
 - Não altere dados, PostgreSQL original do notebook na porta 5432, MariaDB, backups ou `.env` sem aprovação específica. Não execute `DROP DATABASE`, `migrate:fresh`, `db:wipe` ou limpeza destrutiva em bases existentes.
-- Nunca publique segredos, senhas, dumps, documentos de estudantes ou dados reais no Git. Não faça merge nem deploy automaticamente. O usuário mescla os PRs.
+- Nunca publique segredos, senhas, dumps, documentos de estudantes ou dados reais no Git. Não faça deploy automaticamente. Merge só com CI verde e revisão (ver coordenação).
+- LGPD desde o desenho é obrigatória em toda tabela, tela, importação e API: siga `docs/arquitetura/lgpd-by-design.md` e diga no PR como a regra foi aplicada.
 
 ## Coordenação de desenvolvimento
 
-- Por decisão de Jefferson em 21/11/2026, o ChatGPT assume a coordenação técnica do Astuti e a execução dos blocos atribuídos. Claude pode revisar independentemente quando Jefferson solicitar. Nenhum assistente aprova merge por conta própria.
+- Por decisão de Jefferson em 22/11/2026, o Claude é o programador-chefe: distribui as tarefas, revisa e mescla os PRs com CI verde. O ChatGPT executa os blocos atribuídos. Instruções ao ChatGPT podem chegar pelo chat ou por issue no GitHub com o rótulo `chatgpt`; uma tarefa por vez.
+- Antes de diagnosticar problema relatado por Jefferson, confira no rodapé da tela a versão e o banco em uso.
 - Antes de programar, faça um inventário dos PRs abertos e de suas bases; não altere branches de outras frentes. Use um PR pequeno por objetivo, com CI, sem merge ou deploy automáticos.
 
 ## Modo de trabalho aprovado em 21/11/2026
