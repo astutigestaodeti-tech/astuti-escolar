@@ -427,6 +427,8 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $recoveryPlatform, $recoveryTenant, false));
         $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $recoveryPlatform, $recoveryTenant, true));
         $recovered = $this->snapshot($recoveryPlatform, $recoveryTenant);
+        $this->assertTargetOnlyDefaults($recovered);
+        $recovered = $this->withoutTargetOnlyColumns($recovered);
         foreach ($sourceBefore as $database => $tables) {
             foreach ($tables as $table => $rows) {
                 $this->assertCopiedRowsMatch($rows, $recovered[$database][$table], $table);
