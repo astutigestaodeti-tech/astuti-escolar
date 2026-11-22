@@ -423,3 +423,11 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
     .app{display:block}
     .folha{box-shadow:none}
 }
+
+/* Segundo fator: QR Code e chave manual */
+.seguranca-qr{margin:18px auto 6px;width:min(240px,100%);padding:0;border:1px solid var(--linha);border-radius:var(--raio-controle);background:#fff;overflow:hidden}
+.seguranca-qr svg{display:block;width:100%;height:auto}
+.seguranca-manual{margin:8px 0 4px;font-size:14.5px;color:var(--tinta-2)}
+.seguranca-manual summary{cursor:pointer;font-weight:700;color:var(--caneta);padding:6px 0}
+.seguranca-manual p{margin:6px 0 0}
+.seguranca-manual .seguranca-chave{margin-top:10px}

@@ -52,11 +52,18 @@
             @elseif ($user->two_factor_pending_secret)
                 <div class="seguranca-passo">Etapa 2 de 2: confirmar seu aplicativo</div>
                 <ol class="seguranca-passos">
-                    <li>Abra o aplicativo autenticador no celular e escolha adicionar uma conta manualmente.</li>
-                    <li>Informe a chave abaixo como tipo <strong>baseado em tempo (TOTP)</strong>, com 6 dígitos a cada 30 segundos.</li>
-                    <li>Digite o código exibido pelo aplicativo para concluir.</li>
+                    <li>No aplicativo autenticador do celular, toque em adicionar conta e escolha <strong>ler QR Code</strong>.</li>
+                    <li>Aponte a câmera para o código abaixo.</li>
+                    <li>Digite o código de 6 dígitos que aparecer no aplicativo para concluir.</li>
                 </ol>
-                <div class="seguranca-chave" aria-label="Chave do autenticador"><code>{{ $user->two_factor_pending_secret }}</code></div>
+                @if ($qrCode)
+                    <figure class="seguranca-qr">{!! $qrCode !!}</figure>
+                @endif
+                <details class="seguranca-manual">
+                    <summary>A câmera não funcionou? Digite a chave</summary>
+                    <p>No aplicativo, escolha inserir a chave manualmente, tipo <strong>baseado em tempo (TOTP)</strong>, com 6 dígitos a cada 30 segundos.</p>
+                    <div class="seguranca-chave" aria-label="Chave do autenticador"><code>{{ $user->two_factor_pending_secret }}</code></div>
+                </details>
                 <form method="POST" action="{{ route('two-factor.confirm') }}" class="seguranca-form">
                     @csrf
                     <label class="rotulo" for="code">Código de 6 dígitos</label>
