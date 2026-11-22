@@ -121,6 +121,53 @@
                     @error('school_class_id')<p class="campo-erro" id="school_class_id-erro">{{ $message }}</p>@enderror
                     <p class="texto-ajuda">A turma deve pertencer a esta escola e ao mesmo ano letivo da matrícula. Se ainda não foi definida, deixe em branco.</p>
                 </div>
+
+                <fieldset class="grupo-endereco">
+                    <legend>Endereço</legend>
+                    <p class="texto-ajuda">Todos os campos são opcionais. Registre apenas informações confirmadas.</p>
+                    <div class="formulario-grade">
+                        <div class="formulario-campo largo">
+                            <label class="rotulo" for="address_street">Logradouro</label>
+                            <input class="entrada" id="address_street" name="address_street" type="text" maxlength="180"
+                                   value="{{ old('address_street', $student?->address_street) }}"
+                                   @error('address_street') aria-invalid="true" aria-describedby="address_street-erro" @enderror>
+                            @error('address_street')<p class="campo-erro" id="address_street-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="address_number">Número</label>
+                            <input class="entrada" id="address_number" name="address_number" type="text" maxlength="20"
+                                   value="{{ old('address_number', $student?->address_number) }}"
+                                   @error('address_number') aria-invalid="true" aria-describedby="address_number-erro" @enderror>
+                            @error('address_number')<p class="campo-erro" id="address_number-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="address_district">Bairro</label>
+                            <input class="entrada" id="address_district" name="address_district" type="text" maxlength="120"
+                                   value="{{ old('address_district', $student?->address_district) }}"
+                                   @error('address_district') aria-invalid="true" aria-describedby="address_district-erro" @enderror>
+                            @error('address_district')<p class="campo-erro" id="address_district-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="postal_code">CEP</label>
+                            <input class="entrada" id="postal_code" name="postal_code" type="text" maxlength="9" inputmode="numeric" autocomplete="postal-code"
+                                   placeholder="00000-000" value="{{ old('postal_code', $student?->postal_code) }}"
+                                   aria-describedby="{{ $errors->has('postal_code') ? 'postal_code-ajuda postal_code-erro' : 'postal_code-ajuda' }}"
+                                   @error('postal_code') aria-invalid="true" @enderror>
+                            <p class="texto-ajuda" id="postal_code-ajuda">Digite oito números ou use o formato 00000-000.</p>
+                            @error('postal_code')<p class="campo-erro" id="postal_code-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="residence_zone">Zona de residência</label>
+                            <select class="entrada" id="residence_zone" name="residence_zone"
+                                    @error('residence_zone') aria-invalid="true" aria-describedby="residence_zone-erro" @enderror>
+                                <option value="">Não informada</option>
+                                <option value="urban" @selected(old('residence_zone', $student?->residence_zone) === 'urban')>Urbana</option>
+                                <option value="rural" @selected(old('residence_zone', $student?->residence_zone) === 'rural')>Rural</option>
+                            </select>
+                            @error('residence_zone')<p class="campo-erro" id="residence_zone-erro">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                </fieldset>
             </div>
 
             @if (session('possivel_duplicidade'))

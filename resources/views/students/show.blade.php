@@ -42,6 +42,17 @@
             </dl>
         </section>
 
+        <section class="folha" aria-labelledby="titulo-endereco-aluno">
+            <div class="folha-cabecalho"><div><h2 id="titulo-endereco-aluno">Endereço</h2><p>Dados informados no cadastro municipal.</p></div></div>
+            <dl>
+                <div><dt>Logradouro</dt><dd>{{ $student->address_street ?? 'Não informado' }}</dd></div>
+                <div><dt>Número</dt><dd>{{ $student->address_number ?? 'Não informado' }}</dd></div>
+                <div><dt>Bairro</dt><dd>{{ $student->address_district ?? 'Não informado' }}</dd></div>
+                <div><dt>CEP</dt><dd class="numero">{{ $student->postal_code ?? 'Não informado' }}</dd></div>
+                <div><dt>Zona de residência</dt><dd>{{ ['urban' => 'Urbana', 'rural' => 'Rural'][$student->residence_zone] ?? 'Não informada' }}</dd></div>
+            </dl>
+        </section>
+
         <section class="folha cartao" aria-labelledby="titulo-vinculos">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-vinculos">Histórico de vínculos nesta escola</h2>

@@ -34,9 +34,30 @@ class StudentRecordController extends Controller
 
     private const RA_RULES = ['nullable', 'string', 'max:32', 'regex:/\\A\\d{9,12}-[\\dX]\\/[A-Z]{2}\\z/'];
 
-    private const RA_MESSAGES = ['ra.regex' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.'];
+    private const ADDRESS_FIELDS = ['address_street', 'address_number', 'address_district', 'postal_code', 'residence_zone'];
 
-    private const RA_ATTRIBUTES = ['ra' => 'RA'];
+    private const ADDRESS_RULES = [
+        'address_street' => ['nullable', 'string', 'max:180'],
+        'address_number' => ['nullable', 'string', 'max:20'],
+        'address_district' => ['nullable', 'string', 'max:120'],
+        'postal_code' => ['nullable', 'string', 'regex:/\\A\\d{5}-\\d{3}\\z/'],
+        'residence_zone' => ['nullable', 'in:urban,rural'],
+    ];
+
+    private const VALIDATION_MESSAGES = [
+        'ra.regex' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.',
+        'postal_code.regex' => 'Informe o CEP no formato 00000-000.',
+        'residence_zone.in' => 'Selecione a zona de residência: Urbana ou Rural.',
+    ];
+
+    private const VALIDATION_ATTRIBUTES = [
+        'ra' => 'RA',
+        'address_street' => 'Logradouro',
+        'address_number' => 'Número',
+        'address_district' => 'Bairro',
+        'postal_code' => 'CEP',
+        'residence_zone' => 'Zona de residência',
+    ];
 
     public function create(Request $request, string $municipio, string $escola): View|RedirectResponse
     {
@@ -64,15 +85,17 @@ class StudentRecordController extends Controller
             'full_name' => $this->normalizeName($request->input('full_name')),
             'ra' => $this->normalizeRa($request->input('ra')),
         ]);
+        $this->normalizeAddressInput($request);
         $data = $request->validate([
             'full_name' => self::NAME_RULES,
             'birth_date' => self::BIRTH_RULES,
             'ra' => self::RA_RULES,
+            ...self::ADDRESS_RULES,
             'school_class_id' => ['nullable', 'uuid'],
             'school_year_id' => ['required', 'uuid'],
             'started_at' => ['nullable', 'date_format:Y-m-d'],
             'confirmar_duplicidade' => ['nullable', 'boolean'],
-        ], self::RA_MESSAGES, self::RA_ATTRIBUTES);
+        ], self::VALIDATION_MESSAGES, self::VALIDATION_ATTRIBUTES);
 
         $this->assertRaAvailable($data['ra'] ?? null);
 
@@ -104,6 +127,11 @@ class StudentRecordController extends Controller
                     'full_name' => $data['full_name'],
                     'birth_date' => $data['birth_date'] ?? null,
                     'ra' => $data['ra'] ?? null,
+                    'address_street' => $data['address_street'] ?? null,
+                    'address_number' => $data['address_number'] ?? null,
+                    'address_district' => $data['address_district'] ?? null,
+                    'postal_code' => $data['postal_code'] ?? null,
+                    'residence_zone' => $data['residence_zone'] ?? null,
                 ]);
 
                 StudentEnrollment::query()->create([
@@ -160,26 +188,32 @@ class StudentRecordController extends Controller
         $this->activeStudentOf($school)->findOrFail($aluno);
 
         $raSubmitted = $request->exists('ra');
+        $addressFieldsSubmitted = array_values(array_filter(
+            self::ADDRESS_FIELDS,
+            fn (string $field): bool => $request->exists($field),
+        ));
         $request->merge([
             'full_name' => $this->normalizeName($request->input('full_name')),
             'ra' => $this->normalizeRa($request->input('ra')),
         ]);
+        $this->normalizeAddressInput($request);
         $data = $request->validate([
             'full_name' => self::NAME_RULES,
             'birth_date' => self::BIRTH_RULES,
             'ra' => self::RA_RULES,
+            ...self::ADDRESS_RULES,
             'school_class_id' => ['nullable', 'uuid'],
             'enrollment_id' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'uuid'],
             'versao_matricula' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'string', 'max:40'],
             'versao' => ['required', 'string', 'max:40'],
-        ], self::RA_MESSAGES, self::RA_ATTRIBUTES);
+        ], self::VALIDATION_MESSAGES, self::VALIDATION_ATTRIBUTES);
 
         if ($raSubmitted) {
             $this->assertRaAvailable($data['ra'] ?? null, $aluno);
         }
 
         try {
-            $changed = DB::connection('tenant')->transaction(function () use ($aluno, $school, $data, $request, $raSubmitted): bool {
+            $changed = DB::connection('tenant')->transaction(function () use ($aluno, $school, $data, $request, $raSubmitted, $addressFieldsSubmitted): bool {
                 $locked = Student::query()->selectRaw('students.*, xmin::text AS row_token')->lockForUpdate()->findOrFail($aluno);
                 $enrollmentQuery = $this->activeEnrollmentOf($school, $aluno);
                 if (! empty($data['enrollment_id'])) {
@@ -208,11 +242,15 @@ class StudentRecordController extends Controller
                     }
                 }
 
-                $locked->fill([
+                $studentData = [
                     'full_name' => $data['full_name'],
                     'birth_date' => $data['birth_date'] ?? null,
                     'ra' => $raSubmitted ? ($data['ra'] ?? null) : $locked->ra,
-                ]);
+                ];
+                foreach ($addressFieldsSubmitted as $field) {
+                    $studentData[$field] = $data[$field] ?? null;
+                }
+                $locked->fill($studentData);
                 $studentDirty = $locked->isDirty();
 
                 if ($request->exists('school_class_id')) {
@@ -332,6 +370,44 @@ class StudentRecordController extends Controller
         }
 
         throw $exception;
+    }
+
+    /** Normaliza os dados opcionais sem aceitar letras ou pontuação indevida no CEP. */
+    private function normalizeAddressInput(Request $request): void
+    {
+        $request->merge([
+            'address_street' => $this->normalizeAddressPart($request->input('address_street')),
+            'address_number' => $this->normalizeAddressPart($request->input('address_number')),
+            'address_district' => $this->normalizeAddressPart($request->input('address_district')),
+            'postal_code' => $this->normalizePostalCode($request->input('postal_code')),
+        ]);
+    }
+
+    private function normalizeAddressPart(mixed $value): mixed
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        $value = preg_replace('/\\s+/u', ' ', trim($value));
+
+        return $value === '' ? null : $value;
+    }
+
+    private function normalizePostalCode(mixed $value): mixed
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        return preg_match('/\\A\\d{8}\\z/', $value) === 1
+            ? substr($value, 0, 5).'-'.substr($value, 5)
+            : $value;
     }
 
     private function normalizeRa(mixed $ra): mixed

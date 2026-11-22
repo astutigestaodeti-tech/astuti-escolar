@@ -98,7 +98,7 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
                 $this->assertSame([], array_diff($sourceColumns, $targetColumns), $table);
                 $this->assertEqualsCanonicalizing(
                     match ($table) {
-                        'students' => ['ra'],
+                        'students' => ['ra', 'address_street', 'address_number', 'address_district', 'postal_code', 'residence_zone'],
                         'student_enrollments' => ['school_class_id', 'transport_status'],
                         default => [],
                     },

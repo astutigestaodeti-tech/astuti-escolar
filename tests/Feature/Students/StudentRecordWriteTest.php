@@ -10,6 +10,7 @@ use App\Models\Tenant\StudentEnrollment;
 use App\Models\User;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
@@ -311,5 +312,172 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
 
         $this->get($this->url('/'.$alheio.'/editar'))->assertNotFound();
         $this->put($this->url('/'.$alheio), ['full_name' => 'Tentativa Fictícia', 'versao' => 'x'])->assertNotFound();
+    }
+
+    public function test_cadastro_e_edicao_de_endereco_com_cep_formatado_ficha_e_auditoria(): void
+    {
+        $user = $this->conta('endereco-ficticio@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->get($this->url('/novo'))
+            ->assertOk()
+            ->assertSee('Endereço')
+            ->assertSee('name="address_street"', false)
+            ->assertSee('name="postal_code"', false)
+            ->assertSee('value="urban"', false)
+            ->assertSee('value="rural"', false);
+
+        $this->post($this->url(), $this->dados([
+            'address_street' => ' Rua das Acácias ',
+            'address_number' => ' 12B ',
+            'address_district' => ' Jardim Fictício ',
+            'postal_code' => '01234567',
+            'residence_zone' => 'urban',
+        ]))->assertRedirect();
+
+        [$id, $versao, $created] = $this->noMunicipio($this->municipioA, function (): array {
+            $student = Student::query()->firstOrFail();
+            $audit = AuditLog::query()->where('auditable_type', Student::class)->where('action', 'created')->firstOrFail();
+
+            return [
+                $student->id,
+                DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token,
+                $audit->after,
+            ];
+        });
+
+        $this->assertSame('Rua das Acácias', $created['address_street']);
+        $this->assertSame('12B', $created['address_number']);
+        $this->assertSame('Jardim Fictício', $created['address_district']);
+        $this->assertSame('01234-567', $created['postal_code']);
+        $this->assertSame('urban', $created['residence_zone']);
+
+        $this->get($this->url('/'.$id))
+            ->assertOk()
+            ->assertSee('Rua das Acácias')
+            ->assertSee('01234-567')
+            ->assertSee('Urbana');
+
+        $this->get($this->url('/'.$id.'/editar'))
+            ->assertOk()
+            ->assertSee('value="01234-567"', false);
+
+        $this->put($this->url('/'.$id), [
+            'full_name' => 'Lívia Fictícia de Souza',
+            'birth_date' => '2019-05-10',
+            'versao' => $versao,
+            'address_street' => 'Avenida dos Ipês',
+            'address_number' => 'S/N',
+            'address_district' => 'Bairro Modelo',
+            'postal_code' => '98765-432',
+            'residence_zone' => 'rural',
+        ])->assertRedirect($this->url('/'.$id));
+
+        [$student, $updated] = $this->noMunicipio($this->municipioA, function () use ($id): array {
+            return [
+                Student::query()->findOrFail($id),
+                AuditLog::query()->where('auditable_type', Student::class)->where('auditable_id', $id)
+                    ->where('action', 'updated')->firstOrFail(),
+            ];
+        });
+
+        $this->assertSame('Avenida dos Ipês', $student->address_street);
+        $this->assertSame('S/N', $student->address_number);
+        $this->assertSame('Bairro Modelo', $student->address_district);
+        $this->assertSame('98765-432', $student->postal_code);
+        $this->assertSame('rural', $student->residence_zone);
+        $this->assertSame('Rua das Acácias', $updated->before['address_street']);
+        $this->assertSame('Avenida dos Ipês', $updated->after['address_street']);
+        $this->assertSame('01234-567', $updated->before['postal_code']);
+        $this->assertSame('98765-432', $updated->after['postal_code']);
+        $this->assertSame('urban', $updated->before['residence_zone']);
+        $this->assertSame('rural', $updated->after['residence_zone']);
+
+        $this->get($this->url('/'.$id))->assertOk()->assertSee('Rural')->assertSee('98765-432');
+
+        // PUT antigo que não envia endereço não apaga os dados já gravados.
+        $versaoNova = $this->noMunicipio($this->municipioA, fn (): string => DB::connection('tenant')
+            ->table('students')->where('id', $id)->selectRaw('xmin::text AS token')->first()->token);
+        $this->put($this->url('/'.$id), [
+            'full_name' => 'Lívia Fictícia Revisada',
+            'birth_date' => '2019-05-10',
+            'versao' => $versaoNova,
+        ])->assertRedirect($this->url('/'.$id));
+        $this->assertSame('98765-432', $this->noMunicipio($this->municipioA, fn (): ?string => Student::query()->findOrFail($id)->postal_code));
+
+        $versaoLimpeza = $this->noMunicipio($this->municipioA, fn (): string => DB::connection('tenant')
+            ->table('students')->where('id', $id)->selectRaw('xmin::text AS token')->first()->token);
+        $this->put($this->url('/'.$id), [
+            'full_name' => 'Lívia Fictícia Revisada',
+            'birth_date' => '2019-05-10',
+            'versao' => $versaoLimpeza,
+            'address_number' => '',
+        ])->assertRedirect($this->url('/'.$id));
+        [$number, $street] = $this->noMunicipio($this->municipioA, fn (): array => [
+            Student::query()->findOrFail($id)->address_number,
+            Student::query()->findOrFail($id)->address_street,
+        ]);
+        $this->assertNull($number);
+        $this->assertSame('Avenida dos Ipês', $street);
+    }
+
+    public function test_cep_invalido_e_zona_desconhecida_sao_recusados_em_portugues(): void
+    {
+        $user = $this->conta('endereco-invalido@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->post($this->url(), $this->dados([
+            'postal_code' => '12A45678',
+            'residence_zone' => 'litoral',
+        ]))->assertSessionHasErrors([
+            'postal_code' => 'Informe o CEP no formato 00000-000.',
+            'residence_zone' => 'Selecione a zona de residência: Urbana ou Rural.',
+        ]);
+
+        $this->post($this->url(), $this->dados(['postal_code' => '1234-567']))
+            ->assertSessionHasErrors(['postal_code' => 'Informe o CEP no formato 00000-000.']);
+
+        $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+    }
+
+    public function test_check_municipal_impede_zona_fora_de_urban_ou_rural(): void
+    {
+        $user = $this->conta('endereco-check@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+        $this->post($this->url(), $this->dados())->assertRedirect();
+
+        try {
+            $this->noMunicipio($this->municipioA, fn () => DB::connection('tenant')->table('students')
+                ->update(['residence_zone' => 'other']));
+            $this->fail('A constraint municipal precisa recusar uma zona não permitida.');
+        } catch (QueryException $exception) {
+            $this->assertSame('23514', $exception->getCode());
+        }
+    }
+
+    public function test_endereco_do_aluno_nao_vaza_para_outra_escola(): void
+    {
+        $secretaria = $this->conta('endereco-escola-a@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($secretaria);
+        $this->post($this->url(), $this->dados([
+            'address_street' => 'Rua Fictícia Protegida',
+            'postal_code' => '01001000',
+        ]))->assertRedirect();
+
+        $id = $this->noMunicipio($this->municipioA, fn (): string => Student::query()->firstOrFail()->id);
+
+        $outra = $this->conta('endereco-escola-b@example.invalid', 'school_secretary', [self::ESCOLA_A2]);
+        $this->entrarComSegundoFator($outra);
+        $url = '/m/municipio-a/escolas/'.self::ESCOLA_A2.'/alunos/'.$id;
+
+        $this->get($url)->assertNotFound()->assertDontSee('Rua Fictícia Protegida');
+        $this->get($url.'/editar')->assertNotFound();
+        $this->put($url, [
+            'full_name' => 'Tentativa Fictícia Externa',
+            'versao' => 'x',
+            'address_street' => 'Endereço Indevido',
+        ])->assertNotFound();
+
+        $this->assertSame('Rua Fictícia Protegida', $this->noMunicipio($this->municipioA, fn (): ?string => Student::query()->findOrFail($id)->address_street));
     }
 }

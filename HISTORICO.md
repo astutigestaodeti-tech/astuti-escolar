@@ -1,6 +1,16 @@
 # HISTORICO DE DESENVOLVIMENTO
 
 
+## 2026-11-21 | Cadastro manual | Endereço opcional de alunos
+
+- Migração municipal aditiva inclui logradouro, número, bairro, CEP e zona de residência, todos opcionais, com CHECK PostgreSQL para `urban` ou `rural`.
+- Cadastro e edição normalizam CEP de oito dígitos, validam campos em português, preservam valores não enviados e permitem limpar campos intencionalmente.
+- Formulário e ficha exibem endereço; a auditoria registra alterações antes/depois sem ampliar permissões escolares.
+- Testes fictícios cobrem inclusão, alteração, CEP, zona, CHECK no banco, valores vazios, auditoria e isolamento por escola. Pint e CI são condições da entrega.
+- Nenhum importador de planilhas ou OCR, tela de importação, segundo fator, banco original ou ramo de outro PR foi alterado.
+
+
+
 ## 2026-11-21 | Cadastro manual | Orientacao do formato RA SED
 
 - Criacao e edicao manual de alunos exibem erro especifico ao informar RA fora do padrao SED, e o atributo recebe o nome "RA" nas mensagens da validacao.

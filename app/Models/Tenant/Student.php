@@ -13,7 +13,10 @@ class Student extends TenantModel
 
     public $incrementing = false;
 
-    protected $fillable = ['id', 'full_name', 'birth_date', 'ra'];
+    protected $fillable = [
+        'id', 'full_name', 'birth_date', 'ra',
+        'address_street', 'address_number', 'address_district', 'postal_code', 'residence_zone',
+    ];
 
     protected function casts(): array
     {
