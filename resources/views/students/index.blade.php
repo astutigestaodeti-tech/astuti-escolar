@@ -51,12 +51,12 @@
         @else
             <div class="rolagem">
                 <table class="tabela">
-                    <thead><tr><th scope="col">Aluno</th><th scope="col">Ano de nascimento</th></tr></thead>
+                    <thead><tr><th scope="col">Aluno</th><th scope="col">Data de nascimento</th></tr></thead>
                     <tbody>
                     @foreach ($students as $student)
                         <tr>
                             <td><a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}" aria-label="Abrir ficha de {{ $student->full_name }}"><strong>{{ $student->full_name }}</strong></a></td>
-                            <td class="numero">{{ $student->birth_date?->format('Y') ?? 'Não informado' }}</td>
+                            <td class="numero">{{ $student->birth_date?->format('d/m/Y') ?? 'Não informada' }}</td>
                         </tr>
                     @endforeach
                     </tbody>

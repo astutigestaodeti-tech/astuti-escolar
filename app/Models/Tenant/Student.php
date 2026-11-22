@@ -3,6 +3,7 @@
 namespace App\Models\Tenant;
 
 use App\Models\Tenant\Concerns\HasSchoolHistory;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends TenantModel
@@ -22,6 +23,16 @@ class Student extends TenantModel
     protected function casts(): array
     {
         return ['birth_date' => 'date'];
+    }
+
+    /** Anos completos numa data; null sem nascimento ou com data anterior a ele. */
+    public function ageOn(DateTimeInterface $date): ?int
+    {
+        if ($this->birth_date === null || $this->birth_date->greaterThan($date)) {
+            return null;
+        }
+
+        return (int) $this->birth_date->diffInYears($date);
     }
 
     public function enrollments(): HasMany
