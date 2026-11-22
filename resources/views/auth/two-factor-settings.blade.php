@@ -59,6 +59,7 @@
                 @if ($qrCode)
                     <figure class="seguranca-qr">{!! $qrCode !!}</figure>
                 @endif
+                <p class="seguranca-aviso">Já tinha cadastrado o Astuti no aplicativo antes? Apague só a conta Astuti antiga (as dos outros sistemas continuam) e leia este código de novo. A conta antiga gera números que não valem mais.</p>
                 <details class="seguranca-manual">
                     <summary>A câmera não funcionou? Digite a chave</summary>
                     <p>No aplicativo, escolha inserir a chave manualmente, tipo <strong>baseado em tempo (TOTP)</strong>, com 6 dígitos a cada 30 segundos.</p>

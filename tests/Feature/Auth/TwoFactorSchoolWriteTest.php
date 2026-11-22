@@ -108,6 +108,7 @@ class TwoFactorSchoolWriteTest extends TwoMunicipalityTestCase
             ->assertSee('<svg xmlns="http://www.w3.org/2000/svg"', false)
             ->assertSee('aria-label="QR Code para cadastrar no aplicativo autenticador"', false)
             ->assertSee($user->two_factor_pending_secret)
+            ->assertSee('Apague só a conta Astuti antiga')
             ->assertDontSee('chart.googleapis', false)
             ->assertDontSee('api.qrserver', false);
 
