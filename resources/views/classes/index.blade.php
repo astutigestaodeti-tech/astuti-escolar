@@ -17,17 +17,26 @@
             <h1>Turmas de {{ $school->name }}</h1>
             <p>Somente as turmas ativas desta unidade.</p>
         </div>
-        <span class="marcador"><x-icon name="turmas" :size="16" /> {{ $classes->count() }} {{ $classes->count() === 1 ? 'turma' : 'turmas' }}</span>
+        <div class="acoes-titulo">
+            <span class="marcador"><x-icon name="turmas" :size="16" /> {{ $classes->count() }} {{ $classes->count() === 1 ? 'turma' : 'turmas' }}</span>
+            @if ($canManage)
+                <a class="botao" href="{{ route('school.classes.create', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="turmas" :size="16" /> Nova turma</a>
+            @endif
+        </div>
     </div>
+
+    @if (session('status'))
+        <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
+    @endif
 
     <section class="folha" aria-labelledby="titulo-tabela">
         <div class="folha-cabecalho"><div><h2 id="titulo-tabela">Turmas ativas</h2><p>Etapa, modalidade, turno e vagas de cada turma.</p></div></div>
         @if ($classes->isEmpty())
-            <div class="vazio">Nenhuma turma ativa cadastrada nesta escola. As turmas aparecem aqui assim que a Secretaria abrir o ano letivo.</div>
+            <div class="vazio">Nenhuma turma ativa cadastrada nesta escola. Quem tem permissão de gestão pode usar o botão Nova turma.</div>
         @else
             <div class="rolagem">
                 <table class="tabela">
-                    <thead><tr><th scope="col">Turma</th><th scope="col">Etapa</th><th scope="col">Modalidade</th><th scope="col">Turno</th><th scope="col">Vagas</th><th scope="col">Ano letivo</th></tr></thead>
+                    <thead><tr><th scope="col">Turma</th><th scope="col">Etapa</th><th scope="col">Modalidade</th><th scope="col">Turno</th><th scope="col">Vagas</th><th scope="col">Ano letivo</th>@if ($canManage)<th scope="col">Ações</th>@endif</tr></thead>
                     <tbody>
                     @foreach ($classes as $class)
                         <tr>
@@ -37,6 +46,9 @@
                             <td>{{ $class->shift }}</td>
                             <td class="numero">{{ $class->capacity !== null ? $class->capacity.' vagas' : 'Não informada' }}</td>
                             <td><span class="etiqueta neutra numero">{{ $class->schoolYear->year }}</span></td>
+                            @if ($canManage)
+                                <td><a href="{{ route('school.classes.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $class->id]) }}">Editar</a></td>
+                            @endif
                         </tr>
                     @endforeach
                     </tbody>
@@ -45,5 +57,9 @@
         @endif
     </section>
 
-    <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta, por enquanto</strong><p>Alterações em anos e turmas permanecem indisponíveis até a ativação da autenticação reforçada e da auditoria.</p></div></div>
+    @if ($canManage)
+        <div class="nota"><x-icon name="escudo" /><div><strong>Cadastro de turmas liberado</strong><p>Para incluir ou editar turmas, confirme o segundo fator. Toda alteração é auditada.</p></div></div>
+    @else
+        <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta</strong><p>Sua conta pode consultar turmas desta escola, mas não incluir nem editar.</p></div></div>
+    @endif
 @endsection

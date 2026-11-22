@@ -34,6 +34,8 @@
         'schools.index' => route('home'),
         'schools.show' => route('schools.index', $parametrosMunicipio),
         'school.classes.index', 'school.students.index', 'school.enrollments.index' => route('schools.show', $parametrosEscola),
+        'school.classes.create', 'school.classes.store', 'school.classes.edit', 'school.classes.update'
+            => route('school.classes.index', $parametrosEscola),
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
         'school.students.edit',
         'school.enrollments.transfer.form', 'school.enrollments.end.form', 'school.enrollments.delete-registration.form'

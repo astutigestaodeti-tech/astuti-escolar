@@ -43,6 +43,10 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
+    Route::get('/escolas/{escola}/turmas/nova', [SchoolClassController::class, 'create'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.create');
+    Route::post('/escolas/{escola}/turmas', [SchoolClassController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.store');
+    Route::get('/escolas/{escola}/turmas/{turma}/editar', [SchoolClassController::class, 'edit'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.edit');
+    Route::put('/escolas/{escola}/turmas/{turma}', [SchoolClassController::class, 'update'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.update');
     Route::get('/escolas/{escola}/matriculas', [SchoolEnrollmentController::class, 'index'])->whereUuid('escola')->name('school.enrollments.index');
     Route::get('/escolas/{escola}/importacoes/transporte', [ConfirmedTransportImportController::class, 'index'])->whereUuid('escola')->name('school.imports.transport.index');
     Route::post('/escolas/{escola}/importacoes/transporte/previa', [ConfirmedTransportImportController::class, 'preview'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:6,1'])->name('school.imports.transport.preview');

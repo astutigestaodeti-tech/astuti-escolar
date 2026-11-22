@@ -1,5 +1,13 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-21 | Organização acadêmica | Cadastro manual de turmas
+
+- Direção, secretaria e gestão municipal podem criar/editar turmas ativas da escola, com nome/código, etapa, modalidade, turno, vagas opcionais e ano letivo. Professores permanecem somente com consulta.
+- As quatro novas rotas usam RequireConfirmedTwoFactor, sem alterar os arquivos de segundo fator; autorização e vínculo escolar são validados em cada ação.
+- Índice único parcial novo rejeita nomes repetidos em turmas ativas da mesma escola/ano, inclusive na concorrência; validação em português e versão xmin protegem o formulário.
+- Auditoria Eloquent registra antes/depois dentro da transação; botão Nova turma, ação Editar e retorno seguro no layout municipal foram incluídos.
+- Testes fictícios cobrem criação, edição, auditoria, nome duplicado, perfis, escola, 2FA, ano letivo e capacidade. Sem alteração em importadores, branches anteriores ou bases reais.
+
 
 ## 2026-11-21 | Cadastro manual | Endereço opcional de alunos
 
