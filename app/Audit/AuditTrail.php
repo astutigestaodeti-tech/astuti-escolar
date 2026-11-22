@@ -24,7 +24,7 @@ class AuditTrail
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
         Guardian::class => ['id', 'full_name', 'cpf', 'phone', 'email'],
-        StudentGuardian::class => ['id', 'student_id', 'guardian_id', 'relationship', 'is_legal_guardian', 'is_primary_contact'],
+        StudentGuardian::class => ['id', 'student_id', 'guardian_id', 'relationship', 'is_legal_guardian', 'is_primary_contact', 'motivo'],
         School::class => ['id', 'name', 'inep_code', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
         SchoolYear::class => ['id', 'year', 'start_date', 'end_date', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
         SchoolClass::class => ['id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'capacity', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],

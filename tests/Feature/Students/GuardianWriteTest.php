@@ -380,4 +380,177 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
             ->assertSee('Contato principal');
         $this->assertSame('1133334444', $this->inMunicipality(fn (): string => Guardian::query()->sole()->phone));
     }
+
+    public function test_cartao_e_confirmacao_de_desvinculo_mostram_nome_e_parentesco(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $linkId = $this->inMunicipality(fn (): string => StudentGuardian::query()->sole()->id);
+        $confirmUrl = $this->url().'/'.$linkId.'/desvincular';
+
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->studentA)
+            ->assertOk()->assertSee('Desvincular')->assertSee($confirmUrl);
+        $this->get($confirmUrl)->assertOk()
+            ->assertSee('Desvincular responsável')
+            ->assertSee('Maria da Silva Fictícia')
+            ->assertSee('Mãe')
+            ->assertSee('Motivo do desvínculo')
+            ->assertSee('minlength="10"', false)
+            ->assertSee('maxlength="500"', false);
+    }
+
+    public function test_desvinculo_preserva_responsavel_compartilhado_e_audita_motivo_sem_dados_sensiveis(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $this->post($this->url($this->studentSibling), $this->data(['is_primary_contact' => '0']))->assertRedirect();
+
+        $linkId = $this->inMunicipality(fn (): string => StudentGuardian::query()->where('student_id', $this->studentA)->sole()->id);
+        $motivo = 'A família solicitou a correção do vínculo fictício.';
+        $this->post($this->url().'/'.$linkId.'/desvincular', ['motivo' => $motivo])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'O vínculo de Maria da Silva Fictícia com o aluno foi removido. O cadastro continua disponível para os irmãos.');
+
+        [$guardians, $links, $remainingStudent, $audit] = $this->inMunicipality(fn (): array => [
+            Guardian::query()->count(),
+            StudentGuardian::query()->count(),
+            StudentGuardian::query()->sole()->student_id,
+            AuditLog::query()->where('auditable_type', StudentGuardian::class)->where('action', 'deleted')->sole(),
+        ]);
+        $this->assertSame(1, $guardians);
+        $this->assertSame(1, $links);
+        $this->assertSame($this->studentSibling, $remainingStudent);
+        $this->assertSame($linkId, $audit->auditable_id);
+        $this->assertSame($this->studentA, $audit->before['student_id']);
+        $this->assertSame('mother', $audit->before['relationship']);
+        $this->assertTrue($audit->before['is_primary_contact']);
+        $this->assertSame($motivo, $audit->after['motivo']);
+        $snapshots = json_encode([$audit->before, $audit->after], JSON_UNESCAPED_UNICODE);
+        $this->assertStringNotContainsString('123.456.789-09', $snapshots);
+        $this->assertStringNotContainsString('11987654321', $snapshots);
+    }
+
+    public function test_desvinculo_sem_irmaos_preserva_cadastro_e_mostra_mensagem_curta(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_director', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $linkId = $this->inMunicipality(fn (): string => StudentGuardian::query()->sole()->id);
+
+        $this->post($this->url().'/'.$linkId.'/desvincular', [
+            'motivo' => 'Vínculo lançado por engano no cadastro.',
+        ])->assertRedirect()->assertSessionHas('status', 'O vínculo de Maria da Silva Fictícia com o aluno foi removido.');
+
+        $this->assertSame(1, $this->inMunicipality(fn (): int => Guardian::query()->count()));
+        $this->assertSame(0, $this->inMunicipality(fn (): int => StudentGuardian::query()->count()));
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->studentA)
+            ->assertOk()->assertDontSee('Este aluno está sem contato principal.');
+    }
+
+    public function test_sem_contato_principal_avisa_sem_promocao_automatica_na_exclusao_e_na_edicao(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('municipal_manager'));
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $this->post($this->url(), $this->data([
+            'cpf' => '987.654.321-00',
+            'full_name' => 'João Souza Fictício',
+            'relationship' => 'father',
+            'is_primary_contact' => '0',
+        ]))->assertRedirect();
+
+        [$mariaId, $joaoId] = $this->inMunicipality(fn (): array => [
+            StudentGuardian::query()->whereHas('guardian', fn ($q) => $q->where('full_name', 'Maria da Silva Fictícia'))->sole()->id,
+            StudentGuardian::query()->whereHas('guardian', fn ($q) => $q->where('full_name', 'João Souza Fictício'))->sole()->id,
+        ]);
+
+        $this->post($this->url().'/'.$mariaId.'/desvincular', ['motivo' => 'Família informou alteração da referência principal.'])->assertRedirect();
+        $this->assertFalse($this->inMunicipality(fn (): bool => StudentGuardian::query()->findOrFail($joaoId)->is_primary_contact));
+        $show = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->studentA;
+        $warning = 'Este aluno está sem contato principal. Edite um responsável para marcar.';
+        $this->get($show)->assertOk()->assertSee($warning);
+
+        $joao = $this->data([
+            'cpf' => '987.654.321-00',
+            'full_name' => 'João Souza Fictício',
+            'relationship' => 'father',
+            'is_primary_contact' => '1',
+        ]);
+        $this->put($this->url().'/'.$joaoId, $joao)->assertRedirect();
+        $this->get($show)->assertOk()->assertDontSee($warning);
+        $this->put($this->url().'/'.$joaoId, array_replace($joao, ['is_primary_contact' => '0']))->assertRedirect();
+        $this->get($show)->assertOk()->assertSee($warning);
+    }
+
+    public function test_motivo_obrigatorio_recusa_espacos_menos_de_dez_e_mais_de_quinhentos_caracteres(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $linkId = $this->inMunicipality(fn (): string => StudentGuardian::query()->sole()->id);
+        $postUrl = $this->url().'/'.$linkId.'/desvincular';
+
+        $this->post($postUrl, ['motivo' => ''])->assertSessionHasErrors(['motivo' => 'Informe o motivo do desvínculo.']);
+        $this->post($postUrl, ['motivo' => '      '])->assertSessionHasErrors(['motivo' => 'Informe o motivo do desvínculo.']);
+        $this->post($postUrl, ['motivo' => 'Curto1234'])->assertSessionHasErrors(['motivo' => 'O motivo deve ter pelo menos 10 caracteres.']);
+        $this->post($postUrl, ['motivo' => str_repeat('x', 501)])->assertSessionHasErrors(['motivo' => 'O motivo deve ter no máximo 500 caracteres.']);
+
+        $this->assertSame(1, $this->inMunicipality(fn (): int => StudentGuardian::query()->count()));
+        $this->assertSame(0, $this->inMunicipality(fn (): int => AuditLog::query()->where('action', 'deleted')->where('auditable_type', StudentGuardian::class)->count()));
+    }
+
+    public function test_professor_e_outra_escola_recebem_403_ao_tentar_desvincular(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $linkId = $this->inMunicipality(fn (): string => StudentGuardian::query()->sole()->id);
+        $form = $this->url().'/'.$linkId.'/desvincular';
+        $data = ['motivo' => 'Remoção não autorizada do vínculo fictício.'];
+
+        $this->verifyTwoFactor($this->userWithRole('teacher', [self::ESCOLA_A1]));
+        $this->get($form)->assertForbidden();
+        $this->post($form, $data)->assertForbidden();
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->studentA)
+            ->assertOk()->assertDontSee('Desvincular');
+
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A2]));
+        $this->get($form)->assertForbidden();
+        $this->post($form, $data)->assertForbidden();
+        $this->assertSame(1, $this->inMunicipality(fn (): int => StudentGuardian::query()->count()));
+    }
+
+    public function test_desvinculo_exige_segundo_fator_recente_e_reapresenta_motivo_apos_codigo(): void
+    {
+        $user = $this->userWithRole('school_secretary', [self::ESCOLA_A1]);
+        $this->verifyTwoFactor($user);
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $linkId = $this->inMunicipality(fn (): string => StudentGuardian::query()->sole()->id);
+        $url = $this->url().'/'.$linkId.'/desvincular';
+        $motivo = 'O cadastro da escola exige correção do vínculo familiar.';
+
+        $this->get($url)->assertOk();
+        $this->travel(16)->minutes();
+        $this->from($url)->post($url, ['motivo' => $motivo])
+            ->assertRedirect('/seguranca/segundo-fator/desafio');
+        $this->assertSame(1, $this->inMunicipality(fn (): int => StudentGuardian::query()->count()));
+
+        $this->post('/seguranca/segundo-fator/desafio', [
+            'code' => app(Totp::class)->at(self::SECRET, now()->getTimestamp()),
+        ])->assertRedirect($url);
+        $this->get($url)->assertOk()->assertSee($motivo);
+        $this->post($url, ['motivo' => $motivo])->assertRedirect();
+        $this->assertSame(0, $this->inMunicipality(fn (): int => StudentGuardian::query()->count()));
+        $this->travelBack();
+    }
+
+    public function test_vinculo_de_outro_aluno_nao_pode_ser_desvinculado_pela_url(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $this->post($this->url($this->studentSibling), $this->data(['is_primary_contact' => '0']))->assertRedirect();
+        $siblingLink = $this->inMunicipality(fn (): string => StudentGuardian::query()->where('student_id', $this->studentSibling)->sole()->id);
+
+        $this->get($this->url().'/'.$siblingLink.'/desvincular')->assertNotFound();
+        $this->post($this->url().'/'.$siblingLink.'/desvincular', [
+            'motivo' => 'Tentar remover vínculo do outro aluno fictício.',
+        ])->assertNotFound();
+        $this->assertSame(2, $this->inMunicipality(fn (): int => StudentGuardian::query()->count()));
+    }
 }
