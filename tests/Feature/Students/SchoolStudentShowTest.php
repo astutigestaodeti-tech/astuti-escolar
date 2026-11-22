@@ -8,6 +8,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -22,12 +23,43 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
         $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
             ->assertOk()
             ->assertSee('Maria da Unidade A')
-            ->assertSee('2017')
+            ->assertSee('02/04/2017')
             ->assertSee('2027')
             ->assertSee('Unidade A')
             ->assertSee('Editar dados');
 
         $this->assertFalse(app(TenantContext::class)->hasActive());
+    }
+
+    public function test_ficha_mostra_uma_idade_so_e_cita_a_data_de_corte_apenas_quando_difere(): void
+    {
+        $user = $this->criarUsuario('ficha-idade@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        // Aniversário em 02/04: hoje (22/11/2026) tem 9 anos e em 31/03/2027 ainda terá 9.
+        $igual = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluna da Mesma Idade', 'active', '2017-04-02');
+        // Aniversário em 10/01: hoje tem 9 anos e em 31/03/2027 terá 10.
+        $diferente = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluno de Idade Diferente', 'active', '2017-01-10');
+
+        Carbon::setTestNow('2026-11-22 10:00:00');
+        try {
+            $ficha = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/';
+            $this->actingAs($user)->get($ficha.$igual)
+                ->assertOk()
+                ->assertSeeInOrder(['Data de nascimento', '02/04/2017', '9 anos'])
+                ->assertDontSee('data de corte')
+                ->assertDontSee('Ano de nascimento');
+
+            $this->actingAs($user)->get($ficha.$diferente)
+                ->assertOk()
+                ->assertSee('9 anos; <abbr title="Idade em 31/03/2027, que define a etapa e a série do ano letivo">10 na data de corte</abbr>', false);
+
+            $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos')
+                ->assertOk()
+                ->assertSee('Data de nascimento')
+                ->assertSee('02/04/2017');
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_ficha_exibe_historico_da_mesma_escola_sem_revelar_vinculos_de_outra(): void
