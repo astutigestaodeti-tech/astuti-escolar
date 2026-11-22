@@ -1,5 +1,13 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-21 | Incremento 03 parte B | Movimentação auditada de matrículas
+
+- Nova branch e PR próprios sobre `feature/cadastro-aluno-gravacao` (PR #7); PRs #6, #7, #8 e #9 não foram modificados.
+- Transferência interna fecha a matrícula de origem e cria a matrícula ativa no destino, no mesmo ano letivo e na mesma transação; encerramentos admitem somente saída da rede, abandono ou falecimento, com texto opcional de destino em tabela auxiliar e auditoria no mesmo commit.
+- Exclusão por erro de cadastro é lógica e exige justificativa com 15 caracteres, permitida somente à gestão municipal e direção da escola; aluno com outros vínculos permanece cadastrado.
+- Formulários de confirmação, segundo fator confirmado nas gravações, versões otimistas por `xmin` (inclusive duas alterações no mesmo segundo), controle por escola e auditoria antes/depois preservados.
+- Testes fictícios para permissões, 2FA, datas, concorrência, consulta por unidade e auditoria. Validação final depende de Pint e CI deste PR; nenhuma base real alterada e nenhum merge automático.
+
 ## 2026-11-21 | Transporte escolar: CSV conferido, atualização auditada
 
 - Novo importador CSV por escola e ano letivo: UTF-8 e Windows-1252, RA obrigatório, conferência antes de gravar e 2FA para gestões autorizadas.

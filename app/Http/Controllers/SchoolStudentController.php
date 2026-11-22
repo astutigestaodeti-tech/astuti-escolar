@@ -61,7 +61,8 @@ class SchoolStudentController extends Controller
         app(AuditTrail::class)->record('tenant', 'student.viewed', Student::class, $student->id);
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
+        $canDeleteEnrollment = Gate::allows('deleteEnrollment', [$school, $municipality]);
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage'));
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment'));
     }
 }

@@ -25,6 +25,10 @@
         </div>
     </div>
 
+    @if (session('status'))
+        <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
+    @endif
+
     <section class="folha" aria-labelledby="titulo-lista-alunos">
         <div class="folha-cabecalho">
             <div>

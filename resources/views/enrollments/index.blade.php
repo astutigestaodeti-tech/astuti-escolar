@@ -20,6 +20,10 @@
         <span class="marcador"><x-icon name="alunos" :size="16" /> {{ $enrollments->total() }} {{ $enrollments->total() === 1 ? 'matrícula' : 'matrículas' }}</span>
     </div>
 
+    @if (session('status'))
+        <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
+    @endif
+
     <section class="folha" aria-labelledby="titulo-matriculas">
         <div class="folha-cabecalho"><div><h2 id="titulo-matriculas">Matrículas ativas</h2><p>Pesquise pelo nome para localizar um vínculo desta unidade.</p></div></div>
 
@@ -87,5 +91,5 @@
         @endif
     </section>
 
-    <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta, por enquanto</strong><p>A inclusão, transferência e alteração de matrículas permanecem indisponíveis neste ambiente de desenvolvimento. Utilize apenas dados fictícios.</p></div></div>
+    <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta, por enquanto</strong><p>Transferências internas e encerramentos auditados podem ser feitos na ficha do aluno por pessoas autorizadas. Outras alterações continuam indisponíveis. Utilize apenas dados fictícios.</p></div></div>
 @endsection

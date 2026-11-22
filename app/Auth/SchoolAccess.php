@@ -76,6 +76,30 @@ class SchoolAccess
             ->exists();
     }
 
+    /** Exclusão por erro de cadastro cabe somente à direção da unidade ou gestão municipal. */
+    public function mayDeleteEnrollment(User $user, Municipality $municipality, string $schoolId): bool
+    {
+        if ($user->status !== 'active' || $municipality->status !== 'active') {
+            return false;
+        }
+
+        $memberships = Membership::query()
+            ->where('user_id', $user->id)
+            ->where('municipality_id', $municipality->id)
+            ->where('status', 'active')
+            ->whereIn('role', ['municipal_manager', 'school_director'])
+            ->get();
+
+        if ($memberships->contains('role', 'municipal_manager')) {
+            return true;
+        }
+
+        return $memberships->isNotEmpty() && DB::connection('platform')->table('school_scopes')
+            ->whereIn('membership_id', $memberships->pluck('id')->all())
+            ->where('school_id', $schoolId)
+            ->exists();
+    }
+
     public function maySeeSchool(User $user, Municipality $municipality, string $schoolId): bool
     {
         $schoolIds = $this->visibleSchoolIds($user, $municipality);

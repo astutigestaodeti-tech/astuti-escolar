@@ -290,7 +290,7 @@ class MunicipalityIsolationTest extends TestCase
                     '--realpath' => true,
                     '--force' => true,
                 ]);
-                foreach (['student_enrollments', 'students'] as $table) {
+                foreach (['student_enrollment_destinations', 'student_enrollments', 'students'] as $table) {
                     if (Schema::connection('tenant')->hasTable($table)) {
                         DB::connection('tenant')->table($table)->delete();
                     }
