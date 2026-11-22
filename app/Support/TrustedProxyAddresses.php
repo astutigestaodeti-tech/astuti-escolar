@@ -31,9 +31,11 @@ final class TrustedProxyAddresses
             }
 
             if (count($parts) === 2) {
-                $limit = filter_var($parts[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? 128 : 32;
+                $ipv6 = filter_var($parts[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+                $min = $ipv6 ? 16 : 8;
+                $limit = $ipv6 ? 128 : 32;
 
-                if (! preg_match('/\A(?:0|[1-9][0-9]*)\z/D', $parts[1]) || (int) $parts[1] > $limit) {
+                if (! preg_match('/\A(?:0|[1-9][0-9]*)\z/D', $parts[1]) || (int) $parts[1] < $min || (int) $parts[1] > $limit) {
                     throw new InvalidArgumentException('TRUSTED_PROXIES contem uma mascara CIDR invalida.');
                 }
             }

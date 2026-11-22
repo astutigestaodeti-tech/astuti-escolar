@@ -18,8 +18,8 @@ class TrustedProxyAddressesTest extends TestCase
         $this->assertTrue(class_exists(TrustedProxyAddresses::class));
 
         $this->assertSame(
-            ['127.0.0.1', '10.10.0.0/16', '::1', '2001:db8::/32'],
-            TrustedProxyAddresses::parse(' 127.0.0.1, 10.10.0.0/16, ::1,2001:db8::/32,127.0.0.1, '),
+            ['127.0.0.1', '10.10.0.0/16', '::1', '2001:db8::/32', '10.0.0.0/8', '2001:db8::/16'],
+            TrustedProxyAddresses::parse(' 127.0.0.1, 10.10.0.0/16, ::1,2001:db8::/32,127.0.0.1,10.0.0.0/8, 2001:db8::/16, '),
         );
         $this->assertSame([], TrustedProxyAddresses::parse(null));
         $this->assertSame([], TrustedProxyAddresses::parse(' , , '));
@@ -29,7 +29,7 @@ class TrustedProxyAddressesTest extends TestCase
     {
         $this->assertTrue(class_exists(TrustedProxyAddresses::class));
 
-        foreach (['*', 'all', 'private_ranges', '999.999.9.9', '10.0.0.0/33', '::1/129', '127.0.0.1/', '127.0.0.1/-1'] as $invalid) {
+        foreach (['*', 'all', 'private_ranges', '999.999.9.9', '10.0.0.0/33', '::1/129', '127.0.0.1/', '127.0.0.1/-1', '0.0.0.0/0', '::/0', '10.0.0.0/7', '2001:db8::/15'] as $invalid) {
             try {
                 TrustedProxyAddresses::parse($invalid);
                 $this->fail('Uma entrada invalida foi aceita.');
