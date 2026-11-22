@@ -245,7 +245,10 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
 
         $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1)
             ->assertOk()
-            ->assertSee('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos');
+            ->assertSee('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos')
+            ->assertSee('class="rodape-versao"', false)
+            // Fora do ambiente de desenvolvimento, o rodapé não revela o banco.
+            ->assertDontSee('Plataforma:');
     }
 
     public function test_cartoes_da_escola_nao_sao_empilhados_pela_regra_da_ficha_do_aluno(): void

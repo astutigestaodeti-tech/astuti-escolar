@@ -105,6 +105,8 @@ button,input,select{font:inherit;color:inherit}
 
 .conteudo{width:100%;max-width:1240px;padding:28px 36px 40px}
 .rodape{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;margin-top:40px;padding-top:16px;border-top:1px solid var(--linha);font-size:13px;color:var(--tinta-3)}
+.rodape-versao{margin:8px 0 0;font-size:12px;color:var(--tinta-3);opacity:.85;font-variant-numeric:tabular-nums}
+.rodape-versao span{margin-left:12px;white-space:nowrap}
 
 /* Faixa de demonstração */
 .aviso-demo{display:flex;align-items:center;gap:12px;padding:10px 14px;margin-bottom:26px;border-radius:var(--raio-controle);background:var(--ouro-claro);border:1px solid #ead7a6;color:#5f4410;font-size:14px}
