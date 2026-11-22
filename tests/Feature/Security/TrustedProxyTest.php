@@ -77,4 +77,17 @@ class TrustedProxyTest extends TestCase
             ->assertJsonPath('secure', true)
             ->assertHeaderMissing('Strict-Transport-Security');
     }
+
+    public function test_header_forwarded_padrao_nao_e_aceito_mesmo_de_proxy_autorizado(): void
+    {
+        TrustProxies::at(['127.0.0.1']);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])
+            ->withHeader('Forwarded', 'for=203.0.113.90;proto=https;host=dominio-falso.invalid')
+            ->get('http://escolar.example.test/__teste_proxy')
+            ->assertOk()
+            ->assertJsonPath('ip', '127.0.0.1')
+            ->assertJsonPath('secure', false)
+            ->assertJsonPath('host', 'escolar.example.test');
+    }
 }

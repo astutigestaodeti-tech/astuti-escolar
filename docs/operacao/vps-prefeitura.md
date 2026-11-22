@@ -24,6 +24,15 @@
 6. Configurar Nginx + PHP-FPM, executar `php artisan config:cache`, `php artisan route:cache`, `php artisan view:cache` somente após validar variáveis, permissões, migrações e tarefas agendadas.
 7. Ter monitoramento de espaço, memória, aplicação, TLS, logs de segurança, banco e término de backup. A trilha escolar é imutável para a aplicação; a LGPD exige política de acesso e de retenção, além de resposta a incidentes.
 
+
+## HTTPS, proxy reverso e IP de origem
+
+O Laravel recebe apenas os cabecalhos de um proxy explicitamente autorizado. Em cada VPS, configure `TRUSTED_PROXIES` com o **IP real do ultimo salto** que se conecta a aplicacao, ou sua sub-rede CIDR estritamente necessaria, separados por virgula. Deixe vazio se o Nginx entrega diretamente ao PHP-FPM sem proxy HTTP adicional. Nunca use `*` nem libere a origem da aplicacao diretamente para a internet.
+
+Exemplo, apenas quando o proxy local realmente conecta a aplicacao por loopback: `TRUSTED_PROXIES=127.0.0.1,::1`. Nao copie esse valor cegamente entre Prefeituras. Use `php artisan config:cache` depois de configurar o `.env` de producao e confira o IP remoto observado pelo aplicativo. Valores malformados ou curinga impedem a inicializacao com essa configuracao.
+
+O proxy deve remover ou **sobrescrever** os cabecalhos de encaminhamento recebidos do cliente e enviar somente seus valores reais de `X-Forwarded-For`, `X-Forwarded-Proto` e `X-Forwarded-Port`; a aplicacao nao confia em `X-Forwarded-Host`, `Forwarded` nem `X-Forwarded-Prefix`. Configure o dominio valido no proprio servidor web e `APP_URL=https://...` no `.env` privado, com HTTP publico redirecionado para HTTPS. Confirme o cookie de sessao `Secure` e o HSTS na resposta HTTPS de producao; conexoes HTTP ou origens nao confiaveis nao devem ativar HSTS por cabecalho falsificado.
+
 ## Implantação segura por Prefeitura
 
 - Revisar o código no GitHub, CI verde, revisão independente e aprovação de release.
