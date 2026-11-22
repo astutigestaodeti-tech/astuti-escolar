@@ -154,7 +154,14 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
 
         $this->from($this->url('/novo'))->post($this->url(), $this->dados(['ra' => '000123456789']))
             ->assertRedirect($this->url('/novo'))
-            ->assertSessionHasErrors(['ra' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.']);
+            ->assertSessionHasErrors(['ra' => 'RA fora do padrão da SED: falta o dígito verificador depois do hífen e falta a barra com a sigla do estado (/SP). Exemplo: 000123456789-0/SP.']);
+
+        // A mensagem diz o que está errado, em vez de só "formato inválido".
+        $this->from($this->url('/novo'))->post($this->url(), $this->dados(['ra' => '123']))
+            ->assertSessionHasErrors(['ra' => 'RA fora do padrão da SED: tem só 3 números antes do hífen (são de 9 a 12), falta o dígito verificador depois do hífen e falta a barra com a sigla do estado (/SP). Exemplo: 000123456789-0/SP.']);
+        $this->followingRedirects()->from($this->url('/novo'))->post($this->url(), $this->dados(['ra' => '123']))
+            ->assertSee('RA fora do padrão da SED')
+            ->assertDontSee('campo ra');
 
         $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
 
@@ -192,7 +199,7 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
             'birth_date' => '2019-05-10',
             'ra' => '000987654321',
             'versao' => $versao,
-        ])->assertSessionHasErrors(['ra' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.']);
+        ])->assertSessionHasErrors(['ra' => 'RA fora do padrão da SED: falta o dígito verificador depois do hífen e falta a barra com a sigla do estado (/SP). Exemplo: 000123456789-0/SP.']);
 
         $this->assertNull($this->noMunicipio($this->municipioA, fn (): ?string => Student::query()->findOrFail($id)->ra));
 

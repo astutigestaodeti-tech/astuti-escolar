@@ -9,6 +9,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Security\TwoFactorSession;
+use App\Validation\SedRa;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
@@ -32,8 +33,6 @@ class StudentRecordController extends Controller
 
     private const BIRTH_RULES = ['nullable', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before:today'];
 
-    private const RA_RULES = ['nullable', 'string', 'max:32', 'regex:/\\A\\d{9,12}-[\\dX]\\/[A-Z]{2}\\z/'];
-
     private const ADDRESS_FIELDS = ['address_street', 'address_number', 'address_district', 'postal_code', 'residence_zone'];
 
     private const ADDRESS_RULES = [
@@ -45,7 +44,7 @@ class StudentRecordController extends Controller
     ];
 
     private const VALIDATION_MESSAGES = [
-        'ra.regex' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.',
+        'ra.max' => 'RA fora do padrão da SED: tem caracteres demais. Exemplo: '.SedRa::EXAMPLE.'.',
         'postal_code.regex' => 'Informe o CEP no formato 00000-000.',
         'residence_zone.in' => 'Selecione a zona de residência: Urbana ou Rural.',
     ];
@@ -89,7 +88,7 @@ class StudentRecordController extends Controller
         $data = $request->validate([
             'full_name' => self::NAME_RULES,
             'birth_date' => self::BIRTH_RULES,
-            'ra' => self::RA_RULES,
+            'ra' => ['nullable', 'string', 'max:32', new SedRa],
             ...self::ADDRESS_RULES,
             'school_class_id' => ['nullable', 'uuid'],
             'school_year_id' => ['required', 'uuid'],
@@ -200,7 +199,7 @@ class StudentRecordController extends Controller
         $data = $request->validate([
             'full_name' => self::NAME_RULES,
             'birth_date' => self::BIRTH_RULES,
-            'ra' => self::RA_RULES,
+            'ra' => ['nullable', 'string', 'max:32', new SedRa],
             ...self::ADDRESS_RULES,
             'school_class_id' => ['nullable', 'uuid'],
             'enrollment_id' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'uuid'],
