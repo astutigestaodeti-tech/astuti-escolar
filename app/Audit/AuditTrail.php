@@ -5,6 +5,8 @@ namespace App\Audit;
 use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
 use App\Models\Platform\PlatformAuditLog;
+use App\Models\Tenant\AttendanceMark;
+use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\Guardian;
 use App\Models\Tenant\School;
@@ -25,6 +27,8 @@ class AuditTrail
 {
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
+        AttendanceSession::class => ['id', 'school_class_id', 'attendance_date', 'recorded_by', 'recorded_at', 'last_corrected_by', 'last_corrected_at', 'correction_reason', 'present_count', 'absent_count', 'justified_count'],
+        AttendanceMark::class => ['id', 'attendance_session_id', 'student_id', 'status'],
         Guardian::class => ['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'photo_updated_at', 'rg_number', 'rg_state'],
         StudentGuardian::class => ['id', 'student_id', 'guardian_id', 'relationship', 'is_legal_guardian', 'is_primary_contact', 'motivo'],
         StudentExit::class => ['id', 'student_id', 'school_id', 'person_type', 'person_id', 'person_name', 'person_relationship', 'exited_at'],
@@ -113,7 +117,7 @@ class AuditTrail
 
         foreach ($values as $key => $value) {
             // Dados sensíveis: a auditoria registra que mudou, sem guardar o valor.
-            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|rg_number|birth_certificate)\z/iu', (string) $key)) {
+            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|correction_reason|rg_number|birth_certificate)\z/iu', (string) $key)) {
                 $values[$key] = '[REDACTED]';
             } elseif (is_array($value)) {
                 $values[$key] = '[REDACTED]';
