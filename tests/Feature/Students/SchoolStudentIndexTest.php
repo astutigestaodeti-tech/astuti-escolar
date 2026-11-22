@@ -3,9 +3,11 @@
 namespace Tests\Feature\Students;
 
 use App\Models\Platform\Municipality;
+use App\Models\Tenant\Guardian;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
+use App\Models\Tenant\StudentGuardian;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -266,6 +268,79 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
             ->assertOk()
             ->assertSeeInOrder(['Turmas', 'Alunos', 'Matrículas'])
             ->assertDontSee('permanecem indisponíveis');
+    }
+
+    /** @param array<string, mixed> $dados */
+    private function alunoCom(string $nome, array $dados = [], ?string $transporte = null): string
+    {
+        return app(TenantContext::class)->runFor($this->municipioA, function () use ($nome, $dados, $transporte): string {
+            $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => $nome, ...$dados]);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $student->id,
+                'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $this->anoLetivo(2027)->id,
+                'status' => 'active',
+                'transport_status' => $transporte,
+            ]);
+
+            return $student->id;
+        });
+    }
+
+    public function test_lista_mostra_e_filtra_transporte_escolar_com_contagens(): void
+    {
+        $user = $this->criarUsuario('alunos-transporte@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $this->alunoCom('Ana Usa Ônibus', [], 'active');
+        $this->alunoCom('Bia Também Usa', [], 'active');
+        $this->alunoCom('Caio Cancelado', [], 'cancelled');
+        $this->alunoCom('Duda Sem Informação');
+
+        $lista = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos';
+        $this->actingAs($user)->get($lista)
+            ->assertOk()
+            ->assertSeeInOrder(['Usa transporte', '2', 'Não solicitado', '0', 'Cancelado', '1', 'Sem informação', '1'])
+            ->assertSee('Transporte escolar');
+
+        $this->actingAs($user)->get($lista.'?transporte=usa')
+            ->assertOk()
+            ->assertSee('Ana Usa Ônibus')
+            ->assertSee('Bia Também Usa')
+            ->assertDontSee('Caio Cancelado')
+            ->assertDontSee('Duda Sem Informação');
+
+        $this->actingAs($user)->get($lista.'?transporte=sem_informacao')
+            ->assertOk()->assertSee('Duda Sem Informação')->assertDontSee('Ana Usa Ônibus');
+
+        $this->actingAs($user)->get($lista.'?transporte=qualquer')->assertSessionHasErrors('transporte');
+
+        // A tela da escola resume quem usa o transporte e leva à lista filtrada.
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1)
+            ->assertOk()
+            ->assertSee('2 alunos usam o transporte escolar.')
+            ->assertSee($lista.'?transporte=usa');
+    }
+
+    public function test_busca_por_ra_cpf_e_nome_do_responsavel_sem_acento(): void
+    {
+        $user = $this->criarUsuario('alunos-busca@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $this->alunoCom('Aluno do RA', ['ra' => '000123456789-0/SP']);
+        $this->alunoCom('Aluno do CPF', ['cpf' => '529.982.247-25']);
+        $comMae = $this->alunoCom('Aluno da Mãe');
+        $this->alunoCom('Aluno Sem Relação');
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($comMae): void {
+            $guardian = Guardian::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'Conceição Fictícia Araújo', 'phone' => '11987654321']);
+            StudentGuardian::query()->create(['id' => (string) Str::uuid(), 'student_id' => $comMae, 'guardian_id' => $guardian->id, 'relationship' => 'mother', 'is_primary_contact' => true]);
+        });
+
+        $lista = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos?busca=';
+        $this->actingAs($user)->get($lista.urlencode('123456789'))->assertOk()->assertSee('Aluno do RA')->assertDontSee('Aluno Sem Relação');
+        $this->actingAs($user)->get($lista.urlencode('52998224725'))->assertOk()->assertSee('Aluno do CPF')->assertDontSee('Aluno do RA');
+        $this->actingAs($user)->get($lista.urlencode('529.982.247-25'))->assertOk()->assertSee('Aluno do CPF');
+        $this->actingAs($user)->get($lista.urlencode('conceicao araujo'))->assertOk()->assertDontSee('Aluno da Mãe');
+        $this->actingAs($user)->get($lista.urlencode('conceicao ficticia'))->assertOk()->assertSee('Aluno da Mãe')->assertDontSee('Aluno Sem Relação');
     }
 
     private function matricularAluno(Municipality $municipio, string $escola, string $nome, string $status = 'active'): void

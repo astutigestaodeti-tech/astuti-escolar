@@ -18,7 +18,8 @@
     </div></div>
 
     @if (session('status'))
-        <div class="nota"><x-icon name="info" /><div><strong>{{ session('status') }}</strong></div></div>
+        <div class="nota"><x-icon name="info" /><div><strong>{{ session('status') }}</strong>
+            <p><a href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'transporte' => 'usa']) }}">Ver alunos que usam transporte</a></p></div></div>
     @endif
 
     @if ($errors->any())

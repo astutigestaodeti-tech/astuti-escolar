@@ -33,30 +33,53 @@
         <div class="folha-cabecalho">
             <div>
                 <h2 id="titulo-lista-alunos">Alunos com vínculo ativo</h2>
-                <p>Localize um aluno pelo nome para conferir sua presença na unidade.</p>
+                <p>Procure pelo nome do aluno ou do responsável, pelo RA ou pelo CPF, com ou sem pontuação.</p>
             </div>
         </div>
 
         <form class="busca" method="GET" action="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}" role="search">
             <div class="campo">
                 <x-icon name="busca" :size="18" />
-                <label class="sr-only" for="busca-aluno">Nome do aluno</label>
-                <input id="busca-aluno" type="search" name="busca" value="{{ $search }}" placeholder="Buscar aluno pelo nome" maxlength="120" autocomplete="off">
+                <label class="sr-only" for="busca-aluno">Nome, responsável, RA ou CPF</label>
+                <input id="busca-aluno" type="search" name="busca" value="{{ $search }}" placeholder="Nome do aluno ou do responsável, RA ou CPF" maxlength="120" autocomplete="off">
             </div>
+            @if ($transport !== '')
+                <input type="hidden" name="transporte" value="{{ $transport }}">
+            @endif
             <button class="botao" type="submit"><x-icon name="busca" :size="16" /> Pesquisar</button>
         </form>
 
+        @php
+            $parametrosLista = ['municipio' => $municipality->slug, 'escola' => $school->id];
+            $contagemTransporte = [
+                'usa' => $transportCounts['active'] ?? 0,
+                'nao_solicitado' => $transportCounts['not_requested'] ?? 0,
+                'cancelado' => $transportCounts['cancelled'] ?? 0,
+                'sem_informacao' => $transportCounts['sem_informacao'] ?? 0,
+            ];
+        @endphp
+        <nav class="filtro-transporte" aria-label="Filtrar por transporte escolar">
+            <span class="filtro-transporte-rotulo">Transporte escolar:</span>
+            <a href="{{ route('school.students.index', array_filter([...$parametrosLista, 'busca' => $search ?: null])) }}" @class(['filtro-chip', 'ativo' => $transport === '']) @if ($transport === '') aria-current="true" @endif>Todos</a>
+            @foreach ($transportFilters as $chave => $filtro)
+                <a href="{{ route('school.students.index', array_filter([...$parametrosLista, 'busca' => $search ?: null, 'transporte' => $chave])) }}" @class(['filtro-chip', 'ativo' => $transport === $chave]) @if ($transport === $chave) aria-current="true" @endif>{{ $filtro['label'] }} <span class="numero">{{ $contagemTransporte[$chave] }}</span></a>
+            @endforeach
+        </nav>
+
         @if ($students->isEmpty())
-            <div class="vazio">Nenhum aluno ativo {{ $search !== '' ? 'encontrado para esta pesquisa.' : 'cadastrado nesta escola.' }}</div>
+            <div class="vazio">Nenhum aluno ativo {{ $search !== '' || $transport !== '' ? 'encontrado com esses filtros.' : 'cadastrado nesta escola.' }}</div>
         @else
             <div class="rolagem">
                 <table class="tabela">
-                    <thead><tr><th scope="col">Aluno</th><th scope="col">Data de nascimento</th></tr></thead>
+                    <thead><tr><th scope="col">Aluno</th><th scope="col">Data de nascimento</th><th scope="col">Transporte escolar</th></tr></thead>
                     <tbody>
                     @foreach ($students as $student)
                         <tr>
-                            <td><a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}" aria-label="Abrir ficha de {{ $student->full_name }}"><strong>{{ $student->full_name }}</strong></a></td>
+                            <td><a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}" aria-label="Abrir ficha de {{ $student->full_name }}"><strong>{{ $student->full_name }}</strong></a>
+                                @if ($student->ra)<small class="lista-ra numero">RA {{ $student->ra }}</small>@endif</td>
                             <td class="numero">{{ $student->birth_date?->format('d/m/Y') ?? 'Não informada' }}</td>
+                            @php($situacaoTransporte = $student->enrollments->first()?->transport_status)
+                            <td>@include('students.partials.transporte', ['situacao' => $situacaoTransporte])</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -84,7 +107,7 @@
     </section>
 
     @if ($canManage)
-        <div class="nota"><x-icon name="escudo" /><div><strong>Cadastro manual liberado para sua conta</strong><p>Incluir e alterar alunos exige o segundo fator confirmado, e cada alteração fica no histórico. A importação de planilhas e documentos virá em etapa própria, com conferência humana. Não utilize dados reais de alunos neste ambiente de desenvolvimento.</p></div></div>
+        <div class="nota"><x-icon name="escudo" /><div><strong>Alterações protegidas</strong><p>Incluir, importar e alterar alunos exige o segundo fator confirmado, e cada alteração fica no histórico. Para trazer vários alunos de uma vez, use "Importar alunos" na página da escola.</p></div></div>
     @else
         <div class="nota"><x-icon name="escudo" /><div><strong>Somente consulta</strong><p>Sua conta pode consultar os alunos desta escola, mas não incluir nem alterar cadastros. Não utilize dados reais de alunos neste ambiente de desenvolvimento.</p></div></div>
     @endif

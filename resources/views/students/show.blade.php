@@ -121,6 +121,7 @@
                         <span class="etiqueta neutra numero">Ano letivo {{ $enrollment->schoolYear?->year ?? 'Não informado' }}</span>
                         <span class="etiqueta {{ $enrollment->status === 'active' ? 'ok' : 'neutra' }}">{{ $situacao }}</span>
                         <div class="vinculo-datas"><small>Turma: {{ $enrollment->schoolClass?->name ?? 'Não informada' }}</small></div>
+                        <div class="vinculo-datas"><small>Transporte escolar:</small> @include('students.partials.transporte', ['situacao' => $enrollment->transport_status])</div>
                         @if ($canManage && $enrollment->status === 'active')
                             <a href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id, 'matricula' => $enrollment->id]) }}">Editar turma desta matrícula</a>
                         @endif
