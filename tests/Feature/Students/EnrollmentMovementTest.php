@@ -425,4 +425,68 @@ class EnrollmentMovementTest extends TwoMunicipalityTestCase
             $this->tenant(fn () => $this->assertSame('active', StudentEnrollment::query()->findOrFail($fixture['enrollment'])->status));
         }
     }
+
+    public function test_exclusao_pede_codigo_recente_e_devolve_o_formulario_preenchido(): void
+    {
+        $fixture = $this->fixture();
+        $user = $this->account('diretor-exclusao-recente@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->confirmed($user);
+        $url = $this->actionUrl($fixture, 'excluir-cadastro');
+
+        // Dentro de 15 minutos o formulário abre direto.
+        $this->get($url)->assertOk()->assertSee('Excluir cadastro');
+
+        // O formulário ficou aberto por mais de 15 minutos: gravar pede o código de novo.
+        $this->travel(16)->minutes();
+        $this->delete($url, ['versao' => $fixture['version'], 'motivo' => 'Cadastro fictício duplicado na escola', 'confirmar' => '1'])
+            ->assertRedirect(route('two-factor.challenge'));
+        $this->tenant(fn () => $this->assertSame('active', StudentEnrollment::query()->findOrFail($fixture['enrollment'])->status));
+        $this->get(route('two-factor.challenge'))->assertOk()->assertSee('Esta ação pede uma nova confirmação');
+
+        // Depois do código, volta ao formulário com o motivo já digitado.
+        $this->post('/seguranca/segundo-fator/desafio', ['code' => app(Totp::class)->at(self::SECRET, now()->getTimestamp())])
+            ->assertRedirect($url)
+            ->assertSessionHasInput('motivo', 'Cadastro fictício duplicado na escola');
+        $this->get($url)->assertOk()->assertSee('Cadastro fictício duplicado na escola');
+        $this->assertNull(session('astuti.two_factor.pending_input'));
+    }
+
+    public function test_abrir_exclusao_depois_de_quinze_minutos_pede_codigo_antes_do_formulario(): void
+    {
+        $fixture = $this->fixture();
+        $user = $this->account('diretor-exclusao-abrir@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->confirmed($user);
+        $url = $this->actionUrl($fixture, 'excluir-cadastro');
+
+        $this->travel(16)->minutes();
+        // Transferir e encerrar seguem liberados pela verificação da entrada.
+        $this->get($this->actionUrl($fixture, 'transferir'))->assertOk();
+        $this->get($this->actionUrl($fixture, 'encerrar'))->assertOk();
+
+        $this->get($url)->assertRedirect(route('two-factor.challenge'));
+        $this->post('/seguranca/segundo-fator/desafio', ['code' => app(Totp::class)->at(self::SECRET, now()->getTimestamp())])
+            ->assertRedirect($url);
+        $this->get($url)->assertOk()->assertSee('Excluir cadastro');
+    }
+
+    public function test_gravacao_depois_do_teto_de_doze_horas_volta_ao_formulario_com_os_dados(): void
+    {
+        $fixture = $this->fixture();
+        $user = $this->account('diretor-teto@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->confirmed($user);
+        $url = $this->actionUrl($fixture, 'transferir');
+
+        $this->get($url)->assertOk();
+        $this->travel(12)->hours();
+        $this->travel(1)->minutes();
+        $this->post($url, $this->transferData($fixture, ['data' => '2027-04-12']))
+            ->assertRedirect(route('two-factor.challenge'));
+        $this->tenant(fn () => $this->assertSame('active', StudentEnrollment::query()->findOrFail($fixture['enrollment'])->status));
+
+        $this->post('/seguranca/segundo-fator/desafio', ['code' => app(Totp::class)->at(self::SECRET, now()->getTimestamp())])
+            ->assertRedirect($url)
+            ->assertSessionHasInput('data', '2027-04-12')
+            ->assertSessionHasInput('escola_destino_id', self::ESCOLA_A2)
+            ->assertSessionMissing('_old_input._token');
+    }
 }

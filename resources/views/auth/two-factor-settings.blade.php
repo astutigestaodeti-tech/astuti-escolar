@@ -39,7 +39,7 @@
 
             @if ($user->two_factor_confirmed_at)
                 <div class="seguranca-sucesso" role="status">Segundo fator ativo. Sua conta está pronta para confirmar alterações escolares.</div>
-                <p>Ao entrar novamente, você deverá informar um código atualizado. A autorização para alterações expira após 15 minutos.</p>
+                <p>Ao entrar no sistema, você informa o código uma vez. Ele vale enquanto você estiver usando o sistema (até 12 horas). Ações delicadas, como excluir um cadastro ou desativar o segundo fator, pedem o código de novo se ele foi digitado há mais de 15 minutos.</p>
                 <a class="botao secundario seguranca-link" href="{{ route('two-factor.challenge') }}">Confirmar novo código</a>
                 <form method="POST" action="{{ route('two-factor.disable') }}" class="seguranca-form">
                     @csrf

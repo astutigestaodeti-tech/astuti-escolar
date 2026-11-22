@@ -15,6 +15,9 @@
         <section class="folha seguranca-folha" aria-labelledby="titulo-desafio">
             <span class="seguranca-etiqueta">Verificação em duas etapas</span>
             <h1 id="titulo-desafio">Confirme que é você</h1>
+            @if (! empty($reason))
+                <p class="seguranca-passo" role="status">{{ $reason }}</p>
+            @endif
             <p>Digite o código de 6 dígitos do seu aplicativo autenticador ou um código de recuperação ainda não utilizado.</p>
 
             @if ($errors->any())

@@ -114,7 +114,7 @@ class TwoFactorReadAccessTest extends TwoMunicipalityTestCase
             ->assertRedirect(route('two-factor.challenge'));
     }
 
-    public function test_confirmacao_expirada_volta_a_exigir_codigo_para_ler_dados_escolares(): void
+    public function test_codigo_da_entrada_vale_durante_o_uso_e_vence_apos_doze_horas(): void
     {
         $user = $this->criarUsuario('consulta-expirada@example.invalid');
         $this->vincular($user, $this->municipioA, 'municipal_manager');
@@ -128,8 +128,13 @@ class TwoFactorReadAccessTest extends TwoMunicipalityTestCase
         $this->post('/seguranca/segundo-fator/desafio', ['code' => $code])->assertRedirect('/');
 
         $this->get('/m/municipio-a/escolas')->assertOk();
-        $this->travel(16)->minutes();
 
+        // Depois de 15 minutos o uso normal continua sem pedir o código de novo.
+        $this->travel(16)->minutes();
+        $this->get('/m/municipio-a/escolas')->assertOk();
+
+        // O teto de 12 horas vale mesmo para quem deixou o sistema aberto.
+        $this->travel(12)->hours();
         $this->get('/m/municipio-a/escolas')->assertRedirect(route('two-factor.challenge'));
         $this->get('/')->assertRedirect(route('two-factor.challenge'));
         $this->assertFalse(app(TenantContext::class)->hasActive());

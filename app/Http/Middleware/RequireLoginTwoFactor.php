@@ -28,17 +28,7 @@ class RequireLoginTwoFactor
                     ], 403);
                 }
 
-                if ($request->isMethod('GET')) {
-                    $path = $request->path();
-                    $destination = $path === '/' ? '/' : '/'.$path;
-                    $query = $request->getQueryString();
-
-                    if ($query !== null && $query !== '') {
-                        $destination .= '?'.$query;
-                    }
-
-                    $request->session()->put('url.intended', $destination);
-                }
+                app(TwoFactorSession::class)->rememberDestination($request);
 
                 return redirect()->route('two-factor.challenge');
             }

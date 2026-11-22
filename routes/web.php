@@ -60,6 +60,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::put('/escolas/{escola}/alunos/{aluno}', [StudentRecordController::class, 'update'])->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.update');
 
     // Movimentações são confirmadas em GET e gravadas somente com segundo fator.
+    // A exclusão de cadastro é ação delicada: pede o código digitado nos últimos 15 minutos.
     Route::get('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/transferir', [EnrollmentMovementController::class, 'transferForm'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->name('school.enrollments.transfer.form');
     Route::post('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/transferir', [EnrollmentMovementController::class, 'transfer'])
@@ -69,7 +70,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/encerrar', [EnrollmentMovementController::class, 'end'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class)->name('school.enrollments.end');
     Route::get('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/excluir-cadastro', [EnrollmentMovementController::class, 'deleteForm'])
-        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->name('school.enrollments.delete-registration.form');
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.enrollments.delete-registration.form');
     Route::delete('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/excluir-cadastro', [EnrollmentMovementController::class, 'deleteRegistration'])
-        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class)->name('school.enrollments.delete-registration');
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.enrollments.delete-registration');
 });

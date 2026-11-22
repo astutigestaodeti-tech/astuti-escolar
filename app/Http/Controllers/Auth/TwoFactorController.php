@@ -91,7 +91,9 @@ class TwoFactorController extends Controller
             return redirect()->route('two-factor.settings');
         }
 
-        return view('auth.two-factor-challenge');
+        return view('auth.two-factor-challenge', [
+            'reason' => app(TwoFactorSession::class)->reason($request),
+        ]);
     }
 
     public function challenge(Request $request, Totp $totp): RedirectResponse
@@ -129,9 +131,13 @@ class TwoFactorController extends Controller
         });
 
         $request->session()->regenerate();
-        app(TwoFactorSession::class)->markVerified($request, $user->fresh());
+        $twoFactor = app(TwoFactorSession::class);
+        $pendingInput = $twoFactor->pullPendingInput($request);
+        $twoFactor->markVerified($request, $user->fresh());
 
-        return redirect()->intended('/');
+        $response = redirect()->intended('/');
+
+        return $pendingInput === [] ? $response : $response->withInput($pendingInput);
     }
 
     public function disable(Request $request): RedirectResponse
@@ -143,8 +149,15 @@ class TwoFactorController extends Controller
             throw ValidationException::withMessages(['password' => 'Senha atual incorreta.']);
         }
 
-        if (! app(TwoFactorSession::class)->isVerified($request, $user)) {
+        $twoFactor = app(TwoFactorSession::class);
+        if (! $twoFactor->isVerified($request, $user)) {
             abort(403, 'Confirme o segundo fator antes de desativá-lo.');
+        }
+
+        if (! $twoFactor->isRecentlyVerified($request, $user)) {
+            $twoFactor->rememberDestination($request, 'Para desativar o segundo fator, confirme o código do aplicativo e repita o pedido.');
+
+            return redirect()->route('two-factor.challenge');
         }
 
         DB::connection('platform')->transaction(function () use ($user): void {

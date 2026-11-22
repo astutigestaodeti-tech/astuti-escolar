@@ -23,3 +23,11 @@ Não obriga ainda o cadastro inicial do segundo fator, não cria nem altera regi
 
 ## Evidência
 Testes de recurso cobrem acesso por URL direta, visitante, conta sem TOTP, validação e expiração de sessão, e preservação da rota originalmente solicitada.
+
+## Revisão de 21/11/2026 (decisão de Jefferson)
+
+A expiração fixa de 15 minutos interrompia o trabalho e fazia perder formulários. Passa a valer:
+
+- O código é pedido uma vez ao entrar e vale enquanto a sessão estiver viva (a sessão termina após 2 horas sem uso), com teto de 12 horas.
+- Ações delicadas exigem código digitado nos últimos 15 minutos: abrir e gravar a exclusão justificada de cadastro e desativar o segundo fator. Transferência, encerramento, cadastro, edição e importações usam a verificação da entrada.
+- Quando o código é pedido no momento de gravar, o sistema volta ao formulário com os campos preenchidos. Senha, código, arquivos e tokens nunca são guardados para isso.
