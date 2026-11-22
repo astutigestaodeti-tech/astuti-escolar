@@ -15,7 +15,7 @@ class Student extends TenantModel
 
     protected $fillable = [
         'id', 'full_name', 'birth_date', 'ra',
-        'address_street', 'address_number', 'address_district', 'postal_code', 'residence_zone',
+        'address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state', 'postal_code', 'residence_zone',
     ];
 
     protected function casts(): array

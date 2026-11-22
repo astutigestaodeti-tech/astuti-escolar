@@ -431,6 +431,9 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
 .formulario-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
 .formulario-campo.largo{grid-column:1/-1}
 .texto-ajuda{margin:4px 0 0;color:var(--tinta-3);font-size:13px}
+.cep-busca{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.cep-busca .entrada{flex:1;min-width:160px}
+.cep-busca .botao{white-space:nowrap}
 .grupo-endereco{grid-column:1/-1;min-width:0;border:0;border-top:1px solid var(--linha);padding:12px 0 0;margin:14px 0 0}
 .grupo-endereco legend{font-size:17px;font-weight:700;color:var(--tinta);padding:0 10px 0 0}
 .campo-erro{margin:6px 0 0;color:#8a2c22;font-size:14px}

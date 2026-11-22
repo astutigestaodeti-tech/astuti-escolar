@@ -7,6 +7,7 @@ use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentMovementController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
@@ -55,6 +56,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/importacoes/alunos/previa', [ConfirmedStudentImportController::class, 'preview'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:6,1'])->name('school.imports.students.preview');
     Route::post('/escolas/{escola}/importacoes/alunos/confirmar', [ConfirmedStudentImportController::class, 'confirm'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.imports.students.confirm');
     Route::get('/escolas/{escola}/alunos', [SchoolStudentController::class, 'index'])->whereUuid('escola')->name('school.students.index');
+    Route::get('/escolas/{escola}/alunos/cep/{cep}', [PostalCodeLookupController::class, 'show'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:20,1'])->name('school.students.postal.lookup');
     Route::get('/escolas/{escola}/alunos/{aluno}', [SchoolStudentController::class, 'show'])->whereUuid('escola')->whereUuid('aluno')->name('school.students.show');
 
     // Gravação: permissão de gestão na escola (no controlador) e segundo fator confirmado.

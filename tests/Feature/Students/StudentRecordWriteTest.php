@@ -487,4 +487,82 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
 
         $this->assertSame('Rua Fictícia Protegida', $this->noMunicipio($this->municipioA, fn (): ?string => Student::query()->findOrFail($id)->address_street));
     }
+
+    public function test_complemento_cidade_uf_e_cep_primeiro_sao_gravados_editados_e_auditados(): void
+    {
+        $user = $this->conta('endereco-inteligente@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $html = $this->get($this->url('/novo'))->assertOk()
+            ->assertSee('Complemento')
+            ->assertSee('Cidade')
+            ->assertSee('Estado (UF)')
+            ->assertSee('postal-lookup-status')
+            ->getContent();
+        $this->assertIsString($html);
+        $this->assertTrue(strpos($html, 'id="postal_code"') < strpos($html, 'id="address_street"'));
+
+        $this->post($this->url(), $this->dados([
+            'postal_code' => '07400000',
+            'address_street' => 'Rua Fictícia das Flores',
+            'address_number' => '45',
+            'address_complement' => ' Casa 2 ',
+            'address_district' => 'Centro',
+            'address_city' => ' Santa Isabel ',
+            'address_state' => 'sp',
+            'residence_zone' => 'urban',
+        ]))->assertRedirect();
+
+        [$id, $beforeEditVersion, $afterCreate] = $this->noMunicipio($this->municipioA, function (): array {
+            $student = Student::query()->sole();
+            $audit = AuditLog::query()->where('auditable_type', Student::class)->where('action', 'created')->sole();
+
+            return [
+                $student->id,
+                DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->sole()->token,
+                $audit->after,
+            ];
+        });
+
+        $this->assertSame('Casa 2', $afterCreate['address_complement']);
+        $this->assertSame('Santa Isabel', $afterCreate['address_city']);
+        $this->assertSame('SP', $afterCreate['address_state']);
+
+        $this->get($this->url('/'.$id))->assertOk()
+            ->assertSee('Casa 2')->assertSee('Santa Isabel')->assertSee('SP');
+
+        $this->put($this->url('/'.$id), [
+            'full_name' => 'Lívia Fictícia de Souza',
+            'birth_date' => '2019-05-10',
+            'versao' => $beforeEditVersion,
+            'address_complement' => 'Apto. 12',
+            'address_city' => 'Arujá',
+            'address_state' => 'SP',
+        ])->assertRedirect($this->url('/'.$id));
+
+        [$student, $log] = $this->noMunicipio($this->municipioA, fn (): array => [
+            Student::query()->findOrFail($id),
+            AuditLog::query()->where('auditable_type', Student::class)->where('action', 'updated')->sole(),
+        ]);
+        $this->assertSame('Apto. 12', $student->address_complement);
+        $this->assertSame('Arujá', $student->address_city);
+        $this->assertSame('SP', $student->address_state);
+        $this->assertSame('Rua Fictícia das Flores', $student->address_street);
+        $this->assertSame('Casa 2', $log->before['address_complement']);
+        $this->assertSame('Apto. 12', $log->after['address_complement']);
+        $this->assertSame('Santa Isabel', $log->before['address_city']);
+        $this->assertSame('Arujá', $log->after['address_city']);
+    }
+
+    public function test_estado_invalido_e_recusado_com_mensagem_em_portugues(): void
+    {
+        $user = $this->conta('uf-invalida@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->post($this->url(), $this->dados(['address_state' => 'ZZ']))
+            ->assertSessionHasErrors(['address_state' => 'Selecione uma UF válida.']);
+        $this->post($this->url(), $this->dados(['address_state' => 'Sao Paulo']))
+            ->assertSessionHasErrors('address_state');
+        $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+    }
 }

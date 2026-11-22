@@ -47,7 +47,10 @@
             <dl>
                 <div><dt>Logradouro</dt><dd>{{ $student->address_street ?? 'Não informado' }}</dd></div>
                 <div><dt>Número</dt><dd>{{ $student->address_number ?? 'Não informado' }}</dd></div>
+                <div><dt>Complemento</dt><dd>{{ $student->address_complement ?? 'Não informado' }}</dd></div>
                 <div><dt>Bairro</dt><dd>{{ $student->address_district ?? 'Não informado' }}</dd></div>
+                <div><dt>Cidade</dt><dd>{{ $student->address_city ?? 'Não informado' }}</dd></div>
+                <div><dt>Estado</dt><dd>{{ $student->address_state ?? 'Não informado' }}</dd></div>
                 <div><dt>CEP</dt><dd class="numero">{{ $student->postal_code ?? 'Não informado' }}</dd></div>
                 <div><dt>Zona de residência</dt><dd>{{ ['urban' => 'Urbana', 'rural' => 'Rural'][$student->residence_zone] ?? 'Não informada' }}</dd></div>
             </dl>

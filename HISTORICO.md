@@ -1,5 +1,13 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-21 | Cadastro manual | CEP primeiro e endereço assistido
+
+- CEP passa a abrir o grupo de endereço; consulta ViaCEP pelo servidor, com cache PostgreSQL próprio do município (30 dias), limite de requisições, autorização escolar e segundo fator confirmado.
+- Logradouro, bairro, cidade e UF são sugeridos quando disponíveis, sem substituir correções feitas durante a consulta; número, complemento e zona permanecem exclusivamente manuais. Sem rede, o formulário continua utilizável.
+- Migração municipal nova adiciona complemento, cidade, estado e cache de CEP, sem alterar migrações antigas, bases originais ou importadores de alunos.
+- Criação, edição, ficha e auditoria contemplam os três campos; testes fictícios cobrem retorno, cache, falhas, permissões, criação, edição e interface acessível. O PR depende de Pint e CI para integração.
+
+
 ## 2026-11-21 | Organização acadêmica | Cadastro manual de turmas
 
 - Direção, secretaria e gestão municipal podem criar/editar turmas ativas da escola, com nome/código, etapa, modalidade, turno, vagas opcionais e ano letivo. Professores permanecem somente com consulta.
