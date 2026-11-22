@@ -22,13 +22,15 @@
 
             @if ($errors->any())
                 <div class="erro" role="alert"><x-icon name="alerta" :size="18" /><span>{{ $errors->first() }}</span></div>
+            @elseif (! empty($lockedMessage))
+                <div class="erro" role="alert"><x-icon name="alerta" :size="18" /><span>{{ $lockedMessage }}</span></div>
             @endif
 
             <form method="POST" action="{{ route('two-factor.verify') }}" class="seguranca-form">
                 @csrf
                 <label class="rotulo" for="code">Código de segurança</label>
-                <input class="entrada" id="code" name="code" type="text" inputmode="text" autocomplete="one-time-code" minlength="6" maxlength="16" required autofocus>
-                <button class="botao" type="submit">Confirmar acesso</button>
+                <input class="entrada" id="code" name="code" type="text" inputmode="text" autocomplete="one-time-code" minlength="6" maxlength="16" required autofocus @disabled(! empty($lockedMessage))>
+                <button class="botao" type="submit" @disabled(! empty($lockedMessage))>Confirmar acesso</button>
             </form>
             <form method="POST" action="{{ route('logout') }}" class="seguranca-form">
                 @csrf
