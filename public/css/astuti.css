@@ -372,7 +372,7 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
     .topo{padding:0 20px}
     .conteudo{padding:22px 20px 32px}
     .ficha-escola{grid-template-columns:1fr}
-    .ficha-escola>.ficha-responsaveis,.ficha-escola>.cartao{grid-column:auto;grid-row:auto}
+    .ficha-escola>.ficha-responsaveis,.ficha-escola>.ficha-historico{grid-column:auto;grid-row:auto}
     .acesso{grid-template-columns:1fr}
     .acesso-lado{display:none}
     .acesso-marca-movel{display:inline-flex;color:var(--tinta);margin-bottom:28px}
@@ -520,7 +520,7 @@ select.entrada{cursor:pointer}
 @media (max-width:960px){.ficha-grupos{grid-template-columns:1fr}}
 /* Responsáveis abaixo dos dados do aluno; o histórico ocupa a coluna lateral */
 .ficha-escola>.ficha-responsaveis{grid-column:1}
-.ficha-escola>.cartao{grid-column:2;grid-row:1 / span 2}
+.ficha-escola>.ficha-historico{grid-column:2;grid-row:1 / span 2}
 .responsaveis-vazio{padding:0 22px 18px}
 .responsaveis-vazio .ficha-vazio{margin:0}
 .responsaveis-lista{list-style:none;margin:0;padding:0 22px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
