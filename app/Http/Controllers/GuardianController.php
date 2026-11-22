@@ -266,9 +266,10 @@ class GuardianController extends Controller
             return [$guardian->full_name, $stillLinked];
         });
 
-        $message = "{$guardianName} foi desvinculada do aluno.";
+        // Texto neutro: o responsável pode ser mãe, pai, avô, tia...
+        $message = "O vínculo de {$guardianName} com o aluno foi removido.";
         if ($stillLinked) {
-            $message .= ' O cadastro dela continua disponível para os irmãos.';
+            $message .= ' O cadastro continua disponível para os irmãos.';
         }
 
         return redirect()->to(route('school.students.show', [

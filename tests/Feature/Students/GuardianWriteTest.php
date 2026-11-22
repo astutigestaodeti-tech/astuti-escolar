@@ -409,7 +409,7 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
         $motivo = 'A família solicitou a correção do vínculo fictício.';
         $this->post($this->url().'/'.$linkId.'/desvincular', ['motivo' => $motivo])
             ->assertRedirect()
-            ->assertSessionHas('status', 'Maria da Silva Fictícia foi desvinculada do aluno. O cadastro dela continua disponível para os irmãos.');
+            ->assertSessionHas('status', 'O vínculo de Maria da Silva Fictícia com o aluno foi removido. O cadastro continua disponível para os irmãos.');
 
         [$guardians, $links, $remainingStudent, $audit] = $this->inMunicipality(fn (): array => [
             Guardian::query()->count(),
@@ -438,7 +438,7 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
 
         $this->post($this->url().'/'.$linkId.'/desvincular', [
             'motivo' => 'Vínculo lançado por engano no cadastro.',
-        ])->assertRedirect()->assertSessionHas('status', 'Maria da Silva Fictícia foi desvinculada do aluno.');
+        ])->assertRedirect()->assertSessionHas('status', 'O vínculo de Maria da Silva Fictícia com o aluno foi removido.');
 
         $this->assertSame(1, $this->inMunicipality(fn (): int => Guardian::query()->count()));
         $this->assertSame(0, $this->inMunicipality(fn (): int => StudentGuardian::query()->count()));
