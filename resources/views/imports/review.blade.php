@@ -11,12 +11,15 @@
 @endsection
 
 @section('content')
+    @php
+        $alreadyCount = count(array_filter($rows, fn ($row) => in_array('ja_cadastrado', array_column($row['confirmation'], 'field'), true)));
+    @endphp
     <a class="voltar" href="{{ route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Voltar à tela anterior</a>
     <div class="folha-titulo">
         <div>
             <span class="contexto">{{ $school->name }} - Ano letivo {{ $year->year }}</span>
             <h1>Conferir antes de importar</h1>
-            <p>{{ count($rows) }} alunos identificados. Confira cada repetição de nome antes de gravar.</p>
+            <p>{{ count($rows) }} linhas conferidas: {{ $alreadyCount }} já cadastradas e {{ count($rows) - $alreadyCount }} possíveis inclusões.</p>
         </div>
     </div>
 
@@ -38,18 +41,27 @@
                                 <td>{{ $row['ra'] ?? 'Pendente' }}</td>
                                 <td>{{ $row['class_name'] ?? 'Conferir turma' }}</td>
                                 <td>
-                                    @foreach ($row['confirmation'] as $issue)
-                                        <p role="alert">{{ $issue['message'] }}</p>
-                                        @if ($issue['field'] === 'duplicidade')
-                                            <label><input type="checkbox" name="confirmados[]" value="{{ $index }}"> Confirmo que são registros da mesma pessoa.</label>
-                                        @else
-                                            <strong>Corrija a planilha e envie novamente.</strong>
+                                    @if (in_array('ja_cadastrado', array_column($row['confirmation'], 'field'), true))
+                                        <strong>Já cadastrado: esta linha será ignorada</strong>
+                                        <small style="display:block">O cadastro e o RA existentes serão preservados.</small>
+                                    @else
+                                        @foreach ($row['confirmation'] as $issue)
+                                            @if ($issue['field'] === 'duplicidade')
+                                                <p role="alert">{{ $issue['message'] }}</p>
+                                                <label><input type="checkbox" name="confirmados[]" value="{{ $index }}"> Confirmo que são registros da mesma pessoa.</label>
+                                            @elseif ($issue['field'] === 'homonimo')
+                                                <p role="alert">{{ $issue['message'] }}</p>
+                                                <label><input type="checkbox" name="homonimos[]" value="{{ $index }}"> É outra pessoa. Autorizo cadastrar um novo aluno.</label>
+                                            @else
+                                                <p role="alert">{{ $issue['message'] }}</p>
+                                                <strong>Corrija a planilha e envie novamente.</strong>
+                                            @endif
+                                        @endforeach
+                                        @if (count($row['pending']) > 0)
+                                            <small>{{ count($row['pending']) }} informação(ões) pendente(s).</small>
+                                        @elseif (count($row['confirmation']) === 0)
+                                            <span>Pronto</span>
                                         @endif
-                                    @endforeach
-                                    @if (count($row['pending']) > 0)
-                                        <small>{{ count($row['pending']) }} informação(ões) pendente(s).</small>
-                                    @elseif (count($row['confirmation']) === 0)
-                                        <span>Pronto</span>
                                     @endif
                                 </td>
                             </tr>
@@ -59,10 +71,10 @@
             </div>
         </section>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:18px">
-            <button class="botao" type="submit">Confirmar e gravar {{ count($rows) }} alunos</button>
+            <button class="botao" type="submit">Confirmar importação de {{ count($rows) - $alreadyCount }} alunos</button>
             <a class="botao secundario" href="{{ route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Cancelar e voltar</a>
         </div>
     </form>
 
-    <div class="nota" style="margin-top:20px"><x-icon name="info" /><div><strong>LGPD e auditoria</strong><p>Somente nome, nascimento, RA e turma serão cadastrados. Nenhuma data de matrícula será inventada. A operação inteira será desfeita se houver conflito ou falha de auditoria.</p></div></div>
+    <div class="nota" style="margin-top:20px"><x-icon name="info" /><div><strong>LGPD e auditoria</strong><p>As linhas já cadastradas serão ignoradas e contabilizadas. Somente as novas linhas aceitas serão gravadas em uma única transação; nenhum RA será reutilizado e nenhuma data será inventada.</p></div></div>
 @endsection

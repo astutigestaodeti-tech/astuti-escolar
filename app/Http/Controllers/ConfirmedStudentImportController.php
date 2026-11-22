@@ -100,10 +100,20 @@ class ConfirmedStudentImportController extends Controller
                 }
             }
 
+            $birthDate = $student->birthDate?->format('Y-m-d');
+            $ra = $this->canonicalRa($student->ra);
+            $match = $this->existingStatus($student->name, $birthDate, $ra);
+
+            if ($match === 'existing') {
+                $confirmation[] = ['field' => 'ja_cadastrado', 'message' => 'Já cadastrado: esta linha será ignorada.'];
+            } elseif ($match === 'homonym') {
+                $confirmation[] = ['field' => 'homonimo', 'message' => 'Possível homônimo. Confirme que é outra pessoa.'];
+            }
+
             $rows[] = [
                 'name' => $student->name,
-                'birth_date' => $student->birthDate?->format('Y-m-d'),
-                'ra' => $this->canonicalRa($student->ra),
+                'birth_date' => $birthDate,
+                'ra' => $ra,
                 'class_id' => $student->classId,
                 'class_name' => $classNames[$student->classId ?? ''] ?? null,
                 'confirmation' => $confirmation,
@@ -133,6 +143,8 @@ class ConfirmedStudentImportController extends Controller
             'lote' => ['required', 'string', 'max:500000'],
             'confirmados' => ['nullable', 'array', 'max:500'],
             'confirmados.*' => ['integer', 'min:0', 'max:499'],
+            'homonimos' => ['nullable', 'array', 'max:500'],
+            'homonimos.*' => ['integer', 'min:0', 'max:499'],
         ]);
 
         try {
@@ -152,24 +164,44 @@ class ConfirmedStudentImportController extends Controller
         }
 
         $confirmed = array_values(array_unique(array_map('intval', $data['confirmados'] ?? [])));
+        $homonyms = array_values(array_unique(array_map('intval', $data['homonimos'] ?? [])));
+        $acceptedRows = [];
+        $ignoredCount = 0;
+
         foreach ($payload['rows'] as $index => $row) {
             if (! is_array($row) || ! is_array($row['confirmation'] ?? null)) {
                 throw ValidationException::withMessages(['lote' => 'Os dados da conferência são inválidos.']);
             }
 
+            if ($this->hasConfirmation($row, 'ja_cadastrado')) {
+                $ignoredCount++;
+
+                continue;
+            }
+
             foreach ($row['confirmation'] as $issue) {
-                if (! is_array($issue) || ($issue['field'] ?? null) !== 'duplicidade') {
-                    throw ValidationException::withMessages(['lote' => 'Há conflitos de turma ou informações na planilha. Corrija o arquivo e envie novamente.']);
+                if (! is_array($issue)) {
+                    throw ValidationException::withMessages(['lote' => 'Os dados da conferência são inválidos.']);
                 }
 
-                if (! in_array($index, $confirmed, true)) {
+                if (($issue['field'] ?? null) === 'duplicidade' && ! in_array($index, $confirmed, true)) {
                     throw ValidationException::withMessages(['confirmados' => 'Confirme explicitamente cada repetição de aluno antes de gravar.']);
                 }
+
+                if (($issue['field'] ?? null) === 'homonimo' && ! in_array($index, $homonyms, true)) {
+                    throw ValidationException::withMessages(['homonimos' => 'Marque explicitamente que o possível homônimo é outra pessoa.']);
+                }
+
+                if (! in_array($issue['field'] ?? null, ['duplicidade', 'homonimo'], true)) {
+                    throw ValidationException::withMessages(['lote' => 'Há conflitos de turma ou informações na planilha. Corrija o arquivo e envie novamente.']);
+                }
             }
+
+            $acceptedRows[] = $row;
         }
 
         try {
-            DB::connection('tenant')->transaction(function () use ($payload, $school, $request): void {
+            DB::connection('tenant')->transaction(function () use ($payload, $acceptedRows, $ignoredCount, $school, $request): void {
                 $year = SchoolYear::query()->whereIn('status', ['active', 'planned'])->lockForUpdate()->find($payload['year_id'] ?? null);
                 if ($year === null || School::query()->where('status', 'active')->whereKey($school->id)->lockForUpdate()->first() === null) {
                     throw ValidationException::withMessages(['lote' => 'Escola ou ano letivo deixou de estar disponível. Refaça a conferência.']);
@@ -187,19 +219,24 @@ class ConfirmedStudentImportController extends Controller
                     ->where('school_year_id', $year->id)
                     ->whereIn('status', ['active', 'planned'])->pluck('id')->all();
 
+                // Rechecar sob lock impede que outra importação reuse o RA
+                // ou introduza um homônimo sem confirmação humana.
                 foreach ($payload['rows'] as $row) {
+                    $match = $this->existingStatus($row['name'], $row['birth_date'], $row['ra']);
+                    if ($this->hasConfirmation($row, 'ja_cadastrado')) {
+                        if ($match !== 'existing') {
+                            throw ValidationException::withMessages(['lote' => 'Um cadastro mudou depois da prévia. Refaça a conferência antes de confirmar.']);
+                        }
+
+                        continue;
+                    }
+
                     $this->validateStudent($row, $classIds);
-                    $name = $row['name'];
-                    $ra = $row['ra'];
-                    $candidate = Student::query()->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$name]);
-                    if ($row['birth_date'] !== null) {
-                        $candidate->whereDate('birth_date', $row['birth_date']);
+                    if ($match === 'existing') {
+                        throw ValidationException::withMessages(['lote' => 'Um aluno ou RA foi cadastrado depois da prévia. Refaça a conferência; nenhum registro foi gravado.']);
                     }
-                    if ($candidate->exists()) {
-                        throw ValidationException::withMessages(['lote' => 'Há um aluno já cadastrado no município. Confira o cadastro existente; nenhum aluno deste lote foi importado.']);
-                    }
-                    if ($ra !== null && Student::query()->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$ra])->exists()) {
-                        throw ValidationException::withMessages(['lote' => 'Há um RA já cadastrado no município. Nenhum aluno deste lote foi importado.']);
+                    if ($match === 'homonym' && ! $this->hasConfirmation($row, 'homonimo')) {
+                        throw ValidationException::withMessages(['lote' => 'Um possível homônimo apareceu depois da prévia. Refaça a conferência antes de gravar.']);
                     }
                 }
 
@@ -208,11 +245,12 @@ class ConfirmedStudentImportController extends Controller
                     'school_id' => $school->id,
                     'school_year_id' => $year->id,
                     'created_by' => $request->user()->id,
-                    'student_count' => count($payload['rows']),
+                    'student_count' => count($acceptedRows),
+                    'ignored_count' => $ignoredCount,
                     'created_at' => now(),
                 ]);
 
-                foreach ($payload['rows'] as $row) {
+                foreach ($acceptedRows as $row) {
                     $student = Student::query()->create([
                         'id' => (string) Str::uuid(),
                         'full_name' => $row['name'],
@@ -235,7 +273,8 @@ class ConfirmedStudentImportController extends Controller
                     'id' => $payload['id'],
                     'school_id' => $school->id,
                     'school_year_id' => $year->id,
-                    'student_count' => count($payload['rows']),
+                    'student_count' => count($acceptedRows),
+                    'ignored_count' => $ignoredCount,
                 ]);
             });
         } catch (QueryException $exception) {
@@ -247,7 +286,7 @@ class ConfirmedStudentImportController extends Controller
         }
 
         return redirect()->route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id])
-            ->with('status', count($payload['rows']).' alunos e matrículas importados com auditoria.');
+            ->with('status', count($acceptedRows).' alunos e matrículas importados; '.$ignoredCount.' já cadastrados ignorados com auditoria.');
     }
 
     /** @return array{0: mixed, 1: School} */
@@ -273,6 +312,44 @@ class ConfirmedStudentImportController extends Controller
         return SchoolClass::query()->where('school_id', $school->id)->where('school_year_id', $year->id)
             ->whereIn('status', ['active', 'planned'])->orderBy('name')->get()
             ->map(fn (SchoolClass $class): ClassOption => new ClassOption($class->id, $class->name, $class->shift))->all();
+    }
+
+    /** @param array<string, mixed> $row */
+    private function hasConfirmation(array $row, string $field): bool
+    {
+        foreach ($row['confirmation'] as $issue) {
+            if (is_array($issue) && ($issue['field'] ?? null) === $field) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * RA igual ou nome e nascimento iguais indicam cadastro existente.
+     * Data ausente impede identificar com segurança duas pessoas homônimas.
+     */
+    private function existingStatus(string $name, ?string $birthDate, ?string $ra): string
+    {
+        if ($ra !== null && Student::query()
+            ->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$ra])
+            ->exists()) {
+            return 'existing';
+        }
+
+        $sameName = Student::query()
+            ->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$name]);
+
+        if ($birthDate === null) {
+            return $sameName->exists() ? 'homonym' : 'new';
+        }
+
+        if ((clone $sameName)->whereDate('birth_date', $birthDate)->exists()) {
+            return 'existing';
+        }
+
+        return (clone $sameName)->whereNull('birth_date')->exists() ? 'homonym' : 'new';
     }
 
     private function canonicalRa(?string $ra): ?string

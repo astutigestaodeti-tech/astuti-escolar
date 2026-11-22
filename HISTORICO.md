@@ -33,3 +33,10 @@
 - Proximos blocos, na ordem solicitada: ordenacao ICU pt-BR e busca sem acento, permissoes de producao em PR proprio, e limite/auditoria do segundo fator.
 
 Registro unico desta sessao. Testes completos e Pint sao condicionantes de entrega; verificar o status do CI deste commit antes do ensaio.
+
+## 2026-11-21 | PR #13 | Reimportacao de alunos sem bloqueio por cadastro existente
+
+- Previa classifica RA ou nome com data ja existentes como `ja_cadastrado`, com descarte automatico e contagem no recibo, sem reutilizar RA.
+- Nome coincidente com nascimento ausente exige confirmar `homonimo` como outra pessoa antes da inclusao.
+- Confirmacao revalida os cadastros sob advisory lock e grava de forma transacional somente as linhas aceitas.
+- Testes cobrem reenvio da E02 (58 ignorados, zero gravados), E02 com uma aluna nova e homonimo sem data; formatacao e CI exigidos antes da integracao.
