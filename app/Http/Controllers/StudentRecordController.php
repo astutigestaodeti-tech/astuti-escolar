@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Address\PostalCodeBook;
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
@@ -33,12 +34,18 @@ class StudentRecordController extends Controller
 
     private const BIRTH_RULES = ['nullable', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before:today'];
 
-    private const ADDRESS_FIELDS = ['address_street', 'address_number', 'address_district', 'postal_code', 'residence_zone'];
+    private const ADDRESS_FIELDS = ['postal_code', 'address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state', 'residence_zone'];
+
+    public const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB',
+        'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
     private const ADDRESS_RULES = [
         'address_street' => ['nullable', 'string', 'max:180'],
         'address_number' => ['nullable', 'string', 'max:20'],
+        'address_complement' => ['nullable', 'string', 'max:120'],
         'address_district' => ['nullable', 'string', 'max:120'],
+        'address_city' => ['nullable', 'string', 'max:120'],
+        'address_state' => ['nullable', 'in:AC,AL,AP,AM,BA,CE,DF,ES,GO,MA,MT,MS,MG,PA,PB,PR,PE,PI,RJ,RN,RS,RO,RR,SC,SP,SE,TO'],
         'postal_code' => ['nullable', 'string', 'regex:/\\A\\d{5}-\\d{3}\\z/'],
         'residence_zone' => ['nullable', 'in:urban,rural'],
     ];
@@ -47,13 +54,17 @@ class StudentRecordController extends Controller
         'ra.max' => 'RA fora do padrão da SED: tem caracteres demais. Exemplo: '.SedRa::EXAMPLE.'.',
         'postal_code.regex' => 'Informe o CEP no formato 00000-000.',
         'residence_zone.in' => 'Selecione a zona de residência: Urbana ou Rural.',
+        'address_state.in' => 'Escolha o estado (UF) na lista.',
     ];
 
     private const VALIDATION_ATTRIBUTES = [
         'ra' => 'RA',
         'address_street' => 'Logradouro',
         'address_number' => 'Número',
+        'address_complement' => 'Complemento',
         'address_district' => 'Bairro',
+        'address_city' => 'Cidade',
+        'address_state' => 'Estado',
         'postal_code' => 'CEP',
         'residence_zone' => 'Zona de residência',
     ];
@@ -128,7 +139,10 @@ class StudentRecordController extends Controller
                     'ra' => $data['ra'] ?? null,
                     'address_street' => $data['address_street'] ?? null,
                     'address_number' => $data['address_number'] ?? null,
+                    'address_complement' => $data['address_complement'] ?? null,
                     'address_district' => $data['address_district'] ?? null,
+                    'address_city' => $data['address_city'] ?? null,
+                    'address_state' => $data['address_state'] ?? null,
                     'postal_code' => $data['postal_code'] ?? null,
                     'residence_zone' => $data['residence_zone'] ?? null,
                 ]);
@@ -377,9 +391,44 @@ class StudentRecordController extends Controller
         $request->merge([
             'address_street' => $this->normalizeAddressPart($request->input('address_street')),
             'address_number' => $this->normalizeAddressPart($request->input('address_number')),
+            'address_complement' => $this->normalizeAddressPart($request->input('address_complement')),
             'address_district' => $this->normalizeAddressPart($request->input('address_district')),
+            'address_city' => $this->normalizeAddressPart($request->input('address_city')),
+            'address_state' => is_string($request->input('address_state')) && trim($request->input('address_state')) !== ''
+                ? strtoupper(trim($request->input('address_state'))) : null,
             'postal_code' => $this->normalizePostalCode($request->input('postal_code')),
         ]);
+
+        $this->fillFromPostalCode($request);
+    }
+
+    /**
+     * Com o CEP na base local da Prefeitura, completa só os campos deixados em
+     * branco (rua, bairro, cidade, UF e zona). O que a pessoa digitou prevalece.
+     * Funciona também sem JavaScript.
+     */
+    private function fillFromPostalCode(Request $request): void
+    {
+        $found = app(PostalCodeBook::class)->find($request->input('postal_code'));
+        if ($found === null) {
+            return;
+        }
+
+        $map = [
+            'address_street' => $found['logradouro'],
+            'address_district' => $found['bairro'],
+            'address_city' => $found['cidade'],
+            'address_state' => $found['uf'],
+            'residence_zone' => $found['zona'],
+        ];
+        $fill = [];
+        foreach ($map as $field => $value) {
+            $current = $request->input($field);
+            if ($value !== null && ($current === null || $current === '') && $request->exists('postal_code')) {
+                $fill[$field] = $value;
+            }
+        }
+        $request->merge($fill);
     }
 
     private function normalizeAddressPart(mixed $value): mixed

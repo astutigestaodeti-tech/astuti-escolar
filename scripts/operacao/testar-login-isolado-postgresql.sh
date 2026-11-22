@@ -242,6 +242,32 @@ else
 fi
 unset ASTUTI_ATUALIZAR_ESTRUTURA
 
+# Base de CEPs ficticios do kit Monte Sereno, SOMENTE na copia 55436 e so se a
+# estrutura ja tiver a tabela. Atualiza sem apagar nada; pode rodar sempre.
+php -r '
+    require "vendor/autoload.php";
+    $app = require "bootstrap/app.php";
+    $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+    $municipio = \App\Models\Platform\Municipality::query()->sole();
+    $ok = app(\App\Tenancy\TenantContext::class)->runFor($municipio, function (): bool {
+        $dados = \Illuminate\Support\Facades\DB::connection("tenant")->selectOne(
+            "SELECT current_database() AS banco, current_user AS usuario, inet_server_port() AS porta"
+        );
+        if ($dados->banco !== "astuti_monte_sereno_dev" || $dados->usuario !== "astuti_ensaio" || (int) $dados->porta !== 55436) {
+            throw new \RuntimeException("Conexao efetiva fora do cluster isolado.");
+        }
+
+        return \Illuminate\Support\Facades\Schema::connection("tenant")->hasTable("postal_codes");
+    });
+    if (! $ok) {
+        echo "Base de CEPs: tabela ainda nao existe (rode com ASTUTI_ATUALIZAR_ESTRUTURA=1).\n";
+        exit(0);
+    }
+    $codigo = \Illuminate\Support\Facades\Artisan::call("astuti:ceps-importar", ["municipio" => $municipio->slug, "--ficticio" => true]);
+    echo "Base de CEPs: ".\Illuminate\Support\Facades\Artisan::output();
+    exit($codigo === 0 ? 0 : 1);
+' || printf 'Aviso: nao foi possivel carregar os CEPs ficticios; o endereco continua funcionando sem o preenchimento automatico.\n'
+
 # Opcional: troca as escolas inventadas da primeira demonstracao pelas do kit
 # Monte Sereno, SOMENTE na copia 55436. Exclusao logica com motivo e auditoria.
 # Uso: ASTUTI_TROCAR_DEMO_KIT=1 bash scripts/operacao/testar-login-isolado-postgresql.sh

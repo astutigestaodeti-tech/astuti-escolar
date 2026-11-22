@@ -124,21 +124,38 @@
 
                 <fieldset class="grupo-endereco" id="endereco">
                     <legend>Endereço</legend>
-                    <p class="texto-ajuda">Todos os campos são opcionais. Registre apenas informações confirmadas.</p>
+                    <p class="texto-ajuda">Comece pelo CEP: o sistema completa rua, bairro, cidade e estado. Todos os campos são opcionais.</p>
                     <div class="formulario-grade grade-endereco">
+                        <div class="formulario-campo end-cep">
+                            <label class="rotulo" for="postal_code">CEP</label>
+                            <input class="entrada" id="postal_code" name="postal_code" type="text" maxlength="9" inputmode="numeric" autocomplete="postal-code"
+                                   placeholder="00000-000" value="{{ old('postal_code', $student?->postal_code) }}"
+                                   data-consulta="{{ route('postal-codes.show', ['municipio' => $municipality->slug, 'cep' => '00000000']) }}"
+                                   aria-describedby="{{ $errors->has('postal_code') ? 'postal_code-status postal_code-erro' : 'postal_code-status' }}"
+                                   @error('postal_code') aria-invalid="true" @enderror>
+                            @error('postal_code')<p class="campo-erro" id="postal_code-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <p class="cep-status end-status" id="postal_code-status" role="status" aria-live="polite"></p>
                         <div class="formulario-campo end-logradouro">
                             <label class="rotulo" for="address_street">Logradouro</label>
-                            <input class="entrada" id="address_street" name="address_street" type="text" maxlength="180"
+                            <input class="entrada" id="address_street" name="address_street" type="text" maxlength="180" autocomplete="address-line1"
                                    value="{{ old('address_street', $student?->address_street) }}"
                                    @error('address_street') aria-invalid="true" aria-describedby="address_street-erro" @enderror>
                             @error('address_street')<p class="campo-erro" id="address_street-erro">{{ $message }}</p>@enderror
                         </div>
-                        <div class="formulario-campo">
+                        <div class="formulario-campo end-numero">
                             <label class="rotulo" for="address_number">Número</label>
                             <input class="entrada" id="address_number" name="address_number" type="text" maxlength="20"
                                    value="{{ old('address_number', $student?->address_number) }}"
                                    @error('address_number') aria-invalid="true" aria-describedby="address_number-erro" @enderror>
                             @error('address_number')<p class="campo-erro" id="address_number-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo end-complemento">
+                            <label class="rotulo" for="address_complement">Complemento</label>
+                            <input class="entrada" id="address_complement" name="address_complement" type="text" maxlength="120" placeholder="Apto, bloco, casa, fundos"
+                                   value="{{ old('address_complement', $student?->address_complement) }}"
+                                   @error('address_complement') aria-invalid="true" aria-describedby="address_complement-erro" @enderror>
+                            @error('address_complement')<p class="campo-erro" id="address_complement-erro">{{ $message }}</p>@enderror
                         </div>
                         <div class="formulario-campo end-bairro">
                             <label class="rotulo" for="address_district">Bairro</label>
@@ -147,17 +164,26 @@
                                    @error('address_district') aria-invalid="true" aria-describedby="address_district-erro" @enderror>
                             @error('address_district')<p class="campo-erro" id="address_district-erro">{{ $message }}</p>@enderror
                         </div>
-                        <div class="formulario-campo">
-                            <label class="rotulo" for="postal_code">CEP</label>
-                            <input class="entrada" id="postal_code" name="postal_code" type="text" maxlength="9" inputmode="numeric" autocomplete="postal-code"
-                                   placeholder="00000-000" value="{{ old('postal_code', $student?->postal_code) }}"
-                                   aria-describedby="{{ $errors->has('postal_code') ? 'postal_code-ajuda postal_code-erro' : 'postal_code-ajuda' }}"
-                                   @error('postal_code') aria-invalid="true" @enderror>
-                            <p class="texto-ajuda" id="postal_code-ajuda">Só números ou 00000-000.</p>
-                            @error('postal_code')<p class="campo-erro" id="postal_code-erro">{{ $message }}</p>@enderror
+                        <div class="formulario-campo end-cidade">
+                            <label class="rotulo" for="address_city">Cidade</label>
+                            <input class="entrada" id="address_city" name="address_city" type="text" maxlength="120" autocomplete="address-level2"
+                                   value="{{ old('address_city', $student?->address_city) }}"
+                                   @error('address_city') aria-invalid="true" aria-describedby="address_city-erro" @enderror>
+                            @error('address_city')<p class="campo-erro" id="address_city-erro">{{ $message }}</p>@enderror
                         </div>
-                        <div class="formulario-campo">
-                            <label class="rotulo" for="residence_zone">Zona de residência</label>
+                        <div class="formulario-campo end-uf">
+                            <label class="rotulo" for="address_state">Estado</label>
+                            <select class="entrada" id="address_state" name="address_state"
+                                    @error('address_state') aria-invalid="true" aria-describedby="address_state-erro" @enderror>
+                                <option value="">UF</option>
+                                @foreach (\App\Http\Controllers\StudentRecordController::UFS as $uf)
+                                    <option value="{{ $uf }}" @selected(old('address_state', $student?->address_state) === $uf)>{{ $uf }}</option>
+                                @endforeach
+                            </select>
+                            @error('address_state')<p class="campo-erro" id="address_state-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo end-zona">
+                            <label class="rotulo" for="residence_zone">Zona</label>
                             <select class="entrada" id="residence_zone" name="residence_zone"
                                     @error('residence_zone') aria-invalid="true" aria-describedby="residence_zone-erro" @enderror>
                                 <option value="">Não informada</option>
@@ -168,6 +194,7 @@
                         </div>
                     </div>
                 </fieldset>
+                <script src="{{ asset('js/endereco-cep.js') }}?v={{ filemtime(public_path('js/endereco-cep.js')) }}" defer></script>
             </div>
 
             @if (session('possivel_duplicidade'))

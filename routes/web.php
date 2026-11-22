@@ -7,6 +7,7 @@ use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentMovementController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
@@ -41,6 +42,7 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
 
 Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
+    Route::get('/cep/{cep}', [PostalCodeLookupController::class, 'show'])->where('cep', '[0-9.-]{8,10}')->middleware('throttle:60,1')->name('postal-codes.show');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
     Route::get('/escolas/{escola}/matriculas', [SchoolEnrollmentController::class, 'index'])->whereUuid('escola')->name('school.enrollments.index');

@@ -500,11 +500,69 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         $html = $this->get($this->url('/'.$id))->assertOk()->getContent();
         $this->assertStringContainsString('Endereço ainda não informado.', $html);
         $this->assertStringContainsString('href="'.url($this->url('/'.$id.'/editar')).'#endereco"', $html);
-        $this->assertStringNotContainsString('Logradouro e número', $html, 'Sem endereço, nao repete "Nao informado" em cada campo.');
+        $this->assertStringNotContainsString('Rua e número', $html, 'Sem endereço, nao repete "Nao informado" em cada campo.');
 
         $this->get($this->url('/'.$id.'/editar'))->assertOk()->assertSee('id="endereco"', false);
         $css = file_get_contents(public_path('css/astuti.css'));
         $this->assertStringContainsString('.ficha-grupos{', $css);
         $this->assertStringContainsString('.grade-endereco .end-logradouro{grid-column:span 3}', $css);
+    }
+
+    public function test_cep_da_base_local_preenche_o_endereco_e_respeita_o_que_foi_digitado(): void
+    {
+        $this->artisan('astuti:ceps-importar', ['municipio' => 'municipio-a', '--ficticio' => true])->assertSuccessful();
+        $user = $this->conta('cep-preenche@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        // Só CEP, número e complemento: o resto vem da base, inclusive sem JavaScript.
+        $this->post($this->url(), $this->dados(['postal_code' => '00990101', 'address_number' => '327', 'address_complement' => 'Fundos']))
+            ->assertRedirect();
+        $aluno = $this->noMunicipio($this->municipioA, fn (): Student => Student::query()->firstOrFail());
+        $this->assertSame(
+            ['00990-101', 'Rua das Palmeiras', '327', 'Fundos', 'Vila Esperança', 'Monte Sereno', 'SP', 'urban'],
+            [$aluno->postal_code, $aluno->address_street, $aluno->address_number, $aluno->address_complement,
+                $aluno->address_district, $aluno->address_city, $aluno->address_state, $aluno->residence_zone],
+        );
+        $after = $this->noMunicipio($this->municipioA, fn (): array => AuditLog::query()
+            ->where('auditable_type', Student::class)->where('auditable_id', $aluno->id)->where('action', 'created')->firstOrFail()->after);
+        $this->assertSame('Fundos', $after['address_complement']);
+        $this->assertSame('SP', $after['address_state']);
+
+        $this->get($this->url('/'.$aluno->id))->assertOk()
+            ->assertSee('Rua das Palmeiras, 327 - Fundos')
+            ->assertSee('Monte Sereno/SP');
+
+        // O que a pessoa digitou prevalece sobre a base.
+        $this->post($this->url(), $this->dados([
+            'full_name' => 'Outra Criança Fictícia', 'ra' => null,
+            'postal_code' => '00990-101', 'address_street' => 'Travessa Digitada', 'address_city' => 'Outra Cidade',
+        ]))->assertRedirect();
+        $outro = $this->noMunicipio($this->municipioA, fn (): Student => Student::query()->where('full_name', 'Outra Criança Fictícia')->firstOrFail());
+        $this->assertSame(['Travessa Digitada', 'Outra Cidade', 'SP'], [$outro->address_street, $outro->address_city, $outro->address_state]);
+
+        // UF fora da lista e CEP desconhecido.
+        $this->post($this->url(), $this->dados(['full_name' => 'Terceira Criança Fictícia', 'ra' => null, 'address_state' => 'XX']))
+            ->assertSessionHasErrors(['address_state' => 'Escolha o estado (UF) na lista.']);
+        $this->post($this->url(), $this->dados(['full_name' => 'Quarta Criança Fictícia', 'ra' => null, 'postal_code' => '07500-000']))
+            ->assertRedirect();
+        $quarto = $this->noMunicipio($this->municipioA, fn (): Student => Student::query()->where('full_name', 'Quarta Criança Fictícia')->firstOrFail());
+        $this->assertSame(['07500-000', null, null], [$quarto->postal_code, $quarto->address_street, $quarto->address_city]);
+    }
+
+    public function test_formulario_comeca_pelo_cep_com_consulta_e_campos_novos(): void
+    {
+        $user = $this->conta('cep-form@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $html = $this->get($this->url('/novo'))->assertOk()->getContent();
+        $cep = strpos($html, 'id="postal_code"');
+        $this->assertNotFalse($cep);
+        $this->assertLessThan(strpos($html, 'id="address_street"'), $cep, 'CEP vem antes do logradouro.');
+        foreach (['address_complement', 'address_city', 'address_state', 'postal_code-status'] as $id) {
+            $this->assertStringContainsString('id="'.$id.'"', $html);
+        }
+        $this->assertStringContainsString('data-consulta="'.url('/m/municipio-a/cep/00000000').'"', $html);
+        $this->assertStringContainsString('js/endereco-cep.js', $html);
+        $this->assertFileExists(public_path('js/endereco-cep.js'));
     }
 }

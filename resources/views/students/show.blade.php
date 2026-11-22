@@ -34,8 +34,12 @@
     <div class="ficha-escola">
         @php
             $logradouro = trim(implode(', ', array_filter([$student->address_street, $student->address_number])));
+            if ($student->address_complement) {
+                $logradouro = trim($logradouro.($logradouro !== '' ? ' - ' : '').$student->address_complement);
+            }
+            $cidade = trim(implode('/', array_filter([$student->address_city, $student->address_state])));
             $zona = ['urban' => 'Urbana', 'rural' => 'Rural'][$student->residence_zone ?? ''] ?? null;
-            $temEndereco = $logradouro !== '' || $student->address_district || $student->postal_code || $zona;
+            $temEndereco = $logradouro !== '' || $student->address_district || $cidade !== '' || $student->postal_code || $zona;
             $editarEndereco = route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]).'#endereco';
         @endphp
         <section class="folha" aria-labelledby="titulo-dados-aluno">
@@ -54,8 +58,9 @@
                     <h3 id="titulo-endereco-aluno">Endereço</h3>
                     @if ($temEndereco)
                         <dl>
-                            <div><dt>Logradouro e número</dt><dd>{{ $logradouro !== '' ? $logradouro : 'Não informado' }}</dd></div>
+                            <div><dt>Rua e número</dt><dd>{{ $logradouro !== '' ? $logradouro : 'Não informado' }}</dd></div>
                             <div><dt>Bairro</dt><dd>{{ $student->address_district ?? 'Não informado' }}</dd></div>
+                            <div><dt>Cidade</dt><dd>{{ $cidade !== '' ? $cidade : 'Não informada' }}</dd></div>
                             <div><dt>CEP</dt><dd class="numero">{{ $student->postal_code ?? 'Não informado' }}</dd></div>
                             <div><dt>Zona</dt><dd>{{ $zona ?? 'Não informada' }}</dd></div>
                         </dl>

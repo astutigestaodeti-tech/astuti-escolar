@@ -514,5 +514,9 @@ select.entrada{cursor:pointer}
 @media (min-width:641px){
     .grade-endereco{grid-template-columns:repeat(4,minmax(0,1fr))}
     .grade-endereco .end-logradouro{grid-column:span 3}
-    .grade-endereco .end-bairro{grid-column:span 2}
+    .grade-endereco .end-status{grid-column:span 3}
+    .grade-endereco .end-complemento,.grade-endereco .end-bairro,.grade-endereco .end-cidade{grid-column:span 2}
 }
+.cep-status{align-self:end;margin:0 0 12px;min-height:20px;font-size:14px;color:var(--tinta-3)}
+.cep-status.ok{color:var(--verde);font-weight:700}
+.cep-status.aviso{color:#6b4a0c}
