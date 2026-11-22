@@ -434,6 +434,8 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
 .cep-busca{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .cep-busca .entrada{flex:1;min-width:160px}
 .cep-busca .botao{white-space:nowrap}
+.grupo-endereco #postal_code-ajuda{margin-top:7px;color:var(--tinta-2);font-size:14px;line-height:1.45;font-weight:600}
+.grupo-endereco #postal-lookup-status:not(:empty){margin:10px 0 0;padding:12px 14px;background:var(--caneta-clara);border:1px solid var(--pauta);border-left:4px solid var(--caneta);border-radius:var(--raio-controle);color:var(--caneta-escura);font-size:14px;line-height:1.55;font-weight:600}
 .grupo-endereco{grid-column:1/-1;min-width:0;border:0;border-top:1px solid var(--linha);padding:12px 0 0;margin:14px 0 0}
 .grupo-endereco legend{font-size:17px;font-weight:700;color:var(--tinta);padding:0 10px 0 0}
 .campo-erro{margin:6px 0 0;color:#8a2c22;font-size:14px}

@@ -1,5 +1,11 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-22 | Cadastro manual | Contraste da orientação de CEP
+
+- A dica permanente do CEP usa fonte maior, peso mais forte e texto escuro. A resposta da consulta ganha caixa azul informativa e borda lateral, exibida somente quando houver mensagem.
+- Testes de interface verificam os estilos específicos e preservam a atualização de endereço e o aviso de CEP geral. Sem mudanças em controllers, migrações, permissões ou dados.
+
+
 ## 2026-11-22 | Cadastro manual | Explicação para CEP geral do município
 
 - Consulta de CEP sem logradouro e bairro, mas com cidade e UF, informa que é um CEP geral e orienta a preencher os campos restantes. O aviso de cache antigo e a consulta de CEP específico são preservados.

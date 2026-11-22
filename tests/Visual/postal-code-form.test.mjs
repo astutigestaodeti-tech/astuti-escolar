@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { formatPostalCode, postalCodeDigits, postalLookupMessage, shouldApplySuggestion } from '../../public/js/student-postal-code.js';
+
+const styles = readFileSync(new URL('../../public/css/astuti.css', import.meta.url), 'utf8');
 
 test('CEP com oito algarismos recebe hifen sem perder zeros iniciais', () => {
     assert.equal(formatPostalCode('07400000'), '07400-000');
@@ -31,6 +34,25 @@ test('CEP com rua mantém mensagem normal e cache antigo mantém alerta', () => 
     assert.equal(postalLookupMessage(enderecoCompleto), 'Endereço encontrado. Confira os dados e complete o número, se necessário.');
     assert.equal(postalLookupMessage({ ...enderecoCompleto, source: 'stale', street: null }), 'Endereço sugerido com dados salvos anteriormente. Confirme antes de gravar.');
     assert.equal(postalLookupMessage({ source: 'online', street: null, district: null, city: '', state: '' }), 'Endereço encontrado. Confira os dados e complete o número, se necessário.');
+});
+
+test('dica permanente do CEP tem texto maior e mais contrastante', () => {
+    const regra = styles.match(/\.grupo-endereco #postal_code-ajuda\{([^}]+)\}/)?.[1];
+
+    assert.ok(regra, 'A dica do CEP precisa ter estilo próprio');
+    assert.match(regra, /color:var\(--tinta-2\)/);
+    assert.match(regra, /font-size:14px/);
+    assert.match(regra, /font-weight:600/);
+});
+
+test('resposta do CEP aparece como orientação azul só quando contém texto', () => {
+    const regra = styles.match(/\.grupo-endereco #postal-lookup-status:not\(:empty\)\{([^}]+)\}/)?.[1];
+
+    assert.ok(regra, 'A resposta do CEP precisa ter uma caixa informativa própria');
+    assert.match(regra, /background:var\(--caneta-clara\)/);
+    assert.match(regra, /color:var\(--caneta-escura\)/);
+    assert.match(regra, /border-left:4px solid var\(--caneta\)/);
+    assert.match(regra, /font-size:14px/);
 });
 
 test('consulta de CEP geral mostra orientacao no formulario sem preencher rua e bairro', async () => {
