@@ -18,6 +18,11 @@ use Tests\TestCase;
 
 class MigrateFictitiousDataToPostgresTest extends TestCase
 {
+    /** Colunas criadas depois da era MariaDB: existem só no PostgreSQL, com valor padrão. */
+    private const TARGET_ONLY_COLUMNS = [
+        'users' => ['two_factor_failed_attempts', 'two_factor_locked_until'],
+    ];
+
     private const EXPECTED_COUNTS = [
         'platform' => [
             'municipalities' => 1,
@@ -100,6 +105,7 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
                     match ($table) {
                         'students' => ['ra', 'address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state', 'postal_code', 'residence_zone'],
                         'student_enrollments' => ['school_class_id', 'transport_status'],
+                        'users' => self::TARGET_ONLY_COLUMNS['users'],
                         default => [],
                     },
                     array_values(array_diff($targetColumns, $sourceColumns)),
@@ -168,6 +174,8 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $targetPlatform, $targetTenant, true));
 
         $copied = $this->snapshot($targetPlatform, $targetTenant);
+        $this->assertTargetOnlyDefaults($copied);
+        $copied = $this->withoutTargetOnlyColumns($copied);
 
         foreach ($sourceBefore as $database => $tables) {
             foreach ($tables as $table => $rows) {
@@ -419,6 +427,8 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
         $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $recoveryPlatform, $recoveryTenant, false));
         $this->assertSame(self::EXPECTED_COUNTS, $transfer->run($sourcePlatform, $sourceTenant, $recoveryPlatform, $recoveryTenant, true));
         $recovered = $this->snapshot($recoveryPlatform, $recoveryTenant);
+        $this->assertTargetOnlyDefaults($recovered);
+        $recovered = $this->withoutTargetOnlyColumns($recovered);
         foreach ($sourceBefore as $database => $tables) {
             foreach ($tables as $table => $rows) {
                 $this->assertCopiedRowsMatch($rows, $recovered[$database][$table], $table);
@@ -521,6 +531,26 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
     private function sessionSettings(Connection $connection): array
     {
         return (array) $connection->selectOne('SELECT @@SESSION.transaction_read_only AS read_only, @@SESSION.transaction_isolation AS isolation_level');
+    }
+
+    private function withoutTargetOnlyColumns(array $snapshot): array
+    {
+        foreach (self::TARGET_ONLY_COLUMNS as $table => $columns) {
+            $snapshot['platform'][$table] = array_map(
+                static fn (array $row): array => array_diff_key($row, array_flip($columns)),
+                $snapshot['platform'][$table],
+            );
+        }
+
+        return $snapshot;
+    }
+
+    private function assertTargetOnlyDefaults(array $snapshot): void
+    {
+        foreach ($snapshot['platform']['users'] as $row) {
+            $this->assertSame(0, (int) $row['two_factor_failed_attempts']);
+            $this->assertNull($row['two_factor_locked_until']);
+        }
     }
 
     /**

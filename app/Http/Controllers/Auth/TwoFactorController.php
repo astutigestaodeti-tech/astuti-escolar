@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Security\Totp;
 use App\Security\TotpQrCode;
+use App\Security\TwoFactorLockout;
 use App\Security\TwoFactorSession;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -108,35 +109,50 @@ class TwoFactorController extends Controller
     {
         $data = $request->validate(['code' => ['required', 'string', 'regex:/\A(?:[0-9]{6}|[0-9A-Fa-f]{16})\z/D']]);
         $user = $request->user();
+        $lockout = app(TwoFactorLockout::class);
+        $wrongCode = false;
 
-        DB::connection('platform')->transaction(function () use ($user, $totp, $data): void {
-            $locked = User::query()->lockForUpdate()->findOrFail($user->id);
-            if ($locked->two_factor_confirmed_at === null || ! is_string($locked->two_factor_secret)) {
-                throw ValidationException::withMessages(['code' => 'Configure primeiro o segundo fator.']);
-            }
+        try {
+            DB::connection('platform')->transaction(function () use ($user, $totp, $data, $lockout, &$wrongCode): void {
+                $locked = User::query()->lockForUpdate()->findOrFail($user->id);
+                if ($locked->two_factor_confirmed_at === null || ! is_string($locked->two_factor_secret)) {
+                    throw ValidationException::withMessages(['code' => 'Configure primeiro o segundo fator.']);
+                }
 
-            $code = strtoupper($data['code']);
-            $step = $totp->matchingStep($locked->two_factor_secret, $code, now()->getTimestamp());
+                // Durante o bloqueio nem o codigo correto e aceito; senao o bloqueio nao protege nada.
+                $lockout->assertNotLocked($locked);
 
-            if ($step !== null && ($locked->two_factor_last_step === null || $step > $locked->two_factor_last_step)) {
-                $locked->forceFill(['two_factor_last_step' => $step])->save();
-            } elseif (strlen($code) === 16) {
-                $hash = hash('sha256', $code);
-                $recovery = $locked->two_factor_recovery_codes ?? [];
-                $index = array_search($hash, $recovery, true);
+                $code = strtoupper($data['code']);
+                $step = $totp->matchingStep($locked->two_factor_secret, $code, now()->getTimestamp());
 
-                if ($index === false) {
+                if ($step !== null && ($locked->two_factor_last_step === null || $step > $locked->two_factor_last_step)) {
+                    $locked->forceFill(['two_factor_last_step' => $step] + $lockout->resetValues())->save();
+                } elseif (strlen($code) === 16) {
+                    $hash = hash('sha256', $code);
+                    $recovery = $locked->two_factor_recovery_codes ?? [];
+                    $index = array_search($hash, $recovery, true);
+
+                    if ($index === false) {
+                        $wrongCode = true;
+                        throw ValidationException::withMessages(['code' => 'Código inválido, já utilizado ou expirado.']);
+                    }
+
+                    unset($recovery[$index]);
+                    $locked->forceFill(['two_factor_recovery_codes' => array_values($recovery)] + $lockout->resetValues())->save();
+                } else {
+                    $wrongCode = true;
                     throw ValidationException::withMessages(['code' => 'Código inválido, já utilizado ou expirado.']);
                 }
 
-                unset($recovery[$index]);
-                $locked->forceFill(['two_factor_recovery_codes' => array_values($recovery)])->save();
-            } else {
-                throw ValidationException::withMessages(['code' => 'Código inválido, já utilizado ou expirado.']);
+                app(AuditTrail::class)->record('platform', 'auth.two_factor_verified', User::class, $user->id);
+            });
+        } catch (ValidationException $exception) {
+            if ($wrongCode) {
+                $lockout->registerFailure($user->id);
             }
 
-            app(AuditTrail::class)->record('platform', 'auth.two_factor_verified', User::class, $user->id);
-        });
+            throw $exception;
+        }
 
         $request->session()->regenerate();
         $twoFactor = app(TwoFactorSession::class);
