@@ -24,6 +24,8 @@
                     @php($responsavelAutorizado = $vinculo->guardian)
                     <li class="retirada-pessoa">
                         <div class="retirada-identificacao">
+                            <x-foto-identificacao tipo="responsavel" :id="$responsavelAutorizado->id" :escola="$school->id" :municipio="$municipality->slug" :nome="$responsavelAutorizado->full_name"
+                                :tem-foto="$responsavelAutorizado->photo_path !== null" tamanho="media" />
                             <strong>{{ $responsavelAutorizado->full_name }}</strong>
                             <span class="etiqueta ok">Responsável autorizado</span>
                         </div>
@@ -45,6 +47,8 @@
                     @php($vencida = $pessoaAutorizada->isExpired())
                     <li class="retirada-pessoa {{ $vencida ? 'retirada-vencida' : '' }}">
                         <div class="retirada-identificacao">
+                            <x-foto-identificacao tipo="autorizado" :id="$pessoaAutorizada->id" :escola="$school->id" :municipio="$municipality->slug" :nome="$pessoaAutorizada->full_name"
+                                :tem-foto="$pessoaAutorizada->photo_path !== null" :pode-alterar="$canManage && ! $vencida" tamanho="media" />
                             <strong>{{ $pessoaAutorizada->full_name }}</strong>
                             @if ($vencida)
                                 <span class="etiqueta neutra">Vencida em {{ $pessoaAutorizada->expires_at->format('d/m/Y') }}</span>

@@ -16,7 +16,7 @@ class StudentPickupAuthorization extends TenantModel
 
     protected function casts(): array
     {
-        return ['expires_at' => 'date'];
+        return ['expires_at' => 'date', 'photo_updated_at' => 'datetime'];
     }
 
     public function student(): BelongsTo

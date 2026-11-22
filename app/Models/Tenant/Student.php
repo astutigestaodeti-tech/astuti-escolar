@@ -23,7 +23,7 @@ class Student extends TenantModel
 
     protected function casts(): array
     {
-        return ['birth_date' => 'date'];
+        return ['birth_date' => 'date', 'photo_updated_at' => 'datetime'];
     }
 
     /** Anos completos numa data; null sem nascimento ou com data anterior a ele. */
@@ -34,6 +34,12 @@ class Student extends TenantModel
         }
 
         return (int) $this->birth_date->diffInYears($date);
+    }
+
+    /** Foto de identificação com mais de 12 meses: criança muda rápido, vale atualizar. */
+    public function photoIsOld(): bool
+    {
+        return $this->photo_path !== null && $this->photo_updated_at !== null && $this->photo_updated_at->lt(now()->subYear());
     }
 
     public function enrollments(): HasMany

@@ -32,6 +32,8 @@
                 @php($responsavel = $vinculoResponsavel->guardian)
                 <li class="responsavel">
                     <div class="responsavel-topo">
+                        <x-foto-identificacao tipo="responsavel" :id="$responsavel->id" :escola="$school->id" :municipio="$municipality->slug" :nome="$responsavel->full_name"
+                            :tem-foto="$responsavel->photo_path !== null" :pode-alterar="$canManage" />
                         <h3>{{ $responsavel->full_name }}</h3>
                         <span class="responsavel-parentesco">{{ \App\Http\Controllers\GuardianController::RELATIONSHIPS[$vinculoResponsavel->relationship] ?? 'Outro' }}</span>
                     </div>

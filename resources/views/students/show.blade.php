@@ -30,6 +30,9 @@
     @if (session('status'))
         <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
     @endif
+    @if ($errors->has('foto'))
+        <div class="status-erro" role="alert"><x-icon name="info" :size="18" /> {{ $errors->first('foto') }}</div>
+    @endif
 
     <div class="ficha-escola">
         @php
@@ -39,7 +42,12 @@
             $editarEndereco = route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]).'#endereco';
         @endphp
         <section class="folha" aria-labelledby="titulo-dados-aluno">
-            <div class="folha-cabecalho"><div><h2 id="titulo-dados-aluno">Dados do aluno</h2><p>Informações disponíveis no cadastro municipal.</p></div></div>
+            <div class="folha-cabecalho ficha-cabecalho-foto">
+                <x-foto-identificacao tipo="aluno" :id="$student->id" :escola="$school->id" :municipio="$municipality->slug" :nome="$student->full_name"
+                    :tem-foto="$student->photo_path !== null" :pode-alterar="$canManage" tamanho="grande"
+                    :aviso="$student->photoIsOld() ? 'Foto de '.$student->photo_updated_at->format('m/Y').': vale atualizar' : null" />
+                <div><h2 id="titulo-dados-aluno">Dados do aluno</h2><p>Informações disponíveis no cadastro municipal.</p></div>
+            </div>
             <div class="ficha-grupos">
                 <div class="ficha-grupo" aria-labelledby="titulo-identificacao">
                     <h3 id="titulo-identificacao">Identificação</h3>
