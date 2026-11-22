@@ -1,5 +1,13 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+
+## 2026-11-21 | Cadastro manual | Orientacao do formato RA SED
+
+- Criacao e edicao manual de alunos exibem erro especifico ao informar RA fora do padrao SED, e o atributo recebe o nome "RA" nas mensagens da validacao.
+- Formulario apresenta dica permanente sobre digitos, hifen, digito verificador e UF, associada ao campo por `aria-describedby` mesmo quando ha erro.
+- Testes ficticios cobrem RA incompleto, RA valido nas duas acoes, mensagem de atributo e a ajuda acessivel. Verificar o CI antes de integrar.
+
+
 ## 2026-11-21 | Incremento 03 parte B | Movimentação auditada de matrículas
 
 - Nova branch e PR próprios sobre `feature/cadastro-aluno-gravacao` (PR #7); PRs #6, #7, #8 e #9 não foram modificados.

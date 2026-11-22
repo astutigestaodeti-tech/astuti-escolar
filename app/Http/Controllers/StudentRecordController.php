@@ -34,6 +34,10 @@ class StudentRecordController extends Controller
 
     private const RA_RULES = ['nullable', 'string', 'max:32', 'regex:/\\A\\d{9,12}-[\\dX]\\/[A-Z]{2}\\z/'];
 
+    private const RA_MESSAGES = ['ra.regex' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.'];
+
+    private const RA_ATTRIBUTES = ['ra' => 'RA'];
+
     public function create(Request $request, string $municipio, string $escola): View|RedirectResponse
     {
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
@@ -68,7 +72,7 @@ class StudentRecordController extends Controller
             'school_year_id' => ['required', 'uuid'],
             'started_at' => ['nullable', 'date_format:Y-m-d'],
             'confirmar_duplicidade' => ['nullable', 'boolean'],
-        ]);
+        ], self::RA_MESSAGES, self::RA_ATTRIBUTES);
 
         $this->assertRaAvailable($data['ra'] ?? null);
 
@@ -168,7 +172,7 @@ class StudentRecordController extends Controller
             'enrollment_id' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'uuid'],
             'versao_matricula' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'string', 'max:40'],
             'versao' => ['required', 'string', 'max:40'],
-        ]);
+        ], self::RA_MESSAGES, self::RA_ATTRIBUTES);
 
         if ($raSubmitted) {
             $this->assertRaAvailable($data['ra'] ?? null, $aluno);

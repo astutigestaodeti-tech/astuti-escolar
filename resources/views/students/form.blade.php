@@ -73,8 +73,10 @@
                 <div class="formulario-campo">
                     <label class="rotulo" for="ra">RA do aluno</label>
                     <input class="entrada" id="ra" name="ra" type="text" maxlength="32" autocomplete="off"
-                           placeholder="123456789-0/SP" value="{{ old('ra', $student?->ra) }}"
-                           @error('ra') aria-invalid="true" aria-describedby="ra-erro" @enderror>
+                           placeholder="000123456789-0/SP" value="{{ old('ra', $student?->ra) }}"
+                           aria-describedby="{{ $errors->has('ra') ? 'ra-ajuda ra-erro' : 'ra-ajuda' }}"
+                           @error('ra') aria-invalid="true" @enderror>
+                    <p class="texto-ajuda" id="ra-ajuda">Formato da SED: números, hífen, dígito e UF. Ex.: 000123456789-0/SP. Pode ficar em branco.</p>
                     @error('ra')<p class="campo-erro" id="ra-erro">{{ $message }}</p>@enderror
                 </div>
 

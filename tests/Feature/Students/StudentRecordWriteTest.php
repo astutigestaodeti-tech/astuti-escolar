@@ -134,6 +134,70 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
     }
 
+    public function test_cadastro_manual_exibe_ajuda_e_erro_claro_para_ra_e_aceita_formato_sed(): void
+    {
+        $user = $this->conta('ra-cadastro@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->get($this->url('/novo'))
+            ->assertOk()
+            ->assertSee('Formato da SED: números, hífen, dígito e UF. Ex.: 000123456789-0/SP. Pode ficar em branco.')
+            ->assertSee('aria-describedby="ra-ajuda"', false);
+
+        $this->from($this->url('/novo'))->post($this->url(), $this->dados(['ra' => '000123456789']))
+            ->assertRedirect($this->url('/novo'))
+            ->assertSessionHasErrors(['ra' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.']);
+
+        $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+
+        $this->post($this->url(), $this->dados(['ra' => str_repeat('1', 33)]))
+            ->assertSessionHasErrors('ra');
+        $this->assertStringContainsString('RA', session('errors')->first('ra'));
+
+        $this->post($this->url(), $this->dados(['ra' => '000123456789-0/SP']))
+            ->assertRedirect();
+
+        $raGravado = $this->noMunicipio($this->municipioA, fn (): ?string => Student::query()->firstOrFail()->ra);
+        $this->assertSame('000123456789-0/SP', $raGravado);
+    }
+
+    public function test_edicao_manual_mostra_erro_de_ra_e_aceita_formato_sed(): void
+    {
+        $user = $this->conta('ra-edicao@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->post($this->url(), $this->dados())->assertRedirect();
+        [$id, $versao] = $this->noMunicipio($this->municipioA, function (): array {
+            $student = Student::query()->firstOrFail();
+            $row = DB::connection('tenant')->table('students')->where('id', $student->id)
+                ->selectRaw('xmin::text AS versao')->first();
+
+            return [$student->id, $row->versao];
+        });
+
+        $this->get($this->url('/'.$id.'/editar'))
+            ->assertOk()
+            ->assertSee('aria-describedby="ra-ajuda"', false);
+
+        $this->from($this->url('/'.$id.'/editar'))->put($this->url('/'.$id), [
+            'full_name' => 'Lívia Fictícia de Souza',
+            'birth_date' => '2019-05-10',
+            'ra' => '000987654321',
+            'versao' => $versao,
+        ])->assertSessionHasErrors(['ra' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.']);
+
+        $this->assertNull($this->noMunicipio($this->municipioA, fn (): ?string => Student::query()->findOrFail($id)->ra));
+
+        $this->put($this->url('/'.$id), [
+            'full_name' => 'Lívia Fictícia de Souza',
+            'birth_date' => '2019-05-10',
+            'ra' => '000987654321-1/SP',
+            'versao' => $versao,
+        ])->assertRedirect($this->url('/'.$id));
+
+        $this->assertSame('000987654321-1/SP', $this->noMunicipio($this->municipioA, fn (): ?string => Student::query()->findOrFail($id)->ra));
+    }
+
     public function test_validacao_em_portugues_e_ano_encerrado_recusado(): void
     {
         $user = $this->conta('valida@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
