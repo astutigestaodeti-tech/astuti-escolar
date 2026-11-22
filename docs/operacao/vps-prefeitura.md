@@ -8,6 +8,41 @@
 - Criar os dois bancos com `TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR'`.
 - Instalar `unaccent` e `pg_trgm` e executar todas as migrations **pela conta exclusiva de migração**, dona do esquema e dos objetos. A conta web não deve instalar extensões nem ser proprietária de tabelas ou funções.
 
+## Provisionamento versionado dos dois papeis PostgreSQL
+
+Antes de receber **qualquer dado real**, executar em VPS dedicada, com janela de manutencao e backup verificado. Este passo nao instala nem altera o notebook de desenvolvimento.
+
+1. Instale PostgreSQL 17+; crie **somente** os bancos da Prefeitura local como administrador PostgreSQL, usando `CREATE DATABASE nome WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';`. Configure `APP_ENV=production`, uma unica `ASTUTI_MUNICIPALITY_DB_KEY`, `PLATFORM_DB_*` e `TENANT_DB_*` apontando para essas duas bases locais distintas. Nunca disponibilize a porta 5432 publicamente.
+2. Como usuario do sistema autorizado para o deploy, injete o acesso PostgreSQL administrativo **apenas no processo CLI**. Nao coloque `ASTUTI_PG_ADMIN_PASSWORD` no `.env` do PHP-FPM, no Git ou em `config:cache`. Exemplo em shell interativo:
+
+   ```bash
+   export ASTUTI_PG_ADMIN_HOST=127.0.0.1
+   export ASTUTI_PG_ADMIN_PORT=5432
+   export ASTUTI_PG_ADMIN_USER=postgres
+   read -rs -p 'Senha PostgreSQL do administrador: ' ASTUTI_PG_ADMIN_PASSWORD
+   export ASTUTI_PG_ADMIN_PASSWORD
+   php artisan astuti:permissoes-pg --confirmar=PERMISSOES-PG
+   ```
+
+3. O comando cria `astuti_migracao` e `astuti_aplicacao` com LOGIN, sem superusuario, sem CREATE DATABASE e sem heranca. **Nao altera senhas em reexecucoes.** Uma conta nova fica sem senha ate o administrador executar interativamente `\\password astuti_migracao` e `\\password astuti_aplicacao` no `psql`. Gere duas senhas fortes e distintas, armazenadas em cofre. O comando transfere a titularidade de bancos, schema, tabelas, sequencias e funcoes da aplicacao para `astuti_migracao`, mas nao altera membros internos de extensoes.
+4. Durante a janela, conecte as migrations usando `PLATFORM_DB_USERNAME=astuti_migracao` e `TENANT_DB_USERNAME=astuti_migracao` e suas respectivas senhas privadas. Instale `unaccent` e `pg_trgm` como este usuario, por meio das migrations. A plataforma pode ser migrada por:
+
+   ```bash
+   php artisan migrate --database=platform --path=database/migrations/platform --force
+   ```
+
+   A conexao municipal exige ativar o municipio configurado. O deploy pode executar:
+
+   ```bash
+   php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\Tenancy\TenantConnectionManager::class)->activate(new App\Models\Platform\Municipality(["db_key" => config("tenancy.deployed_db_key")])); exit(Illuminate\Support\Facades\Artisan::call("migrate", ["--database" => "tenant", "--path" => database_path("migrations/tenant"), "--realpath" => true, "--force" => true]));'
+   ```
+
+5. **Depois de cada migration, ainda em manutencao**, execute novamente `php artisan astuti:permissoes-pg --confirmar=PERMISSOES-PG`, preservando as duas credenciais administrativas apenas ate terminar o comando. Isso concede `SELECT/INSERT/UPDATE` nas tabelas operacionais; `SELECT/INSERT` nas auditorias, nunca `UPDATE/DELETE/TRUNCATE/TRIGGER`. As `ALTER DEFAULT PRIVILEGES` concedem apenas `SELECT/INSERT` para tabelas futuras ate a reconciliacao. A conta web nao tem `CREATE` no schema, nao e dona de objetos e nao pode alterar ou desativar os gatilhos.
+6. Troque `PLATFORM_DB_USERNAME/PASSWORD` e `TENANT_DB_USERNAME/PASSWORD` para `astuti_aplicacao` no ambiente privado do PHP-FPM. Mantenha `astuti_migracao` e as credenciais de administrador **fora do processo web**. Remova as variaveis administrativas do shell com `unset ASTUTI_PG_ADMIN_PASSWORD ASTUTI_PG_ADMIN_USER ASTUTI_PG_ADMIN_HOST ASTUTI_PG_ADMIN_PORT` antes de aquecer caches ou iniciar o site.
+7. Com a conta web limitada a SELECT/INSERT/UPDATE em tabelas operacionais, use `SESSION_DRIVER=file` (instancia unica, diretorio protegido) ou Redis para sessoes, `CACHE_STORE=file`/Redis para cache e um backend de fila que nao exija DELETE nas tabelas PostgreSQL, como Redis. O padrao de exemplo `SESSION_DRIVER=database` nao atende a restricao de DELETE no ciclo de login/logout. Valide login, persistencia de sessao e gravacao auditada antes de liberar acesso.
+
+O CI possui job isolado PostgreSQL 17 que conecta efetivamente com `astuti_aplicacao`: tentativas de UPDATE, DELETE, TRUNCATE, ALTER TABLE, DROP TRIGGER e CREATE TABLE devem receber `SQLSTATE 42501`; login, insercao auditada e reexecucao dos grants devem funcionar. Nao use `SET ROLE` como substituto desse ensaio. O provisionamento e revisado pelo Claude antes da aprovacao de qualquer Prefeitura.
+
 ## Separar desenvolvimento e produção
 
 - Notebook Debian/WSL: desenvolvimento com dados fictícios, Git, testes.

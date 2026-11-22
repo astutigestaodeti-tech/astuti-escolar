@@ -126,6 +126,89 @@ jobs:
       - name: Verificar identidade visual
         run: npm run test:ui
 
+  permissoes-producao:
+    name: PostgreSQL 17 como usuario web restrito
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: astuti_roles_ci_admin
+          POSTGRES_PASSWORD: roles_ci_admin_only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U astuti_roles_ci_admin -d postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: testing
+      ASTUTI_PG_ROLE_INTEGRATION: '1'
+      ASTUTI_PG_ADMIN_HOST: 127.0.0.1
+      ASTUTI_PG_ADMIN_PORT: '5432'
+      ASTUTI_PG_ADMIN_USER: astuti_roles_ci_admin
+      ASTUTI_PG_ADMIN_PASSWORD: roles_ci_admin_only
+      ASTUTI_PG_TEST_MIGRATION_PASSWORD: roles_ci_migration_only
+      ASTUTI_PG_TEST_APPLICATION_PASSWORD: roles_ci_web_only
+      PLATFORM_DB_HOST: 127.0.0.1
+      PLATFORM_DB_PORT: '5432'
+      PLATFORM_DB_DATABASE: astuti_roles_platform_test
+      PLATFORM_DB_USERNAME: astuti_migracao
+      PLATFORM_DB_PASSWORD: roles_ci_migration_only
+      TENANT_DB_HOST: 127.0.0.1
+      TENANT_DB_PORT: '5432'
+      TENANT_DB_DATABASE: astuti_roles_tenant_test
+      TENANT_DB_USERNAME: astuti_migracao
+      TENANT_DB_PASSWORD: roles_ci_migration_only
+
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Preparar PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql
+          coverage: none
+
+      - name: Instalar dependencias
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Preparar chaves descartaveis
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Criar bancos PostgreSQL 17 ICU pt-BR
+        run: |
+          container_id="$(docker ps --filter 'ancestor=postgres:17' --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_roles_ci_admin -d postgres -c "CREATE DATABASE astuti_roles_platform_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_roles_ci_admin -d postgres -c "CREATE DATABASE astuti_roles_tenant_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+
+      - name: Provisionar papeis com o comando versionado
+        run: php artisan astuti:permissoes-pg --confirmar=PERMISSOES-PG
+
+      - name: Definir senhas exclusivas e ficticias de CI
+        run: |
+          container_id="$(docker ps --filter 'ancestor=postgres:17' --format '{{.ID}}' | head -n 1)"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_roles_ci_admin -d postgres -c "ALTER ROLE astuti_migracao PASSWORD 'roles_ci_migration_only';"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_roles_ci_admin -d postgres -c "ALTER ROLE astuti_aplicacao PASSWORD 'roles_ci_web_only';"
+
+      - name: Testar recusas SQL, login e escrita auditada
+        run: |
+          php artisan test --filter=PostgresProductionRolesTest
+          php artisan test --filter=PostgresProductionRolesTest
+
   migracao-integracao:
     name: Integração MariaDB para PostgreSQL
     runs-on: ubuntu-24.04
