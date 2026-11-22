@@ -639,3 +639,8 @@ A tela de consulta `Escolas > Matrículas` passou a recuperar a rota da própria
 ## 22/11/2026 - Desvínculo de responsável com justificativa e segundo fator recente
 
 Implementado em PR independente derivado do main consolidado o fluxo de desvincular o responsável **do aluno**, sem excluir o cadastro municipal do responsável nem afetar irmãos. A tela mostra nome, parentesco e exige motivo de 10 a 500 caracteres; o POST exige segundo fator recente. A exclusão é transacional e auditada como `deleted` em `StudentGuardian`, preservando snapshot sem CPF e telefone em claro. Sem contato principal, a ficha orienta a marcar outro manualmente. Incluídos testes de autorização, escola, motivo, auditoria, irmãos e retomada do formulário após o código. Validação final do CI ficará registrada no PR. Nenhum dado real ou banco do notebook foi alterado.
+
+
+## 22/11/2026 - Consulta da turma com data de corte e ocupação
+
+Nova ficha somente de consulta da turma ligada à lista da escola. Apresenta ano, etapa, turno, vagas preenchidas e alerta acima da capacidade; alunos com matrícula ativa no próprio contexto escolar são ordenados sem efeito de acentos, com nascimento, idade em 31/03 do ano letivo, vínculo com a ficha e contato principal carregado em lote. A regra pedagógica conservadora marca "Conferir idade" somente em Pré I/II e 1º a 9º ano reconhecíveis, sem tolerância, e não marca turmas ambíguas nem estudantes sem nascimento. Sem migração nem alterações em importadores; testes apenas fictícios. Resultados do CI e commit disponíveis no PR correspondente.

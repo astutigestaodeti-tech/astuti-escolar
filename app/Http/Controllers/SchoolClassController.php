@@ -6,11 +6,13 @@ use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\StudentEnrollment;
+use App\Support\ClassAgeRule;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -62,6 +64,56 @@ class SchoolClassController extends Controller
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
 
         return view('classes.index', compact('municipality', 'school', 'classes', 'canManage'));
+    }
+
+    public function show(Request $request, string $municipio, string $escola, string $turma): View
+    {
+        [$municipality, $school] = $this->school($request, $escola);
+        Gate::authorize('view', [$school, $municipality]);
+
+        $class = SchoolClass::query()
+            ->where('school_id', $school->id)
+            ->where('status', 'active')
+            ->with('schoolYear')
+            ->findOrFail($turma);
+
+        $cutoff = Carbon::create((int) $class->schoolYear->year, 3, 31);
+        $allowedAges = ClassAgeRule::allowedAges($class->stage, $class->name);
+
+        $enrollments = StudentEnrollment::query()
+            ->where('school_id', $school->id)
+            ->where('school_year_id', $class->school_year_id)
+            ->where('school_class_id', $class->id)
+            ->where('status', 'active')
+            ->with(['student.primaryGuardianLink.guardian'])
+            ->get()
+            ->sortBy(fn (StudentEnrollment $enrollment): string => Str::lower(Str::ascii((string) $enrollment->student?->full_name)).'|'.$enrollment->id)
+            ->values();
+
+        $roster = $enrollments->map(function (StudentEnrollment $enrollment) use ($cutoff, $allowedAges): array {
+            $student = $enrollment->student;
+            $age = $student?->ageOn($cutoff);
+
+            return [
+                'student' => $student,
+                'age' => $age,
+                'needsAgeReview' => $age !== null && $allowedAges !== null && ! in_array($age, $allowedAges, true),
+                'primaryContact' => $student?->primaryGuardianLink?->guardian,
+            ];
+        });
+
+        $occupied = $roster->count();
+        $capacity = $class->capacity === null ? null : (int) $class->capacity;
+        $occupancyPercentage = $capacity !== null && $capacity > 0
+            ? (int) round($occupied * 100 / $capacity)
+            : null;
+        $visualPercentage = min(100, $occupancyPercentage ?? 0);
+        $aboveCapacity = $capacity !== null && $occupied > $capacity;
+
+        return view('classes.show', compact(
+            'municipality', 'school', 'class', 'roster', 'cutoff',
+            'occupied', 'capacity', 'occupancyPercentage', 'visualPercentage', 'aboveCapacity',
+        ));
     }
 
     public function create(Request $request, string $municipio, string $escola): View
