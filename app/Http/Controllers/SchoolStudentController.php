@@ -21,6 +21,7 @@ class SchoolStudentController extends Controller
         'nao_solicitado' => ['status' => 'not_requested', 'label' => 'Não solicitado'],
         'cancelado' => ['status' => 'cancelled', 'label' => 'Cancelado'],
         'sem_informacao' => ['status' => null, 'label' => 'Sem informação'],
+        'adaptado' => ['status' => null, 'label' => 'Veículo adaptado'],
     ];
 
     public function index(Request $request, string $municipio, string $escola): View
@@ -52,12 +53,22 @@ class SchoolStudentController extends Controller
                 ->where('transporte_matricula.status', 'active');
         })->selectRaw("coalesce(transporte_matricula.transport_status, 'sem_informacao') as situacao, count(distinct students.id) as total")
             ->groupBy('situacao')->pluck('total', 'situacao')->map(fn ($total): int => (int) $total)->all();
+        $transportCounts['adaptado'] = (clone $query)->whereHas('enrollments', function (Builder $enrollments) use ($activeHere): void {
+            $activeHere($enrollments);
+            $enrollments->where('transport_adapted_vehicle', true);
+        })->count();
 
         if ($transport !== '') {
             $status = self::TRANSPORT_FILTERS[$transport]['status'];
-            $query->whereHas('enrollments', function (Builder $enrollments) use ($activeHere, $status): void {
+            $query->whereHas('enrollments', function (Builder $enrollments) use ($activeHere, $status, $transport): void {
                 $activeHere($enrollments);
-                $status === null ? $enrollments->whereNull('transport_status') : $enrollments->where('transport_status', $status);
+                if ($status === null && $transport === 'adaptado') {
+                    $enrollments->where('transport_adapted_vehicle', true);
+                } elseif ($status === null) {
+                    $enrollments->whereNull('transport_status');
+                } else {
+                    $enrollments->where('transport_status', $status);
+                }
             });
         }
 

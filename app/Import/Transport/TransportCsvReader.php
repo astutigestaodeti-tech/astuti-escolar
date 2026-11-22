@@ -5,14 +5,14 @@ namespace App\Import\Transport;
 use App\Import\Students\ImportText;
 
 /**
- * CSV da Secretaria: só lê os campos mínimos para identificar um vínculo.
- * As demais colunas são ignoradas, não armazenadas nem mostradas na prévia.
+ * CSV da Secretaria: identifica matrículas e lê os dados opcionais do transporte.
+ * Outras colunas continuam ignoradas para minimizar dados pessoais.
  */
 class TransportCsvReader
 {
     private const MAX_ROWS = 500;
 
-    /** @return list<array{ra: ?string, name: ?string, birth_date: ?string, school: ?string, status: string, line: int}> */
+    /** @return list<array{ra: ?string, name: ?string, birth_date: ?string, school: ?string, status: string, transport_route: ?string, transport_stop: ?string, transport_adapted_vehicle: ?bool, line: int}> */
     public function read(string $path): array
     {
         $stream = fopen($path, 'rb');
@@ -96,7 +96,30 @@ class TransportCsvReader
                     throw new TransportCsvException('Situação de transporte desconhecida na linha '.$line.'.');
                 }
 
-                $rows[] = ['ra' => $ra, 'name' => $name, 'birth_date' => $birth, 'school' => $school, 'status' => $status, 'line' => $line];
+                $route = isset($columns['transport_route']) ? ImportText::clean($cells[$columns['transport_route']] ?? null) : null;
+                $stop = isset($columns['transport_stop']) ? ImportText::clean($cells[$columns['transport_stop']] ?? null) : null;
+                if ($route !== null && mb_strlen($route) > 60) {
+                    throw new TransportCsvException('Linha de transporte acima de 60 caracteres na linha '.$line.'.');
+                }
+                if ($stop !== null && mb_strlen($stop) > 160) {
+                    throw new TransportCsvException('Ponto de embarque acima de 160 caracteres na linha '.$line.'.');
+                }
+
+                $adaptedValue = isset($columns['transport_adapted_vehicle'])
+                    ? ImportText::key($cells[$columns['transport_adapted_vehicle']] ?? null)
+                    : '';
+                $adapted = match ($adaptedValue) {
+                    '' => null,
+                    'sim', 's', 'x' => true,
+                    'nao', 'n' => false,
+                    default => throw new TransportCsvException('Veículo adaptado desconhecido na linha '.$line.'. Use Sim, Não, S, N ou X.'),
+                };
+
+                $rows[] = [
+                    'ra' => $ra, 'name' => $name, 'birth_date' => $birth, 'school' => $school,
+                    'status' => $status, 'transport_route' => $route, 'transport_stop' => $stop,
+                    'transport_adapted_vehicle' => $adapted, 'line' => $line,
+                ];
                 if (count($rows) > self::MAX_ROWS) {
                     throw new TransportCsvException('O CSV excede 500 alunos. Divida a lista por escola.');
                 }
@@ -118,9 +141,17 @@ class TransportCsvReader
         'name' => ['nome', 'aluno', 'nome aluno', 'nome do aluno', 'nome completo'],
         'birth' => ['dt nasc', 'data nasc', 'nascimento', 'data de nascimento', 'data nascimento', 'dt nascimento'],
         'school' => ['escola', 'unidade', 'unidade escolar', 'nome da escola'],
+        'transport_route' => ['linha', 'rota'],
+        'transport_stop' => ['ponto de embarque', 'ponto embarque', 'ponto'],
+        'transport_adapted_vehicle' => ['adaptado', 'veiculo adaptado'],
     ];
 
-    private const LABELS = ['ra' => 'RA', 'status' => 'situação do transporte', 'name' => 'nome', 'birth' => 'data de nascimento', 'school' => 'escola'];
+    private const LABELS = [
+        'ra' => 'RA', 'status' => 'situação do transporte', 'name' => 'nome',
+        'birth' => 'data de nascimento', 'school' => 'escola',
+        'transport_route' => 'linha', 'transport_stop' => 'ponto de embarque',
+        'transport_adapted_vehicle' => 'veículo adaptado',
+    ];
 
     private function columns(array $header): array
     {

@@ -26,7 +26,7 @@ class TransportCsvReaderTest extends TestCase
         $rows = $this->ler(iconv('UTF-8', 'Windows-1252', $csv));
 
         $this->assertCount(3, $rows);
-        $this->assertSame(['ra' => '999000000001-6/SP', 'name' => 'João Ferreira', 'birth_date' => null, 'school' => null, 'status' => 'active', 'line' => 2], $rows[0]);
+        $this->assertSame(['ra' => '999000000001-6/SP', 'name' => 'João Ferreira', 'birth_date' => null, 'school' => null, 'status' => 'active', 'transport_route' => null, 'transport_stop' => null, 'transport_adapted_vehicle' => null, 'line' => 2], $rows[0]);
         $this->assertSame('not_requested', $rows[1]['status']);
         $this->assertSame('Érica Silva', $rows[1]['name']);
         $this->assertSame('cancelled', $rows[2]['status']);
@@ -105,14 +105,78 @@ class TransportCsvReaderTest extends TestCase
         $this->assertCount(28, $rows);
         $this->assertSame(['active' => 26, 'cancelled' => 2], array_count_values(array_column($rows, 'status')));
         $this->assertSame([null], array_values(array_unique(array_column($rows, 'ra'))));
-        $this->assertSame(['ra' => null, 'name' => 'Yasmin Costa Dias', 'birth_date' => '2023-10-01', 'school' => 'EMEI AURORA', 'status' => 'active', 'line' => 2], $rows[0]);
+        $this->assertSame(['ra' => null, 'name' => 'Yasmin Costa Dias', 'birth_date' => '2023-10-01', 'school' => 'EMEI AURORA', 'status' => 'active', 'transport_route' => 'LINHA 02 - URBANA', 'transport_stop' => 'RUA DAS HORTÊNSIAS, 1079', 'transport_adapted_vehicle' => true, 'line' => 2], $rows[0]);
         $this->assertNotContains(null, array_column($rows, 'birth_date'));
+    }
+
+    public function test_le_linha_ponto_e_veiculo_adaptado_por_cabecalhos_variados(): void
+    {
+        $variations = [
+            ['Linha', 'Ponto de embarque', 'Adaptado', 'SIM', true],
+            ['Rota', 'Ponto', 'Veículo adaptado', 'NÃO', false],
+            ['LINHA', 'PONTO EMBARQUE', 'ADAPTADO', 'S', true],
+            ['ROTA', 'PONTO', 'VEICULO ADAPTADO', 'N', false],
+            ['Linha', 'Ponto de Embarque', 'Adaptado', 'X', true],
+        ];
+
+        foreach ($variations as [$routeHeader, $stopHeader, $adaptedHeader, $value, $expected]) {
+            $rows = $this->ler("RA;SITUACAO;{$routeHeader};{$stopHeader};{$adaptedHeader}\n"
+                ."999000000001-6/SP;SIM;Linha 03;Praça Fictícia;{$value}\n");
+
+            $this->assertSame('Linha 03', $rows[0]['transport_route']);
+            $this->assertSame('Praça Fictícia', $rows[0]['transport_stop']);
+            $this->assertSame($expected, $rows[0]['transport_adapted_vehicle']);
+        }
+    }
+
+    public function test_colunas_omitidas_ou_celulas_vazias_nao_inventam_dados(): void
+    {
+        $rows = $this->ler("RA;SITUACAO;LINHA;PONTO;ADAPTADO\n999000000001-6/SP;SIM;;;\n");
+        $this->assertNull($rows[0]['transport_route']);
+        $this->assertNull($rows[0]['transport_stop']);
+        $this->assertNull($rows[0]['transport_adapted_vehicle']);
+
+        $withoutColumns = $this->ler("RA;SITUACAO\n999000000001-6/SP;SIM\n");
+        $this->assertNull($withoutColumns[0]['transport_route']);
+        $this->assertNull($withoutColumns[0]['transport_stop']);
+        $this->assertNull($withoutColumns[0]['transport_adapted_vehicle']);
+    }
+
+    public function test_valor_desconhecido_de_adaptado_recusa_importacao(): void
+    {
+        $this->expectException(TransportCsvException::class);
+        $this->expectExceptionMessage('Veículo adaptado desconhecido na linha 2');
+
+        $this->ler("RA;SITUACAO;ADAPTADO\n999000000001-6/SP;SIM;TALVEZ\n");
+    }
+
+    public function test_linha_e_ponto_acima_do_limite_recusam_importacao(): void
+    {
+        foreach ([['LINHA', 61], ['PONTO', 161]] as [$header, $length]) {
+            try {
+                $this->ler("RA;SITUACAO;{$header}\n999000000001-6/SP;SIM;".str_repeat('A', $length)."\n");
+                $this->fail('Campo longo deveria ser recusado.');
+            } catch (TransportCsvException $exception) {
+                $this->assertStringContainsString('linha 2', $exception->getMessage());
+            }
+        }
+    }
+
+    public function test_fixture_da_secretaria_contem_dados_de_transporte(): void
+    {
+        $rows = (new TransportCsvReader)->read(__DIR__.'/../../Fixtures/kit-monte-sereno/SME_lista_transporte_escolar.csv');
+
+        $this->assertCount(28, $rows);
+        $this->assertSame('LINHA 02 - URBANA', $rows[0]['transport_route']);
+        $this->assertSame('RUA DAS HORTÊNSIAS, 1079', $rows[0]['transport_stop']);
+        $this->assertTrue($rows[0]['transport_adapted_vehicle']);
+        $this->assertNull($rows[1]['transport_adapted_vehicle']);
     }
 
     public function test_sem_ra_nem_nome_explica_as_colunas_reconhecidas(): void
     {
         $this->expectException(TransportCsvException::class);
-        $this->expectExceptionMessage('Colunas reconhecidas: situação do transporte, escola.');
+        $this->expectExceptionMessage('Colunas reconhecidas: situação do transporte, escola, linha.');
 
         $this->ler("SITUACAO;ESCOLA;LINHA\nATIVO;EMEF;LINHA 01\n");
     }
