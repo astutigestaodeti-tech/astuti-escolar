@@ -9,6 +9,7 @@ use App\Tenancy\TenantContext;
 use Illuminate\Cache\DatabaseStore;
 use Illuminate\Session\DatabaseSessionHandler;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -152,7 +153,10 @@ class PostgresProductionRolesTest extends TestCase
         );
         $this->assertNotNull($sessionCookie);
 
-        $this->withCookie(config('session.cookie'), $sessionCookie->getValue())
+        // A resposta ja traz o cookie criptografado: com withCookie() o
+        // teste o criptografaria novamente e abriria outra sessao.
+        Auth::forgetGuards();
+        $this->withUnencryptedCookie(config('session.cookie'), $sessionCookie->getValue())
             ->get('/seguranca/segundo-fator')->assertOk();
         $this->assertAuthenticatedAs($user);
 
@@ -162,7 +166,8 @@ class PostgresProductionRolesTest extends TestCase
         $this->assertTrue(Cache::forget($cacheKey));
         $this->assertNull(Cache::get($cacheKey));
 
-        $this->withCookie(config('session.cookie'), $sessionCookie->getValue())
+        Auth::forgetGuards();
+        $this->withUnencryptedCookie(config('session.cookie'), $sessionCookie->getValue())
             ->post('/logout')->assertRedirect('/login');
         $this->assertGuest();
         $this->assertSame(0, DB::connection('platform')->table('sessions')->where('id', $sessionId)->count());
