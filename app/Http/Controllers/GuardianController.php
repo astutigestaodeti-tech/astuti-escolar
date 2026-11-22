@@ -53,13 +53,14 @@ class GuardianController extends Controller
         $data = $this->validatedData($request);
 
         try {
-            [$reused, $principalAnterior, $guardianName] = DB::connection('tenant')->transaction(function () use ($aluno, $school, $data): array {
+            [$reused, $principalAnterior, $guardianName, $contactUpdated] = DB::connection('tenant')->transaction(function () use ($aluno, $school, $data): array {
                 $this->lockedStudent($aluno, $school);
 
                 $guardian = $data['cpf'] === null
                     ? null
                     : Guardian::query()->where('cpf', $data['cpf'])->lockForUpdate()->first();
                 $reused = $guardian !== null;
+                $contactUpdated = false;
 
                 if ($guardian === null) {
                     if (empty($data['phone'])) {
@@ -106,6 +107,7 @@ class GuardianController extends Controller
                     }
                     if ($guardian->isDirty()) {
                         $guardian->save();
+                        $contactUpdated = true;
                         app(AuditTrail::class)->record('tenant', 'updated', Guardian::class, $guardian->id, $beforeGuardian, $this->guardianSnapshot($guardian));
                     }
                 }
@@ -123,15 +125,17 @@ class GuardianController extends Controller
 
                 app(AuditTrail::class)->record('tenant', 'created', StudentGuardian::class, $link->id, null, $this->linkSnapshot($link));
 
-                return [$reused, $principalAnterior, $guardian->full_name];
+                return [$reused, $principalAnterior, $guardian->full_name, $contactUpdated];
             });
         } catch (QueryException $exception) {
             $this->rethrowUniqueViolation($exception);
         }
 
-        $message = $reused
-            ? 'Responsável já cadastrado na rede: o vínculo foi feito e os dados de contato foram atualizados.'
-            : 'Responsável vinculado ao aluno com sucesso.';
+        $message = match (true) {
+            $reused && $contactUpdated => 'Responsável já cadastrado na rede: o vínculo foi feito e os dados de contato foram atualizados.',
+            $reused => 'Responsável já cadastrado na rede: o vínculo foi feito com os dados de contato que já estavam no cadastro.',
+            default => 'Responsável vinculado ao aluno com sucesso.',
+        };
         if ($principalAnterior !== null) {
             $promotion = "{$guardianName} passou a ser o contato principal (antes: {$principalAnterior}).";
             $message = $reused ? $message.' '.$promotion : $promotion;

@@ -3,29 +3,50 @@
     $parametrosResponsaveis = ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id];
 @endphp
 
-<section class="folha" id="responsaveis" aria-labelledby="titulo-responsaveis">
+<section class="folha ficha-responsaveis" id="responsaveis" aria-labelledby="titulo-responsaveis">
     <div class="folha-cabecalho">
-        <div><h2 id="titulo-responsaveis">Responsáveis</h2><p>Contatos e vínculo familiar registrados para este aluno.</p></div>
-        @if ($canManage)
+        <div><h2 id="titulo-responsaveis">Responsáveis</h2><p>Quem responde pelo aluno e como falar com a família.</p></div>
+        @if ($canManage && $guardianLinks->isNotEmpty())
             <a class="botao secundario" href="{{ route('school.students.guardians.create', $parametrosResponsaveis) }}">Adicionar responsável</a>
         @endif
     </div>
 
-    @forelse ($guardianLinks as $vinculoResponsavel)
-        <div class="ficha-grupo">
-            <h3>{{ $vinculoResponsavel->guardian->full_name }}</h3>
-            <dl>
-                <div><dt>Parentesco</dt><dd>{{ \App\Http\Controllers\GuardianController::RELATIONSHIPS[$vinculoResponsavel->relationship] ?? 'Outro' }}</dd></div>
-                <div><dt>Telefone</dt><dd>{{ $vinculoResponsavel->guardian->formatted_phone }}</dd></div>
-                <div><dt>E-mail</dt><dd>{{ $vinculoResponsavel->guardian->email ?? 'Não informado' }}</dd></div>
-                <div><dt>Responsável legal</dt><dd>{{ $vinculoResponsavel->is_legal_guardian ? 'Sim' : 'Não' }}</dd></div>
-                <div><dt>Contato principal</dt><dd>{{ $vinculoResponsavel->is_primary_contact ? 'Sim' : 'Não' }}</dd></div>
-            </dl>
-            @if ($canManage)
-                <a class="botao secundario" href="{{ route('school.students.guardians.edit', [...$parametrosResponsaveis, 'vinculo' => $vinculoResponsavel->id]) }}">Editar</a>
-            @endif
+    @if ($guardianLinks->isEmpty())
+        <div class="responsaveis-vazio">
+            <p class="ficha-vazio">Nenhum responsável cadastrado.
+                @if ($canManage)
+                    <a href="{{ route('school.students.guardians.create', $parametrosResponsaveis) }}">Adicionar responsável</a>
+                @endif
+            </p>
         </div>
-    @empty
-        <p class="texto-ajuda">Nenhum responsável cadastrado para este aluno.</p>
-    @endforelse
+    @else
+        <ul class="responsaveis-lista">
+            @foreach ($guardianLinks as $vinculoResponsavel)
+                @php($responsavel = $vinculoResponsavel->guardian)
+                <li class="responsavel">
+                    <div class="responsavel-topo">
+                        <h3>{{ $responsavel->full_name }}</h3>
+                        <span class="responsavel-parentesco">{{ \App\Http\Controllers\GuardianController::RELATIONSHIPS[$vinculoResponsavel->relationship] ?? 'Outro' }}</span>
+                    </div>
+                    @if ($vinculoResponsavel->is_primary_contact || $vinculoResponsavel->is_legal_guardian)
+                        <div class="responsavel-etiquetas">
+                            @if ($vinculoResponsavel->is_primary_contact)
+                                <span class="etiqueta ok">Contato principal</span>
+                            @endif
+                            @if ($vinculoResponsavel->is_legal_guardian)
+                                <span class="etiqueta neutra">Responsável legal</span>
+                            @endif
+                        </div>
+                    @endif
+                    <dl>
+                        <div><dt>Telefone</dt><dd class="numero"><a href="tel:+55{{ preg_replace('/\D/', '', (string) $responsavel->phone) }}">{{ $responsavel->formatted_phone }}</a></dd></div>
+                        <div><dt>E-mail</dt><dd>@if ($responsavel->email)<a href="mailto:{{ $responsavel->email }}">{{ $responsavel->email }}</a>@else Não informado @endif</dd></div>
+                    </dl>
+                    @if ($canManage)
+                        <a class="responsavel-editar" href="{{ route('school.students.guardians.edit', [...$parametrosResponsaveis, 'vinculo' => $vinculoResponsavel->id]) }}" aria-label="Editar dados de {{ $responsavel->full_name }}">Editar</a>
+                    @endif
+                </li>
+            @endforeach
+        </ul>
+    @endif
 </section>

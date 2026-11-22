@@ -372,6 +372,7 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
     .topo{padding:0 20px}
     .conteudo{padding:22px 20px 32px}
     .ficha-escola{grid-template-columns:1fr}
+    .ficha-escola>.ficha-responsaveis,.ficha-escola>.cartao{grid-column:auto;grid-row:auto}
     .acesso{grid-template-columns:1fr}
     .acesso-lado{display:none}
     .acesso-marca-movel{display:inline-flex;color:var(--tinta);margin-bottom:28px}
@@ -515,6 +516,23 @@ select.entrada{cursor:pointer}
 .ficha-vazio{margin:10px 0 0;padding:12px 14px;border:1px dashed var(--pauta);border-radius:var(--raio-controle);color:var(--tinta-3);font-size:14px}
 .ficha-vazio a{display:inline-block;margin-left:4px;font-weight:700;color:var(--caneta)}
 @media (max-width:960px){.ficha-grupos{grid-template-columns:1fr}}
+/* Responsáveis abaixo dos dados do aluno; o histórico ocupa a coluna lateral */
+.ficha-escola>.ficha-responsaveis{grid-column:1}
+.ficha-escola>.cartao{grid-column:2;grid-row:1 / span 2}
+.responsaveis-vazio{padding:0 22px 18px}
+.responsaveis-vazio .ficha-vazio{margin:0}
+.responsaveis-lista{list-style:none;margin:0;padding:0 22px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.responsavel{border:1px solid var(--pauta);border-radius:var(--raio-controle);padding:14px 16px 12px;display:flex;flex-direction:column;gap:8px}
+.responsavel-topo{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.responsavel h3{margin:0;font-size:16px;font-weight:700;color:var(--tinta)}
+.responsavel-parentesco{color:var(--tinta-3);font-size:14px;white-space:nowrap}
+.responsavel-etiquetas{display:flex;flex-wrap:wrap;gap:6px}
+.ficha-escola .responsavel dl{padding:0}
+.ficha-escola .responsavel dl div{padding:7px 0}
+.ficha-escola .responsavel dd{overflow-wrap:anywhere}
+.responsavel dd a{color:var(--caneta)}
+.responsavel-editar{align-self:flex-start;font-weight:700;font-size:14px;color:var(--caneta)}
+
 /* Endereço no formulário: logradouro e número na mesma linha; bairro, CEP e zona na seguinte */
 @media (min-width:641px){
     .grade-endereco{grid-template-columns:repeat(4,minmax(0,1fr))}

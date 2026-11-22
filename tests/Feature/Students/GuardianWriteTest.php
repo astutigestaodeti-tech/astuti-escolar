@@ -187,7 +187,7 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
         $this->post($this->url(), $this->data())->assertRedirect();
         $this->post($this->url($this->studentSibling), $this->data([
             'phone' => '', 'email' => '', 'is_primary_contact' => '0',
-        ]))->assertRedirect();
+        ]))->assertRedirect()->assertSessionHas('status', 'Responsável já cadastrado na rede: o vínculo foi feito com os dados de contato que já estavam no cadastro.');
 
         [$phone, $email, $updates] = $this->inMunicipality(fn (): array => [
             Guardian::query()->sole()->phone,
@@ -375,7 +375,9 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
 
         $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->studentA)
             ->assertOk()
-            ->assertSee('(11) 3333-4444');
+            ->assertSee('(11) 3333-4444')
+            ->assertSee('href="tel:+551133334444"', false)
+            ->assertSee('Contato principal');
         $this->assertSame('1133334444', $this->inMunicipality(fn (): string => Guardian::query()->sole()->phone));
     }
 }
