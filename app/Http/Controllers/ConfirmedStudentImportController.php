@@ -102,9 +102,12 @@ class ConfirmedStudentImportController extends Controller
                     $confirmation[] = ['field' => $issue->field, 'message' => $issue->message];
                 } else {
                     // Observações e pistas pessoais não vão para a prévia persistível.
-                    $pending[] = $issue->field === 'observacao'
-                        ? 'Observação não importada nesta etapa.'
-                        : $issue->message;
+                    $pending[] = [
+                        'field' => $issue->field,
+                        'message' => $issue->field === 'observacao'
+                            ? 'Observação não importada nesta etapa.'
+                            : $issue->message,
+                    ];
                 }
             }
 

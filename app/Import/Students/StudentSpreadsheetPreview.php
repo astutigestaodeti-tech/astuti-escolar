@@ -72,12 +72,14 @@ final class StudentSpreadsheetPreview
                     continue;
                 }
 
-                $source = 'Aba '.$sheet->name.', linha '.$rowNumber;
+                // PDF e foto: "Página 2, linha 5"; planilha: "Aba Alunos, linha 5".
+                $place = ($sheet->name === 'Documento' || str_starts_with($sheet->name, 'Página ')) ? $sheet->name : 'Aba '.$sheet->name;
+                $source = $place.', linha '.$rowNumber;
                 $student = $this->student($sheet, $cells, $columns, $target, $source, $preview);
                 if ($student !== null) {
                     $reading = $sheet->confidence[$rowNumber] ?? null;
                     if ($reading !== null && $reading < self::OCR_CONFIDENCE_MIN) {
-                        $student->addIssue(ImportIssue::CONFIRM, 'leitura', 'Leitura automatica com baixa confianca ('.number_format($reading, 0).'%). Confira nome, data e RA com o documento.');
+                        $student->addIssue(ImportIssue::CONFIRM, 'leitura', 'Leitura automática com baixa confiança ('.number_format($reading, 0).'%). Confira nome, data e RA com o documento.');
                     }
                     $preview->students[] = $student;
                 }
@@ -189,17 +191,17 @@ final class StudentSpreadsheetPreview
         }
         if ($ra === null) {
             $raw = ImportText::clean($cell('ra'));
-            $student->addIssue(ImportIssue::PENDING, 'ra', $raw === null ? 'RA nao informado.' : 'RA em formato nao reconhecido: "'.$raw.'".');
+            $student->addIssue(ImportIssue::PENDING, 'ra', $raw === null ? 'RA não informado.' : 'RA em formato não reconhecido: "'.$raw.'".');
         }
         if ($student->usesTransport === null) {
-            $student->addIssue(ImportIssue::PENDING, 'transporte', 'A planilha nao informa o uso de transporte escolar.');
+            $student->addIssue(ImportIssue::PENDING, 'transporte', 'A planilha não informa o uso de transporte escolar.');
         }
         if ($student->street === null || $student->number === null || $student->district === null) {
-            $student->addIssue(ImportIssue::PENDING, 'endereco', 'Endereco incompleto na planilha.');
+            $student->addIssue(ImportIssue::PENDING, 'endereco', 'Endereço incompleto na planilha.');
         }
-        $student->addIssue(ImportIssue::PENDING, 'cep', 'CEP nao informado.');
+        $student->addIssue(ImportIssue::PENDING, 'cep', 'CEP não informado.');
         if (isset($student->hints['observacao'])) {
-            $student->addIssue(ImportIssue::PENDING, 'observacao', 'Observacao da escola para a etapa de inclusao: "'.$student->hints['observacao'].'".');
+            $student->addIssue(ImportIssue::PENDING, 'observacao', 'Observação da escola para a etapa de inclusão: "'.$student->hints['observacao'].'".');
         }
 
         return $student;
@@ -218,7 +220,7 @@ final class StudentSpreadsheetPreview
 
             return $match !== null
                 ? [$match->id, null]
-                : [null, 'Turma "'.$label.'" nao corresponde a nenhuma turma da escola.'];
+                : [null, 'Turma "'.$label.'" não corresponde a nenhuma turma da escola.'];
         }
 
         $sheetMatch = $byCode[ImportText::classKey($sheet->name)] ?? null;
@@ -238,7 +240,7 @@ final class StudentSpreadsheetPreview
             return [$target->classes[0]->id, null];
         }
 
-        return [null, 'A linha nao informa a turma e a aba "'.$sheet->name.'" nao identifica uma turma unica.'];
+        return [null, 'A linha não informa a turma e a aba "'.$sheet->name.'" não identifica uma turma única.'];
     }
 
     /**
@@ -278,7 +280,7 @@ final class StudentSpreadsheetPreview
                     || ($issue->field === 'transporte' && $first->usesTransport !== null)
                     || ($issue->field === 'turma' && $first->classId !== null)
                 )));
-                $first->addIssue(ImportIssue::CONFIRM, 'duplicidade', 'O mesmo aluno aparece '.count($first->sources).' vezes ('.implode('; ', $first->sources).'). Confirme que e a mesma pessoa.');
+                $first->addIssue(ImportIssue::CONFIRM, 'duplicidade', 'O mesmo aluno aparece '.count($first->sources).' vezes ('.implode('; ', $first->sources).'). Confirme que é a mesma pessoa.');
             }
 
             $result[] = $first;

@@ -85,7 +85,7 @@ final class DocumentTableReader
         if ($digital !== null) {
             $sheets = [];
             foreach ($digital as $page => $words) {
-                $sheets[] = $this->sheet($pages > 1 ? 'Pagina '.$page : 'Documento', $words);
+                $sheets[] = $this->sheet($pages > 1 ? 'Página '.$page : 'Documento', $words);
             }
 
             return $sheets;
@@ -98,7 +98,7 @@ final class DocumentTableReader
 
         $sheets = [];
         foreach (array_values($images) as $index => $image) {
-            $sheets[] = $this->sheet($pages > 1 ? 'Pagina '.($index + 1) : 'Documento', $this->ocrImage($image));
+            $sheets[] = $this->sheet($pages > 1 ? 'Página '.($index + 1) : 'Documento', $this->ocrImage($image));
         }
 
         return $sheets;

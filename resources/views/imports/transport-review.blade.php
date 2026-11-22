@@ -28,14 +28,14 @@
         <input type="hidden" name="lote" value="{{ $token }}">
         <section class="folha" aria-labelledby="linhas-transporte">
             <div class="folha-cabecalho"><div><h2 id="linhas-transporte">Conferência da lista</h2><p>Dados da matrícula atual, sem criar registros novos.</p></div></div>
-            <div style="overflow-x:auto">
-                <table style="width:100%">
-                    <thead><tr><th>Aluno</th><th>RA</th><th>Atual</th><th>Proposta</th></tr></thead>
+            <div class="rolagem">
+                <table class="tabela conf-tabela">
+                    <thead><tr><th scope="col">Aluno</th><th scope="col">RA</th><th scope="col">Atual</th><th scope="col">Proposta</th></tr></thead>
                     <tbody>
                         @foreach ($rows as $row)
                             <tr>
-                                <td><strong>{{ $row['name'] }}</strong><small style="display:block">Linha {{ $row['line'] }} do CSV</small></td>
-                                <td>{{ $row['ra'] }}</td>
+                                <td><strong>{{ $row['name'] }}</strong><span class="conf-origem">Linha {{ $row['line'] }} do CSV</span></td>
+                                <td class="conf-numero">{{ $row['ra'] }}</td>
                                 <td>{{ $labels[$row['current_status']] ?? 'Não informado' }}</td>
                                 <td><strong>{{ $labels[$row['desired_status']] }}</strong></td>
                             </tr>
@@ -44,11 +44,11 @@
                 </table>
             </div>
         </section>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:18px">
+        <div class="conf-acoes">
             <button class="botao" type="submit">Confirmar alterações no transporte</button>
             <a class="botao secundario" href="{{ route('school.imports.transport.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Cancelar e voltar</a>
         </div>
     </form>
 
-    <div class="nota" style="margin-top:20px"><x-icon name="info" /><div><strong>LGPD e auditoria</strong><p>O CSV original não é armazenado. Somente a situação de transporte da matrícula é alterada e auditada. Nenhum cancelamento é reativado automaticamente.</p></div></div>
+    <div class="nota conf-lgpd"><x-icon name="info" /><div><strong>LGPD e auditoria</strong><p>O CSV original não é armazenado. Somente a situação de transporte da matrícula é alterada e auditada. Nenhum cancelamento é reativado automaticamente.</p></div></div>
 @endsection

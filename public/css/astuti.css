@@ -449,3 +449,42 @@ select.entrada{cursor:pointer}
 @media (max-width:640px){.marcadores{justify-content:flex-start;margin-top:12px}.folha-titulo .marcadores .marcador{margin-top:0}}
 .cartao .cartao-dados{margin-top:auto}
 .cartao .cartao-dados + .cartao-acao{margin-top:4px}
+
+/* Conferência da importação de alunos */
+.conf-resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:22px 0 0}
+.conf-resumo-item{padding:14px 16px;border:1px solid var(--linha);border-left:4px solid var(--linha);border-radius:var(--raio-controle);background:var(--folha)}
+.conf-resumo-item dt{font-size:13px;color:var(--tinta-3)}
+.conf-resumo-item dd{margin:4px 0 0;font-family:var(--serifa);font-size:28px;font-weight:600;color:var(--tinta);font-variant-numeric:tabular-nums}
+.conf-resumo-item.pronto{border-left-color:var(--verde)}
+.conf-resumo-item.confirmar{border-left-color:var(--ouro-vivo)}
+.conf-resumo-item.corrigir{border-left-color:var(--margem)}
+.conf-resumo-item.ignorado{border-left-color:#9aa7b8}
+.conf-depois{margin-top:16px}
+.conf-tabela td{vertical-align:top;white-space:normal}
+.conf-tabela td:first-child{min-width:190px}
+.conf-tabela .conf-numero{white-space:nowrap;font-variant-numeric:tabular-nums}
+.conf-origem{display:block;margin-top:2px;font-size:12.5px;color:var(--tinta-3)}
+.conf-falta{display:inline-block;white-space:nowrap;padding:1px 8px;border-radius:999px;background:var(--ouro-claro);color:#6b4a0c;font-size:13px}
+.conf-situacao{min-width:260px}
+.conf-selo{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
+.conf-selo.pronto{background:var(--verde-claro);color:var(--verde)}
+.conf-selo.confirmar{background:var(--ouro-claro);color:#6b4a0c}
+.conf-selo.corrigir{background:#f8e3e0;color:#8c2f25}
+.conf-selo.ignorado{background:#edf0f4;color:var(--tinta-3)}
+.conf-explica{margin-top:6px;font-size:13.5px;color:var(--tinta-3)}
+.conf-erro{color:#8c2f25}
+.conf-linha.confirmar td:first-child{box-shadow:inset 4px 0 0 var(--ouro-vivo)}
+.conf-linha.corrigir td:first-child{box-shadow:inset 4px 0 0 var(--margem)}
+.conf-linha.ignorado td{color:var(--tinta-3)}
+.conf-linha.ignorado td strong{color:var(--tinta-2);font-weight:600}
+.conf-pedido{margin-top:8px}
+.conf-pedido p{font-size:13.5px;color:var(--tinta-2)}
+.conf-marca{display:flex;align-items:flex-start;gap:10px;margin-top:8px;padding:9px 12px;border:1px solid #e2cf9c;border-radius:var(--raio-controle);background:#fffaf0;color:var(--tinta);font-size:14px;cursor:pointer}
+.conf-marca:hover{border-color:var(--ouro-vivo)}
+.conf-marca input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--verde);cursor:pointer}
+.conf-marca:has(input:checked){border-color:#a9cfae;background:var(--verde-claro);color:var(--verde)}
+.conf-marca:focus-within{outline:3px solid var(--caneta);outline-offset:2px}
+.conf-acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+.conf-lembrete{margin-top:10px;font-size:14px;color:#6b4a0c}
+.conf-lgpd{margin-top:22px}
+@media (max-width:640px){.conf-resumo{grid-template-columns:1fr 1fr}.conf-resumo-item dd{font-size:24px}}

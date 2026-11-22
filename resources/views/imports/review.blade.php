@@ -12,58 +12,145 @@
 
 @section('content')
     @php
-        $alreadyCount = count(array_filter($rows, fn ($row) => in_array('ja_cadastrado', array_column($row['confirmation'], 'field'), true)));
+        // Confirmações que a pessoa pode marcar nesta tela; qualquer outra exige corrigir a planilha.
+        $checkable = [
+            'duplicidade' => ['name' => 'confirmados[]', 'label' => 'Confirmo que são registros da mesma pessoa.'],
+            'homonimo' => ['name' => 'homonimos[]', 'label' => 'É outra pessoa. Autorizo cadastrar um novo aluno.'],
+            'leitura' => ['name' => 'leituras[]', 'label' => 'Conferi nome, data e RA com o documento.'],
+        ];
+        // Dados que esta etapa não grava: ficam para completar no cadastro de cada aluno.
+        $laterLabels = [
+            'cep' => 'CEP',
+            'endereco' => 'endereço completo',
+            'transporte' => 'uso de transporte escolar',
+            'observacao' => 'observações da escola',
+        ];
+
+        $counts = ['pronto' => 0, 'confirmar' => 0, 'corrigir' => 0, 'ignorado' => 0];
+        $later = [];
+        $view = [];
+        foreach ($rows as $index => $row) {
+            $fields = array_column($row['confirmation'], 'field');
+            $pendingFields = array_column($row['pending'], 'field');
+            foreach ($pendingFields as $field) {
+                if (isset($laterLabels[$field])) {
+                    $later[$field] = ($later[$field] ?? 0) + 1;
+                }
+            }
+
+            if (in_array('ja_cadastrado', $fields, true)) {
+                $status = 'ignorado';
+            } elseif (array_diff($fields, array_keys($checkable)) !== []) {
+                $status = 'corrigir';
+            } elseif ($fields !== []) {
+                $status = 'confirmar';
+            } else {
+                $status = 'pronto';
+            }
+            $counts[$status]++;
+
+            $view[$index] = ['status' => $status, 'row' => $row];
+        }
+        $toSave = count($rows) - $counts['ignorado'];
+        $statusText = [
+            'pronto' => 'Pronto para gravar',
+            'confirmar' => 'Confirme abaixo',
+            'corrigir' => 'Corrija na planilha',
+            'ignorado' => 'Já cadastrado',
+        ];
     @endphp
+
     <div class="folha-titulo">
         <div>
             <span class="contexto">{{ $school->name }} - Ano letivo {{ $year->year }}</span>
             <h1>Conferir antes de importar</h1>
-            <p>{{ count($rows) }} linhas conferidas: {{ $alreadyCount }} já cadastradas e {{ count($rows) - $alreadyCount }} possíveis inclusões.</p>
+            <p>{{ count($rows) }} {{ count($rows) === 1 ? 'aluno encontrado' : 'alunos encontrados' }} no arquivo. Nada foi gravado ainda.</p>
         </div>
     </div>
 
-    <div class="nota"><x-icon name="info" /><div><strong>Nada foi gravado ainda.</strong><p>As pendências não são preenchidas automaticamente. A conferência vale por uma hora e só pode ser confirmada pela mesma conta.</p></div></div>
+    <dl class="conf-resumo" aria-label="Resumo da conferência">
+        <div class="conf-resumo-item pronto"><dt>Prontos para gravar</dt><dd>{{ $counts['pronto'] }}</dd></div>
+        <div class="conf-resumo-item confirmar"><dt>Precisam da sua confirmação</dt><dd>{{ $counts['confirmar'] }}</dd></div>
+        @if ($counts['corrigir'] > 0)
+            <div class="conf-resumo-item corrigir"><dt>Corrigir na planilha</dt><dd>{{ $counts['corrigir'] }}</dd></div>
+        @endif
+        <div class="conf-resumo-item ignorado"><dt>Já cadastrados (serão ignorados)</dt><dd>{{ $counts['ignorado'] }}</dd></div>
+    </dl>
+
+    @if ($later !== [])
+        <div class="nota conf-depois"><x-icon name="info" /><div>
+            <strong>Fica para completar depois</strong>
+            <p>A importação grava nome, data de nascimento, RA e turma. Estes dados não vêm no arquivo ou não são gravados nesta etapa, e podem ser completados depois no cadastro de cada aluno:
+                @foreach ($later as $field => $total)
+                    {{ $laterLabels[$field] }} ({{ $total }} {{ $total === 1 ? 'aluno' : 'alunos' }}){{ $loop->last ? '.' : ';' }}
+                @endforeach
+            </p>
+        </div></div>
+    @endif
 
     <form method="post" action="{{ route('school.imports.students.confirm', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">
         @csrf
         <input type="hidden" name="lote" value="{{ $token }}">
         <section class="folha" aria-labelledby="linhas-importacao">
-            <div class="folha-cabecalho"><div><h2 id="linhas-importacao">Alunos identificados</h2><p>Uma linha por aluno. As repetidas foram agrupadas para sua confirmação.</p></div></div>
-            <div style="overflow-x:auto">
-                <table style="width:100%">
-                    <thead><tr><th>Aluno</th><th>Nascimento</th><th>RA</th><th>Turma</th><th>Conferência</th></tr></thead>
+            <div class="folha-cabecalho"><div><h2 id="linhas-importacao">Alunos do arquivo</h2><p>Na mesma ordem da planilha ou do documento. Alunos repetidos aparecem uma vez só.</p></div></div>
+            <div class="rolagem">
+                <table class="tabela conf-tabela">
+                    <thead><tr><th scope="col">Aluno</th><th scope="col">Nascimento</th><th scope="col">RA</th><th scope="col">Turma</th><th scope="col">Situação</th></tr></thead>
                     <tbody>
-                        @foreach ($rows as $index => $row)
-                            <tr>
-                                <td><strong>{{ $row['name'] }}</strong><small style="display:block">{{ implode('; ', $row['sources']) }}</small></td>
-                                <td>{{ $row['birth_date'] ? \Carbon\Carbon::parse($row['birth_date'])->format('d/m/Y') : 'Pendente' }}</td>
-                                <td>{{ $row['ra'] ?? 'Pendente' }}</td>
-                                <td>{{ $row['class_name'] ?? 'Conferir turma' }}</td>
+                        @foreach ($view as $index => $item)
+                            @php($row = $item['row'])
+                            <tr class="conf-linha {{ $item['status'] }}">
                                 <td>
-                                    @if (in_array('ja_cadastrado', array_column($row['confirmation'], 'field'), true))
-                                        <strong>Já cadastrado: esta linha será ignorada</strong>
-                                        <small style="display:block">O cadastro e o RA existentes serão preservados.</small>
+                                    <strong>{{ $row['name'] }}</strong>
+                                    <span class="conf-origem">{{ implode('; ', $row['sources']) }}</span>
+                                </td>
+                                <td class="conf-numero">
+                                    @if ($row['birth_date'])
+                                        {{ \Carbon\Carbon::parse($row['birth_date'])->format('d/m/Y') }}
+                                    @else
+                                        <span class="conf-falta">Sem data</span>
+                                    @endif
+                                </td>
+                                <td class="conf-numero">
+                                    @if ($row['ra'])
+                                        {{ $row['ra'] }}
+                                    @else
+                                        <span class="conf-falta">Sem RA</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($row['class_name'])
+                                        {{ $row['class_name'] }}
+                                    @else
+                                        <span class="conf-falta">Sem turma</span>
+                                    @endif
+                                </td>
+                                <td class="conf-situacao">
+                                    <span class="conf-selo {{ $item['status'] }}">{{ $statusText[$item['status']] }}</span>
+                                    @if ($item['status'] === 'ignorado')
+                                        <p class="conf-explica">O cadastro e o RA que já existem ficam como estão.</p>
                                     @else
                                         @foreach ($row['confirmation'] as $issue)
-                                            @if ($issue['field'] === 'duplicidade')
-                                                <p role="alert">{{ $issue['message'] }}</p>
-                                                <label><input type="checkbox" name="confirmados[]" value="{{ $index }}"> Confirmo que são registros da mesma pessoa.</label>
-                                            @elseif ($issue['field'] === 'homonimo')
-                                                <p role="alert">{{ $issue['message'] }}</p>
-                                                <label><input type="checkbox" name="homonimos[]" value="{{ $index }}"> É outra pessoa. Autorizo cadastrar um novo aluno.</label>
-                                            @elseif ($issue['field'] === 'leitura')
-                                                <p role="alert">{{ $issue['message'] }}</p>
-                                                <label><input type="checkbox" name="leituras[]" value="{{ $index }}"> Conferi nome, data e RA com o documento.</label>
+                                            @if (isset($checkable[$issue['field']]))
+                                                <div class="conf-pedido">
+                                                    <p>
+                                                        @if ($issue['field'] === 'duplicidade')
+                                                            Aparece {{ count($row['sources']) }} vezes no arquivo.
+                                                        @elseif ($issue['field'] === 'leitura' && preg_match('/\((\d+)%\)/', $issue['message'], $leitura) === 1)
+                                                            Leitura automática incerta ({{ $leitura[1] }}% de confiança).
+                                                        @else
+                                                            {{ $issue['message'] }}
+                                                        @endif
+                                                    </p>
+                                                    <label class="conf-marca">
+                                                        <input type="checkbox" name="{{ $checkable[$issue['field']]['name'] }}" value="{{ $index }}">
+                                                        <span>{{ $checkable[$issue['field']]['label'] }}</span>
+                                                    </label>
+                                                </div>
                                             @else
-                                                <p role="alert">{{ $issue['message'] }}</p>
-                                                <strong>Corrija a planilha e envie novamente.</strong>
+                                                <p class="conf-explica conf-erro">{{ $issue['message'] }}</p>
                                             @endif
                                         @endforeach
-                                        @if (count($row['pending']) > 0)
-                                            <small>{{ count($row['pending']) }} informação(ões) pendente(s).</small>
-                                        @elseif (count($row['confirmation']) === 0)
-                                            <span>Pronto</span>
-                                        @endif
                                     @endif
                                 </td>
                             </tr>
@@ -72,11 +159,14 @@
                 </table>
             </div>
         </section>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:18px">
-            <button class="botao" type="submit">Confirmar importação de {{ count($rows) - $alreadyCount }} alunos</button>
-            <a class="botao secundario" href="{{ route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Cancelar e voltar</a>
+        <div class="conf-acoes">
+            <button class="botao" type="submit">Gravar {{ $toSave }} {{ $toSave === 1 ? 'aluno' : 'alunos' }}</button>
+            <a class="botao secundario" href="{{ route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Cancelar</a>
         </div>
+        @if ($counts['confirmar'] > 0)
+            <p class="conf-lembrete">Antes de gravar, marque as {{ $counts['confirmar'] === 1 ? 'confirmação pedida' : $counts['confirmar'].' confirmações pedidas' }} na coluna "Situação".</p>
+        @endif
     </form>
 
-    <div class="nota" style="margin-top:20px"><x-icon name="info" /><div><strong>LGPD e auditoria</strong><p>As linhas já cadastradas serão ignoradas e contabilizadas. Somente as novas linhas aceitas serão gravadas em uma única transação; nenhum RA será reutilizado e nenhuma data será inventada.</p></div></div>
+    <div class="nota conf-lgpd"><x-icon name="escudo" /><div><strong>Como a gravação funciona</strong><p>Os alunos já cadastrados são ignorados e contados no recibo. Os demais são gravados todos juntos, ou nenhum, se algo falhar. Nenhum RA é reaproveitado e nenhuma data é inventada. A conferência vale por uma hora e só pode ser confirmada por esta conta.</p></div></div>
 @endsection

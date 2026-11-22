@@ -130,6 +130,10 @@ class OcrStudentImportScreenTest extends TwoMunicipalityTestCase
         $leituras = $this->indices($html, 'leituras');
         $this->assertNotEmpty($leituras);
         $this->assertStringContainsString('Conferi nome, data e RA com o documento.', $html);
+        // A origem de PDF e foto diz a pagina, sem "Aba"; o motivo da conferencia e curto.
+        $this->assertStringContainsString('Página 1, linha 2', $html);
+        $this->assertStringNotContainsString('Aba Página', $html);
+        $this->assertMatchesRegularExpression('/Leitura automática incerta \(\d+% de confiança\)/', $html);
 
         // Sem marcar as leituras duvidosas, nada e gravado.
         $this->post($this->url(self::ESCOLA_A1).'/confirmar', ['lote' => $token])->assertSessionHasErrors('leituras');
@@ -156,6 +160,21 @@ class OcrStudentImportScreenTest extends TwoMunicipalityTestCase
             'school_year_id' => $this->yearId,
         ])->assertOk()->getContent();
         $this->assertSame(1, preg_match('/name="lote" value="([^"]+)"/', $html, $m));
+
+        // Tela de conferencia: resumo por situacao, dados que ficam para depois em uma
+        // nota so, e cada confirmacao numa caixa propria em vez de contagem sem explicacao.
+        $this->assertStringContainsString('Prontos para gravar', $html);
+        $this->assertStringContainsString('Precisam da sua confirmação', $html);
+        $this->assertStringContainsString('CEP (58 alunos)', $html);
+        $this->assertStringContainsString('Aba Alunos, linha 2', $html);
+        $this->assertStringNotContainsString('informação(ões) pendente(s)', $html);
+        $this->assertSame(2, preg_match_all('/<label class="conf-marca">\s*<input type="checkbox" name="confirmados\[\]"/', $html));
+        $this->assertStringContainsString('Gravar 58 alunos', $html);
+        $this->assertStringNotContainsString('style=', $html);
+        $css = file_get_contents(public_path('css/astuti.css'));
+        foreach (['.conf-resumo{', '.conf-marca{', '.conf-selo.confirmar{', '.conf-linha.confirmar'] as $rule) {
+            $this->assertStringContainsString($rule, $css);
+        }
 
         // Sem confirmar as repeticoes: antes, a recusa voltava para GET /previa (405).
         $this->from($this->url(self::ESCOLA_A1).'/previa')
