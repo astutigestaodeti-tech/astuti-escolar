@@ -144,6 +144,13 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
             ->assertSee('Formato da SED: números, hífen, dígito e UF. Ex.: 000123456789-0/SP. Pode ficar em branco.')
             ->assertSee('aria-describedby="ra-ajuda"', false);
 
+        $css = file_get_contents(public_path('css/astuti.css'));
+        $this->assertNotFalse($css);
+        $this->assertMatchesRegularExpression(
+            '/\\.texto-ajuda\\s*\\{\\s*margin:\\s*4px 0 0;\\s*color:\\s*var\\(--tinta-3\\);\\s*font-size:\\s*13px\\s*\\}/',
+            $css,
+        );
+
         $this->from($this->url('/novo'))->post($this->url(), $this->dados(['ra' => '000123456789']))
             ->assertRedirect($this->url('/novo'))
             ->assertSessionHasErrors(['ra' => 'Informe o RA no formato da SED, por exemplo 000123456789-0/SP.']);

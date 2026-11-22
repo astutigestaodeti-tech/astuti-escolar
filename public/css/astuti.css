@@ -430,6 +430,7 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
 .formulario-aluno .erro ul{margin:4px 0 0;padding-left:18px}
 .formulario-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
 .formulario-campo.largo{grid-column:1/-1}
+.texto-ajuda{margin:4px 0 0;color:var(--tinta-3);font-size:13px}
 .campo-erro{margin:6px 0 0;color:#8a2c22;font-size:14px}
 .entrada[aria-invalid="true"]{border-color:#c9493b}
 select.entrada{cursor:pointer}
