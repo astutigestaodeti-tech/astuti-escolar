@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Attendance\SchoolAbsenceAlerts;
 use App\Auth\SchoolAccess;
 use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
@@ -69,7 +70,7 @@ class SchoolController extends Controller
             ->count();
     }
 
-    public function show(Request $request, string $municipio, string $escola): View
+    public function show(Request $request, string $municipio, string $escola, SchoolAbsenceAlerts $alerts): View
     {
         $municipality = $request->attributes->get('astuti.municipality');
         $school = School::query()->where('status', 'active')->findOrFail($escola);
@@ -79,6 +80,12 @@ class SchoolController extends Controller
         $transportUsers = StudentEnrollment::query()->where('school_id', $school->id)
             ->where('status', 'active')->where('transport_status', 'active')->distinct()->count('student_id');
 
-        return view('schools.show', ['municipality' => $municipality, 'school' => $school, 'transportUsers' => $transportUsers]);
+        // O total da busca ativa só é calculado e exibido para quem pode gerir alunos.
+        $absenceAlertCount = null;
+        if (Gate::allows('manageStudents', [$school, $municipality])) {
+            $absenceAlertCount = $alerts->alertCount($school, $alerts->currentYear(), today());
+        }
+
+        return view('schools.show', compact('municipality', 'school', 'transportUsers', 'absenceAlertCount'));
     }
 }

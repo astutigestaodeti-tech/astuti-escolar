@@ -681,3 +681,22 @@ select.entrada{cursor:pointer}
 .chamada-datas a{display:inline-block;padding:7px 10px;background:var(--caneta-clara);border-radius:8px;color:var(--caneta-escura);font-weight:700}
 .turma-frequencia-detalhe{display:block;font-size:13px;color:var(--tinta-2)}
 @media(max-width:780px){.chamada-aluno{grid-template-columns:1fr;gap:10px}.chamada-opcoes{gap:6px}.chamada-opcao{padding:10px}.chamada-consulta-data{align-items:stretch}.chamada-consulta-data input{max-width:none}}
+
+/* Busca ativa: painel restrito à gestão, sem alterar cartões genéricos. */
+.alerta-faltas-resumo{border-left:3px solid var(--ouro-vivo)}
+.alerta-faltas-resumo strong{color:var(--caneta-escura)}
+.alerta-faltas-privacidade{margin:18px 0}
+.alerta-faltas-filtros{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:18px 0}
+.alerta-faltas-filtros>div{display:grid;gap:5px;min-width:200px;flex:1}
+.alerta-faltas-filtros label{font-weight:700;font-size:14px}
+.alerta-faltas-filtros select{width:100%;min-height:42px;border:1px solid var(--pauta);border-radius:var(--raio-controle);padding:9px;color:var(--tinta);background:var(--folha);font:inherit}
+.alerta-faltas-vazio{padding:20px 12px;color:var(--tinta-2);background:var(--pauta-suave);border-radius:var(--raio-controle)}
+.alerta-faltas-rolagem{width:100%;overflow-x:auto}
+.alerta-faltas-tabela{width:100%;min-width:940px;border-collapse:collapse;font-size:14px}
+.alerta-faltas-tabela th,.alerta-faltas-tabela td{text-align:left;vertical-align:top;padding:12px 10px;border-bottom:1px solid var(--pauta)}
+.alerta-faltas-tabela th{color:var(--tinta-2);background:var(--pauta-suave);font-size:13px}
+.alerta-faltas-tabela td a{display:inline-block}
+.alerta-faltas-aluno{font-weight:700;overflow-wrap:anywhere}
+.alerta-faltas-turma,.alerta-faltas-contato{display:block;color:var(--tinta-2);margin-top:3px}
+.alerta-faltas-motivos{display:flex;flex-direction:column;align-items:start;gap:5px}
+.alerta-faltas-etiqueta{background:var(--ouro-claro);color:#714c0b;border:1px solid #e4c779;border-radius:6px;padding:3px 6px;font-size:12px;font-weight:700}

@@ -11,6 +11,7 @@ use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdentificationPhotoController;
 use App\Http\Controllers\PostalCodeLookupController;
+use App\Http\Controllers\SchoolAbsenceAlertsController;
 use App\Http\Controllers\SchoolAttendanceController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
@@ -49,6 +50,7 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
 Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
+    Route::get('/escolas/{escola}/alertas-faltas', [SchoolAbsenceAlertsController::class, 'index'])->whereUuid('escola')->name('school.absences.index');
     Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
     Route::get('/escolas/{escola}/turmas/nova', [SchoolClassController::class, 'create'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.create');
     Route::get('/escolas/{escola}/turmas/{turma}', [SchoolClassController::class, 'show'])->whereUuid('escola')->whereUuid('turma')->name('school.classes.show');
