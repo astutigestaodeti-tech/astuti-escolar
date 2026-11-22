@@ -66,6 +66,12 @@
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar matrículas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
         @can('manageStudents', [$school, $municipality])
+            <section class="folha cartao alerta-faltas-resumo" aria-labelledby="titulo-alerta-faltas">
+                <span class="acao-icone"><x-icon name="info" /></span>
+                <h2 id="titulo-alerta-faltas">Alerta de faltas</h2>
+                <p><strong>{{ $absenceAlertCount }} {{ $absenceAlertCount === 1 ? 'aluno em alerta' : 'alunos em alerta' }}</strong> para acompanhamento da frequência e busca ativa.</p>
+                <a class="botao secundario" style="margin-top:12px" href="{{ route('school.absences.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Ver alunos em alerta <x-icon name="seta" :size="16" /></a>
+            </section>
             <section class="folha cartao" aria-labelledby="titulo-importar-alunos">
                 <span class="acao-icone"><x-icon name="alunos" /></span>
                 <h2 id="titulo-importar-alunos">Importar alunos</h2>

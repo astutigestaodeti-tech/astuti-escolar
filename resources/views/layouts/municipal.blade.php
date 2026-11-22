@@ -28,13 +28,13 @@
             ->map(fn ($papel) => $nomesPapeis[$papel] ?? null)->filter()->first()
         : null;
     $iniciaisUsuario = mb_strtoupper(collect(preg_split('/\s+/u', trim((string) ($usuario?->name ?? ''))) ?: [])->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
-    $escolasAtivo = request()->routeIs('schools.*') || request()->routeIs('school.classes.*') || request()->routeIs('school.students.*');
+    $escolasAtivo = request()->routeIs('schools.*') || request()->routeIs('school.classes.*') || request()->routeIs('school.students.*') || request()->routeIs('school.absences.*');
     $parametrosMunicipio = ['municipio' => $municipality->slug];
     $parametrosEscola = [...$parametrosMunicipio, 'escola' => request()->route('escola')];
     $voltarFallback = match (request()->route()?->getName()) {
         'schools.index' => route('home'),
         'schools.show' => route('schools.index', $parametrosMunicipio),
-        'school.classes.index', 'school.students.index', 'school.enrollments.index' => route('schools.show', $parametrosEscola),
+        'school.classes.index', 'school.students.index', 'school.enrollments.index', 'school.absences.index' => route('schools.show', $parametrosEscola),
         'school.classes.show', 'school.classes.create', 'school.classes.store', 'school.classes.edit', 'school.classes.update'
             => route('school.classes.index', $parametrosEscola),
         'school.classes.attendance.index', 'school.classes.attendance.store', 'school.classes.attendance.correct'
