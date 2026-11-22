@@ -8,6 +8,7 @@ use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentMovementController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\IdentificationPhotoController;
 use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
@@ -77,6 +78,14 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->name('school.students.guardians.unlink.form');
     Route::post('/escolas/{escola}/alunos/{aluno}/responsaveis/{vinculo}/desvincular', [GuardianController::class, 'unlink'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.students.guardians.unlink');
+
+    // Foto de identificação: consulta com a permissão da escola; envio e remoção com segundo fator.
+    Route::get('/escolas/{escola}/fotos/{tipo}/{id}', [IdentificationPhotoController::class, 'show'])
+        ->whereUuid('escola')->whereIn('tipo', IdentificationPhotoController::TYPES)->whereUuid('id')->name('school.photos.show');
+    Route::post('/escolas/{escola}/fotos/{tipo}/{id}', [IdentificationPhotoController::class, 'update'])
+        ->whereUuid('escola')->whereIn('tipo', IdentificationPhotoController::TYPES)->whereUuid('id')->middleware(RequireConfirmedTwoFactor::class)->name('school.photos.update');
+    Route::post('/escolas/{escola}/fotos/{tipo}/{id}/remover', [IdentificationPhotoController::class, 'destroy'])
+        ->whereUuid('escola')->whereIn('tipo', IdentificationPhotoController::TYPES)->whereUuid('id')->middleware(RequireConfirmedTwoFactor::class)->name('school.photos.destroy');
 
     // Pessoas adicionais para retirada: responsáveis já autorizados por vínculo familiar.
     Route::get('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/nova', [StudentPickupAuthorizationController::class, 'create'])

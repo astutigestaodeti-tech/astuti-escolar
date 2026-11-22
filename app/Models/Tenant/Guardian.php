@@ -12,6 +12,11 @@ class Guardian extends TenantModel
 
     protected $fillable = ['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone'];
 
+    protected function casts(): array
+    {
+        return ['photo_updated_at' => 'datetime'];
+    }
+
     public function getFormattedPhoneAttribute(): string
     {
         return self::formatPhone($this->phone) ?? '';

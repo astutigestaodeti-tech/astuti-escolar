@@ -598,3 +598,22 @@ select.entrada{cursor:pointer}
 .retirada-vencida .retirada-identificacao strong,.retirada-vencida .retirada-dados{text-decoration:line-through;text-decoration-color:#768292}
 .retirada-vencida .etiqueta{text-decoration:none}
 @media (max-width:960px){.ficha-escola>.ficha-retiradas{grid-column:auto;grid-row:auto}}
+
+/* Foto de identificação (aluno, responsável, pessoa autorizada) */
+.foto-id{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto}
+.foto-id-imagem,.foto-id-vazia{display:block;border-radius:50%;object-fit:cover;background:#e8edf3;border:1px solid var(--pauta)}
+.foto-id-pequena .foto-id-imagem,.foto-id-pequena .foto-id-vazia{width:44px;height:44px;font-size:15px}
+.foto-id-media .foto-id-imagem,.foto-id-media .foto-id-vazia{width:72px;height:72px;font-size:22px}
+.foto-id-grande .foto-id-imagem,.foto-id-grande .foto-id-vazia{width:112px;height:112px;font-size:34px;border-radius:14px}
+.foto-id-vazia{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--tinta-3)}
+.foto-id-aviso{font-size:12px;color:#7a4d00;background:#fff4dc;border-radius:999px;padding:2px 8px;text-align:center}
+.foto-id-acoes{font-size:13px;text-align:center}
+.foto-id-acoes summary{cursor:pointer;color:var(--caneta);font-weight:700;list-style:none}
+.foto-id-acoes summary::-webkit-details-marker{display:none}
+.foto-id-acoes[open]{position:absolute;top:100%;left:0;z-index:5;width:260px;text-align:left;background:var(--folha);border:1px solid var(--pauta);border-radius:var(--raio-controle);padding:12px;box-shadow:0 6px 18px rgba(16,32,56,.12)}
+.foto-id-acoes form{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.foto-id-acoes input[type=file]{font-size:13px;max-width:100%}
+.foto-id-remover{background:none;border:0;padding:0;color:#8a2c22;font-weight:700;cursor:pointer;text-align:left}
+.ficha-cabecalho-foto{display:flex;align-items:center;gap:18px;justify-content:flex-start}
+.responsavel-topo{align-items:center}
+.status-erro{display:flex;gap:8px;align-items:center;margin:0 0 16px;padding:12px 16px;border-radius:var(--raio-controle);background:#fbe9e6;color:#8a2c22;font-weight:600}
