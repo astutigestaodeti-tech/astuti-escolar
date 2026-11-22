@@ -130,7 +130,6 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
             ->assertSee('(11) 98765-4321')
             ->assertSee('Adicionar responsável')
             ->assertSee('Editar');
-
     }
 
     public function test_cpf_ja_existente_recusa_nome_divergente_e_atualiza_contatos_dos_irmaos(): void
@@ -379,5 +378,4 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
             ->assertSee('(11) 3333-4444');
         $this->assertSame('1133334444', $this->inMunicipality(fn (): string => Guardian::query()->sole()->phone));
     }
-
 }
