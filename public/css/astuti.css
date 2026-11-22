@@ -558,6 +558,14 @@ select.entrada{cursor:pointer}
 .seguranca-manual .seguranca-chave{margin-top:10px}
 .seguranca-aviso{margin:4px 0 10px;font-size:13.5px;color:var(--tinta-2);text-align:center}
 
+/* Lista de alunos: filtro do transporte escolar e RA abaixo do nome */
+.filtro-transporte{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:0 22px 16px}
+.filtro-transporte-rotulo{font-size:14px;color:var(--tinta-3);margin-right:4px}
+.filtro-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--pauta);border-radius:999px;font-size:14px;color:var(--tinta-2);text-decoration:none;background:var(--folha)}
+.filtro-chip .numero{font-weight:700}
+.filtro-chip.ativo{background:var(--caneta);border-color:var(--caneta);color:#fff}
+.lista-ra{display:block;color:var(--tinta-3);font-size:13px}
+.texto-suave{color:var(--tinta-3);font-size:14px}
 /* Consulta de turma: resumo próprio, sem seletores genéricos de cartões. */
 .turma-link strong{color:var(--caneta);text-decoration:underline;text-underline-offset:2px}
 .turma-dados{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding:20px 22px}

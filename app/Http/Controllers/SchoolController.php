@@ -9,6 +9,7 @@ use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
+use App\Models\Tenant\StudentEnrollment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -74,6 +75,10 @@ class SchoolController extends Controller
         $school = School::query()->where('status', 'active')->findOrFail($escola);
         Gate::authorize('view', [$school, $municipality]);
 
-        return view('schools.show', ['municipality' => $municipality, 'school' => $school]);
+        // Resumo do transporte: quantos alunos com matrícula ativa usam o transporte escolar.
+        $transportUsers = StudentEnrollment::query()->where('school_id', $school->id)
+            ->where('status', 'active')->where('transport_status', 'active')->distinct()->count('student_id');
+
+        return view('schools.show', ['municipality' => $municipality, 'school' => $school, 'transportUsers' => $transportUsers]);
     }
 }

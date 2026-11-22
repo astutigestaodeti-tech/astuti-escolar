@@ -58,7 +58,10 @@
             <section class="folha cartao" aria-labelledby="titulo-importar-transporte">
                 <span class="acao-icone"><x-icon name="turmas" /></span>
                 <h2 id="titulo-importar-transporte">Transporte escolar</h2>
-                <p>Conferir a lista de transporte e atualizar somente matrículas existentes.</p>
+                <p>{{ $transportUsers === 0 ? 'Nenhum aluno marcado como usuário do transporte.' : $transportUsers.' '.($transportUsers === 1 ? 'aluno usa' : 'alunos usam').' o transporte escolar.' }}</p>
+                @if ($transportUsers > 0)
+                    <a class="botao secundario" style="margin-top:12px" href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'transporte' => 'usa']) }}">Ver alunos que usam transporte <x-icon name="seta" :size="16" /></a>
+                @endif
                 <a class="botao secundario" style="margin-top:12px" href="{{ route('school.imports.transport.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Importar lista de transporte <x-icon name="seta" :size="16" /></a>
             </section>
         @endcan
