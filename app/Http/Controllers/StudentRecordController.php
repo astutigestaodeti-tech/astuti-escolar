@@ -10,6 +10,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Security\TwoFactorSession;
+use App\Validation\Cpf;
 use App\Validation\SedRa;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,7 +48,22 @@ class StudentRecordController extends Controller
         'residence_zone' => ['nullable', 'in:urban,rural'],
     ];
 
+    /** Dados do Censo Escolar (Educacenso), todos opcionais. */
+    private const CENSUS_FIELDS = ['social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf'];
+
+    public const SEX_LABELS = ['female' => 'Feminino', 'male' => 'Masculino'];
+
+    public const RACE_LABELS = ['branca' => 'Branca', 'preta' => 'Preta', 'parda' => 'Parda', 'amarela' => 'Amarela', 'indigena' => 'Indígena', 'nao_declarada' => 'Não declarada'];
+
+    public const NATIONALITY_LABELS = ['brasileira' => 'Brasileira', 'naturalizada' => 'Brasileira nascida no exterior ou naturalizada', 'estrangeira' => 'Estrangeira'];
+
     private const VALIDATION_MESSAGES = [
+        'social_name.regex' => 'O nome social aceita letras, espaços, apóstrofo, ponto e hífen.',
+        'sex.in' => 'Selecione o sexo na lista.',
+        'race_color.in' => 'Selecione a cor/raça na lista. Se a família não declarou, escolha "Não declarada".',
+        'nationality.in' => 'Selecione a nacionalidade na lista.',
+        'birthplace_state.in' => 'Selecione a UF da naturalidade.',
+        'birthplace_state.size' => 'Selecione a UF da naturalidade.',
         'ra.max' => 'RA fora do padrão da SED: tem caracteres demais. Exemplo: '.SedRa::EXAMPLE.'.',
         'postal_code.regex' => 'Informe o CEP no formato 00000-000.',
         'address_state.in' => 'Selecione uma UF válida.',
@@ -65,6 +81,13 @@ class StudentRecordController extends Controller
         'address_district' => 'Bairro',
         'postal_code' => 'CEP',
         'residence_zone' => 'Zona de residência',
+        'social_name' => 'Nome social',
+        'sex' => 'Sexo',
+        'race_color' => 'Cor/raça',
+        'nationality' => 'Nacionalidade',
+        'birthplace_city' => 'Cidade de nascimento',
+        'birthplace_state' => 'UF de nascimento',
+        'cpf' => 'CPF',
     ];
 
     public function create(Request $request, string $municipio, string $escola): View|RedirectResponse
@@ -94,11 +117,13 @@ class StudentRecordController extends Controller
             'ra' => $this->normalizeRa($request->input('ra')),
         ]);
         $this->normalizeAddressInput($request);
+        $this->normalizeCensusInput($request);
         $data = $request->validate([
             'full_name' => self::NAME_RULES,
             'birth_date' => self::BIRTH_RULES,
             'ra' => ['nullable', 'string', 'max:32', new SedRa],
             ...self::ADDRESS_RULES,
+            ...$this->censusRules(),
             'school_class_id' => ['nullable', 'uuid'],
             'school_year_id' => ['required', 'uuid'],
             'started_at' => ['nullable', 'date_format:Y-m-d'],
@@ -106,6 +131,7 @@ class StudentRecordController extends Controller
         ], self::VALIDATION_MESSAGES, self::VALIDATION_ATTRIBUTES);
 
         $this->assertRaAvailable($data['ra'] ?? null);
+        $this->assertCpfAvailable($data['cpf'] ?? null);
 
         $year = SchoolYear::query()->where('status', '!=', 'completed')->find($data['school_year_id']);
         if ($year === null) {
@@ -140,6 +166,7 @@ class StudentRecordController extends Controller
                     'address_complement' => $data['address_complement'] ?? null,
                     'address_city' => $data['address_city'] ?? null,
                     'address_state' => $data['address_state'] ?? null,
+                    ...array_map(fn (string $field): mixed => $data[$field] ?? null, array_combine(self::CENSUS_FIELDS, self::CENSUS_FIELDS)),
                     'address_district' => $data['address_district'] ?? null,
                     'postal_code' => $data['postal_code'] ?? null,
                     'residence_zone' => $data['residence_zone'] ?? null,
@@ -200,7 +227,7 @@ class StudentRecordController extends Controller
 
         $raSubmitted = $request->exists('ra');
         $addressFieldsSubmitted = array_values(array_filter(
-            self::ADDRESS_FIELDS,
+            [...self::ADDRESS_FIELDS, ...self::CENSUS_FIELDS],
             fn (string $field): bool => $request->exists($field),
         ));
         $request->merge([
@@ -208,11 +235,13 @@ class StudentRecordController extends Controller
             'ra' => $this->normalizeRa($request->input('ra')),
         ]);
         $this->normalizeAddressInput($request);
+        $this->normalizeCensusInput($request);
         $data = $request->validate([
             'full_name' => self::NAME_RULES,
             'birth_date' => self::BIRTH_RULES,
             'ra' => ['nullable', 'string', 'max:32', new SedRa],
             ...self::ADDRESS_RULES,
+            ...$this->censusRules(),
             'school_class_id' => ['nullable', 'uuid'],
             'enrollment_id' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'uuid'],
             'versao_matricula' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'string', 'max:40'],
@@ -221,6 +250,9 @@ class StudentRecordController extends Controller
 
         if ($raSubmitted) {
             $this->assertRaAvailable($data['ra'] ?? null, $aluno);
+        }
+        if ($request->exists('cpf')) {
+            $this->assertCpfAvailable($data['cpf'] ?? null, $aluno);
         }
 
         try {
@@ -381,6 +413,63 @@ class StudentRecordController extends Controller
         }
 
         throw $exception;
+    }
+
+    private function censusRules(): array
+    {
+        return [
+            'social_name' => ['nullable', 'string', 'min:3', 'max:180', 'regex:/\A\p{L}[\p{L}\p{M}\' .-]*\z/u'],
+            'sex' => ['nullable', 'in:'.implode(',', array_keys(self::SEX_LABELS))],
+            'race_color' => ['nullable', 'in:'.implode(',', array_keys(self::RACE_LABELS))],
+            'nationality' => ['nullable', 'in:'.implode(',', array_keys(self::NATIONALITY_LABELS))],
+            'birthplace_city' => ['nullable', 'string', 'max:120'],
+            'birthplace_state' => ['nullable', 'string', 'size:2', BrazilianStates::VALIDATION_RULE],
+            'cpf' => ['nullable', 'string', 'max:20', new Cpf],
+        ];
+    }
+
+    /** Ajusta só os campos do Censo que vieram no formulário. */
+    private function normalizeCensusInput(Request $request): void
+    {
+        $merge = [];
+        foreach (['social_name', 'birthplace_city'] as $field) {
+            if ($request->exists($field)) {
+                $value = $field === 'social_name'
+                    ? $this->normalizeName($request->input($field))
+                    : $this->normalizeAddressPart($request->input($field));
+                $merge[$field] = $value === '' ? null : $value;
+            }
+        }
+        foreach (['sex', 'race_color', 'nationality'] as $field) {
+            if ($request->exists($field)) {
+                $value = $request->input($field);
+                $merge[$field] = is_string($value) && trim($value) !== '' ? trim($value) : null;
+            }
+        }
+        if ($request->exists('birthplace_state')) {
+            $value = $request->input('birthplace_state');
+            $merge['birthplace_state'] = is_string($value) && trim($value) !== '' ? strtoupper(trim($value)) : null;
+        }
+        if ($request->exists('cpf')) {
+            $value = $request->input('cpf');
+            $merge['cpf'] = is_string($value) && trim($value) !== '' ? (Cpf::normalize($value) ?? trim($value)) : null;
+        }
+        $request->merge($merge);
+    }
+
+    /** O mesmo CPF não pode estar em dois cadastros ativos; a mensagem não revela de quem é. */
+    private function assertCpfAvailable(?string $cpf, ?string $exceptStudentId = null): void
+    {
+        if ($cpf === null) {
+            return;
+        }
+
+        $taken = Student::query()->where('cpf', $cpf)
+            ->when($exceptStudentId !== null, fn (Builder $query) => $query->whereKeyNot($exceptStudentId))
+            ->exists();
+        if ($taken) {
+            throw ValidationException::withMessages(['cpf' => 'Este CPF já está no cadastro de outro aluno da rede. Confira o documento.']);
+        }
     }
 
     /** Normaliza os dados opcionais sem aceitar letras ou pontuação indevida no CEP. */

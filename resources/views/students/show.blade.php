@@ -47,6 +47,14 @@
                         <div><dt>Nome completo</dt><dd>{{ $student->full_name }}</dd></div>
                         <div><dt>RA</dt><dd class="numero">{{ $student->ra ?? 'Não informado' }}</dd></div>
                         <div><dt>Ano de nascimento</dt><dd class="numero">{{ $student->birth_date?->format('Y') ?? 'Não informado' }}</dd></div>
+                        @if ($student->social_name)
+                            <div><dt>Nome social</dt><dd>{{ $student->social_name }}</dd></div>
+                        @endif
+                        <div><dt>Sexo</dt><dd>{{ \App\Http\Controllers\StudentRecordController::SEX_LABELS[$student->sex ?? ''] ?? 'Não informado' }}</dd></div>
+                        <div><dt>Cor/raça</dt><dd>{{ \App\Http\Controllers\StudentRecordController::RACE_LABELS[$student->race_color ?? ''] ?? 'Não informada' }}</dd></div>
+                        <div><dt>Nacionalidade</dt><dd>{{ \App\Http\Controllers\StudentRecordController::NATIONALITY_LABELS[$student->nationality ?? ''] ?? 'Não informada' }}</dd></div>
+                        <div><dt>Naturalidade</dt><dd>{{ trim(implode('/', array_filter([$student->birthplace_city, $student->birthplace_state]))) ?: 'Não informada' }}</dd></div>
+                        <div><dt>CPF</dt><dd class="numero">{{ $student->cpf ?? 'Não informado' }}</dd></div>
                         <div><dt>Escola</dt><dd>{{ $school->name }}</dd></div>
                     </dl>
                 </div>

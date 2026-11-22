@@ -122,6 +122,79 @@
                     <p class="texto-ajuda">A turma deve pertencer a esta escola e ao mesmo ano letivo da matrícula. Se ainda não foi definida, deixe em branco.</p>
                 </div>
 
+                <fieldset class="grupo-endereco grupo-censo" id="censo">
+                    <legend>Dados do Censo Escolar</legend>
+                    <p class="texto-ajuda">Pedidos pelo Educacenso. Todos são opcionais: preencha o que a família informou na matrícula.</p>
+                    <div class="formulario-grade">
+                        <div class="formulario-campo largo">
+                            <label class="rotulo" for="social_name">Nome social</label>
+                            <input class="entrada" id="social_name" name="social_name" type="text" maxlength="180" autocomplete="off"
+                                   value="{{ old('social_name', $student?->social_name) }}" aria-describedby="social_name-ajuda{{ $errors->has('social_name') ? ' social_name-erro' : '' }}"
+                                   @error('social_name') aria-invalid="true" @enderror>
+                            <p class="texto-ajuda" id="social_name-ajuda">Só quando o aluno ou a família pedir o uso do nome social.</p>
+                            @error('social_name')<p class="campo-erro" id="social_name-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="sex">Sexo</label>
+                            <select class="entrada" id="sex" name="sex"
+                                    @error('sex') aria-invalid="true" aria-describedby="sex-erro" @enderror>
+                                <option value="">Não informado</option>
+                                @foreach (\App\Http\Controllers\StudentRecordController::SEX_LABELS as $valor => $rotulo)
+                                    <option value="{{ $valor }}" @selected(old('sex', $student?->sex) === $valor)>{{ $rotulo }}</option>
+                                @endforeach
+                            </select>
+                            @error('sex')<p class="campo-erro" id="sex-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="race_color">Cor/raça</label>
+                            <select class="entrada" id="race_color" name="race_color"
+                                    @error('race_color') aria-invalid="true" aria-describedby="race_color-erro" @enderror>
+                                <option value="">Não informada</option>
+                                @foreach (\App\Http\Controllers\StudentRecordController::RACE_LABELS as $valor => $rotulo)
+                                    <option value="{{ $valor }}" @selected(old('race_color', $student?->race_color) === $valor)>{{ $rotulo }}</option>
+                                @endforeach
+                            </select>
+                            @error('race_color')<p class="campo-erro" id="race_color-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="nationality">Nacionalidade</label>
+                            <select class="entrada" id="nationality" name="nationality"
+                                    @error('nationality') aria-invalid="true" aria-describedby="nationality-erro" @enderror>
+                                <option value="">Não informada</option>
+                                @foreach (\App\Http\Controllers\StudentRecordController::NATIONALITY_LABELS as $valor => $rotulo)
+                                    <option value="{{ $valor }}" @selected(old('nationality', $student?->nationality) === $valor)>{{ $rotulo }}</option>
+                                @endforeach
+                            </select>
+                            @error('nationality')<p class="campo-erro" id="nationality-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="cpf">CPF</label>
+                            <input class="entrada" id="cpf" name="cpf" type="text" maxlength="14" inputmode="numeric" autocomplete="off"
+                                   placeholder="000.000.000-00" value="{{ old('cpf', $student?->cpf) }}"
+                                   @error('cpf') aria-invalid="true" aria-describedby="cpf-erro" @enderror>
+                            @error('cpf')<p class="campo-erro" id="cpf-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="birthplace_city">Cidade de nascimento</label>
+                            <input class="entrada" id="birthplace_city" name="birthplace_city" type="text" maxlength="120" autocomplete="off"
+                                   value="{{ old('birthplace_city', $student?->birthplace_city) }}"
+                                   @error('birthplace_city') aria-invalid="true" aria-describedby="birthplace_city-erro" @enderror>
+                            @error('birthplace_city')<p class="campo-erro" id="birthplace_city-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="birthplace_state">UF de nascimento</label>
+                            <select class="entrada" id="birthplace_state" name="birthplace_state"
+                                    @error('birthplace_state') aria-invalid="true" aria-describedby="birthplace_state-erro" @enderror>
+                                <option value="">Não informada</option>
+                                @foreach (\App\Address\BrazilianStates::NAMES as $uf => $estado)
+                                    <option value="{{ $uf }}" @selected(old('birthplace_state', $student?->birthplace_state) === $uf)>{{ $uf }} - {{ $estado }}</option>
+                                @endforeach
+                            </select>
+                            @error('birthplace_state')<p class="campo-erro" id="birthplace_state-erro">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                </fieldset>
+
                 <fieldset class="grupo-endereco" id="endereco"
                           data-postal-lookup-url="{{ route('school.students.postal.lookup', ['municipio' => $municipality->slug, 'escola' => $school->id, 'cep' => '__CEP__']) }}">
                     <legend>Endereço</legend>
