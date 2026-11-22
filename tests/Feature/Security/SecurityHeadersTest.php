@@ -6,7 +6,7 @@ use Tests\Support\TwoMunicipalityTestCase;
 
 class SecurityHeadersTest extends TwoMunicipalityTestCase
 {
-    private const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
+    private const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org; font-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
 
     public function test_telas_publicas_recebem_cabecalhos_de_seguranca(): void
     {

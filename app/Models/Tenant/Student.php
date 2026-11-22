@@ -24,7 +24,7 @@ class Student extends TenantModel
 
     protected function casts(): array
     {
-        return ['birth_date' => 'date', 'photo_updated_at' => 'datetime', 'rg_issued_at' => 'date'];
+        return ['birth_date' => 'date', 'photo_updated_at' => 'datetime', 'rg_issued_at' => 'date', 'geo_updated_at' => 'datetime'];
     }
 
     /** Anos completos numa data; null sem nascimento ou com data anterior a ele. */
