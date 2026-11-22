@@ -13,7 +13,7 @@
 @section('content')
     @php
         $labels = ['active' => 'Ativo', 'not_requested' => 'Não utiliza', 'cancelled' => 'Cancelado'];
-        $muda = count(array_filter($rows, fn ($row) => $row['current_status'] !== $row['desired_status']));
+        $muda = count(array_filter($rows, fn ($row) => $row['will_change']));
         $porNome = count(array_filter($rows, fn ($row) => ($row['match'] ?? 'ra') !== 'ra'));
         $foraTotal = count($skipped);
     @endphp
@@ -37,10 +37,10 @@
         @csrf
         <input type="hidden" name="lote" value="{{ $token }}">
         <section class="folha" aria-labelledby="linhas-transporte">
-            <div class="folha-cabecalho"><div><h2 id="linhas-transporte">Alunos desta escola</h2><p>Situação atual da matrícula e a que ficará depois de gravar. Nenhum aluno é criado.</p></div></div>
+            <div class="folha-cabecalho"><div><h2 id="linhas-transporte">Alunos desta escola</h2><p>Situação e detalhes do transporte que serão gravados. Campos vazios não apagam dados já existentes. Nenhum aluno é criado.</p></div></div>
             <div class="rolagem">
                 <table class="tabela conf-tabela">
-                    <thead><tr><th scope="col">Aluno</th><th scope="col">RA</th><th scope="col">Achado por</th><th scope="col">Atual</th><th scope="col">Depois de gravar</th></tr></thead>
+                    <thead><tr><th scope="col">Aluno</th><th scope="col">RA</th><th scope="col">Achado por</th><th scope="col">Atual</th><th scope="col">Depois de gravar</th><th scope="col">Linha</th><th scope="col">Ponto de embarque</th><th scope="col">Veículo adaptado</th></tr></thead>
                     <tbody>
                         @foreach ($rows as $row)
                             @php($porRa = ($row['match'] ?? 'ra') === 'ra')
@@ -50,10 +50,20 @@
                                 <td>{{ $porRa ? 'RA' : (($row['match'] ?? '') === 'nome_data' ? 'Nome e data de nascimento' : 'Só o nome') }}</td>
                                 <td>{{ $labels[$row['current_status']] ?? 'Não informado' }}</td>
                                 <td>
-                                    @if ($row['current_status'] === $row['desired_status'])
-                                        <span class="conf-selo ignorado">Sem mudança</span>
+                                    <span class="conf-selo {{ $row['will_change'] ? 'pronto' : 'ignorado' }}">{{ $labels[$row['desired_status']] }}</span>
+                                    @unless ($row['will_change'])
+                                        <small class="conf-origem">Sem mudança</small>
+                                    @endunless
+                                </td>
+                                <td>{{ $row['transport_route'] ?? 'Não informada' }}</td>
+                                <td>{{ $row['transport_stop'] ?? 'Não informado' }}</td>
+                                <td>
+                                    @if ($row['transport_adapted_vehicle'] === true)
+                                        Veículo adaptado: Sim
+                                    @elseif ($row['transport_adapted_vehicle'] === false)
+                                        Veículo adaptado: Não
                                     @else
-                                        <span class="conf-selo pronto">{{ $labels[$row['desired_status']] }}</span>
+                                        Não informado
                                     @endif
                                 </td>
                             </tr>
@@ -99,5 +109,5 @@
         </section>
     @endif
 
-    <div class="nota conf-lgpd"><x-icon name="escudo" /><div><strong>Como a gravação funciona</strong><p>Só muda a situação do transporte das matrículas acima, todas juntas, ou nenhuma, se algo falhar. A confirmação usa seu segundo fator e vale por uma hora. O arquivo não é guardado no servidor.</p></div></div>
+    <div class="nota conf-lgpd"><x-icon name="escudo" /><div><strong>Como a gravação funciona</strong><p>Só atualiza situação, linha, ponto e veículo adaptado das matrículas acima. Campos vazios preservam os valores existentes. Todas as mudanças são gravadas juntas, ou nenhuma, se algo falhar. A confirmação usa seu segundo fator e vale por uma hora. O arquivo não é guardado no servidor.</p></div></div>
 @endsection
