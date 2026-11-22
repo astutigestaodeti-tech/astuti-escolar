@@ -276,5 +276,8 @@ printf 'Senha temporaria SOMENTE DO ENSAIO: %s\n' "$senha_login"
 printf 'O PostgreSQL original 5432 e o MariaDB nao foram alterados por este comando.\n'
 printf 'Deixe este terminal aberto e pressione Ctrl+C para encerrar o servidor.\n\n'
 
+# Limite de envio de fotos so para este servidor local; o PHP do sistema nao muda.
+export PHP_INI_SCAN_DIR=":$repo/scripts/operacao/php-local"
+
 # Uma unica tentativa: falha caso a porta 8002 ja esteja em uso.
 php artisan serve --host=127.0.0.1 --port=8002 --tries=1

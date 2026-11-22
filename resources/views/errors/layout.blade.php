@@ -6,6 +6,7 @@
         403 => ['Acesso não permitido', 'Sua conta não tem permissão para abrir esta página ou fazer esta ação.'],
         404 => ['Página não encontrada', 'O endereço não existe ou o registro não está disponível para a sua conta.'],
         405 => ['Esta página não abre pelo endereço', 'Este endereço só funciona ao enviar um formulário, como a conferência de uma importação. Volte à tela de envio e repita o envio, se precisar.'],
+        413 => ['Arquivo grande demais', 'O arquivo passou do limite de envio deste servidor. Volte à tela anterior, escolha um arquivo menor ou recorte a imagem e envie de novo.'],
         419 => ['A página expirou', 'A página ficou aberta por muito tempo sem uso. Recarregue a página e faça o envio de novo.'],
         429 => ['Muitas tentativas seguidas', 'Aguarde um minuto e tente de novo.'],
         500 => ['Algo deu errado', 'O sistema não conseguiu concluir o pedido. Nada foi gravado pela metade. Tente de novo em instantes.'],

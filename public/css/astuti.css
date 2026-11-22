@@ -681,3 +681,6 @@ select.entrada{cursor:pointer}
 .chamada-datas a{display:inline-block;padding:7px 10px;background:var(--caneta-clara);border-radius:8px;color:var(--caneta-escura);font-weight:700}
 .turma-frequencia-detalhe{display:block;font-size:13px;color:var(--tinta-2)}
 @media(max-width:780px){.chamada-aluno{grid-template-columns:1fr;gap:10px}.chamada-opcoes{gap:6px}.chamada-opcao{padding:10px}.chamada-consulta-data{align-items:stretch}.chamada-consulta-data input{max-width:none}}
+.foto-id-situacao{margin:6px 0 0;font-size:13px;color:var(--tinta-2,#4a5a6e)}
+.foto-id-situacao:empty{display:none}
+.foto-id-situacao-erro{color:#8a2c22;font-weight:600}

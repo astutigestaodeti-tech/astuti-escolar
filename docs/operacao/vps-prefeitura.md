@@ -77,6 +77,10 @@ O proxy deve remover ou **sobrescrever** os cabecalhos de encaminhamento recebid
 - Fazer atualizações **uma Prefeitura por vez**. Se uma falhar, manter as demais isoladas e intactas.
 - Reversão de código não garante reversão automática de esquema. Antes de migrations irreversíveis, planejar rollback por restauração e preservar a versão anterior.
 
+## Limite de envio de arquivos
+
+O navegador reduz as fotos de identificacao antes do envio (lado maior de 960 px, JPEG), entao o envio normal fica abaixo de 1 MB. Mesmo assim, para navegadores antigos e planilhas de importacao, configure no PHP-FPM `upload_max_filesize = 12M` e `post_max_size = 16M`, e no Nginx `client_max_body_size 16m;`. Se o limite do servidor for menor, a tela informa o limite real ao usuario. No notebook de teste, o script local usa `scripts/operacao/php-local` sem alterar o PHP do sistema.
+
 ## Backup e ensaio de restauração
 
 - Guardar dumps **separados** de `platform` e `tenant`, mais arquivos privados, com criptografia e cópias externas a esse VPS. Nunca guardar só no mesmo volume.

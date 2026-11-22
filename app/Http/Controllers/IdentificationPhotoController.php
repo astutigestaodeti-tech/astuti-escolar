@@ -9,12 +9,15 @@ use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentGuardian;
 use App\Models\Tenant\StudentPickupAuthorization;
 use App\Photos\IdentificationPhoto;
+use App\Support\UploadLimit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -50,11 +53,13 @@ class IdentificationPhotoController extends Controller
         Gate::authorize('manageStudents', [$school, $municipality]);
         $entity = $this->entity($tipo, $id, $school);
 
+        $this->assertUploadArrived($request);
+
         $request->validate(
             ['foto' => ['required', 'file', 'max:8192', 'mimes:jpg,jpeg,png,webp']],
             [
                 'foto.required' => 'Escolha uma foto.',
-                'foto.max' => 'A foto pode ter até 8 MB.',
+                'foto.max' => 'A foto tem mais de 8 MB. Escolha uma foto menor.',
                 'foto.mimes' => 'Envie uma foto JPG, PNG ou WebP.',
                 'foto.file' => 'Escolha uma foto.',
             ],
@@ -81,6 +86,24 @@ class IdentificationPhotoController extends Controller
         }
 
         return back()->with('status', 'Foto removida.');
+    }
+
+    /**
+     * O PHP descarta o arquivo acima do limite do servidor antes da validação.
+     * Explica o motivo em vez da mensagem genérica de envio.
+     */
+    private function assertUploadArrived(Request $request): void
+    {
+        $file = $request->files->get('foto');
+        if (! $file instanceof UploadedFile || $file->getError() === UPLOAD_ERR_OK) {
+            return;
+        }
+
+        $message = in_array($file->getError(), [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
+            ? 'A foto é maior que o limite de envio deste servidor ('.UploadLimit::label().'). Escolha uma foto menor ou recorte a imagem.'
+            : 'A foto não chegou completa. Tente enviar de novo.';
+
+        throw ValidationException::withMessages(['foto' => $message]);
     }
 
     /** @return array{0: mixed, 1: School, 2: mixed} */
