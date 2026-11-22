@@ -45,3 +45,14 @@
 Para trabalhar de qualquer lugar, conecte seu notebook via VPN, abra o projeto do **VPS de desenvolvimento** no VS Code com Remote SSH, edite em branch Git, execute testes e envie um PR. Depois de aprovado, o processo de implantação coloca a versão no VPS de cada Prefeitura. **Evite editar código diretamente em produção**.
 
 Este guia é uma arquitetura e checklist operacional. Um VPS não foi contratado nem configurado e a implantação deve passar por revisão de segurança, restauração e aceite formal antes de receber dados reais.
+
+## Leitor de documentos (OCR)
+
+A importação de listas em PDF e foto precisa de dois pacotes do sistema, instalados uma vez na VPS (e no computador de testes):
+
+```bash
+sudo apt-get install -y tesseract-ocr tesseract-ocr-por poppler-utils
+tesseract --list-langs | grep -x por
+```
+
+A leitura é feita só na própria VPS; nenhum documento é enviado para serviço externo.

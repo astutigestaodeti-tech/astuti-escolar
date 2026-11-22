@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Import\Ocr\DocumentTableReader;
+use App\Import\Ocr\OcrReadException;
 use App\Import\Students\ClassOption;
 use App\Import\Students\ImportedStudent;
 use App\Import\Students\ImportIssue;
@@ -25,7 +27,7 @@ use Illuminate\Console\Command;
 class PreviewStudentImport extends Command
 {
     protected $signature = 'astuti:importar-alunos-previa
-        {arquivo : Planilha .xlsx enviada pela escola}
+        {arquivo : Planilha .xlsx, PDF (digital ou escaneado) ou foto JPG/PNG da lista da escola}
         {--escola= : Identificador (id) ou codigo INEP da escola de destino}
         {--ano= : Ano letivo das turmas (padrao: o ano letivo aberto mais recente)}
         {--municipio= : Slug do municipio (padrao: o unico municipio da instalacao)}
@@ -88,8 +90,14 @@ class PreviewStudentImport extends Command
             $this->info('Escola: '.$school->name.' | Ano letivo: '.$year->year.' | Turmas: '.implode(', ', array_map(fn (ClassOption $c): string => $c->code, $classes)));
 
             try {
-                return $previewer->fromFile($path, new ImportTarget($school->id, $classes, $reference));
-            } catch (XlsxReadException $exception) {
+                $target = new ImportTarget($school->id, $classes, $reference);
+                $head = is_file($path) ? (string) file_get_contents($path, false, null, 0, 4) : '';
+
+                // Planilha (.xlsx e um zip) vai direto; PDF e foto passam pela leitura local.
+                return $head === "PK\x03\x04"
+                    ? $previewer->fromFile($path, $target)
+                    : $previewer->fromSheets(app(DocumentTableReader::class)->read($path), $target);
+            } catch (XlsxReadException|OcrReadException $exception) {
                 return $exception->getMessage();
             }
         });

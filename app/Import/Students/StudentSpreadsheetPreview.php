@@ -31,6 +31,22 @@ final class StudentSpreadsheetPreview
 
     private const HEADER_SEARCH_ROWS = 20;
 
+    /** Abaixo desta confianca de leitura (OCR), a linha exige conferencia. */
+    public const OCR_CONFIDENCE_MIN = 85.0;
+
+    /** Campo correspondente a um titulo de coluna, ou null se desconhecido. */
+    public static function fieldForHeader(mixed $value): ?string
+    {
+        $key = ImportText::key(ImportText::clean($value));
+        foreach (self::HEADERS as $field => $synonyms) {
+            if (in_array($key, $synonyms, true)) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
     public function __construct(private readonly XlsxReader $reader) {}
 
     public function fromFile(string $path, ImportTarget $target): ImportPreview
@@ -59,6 +75,10 @@ final class StudentSpreadsheetPreview
                 $source = 'Aba '.$sheet->name.', linha '.$rowNumber;
                 $student = $this->student($sheet, $cells, $columns, $target, $source, $preview);
                 if ($student !== null) {
+                    $reading = $sheet->confidence[$rowNumber] ?? null;
+                    if ($reading !== null && $reading < self::OCR_CONFIDENCE_MIN) {
+                        $student->addIssue(ImportIssue::CONFIRM, 'leitura', 'Leitura automatica com baixa confianca ('.number_format($reading, 0).'%). Confira nome, data e RA com o documento.');
+                    }
                     $preview->students[] = $student;
                 }
             }

@@ -118,7 +118,7 @@ class PreviewStudentImportCommandTest extends TwoMunicipalityTestCase
                 '--escola' => self::ESCOLA_A1,
                 '--municipio' => 'municipio-a',
             ])
-                ->expectsOutputToContain('nao e uma planilha .xlsx valida')
+                ->expectsOutputToContain('Envie um PDF ou uma foto em JPG ou PNG.')
                 ->assertFailed();
         } finally {
             @unlink($falso);

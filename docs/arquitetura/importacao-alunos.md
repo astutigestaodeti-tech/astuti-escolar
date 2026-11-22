@@ -36,3 +36,16 @@ Leitor próprio, só com as extensões `zip` e `xmlreader` do PHP: sem rede (`LI
 - A edição de turma identifica a matrícula por UUID e usa tokens PostgreSQL `xmin` próprios da matrícula e do aluno, evitando conflitos até quando duas gravações ocorrem no mesmo segundo. Em caso de divergência, nenhuma das duas alterações é gravada.
 - Registros antigos permanecem sem RA ou turma até preenchimento legítimo. A cópia fictícia MariaDB para PostgreSQL compara só colunas existentes na origem e deixa novos campos nulos, sem reescrever dados originais.
 - **A gravação assistida de planilhas está implementada neste bloco** após a conferência humana e segundo fator. O arquivo original nunca é armazenado; ficam pendentes apenas os dados que a fonte não informou e que não integram ainda o cadastro de alunos.
+
+## Leitura de PDF e foto (OCR)
+
+Prioridade definida pelo Jefferson em 21/11/2026: a escola pode enviar a lista impressa escaneada (PDF), uma foto da lista (JPG/PNG) ou um PDF digital, e a leitura entra na mesma conferência das planilhas.
+
+- **Tudo no servidor**: Poppler (`pdfinfo`, `pdftotext`, `pdftoppm`) e Tesseract com português. Nenhum documento vai para serviço externo (dados de crianças, LGPD). As cópias temporárias são apagadas ao fim de cada leitura.
+- **PDF digital** é lido pelo texto do arquivo, sem OCR e sem dúvida de leitura. **PDF escaneado** vira imagem a 300 dpi; **foto** vai direto ao Tesseract (`--psm 4`, que mantém cada linha da tabela inteira).
+- **Tabela**: a linha de cabeçalho é achada pelos mesmos sinônimos das planilhas; as colunas são definidas pela posição de cada título, e as palavras das linhas seguintes são encaixadas pela posição.
+- **Confiança**: cada linha leva a menor confiança das palavras do **nome** (o único campo sem formato que denuncie erro). Abaixo de 85%, o aluno fica em **conferir** ("Leitura automática com baixa confiança"). Data e RA fora do formato ficam pendentes; turma que não bate com uma turma existente fica em conferir.
+- **Limites**: 10 MB, 10 páginas por PDF, 60 megapixels por foto, 90 segundos por etapa; o tipo é reconhecido pelo conteúdo do arquivo, nunca pelo nome.
+- **Regra dos testes** (`OcrDocumentImportTest`): nenhum erro de leitura passa calado; todo aluno sem conferência bate com o gabarito em nome, data, RA e turma. Documentos de teste em `tests/Fixtures/kit-monte-sereno/ocr`, gerados pelo `gerar_documentos.py` a partir do gabarito.
+
+Resultado medido nos documentos fictícios: PDF digital da EMEI, 40 de 40 sem conferência; lista escaneada da EMEF (com ruído forte), 58 de 58 com todos os campos corretos e 25 nomes marcados para conferir; foto da escola rural, 9 de 9 com uma data ilegível deixada pendente.
