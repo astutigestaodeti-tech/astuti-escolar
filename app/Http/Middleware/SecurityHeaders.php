@@ -8,14 +8,23 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
-    private const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
+    private const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:{TILES}; font-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
+
+    /** Só o servidor de mapas configurado pode entregar imagens além do próprio sistema. */
+    private static function csp(): string
+    {
+        $host = parse_url((string) config('geo.tiles_url'), PHP_URL_HOST);
+        $scheme = parse_url((string) config('geo.tiles_url'), PHP_URL_SCHEME);
+
+        return str_replace('{TILES}', is_string($host) && $host !== '' && in_array($scheme, ['https', 'http'], true) ? ' '.$scheme.'://'.$host : '', self::CSP);
+    }
 
     public function handle(Request $request, Closure $next): Response
     {
         /** @var Response $response */
         $response = $next($request);
 
-        $response->headers->set('Content-Security-Policy', self::CSP);
+        $response->headers->set('Content-Security-Policy', self::csp());
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');

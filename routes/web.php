@@ -6,6 +6,7 @@ use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentMovementController;
+use App\Http\Controllers\GeoLocationController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdentificationPhotoController;
@@ -79,6 +80,12 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->name('school.students.guardians.unlink.form');
     Route::post('/escolas/{escola}/alunos/{aluno}/responsaveis/{vinculo}/desvincular', [GuardianController::class, 'unlink'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.students.guardians.unlink');
+
+    // Localização no mapa (residência do aluno e escola): só quem gere a escola; gravação com segundo fator.
+    Route::get('/escolas/{escola}/localizacao', [GeoLocationController::class, 'editSchool'])->whereUuid('escola')->name('schools.geo.edit');
+    Route::post('/escolas/{escola}/localizacao', [GeoLocationController::class, 'updateSchool'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('schools.geo.update');
+    Route::get('/escolas/{escola}/alunos/{aluno}/localizacao', [GeoLocationController::class, 'editStudent'])->whereUuid('escola')->whereUuid('aluno')->name('school.students.geo.edit');
+    Route::post('/escolas/{escola}/alunos/{aluno}/localizacao', [GeoLocationController::class, 'updateStudent'])->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.geo.update');
 
     // Saída de alunos (portão): consulta da escola basta; registra a quem o aluno foi entregue.
     Route::get('/escolas/{escola}/saida', [StudentExitController::class, 'index'])->whereUuid('escola')->name('school.exits.index');

@@ -108,7 +108,22 @@
                             <div><dt>Estado</dt><dd>{{ $student->address_state ?? 'Não informado' }}</dd></div>
                             <div><dt>CEP</dt><dd class="numero">{{ $student->postal_code ?? 'Não informado' }}</dd></div>
                             <div><dt>Zona</dt><dd>{{ $zona ?? 'Não informada' }}</dd></div>
+                            <div><dt>Distância até a escola</dt><dd>
+                                @if ($distanciaEscola !== null)
+                                    {{ \App\Geo\Distance::label($distanciaEscola) }} <small class="ficha-idade">em linha reta</small>
+                                @elseif ($student->latitude === null)
+                                    Casa não marcada no mapa
+                                @else
+                                    Escola não marcada no mapa
+                                @endif
+                                @if ($canManage)
+                                    <small class="ficha-idade"><a href="{{ route('school.students.geo.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">{{ $student->latitude === null ? 'Marcar no mapa' : 'Ajustar no mapa' }}</a></small>
+                                @endif
+                            </dd></div>
                         </dl>
+                        @if ($avisoTransporte)
+                            <p class="geo-aviso" role="note">{{ $avisoTransporte }}</p>
+                        @endif
                     @else
                         <p class="ficha-vazio">Endereço ainda não informado.
                             @if ($canManage)

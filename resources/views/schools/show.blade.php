@@ -18,6 +18,10 @@
         <span class="etiqueta ok">Ativa</span>
     </div>
 
+    @if (session('status'))
+        <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
+    @endif
+
     <div class="ficha-escola">
         <section class="folha" aria-labelledby="titulo-dados">
             <div class="folha-cabecalho"><div><h2 id="titulo-dados">Dados da unidade</h2><p>Informações cadastradas pela Secretaria.</p></div></div>
@@ -25,6 +29,12 @@
                 <div><dt>Nome</dt><dd>{{ $school->name }}</dd></div>
                 <div><dt>Código INEP</dt><dd class="numero">{{ $school->inep_code ?: 'Não informado' }}</dd></div>
                 <div><dt>Situação</dt><dd>Em funcionamento</dd></div>
+                <div><dt>Localização no mapa</dt><dd>
+                    {{ $school->latitude !== null ? 'Marcada' : 'Não marcada' }}
+                    @can('manageStudents', [$school, $municipality])
+                        <small class="ficha-idade"><a href="{{ route('schools.geo.edit', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">{{ $school->latitude !== null ? 'Ajustar no mapa' : 'Marcar no mapa' }}</a></small>
+                    @endcan
+                </dd></div>
             </dl>
         </section>
 

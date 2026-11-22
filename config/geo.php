@@ -1,0 +1,17 @@
+<?php
+
+/*
+ * Georreferenciamento. No desenvolvimento usamos os servidores públicos do
+ * OpenStreetMap (só dados fictícios). Em produção, aponte para servidores
+ * próprios da Prefeitura ou contratados com acordo de tratamento de dados,
+ * para nenhum endereço de aluno sair do ambiente controlado.
+ */
+return [
+    'geocoder_url' => env('ASTUTI_GEOCODER_URL', 'https://nominatim.openstreetmap.org/search'),
+    'tiles_url' => env('ASTUTI_MAPA_TILES_URL', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+    'tiles_attribution' => env('ASTUTI_MAPA_ATRIBUICAO', '© colaboradores do OpenStreetMap'),
+    // O Nominatim pede identificação da aplicação; o contato vem do .env de cada instalação.
+    'user_agent' => env('ASTUTI_GEOCODER_USER_AGENT', 'AstutiGestaoEscolar/1.0'),
+    // Regra municipal: a partir de quantos km em linha reta o aluno tem direito ao transporte.
+    'transport_min_km' => (float) env('ASTUTI_TRANSPORTE_DISTANCIA_MINIMA_KM', 2.0),
+];

@@ -645,3 +645,13 @@ select.entrada{cursor:pointer}
 .formulario-grade .formulario-campo-largo{grid-column:1/-1}
 
 .campo-rg{display:grid;grid-template-columns:1fr 96px;gap:8px}
+
+/* Localização no mapa */
+.geo-folha{padding:0 0 18px}
+.geo-busca{padding:20px 22px 14px}
+.geo-mapa{height:440px;margin:0 22px;border:1px solid var(--pauta);border-radius:var(--raio-controle);z-index:0}
+.geo-salvar{padding:14px 22px 0}
+.geo-remover{color:#8a2c22}
+.geo-lgpd{margin:12px 22px 0}
+.geo-aviso{margin:10px 0 0;padding:10px 12px;border-radius:var(--raio-controle);background:#fff4dc;color:#7a4d00;font-size:14px}
+@media (max-width:640px){.geo-mapa{height:320px;margin:0 12px}}
