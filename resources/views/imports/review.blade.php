@@ -52,6 +52,9 @@
                                             @elseif ($issue['field'] === 'homonimo')
                                                 <p role="alert">{{ $issue['message'] }}</p>
                                                 <label><input type="checkbox" name="homonimos[]" value="{{ $index }}"> É outra pessoa. Autorizo cadastrar um novo aluno.</label>
+                                            @elseif ($issue['field'] === 'leitura')
+                                                <p role="alert">{{ $issue['message'] }}</p>
+                                                <label><input type="checkbox" name="leituras[]" value="{{ $index }}"> Conferi nome, data e RA com o documento.</label>
                                             @else
                                                 <p role="alert">{{ $issue['message'] }}</p>
                                                 <strong>Corrija a planilha e envie novamente.</strong>

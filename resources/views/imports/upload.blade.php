@@ -16,7 +16,7 @@
         <div>
             <span class="contexto">Importação assistida</span>
             <h1>Importar alunos de {{ $school->name }}</h1>
-            <p>Envie a planilha desta escola, revise a prévia e confirme os alunos antes de gravar.</p>
+            <p>Envie a planilha, o PDF ou a foto da lista desta escola, revise a prévia e confirme os alunos antes de gravar.</p>
         </div>
     </div>
 
@@ -29,7 +29,7 @@
     @endif
 
     <section class="folha" aria-labelledby="importar-titulo">
-        <div class="folha-cabecalho"><div><h2 id="importar-titulo">Planilha da escola</h2><p>Arquivo .xlsx até 5 MB. Use somente dados fictícios neste ambiente.</p></div></div>
+        <div class="folha-cabecalho"><div><h2 id="importar-titulo">Lista de alunos da escola</h2><p>Planilha .xlsx, PDF (digital ou escaneado) ou foto JPG/PNG, até 10 MB. Use somente dados fictícios neste ambiente.</p></div></div>
         <form method="post" enctype="multipart/form-data" action="{{ route('school.imports.students.preview', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}" style="padding:20px;display:grid;gap:18px;max-width:720px">
             @csrf
             <label for="school_year_id">Ano letivo <span aria-hidden="true">*</span></label>
@@ -39,11 +39,12 @@
                     <option value="{{ $year->id }}" @selected(old('school_year_id') === $year->id)>{{ $year->year }}</option>
                 @endforeach
             </select>
-            <label for="arquivo">Planilha dos alunos <span aria-hidden="true">*</span></label>
-            <input id="arquivo" name="arquivo" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
-            <button class="botao" type="submit">Ler planilha e conferir</button>
+            <label for="arquivo">Arquivo da lista <span aria-hidden="true">*</span></label>
+            <input id="arquivo" name="arquivo" type="file" accept=".xlsx,.pdf,.jpg,.jpeg,.png,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,image/jpeg,image/png" required>
+            <button class="botao" type="submit">Ler arquivo e conferir</button>
         </form>
     </section>
 
     <div class="nota"><x-icon name="info" /><div><strong>Conferência obrigatória</strong><p>O envio apenas mostra uma prévia. Nenhum aluno é gravado até a confirmação com segundo fator. O arquivo não é guardado no servidor; transporte, endereço e observações permanecem pendentes.</p></div></div>
+    <div class="nota"><x-icon name="info" /><div><strong>PDF e foto</strong><p>A leitura é feita no próprio servidor, sem enviar o documento para fora. Nomes lidos com pouca certeza aparecem para você conferir com o papel antes de gravar. Para uma foto boa: lista inteira no quadro, sem sombra e sem inclinar muito.</p></div></div>
 @endsection

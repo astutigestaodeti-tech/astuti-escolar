@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
+use App\Import\Ocr\DocumentTableReader;
+use App\Import\Ocr\OcrReadException;
 use App\Import\Students\ClassOption;
 use App\Import\Students\ImportIssue;
 use App\Import\Students\ImportTarget;
@@ -14,12 +16,14 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Security\TwoFactorSession;
+use Closure;
 use DateTimeImmutable;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -53,7 +57,7 @@ class ConfirmedStudentImportController extends Controller
     {
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
         $data = $request->validate([
-            'arquivo' => ['required', 'file', 'mimes:xlsx', 'max:5120'],
+            'arquivo' => ['required', 'file', 'max:10240', $this->documentRule()],
             'school_year_id' => ['required', 'uuid'],
         ]);
 
@@ -68,16 +72,19 @@ class ConfirmedStudentImportController extends Controller
         }
 
         try {
-            $preview = $previewer->fromFile(
-                $data['arquivo']->getRealPath(),
-                new ImportTarget($school->id, $classes, new DateTimeImmutable('now')),
-            );
-        } catch (XlsxReadException $exception) {
+            $target = new ImportTarget($school->id, $classes, new DateTimeImmutable('now'));
+            $path = $data['arquivo']->getRealPath();
+            // Planilha vai direto; PDF e foto passam pela leitura local (OCR),
+            // e as linhas de leitura duvidosa chegam marcadas para conferir.
+            $preview = $this->signature($path) === 'xlsx'
+                ? $previewer->fromFile($path, $target)
+                : $previewer->fromSheets(app(DocumentTableReader::class)->read($path), $target);
+        } catch (XlsxReadException|OcrReadException $exception) {
             throw ValidationException::withMessages(['arquivo' => $exception->getMessage()]);
         }
 
         if (count($preview->students) === 0 || count($preview->students) > self::MAX_STUDENTS) {
-            throw ValidationException::withMessages(['arquivo' => 'A planilha deve conter entre 1 e 500 alunos. Divida lotes maiores por escola.']);
+            throw ValidationException::withMessages(['arquivo' => 'O arquivo deve conter entre 1 e 500 alunos, numa tabela com o cabeçalho "Nome" ou "Aluno". Divida lotes maiores por escola.']);
         }
 
         $classNames = [];
@@ -144,6 +151,8 @@ class ConfirmedStudentImportController extends Controller
             'confirmados' => ['nullable', 'array', 'max:500'],
             'confirmados.*' => ['integer', 'min:0', 'max:499'],
             'homonimos' => ['nullable', 'array', 'max:500'],
+            'leituras' => ['nullable', 'array', 'max:500'],
+            'leituras.*' => ['integer', 'min:0', 'max:499'],
             'homonimos.*' => ['integer', 'min:0', 'max:499'],
         ]);
 
@@ -165,6 +174,7 @@ class ConfirmedStudentImportController extends Controller
 
         $confirmed = array_values(array_unique(array_map('intval', $data['confirmados'] ?? [])));
         $homonyms = array_values(array_unique(array_map('intval', $data['homonimos'] ?? [])));
+        $readings = array_values(array_unique(array_map('intval', $data['leituras'] ?? [])));
         $acceptedRows = [];
         $ignoredCount = 0;
 
@@ -192,7 +202,11 @@ class ConfirmedStudentImportController extends Controller
                     throw ValidationException::withMessages(['homonimos' => 'Marque explicitamente que o possível homônimo é outra pessoa.']);
                 }
 
-                if (! in_array($issue['field'] ?? null, ['duplicidade', 'homonimo'], true)) {
+                if (($issue['field'] ?? null) === 'leitura' && ! in_array($index, $readings, true)) {
+                    throw ValidationException::withMessages(['leituras' => 'Confira com o documento e marque cada leitura duvidosa antes de gravar.']);
+                }
+
+                if (! in_array($issue['field'] ?? null, ['duplicidade', 'homonimo', 'leitura'], true)) {
                     throw ValidationException::withMessages(['lote' => 'Há conflitos de turma ou informações na planilha. Corrija o arquivo e envie novamente.']);
                 }
             }
@@ -370,5 +384,32 @@ class ConfirmedStudentImportController extends Controller
             || ! (is_null($row['ra'] ?? null) || (is_string($row['ra']) && preg_match('/\A\d{9,12}-[\dX]\/[A-Z]{2}\z/', $row['ra']) === 1))) {
             throw ValidationException::withMessages(['lote' => 'A conferência está desatualizada ou contém turma/dados inválidos. Envie a planilha novamente.']);
         }
+    }
+
+    /** Tipo pelo conteudo do arquivo: planilha .xlsx (zip), PDF, JPEG ou PNG. */
+    private function signature(string $path): ?string
+    {
+        $head = (string) file_get_contents($path, false, null, 0, 8);
+
+        return match (true) {
+            str_starts_with($head, "PK\x03\x04") => 'xlsx',
+            str_starts_with($head, '%PDF-') => 'pdf',
+            str_starts_with($head, "\xFF\xD8\xFF") => 'jpg',
+            str_starts_with($head, "\x89PNG\r\n\x1A\n") => 'png',
+            default => null,
+        };
+    }
+
+    private function documentRule(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            $extension = $value instanceof UploadedFile ? strtolower($value->getClientOriginalExtension()) : '';
+            $kind = $value instanceof UploadedFile && $value->isValid() ? $this->signature($value->getRealPath()) : null;
+            $expected = ['xlsx' => ['xlsx'], 'pdf' => ['pdf'], 'jpg' => ['jpg', 'jpeg'], 'png' => ['png']];
+
+            if ($kind === null || ! in_array($extension, $expected[$kind], true)) {
+                $fail('Envie a planilha (.xlsx), um PDF ou uma foto da lista (JPG ou PNG).');
+            }
+        };
     }
 }
