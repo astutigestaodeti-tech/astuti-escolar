@@ -19,11 +19,12 @@ class Student extends TenantModel
         'id', 'full_name', 'birth_date', 'ra',
         'address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state', 'postal_code', 'residence_zone',
         'social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf',
+        'rg_number', 'rg_issuer', 'rg_state', 'rg_issued_at', 'birth_certificate',
     ];
 
     protected function casts(): array
     {
-        return ['birth_date' => 'date', 'photo_updated_at' => 'datetime'];
+        return ['birth_date' => 'date', 'photo_updated_at' => 'datetime', 'rg_issued_at' => 'date'];
     }
 
     /** Anos completos numa data; null sem nascimento ou com data anterior a ele. */

@@ -10,7 +10,7 @@ class Guardian extends TenantModel
 
     public $incrementing = false;
 
-    protected $fillable = ['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone'];
+    protected $fillable = ['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'rg_number', 'rg_state'];
 
     protected function casts(): array
     {

@@ -86,6 +86,9 @@
                                 :tem-foto="$vinculo->guardian->photo_path !== null" tamanho="grande" />
                             <strong>{{ $vinculo->guardian->full_name }}</strong>
                             <span>{{ $parentescos[$vinculo->relationship] ?? 'Responsável' }}</span>
+                            @if ($vinculo->guardian->rg_number)
+                                <span class="saida-documento">RG: {{ \App\Validation\IdentityDocuments::formatRg($vinculo->guardian->rg_number) }} {{ $vinculo->guardian->rg_state }}</span>
+                            @endif
                             <form method="POST" action="{{ route('school.exits.store', [...$parametrosEscola, 'aluno' => $aluno->id]) }}">
                                 @csrf
                                 <input type="hidden" name="pessoa" value="guardian:{{ $vinculo->guardian->id }}">

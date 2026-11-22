@@ -75,6 +75,8 @@
                 $censusLabels['nationality'][$census['nationality'] ?? ''] ?? null,
                 isset($census['birthplace_city']) ? 'Natural de '.$census['birthplace_city'].(isset($census['birthplace_state']) ? '/'.$census['birthplace_state'] : '') : null,
                 isset($census['cpf']) ? 'CPF válido' : null,
+                isset($census['rg_number']) ? 'RG informado' : null,
+                isset($census['birth_certificate']) ? 'Certidão informada' : null,
             ]));
             $guardian = $row['guardian'] ?? null;
             $guardianLabel = '';

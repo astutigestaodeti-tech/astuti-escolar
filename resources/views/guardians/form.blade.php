@@ -63,6 +63,22 @@
                     @error('cpf')<p class="campo-erro">{{ $message }}</p>@enderror
                 </div>
                 <div class="formulario-campo">
+                    <label class="rotulo" for="rg_number">RG (opcional)</label>
+                    <div class="campo-rg">
+                        <input class="entrada" id="rg_number" name="rg_number" maxlength="20" autocomplete="off" placeholder="12.345.678-9" value="{{ old('rg_number', \App\Validation\IdentityDocuments::formatRg($guardian?->rg_number)) }}">
+                        <label class="sr-only" for="rg_state">UF do RG</label>
+                        <select class="entrada" id="rg_state" name="rg_state">
+                            <option value="">UF</option>
+                            @foreach (\App\Address\BrazilianStates::NAMES as $uf => $estado)
+                                <option value="{{ $uf }}" @selected(old('rg_state', $guardian?->rg_state) === $uf)>{{ $uf }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <p class="texto-ajuda">Ajuda a conferir a identidade no portão.</p>
+                    @error('rg_number')<p class="campo-erro">{{ $message }}</p>@enderror
+                    @error('rg_state')<p class="campo-erro">{{ $message }}</p>@enderror
+                </div>
+                <div class="formulario-campo">
                     <label class="rotulo" for="phone">Telefone principal com DDD</label>
                     <input class="entrada" id="phone" name="phone" type="tel" inputmode="tel" data-guardian-phone maxlength="15" @if ($editando) required @endif placeholder="(11) 99999-9999" value="{{ old('phone', $guardian?->phone) }}">
                     <p class="texto-ajuda">De preferência o celular: se for celular, a ficha já mostra o atalho do WhatsApp. Obrigatório para um novo cadastro; ao vincular um CPF já existente, pode ficar em branco.</p>

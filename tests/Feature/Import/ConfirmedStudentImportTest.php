@@ -706,6 +706,32 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertSame(['Bruna Teste', 'male', null, null], [$brunoSalvo->social_name, $brunoSalvo->sex, $brunoSalvo->race_color, $brunoSalvo->cpf]);
     }
 
+    public function test_importacao_le_rg_e_certidao_e_deixa_pendente_o_que_esta_fora_do_padrao(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $file = $this->planilha([
+            ['Nome', 'Data de nascimento', 'Turma', 'RG do aluno', 'Certidão de nascimento'],
+            ['Ana Documentada Fictícia', '01/02/2020', '1A', '12.345.678-9', '123456 01 55 2019 1 00012 034 0001234 56'],
+            ['Bia Pendente Fictícia', '03/04/2020', '1A', 'sem rg', '12345'],
+        ]);
+        try {
+            [$token] = $this->preparar('documentos.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $rows = $this->linhasDoLote($token);
+        $this->assertSame(['rg_number' => '123456789', 'birth_certificate' => '12345601552019100012034000123456'], $this->linhaDe($rows, 'Ana Documentada Fictícia')['census']);
+        $pendencias = implode(' | ', array_column($this->linhaDe($rows, 'Bia Pendente Fictícia')['pending'], 'message'));
+        $this->assertStringContainsString('RG do aluno fora do padrão', $pendencias);
+        $this->assertStringContainsString('Certidão de nascimento fora do padrão', $pendencias);
+
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+        $this->assertSame('123456789', app(TenantContext::class)->runFor($this->municipioA, fn (): ?string => Student::query()->where('full_name', 'Ana Documentada Fictícia')->value('rg_number')));
+    }
+
     public function test_cpf_de_outro_aluno_nao_e_importado_e_reimportacao_so_completa_censo_vazio_com_marcacao(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A']);

@@ -23,6 +23,7 @@ use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentGuardian;
 use App\Security\TwoFactorSession;
 use App\Validation\Cpf;
+use App\Validation\IdentityDocuments;
 use Closure;
 use DateTimeImmutable;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -47,7 +48,7 @@ class ConfirmedStudentImportController extends Controller
 {
     private const MAX_STUDENTS = 500;
 
-    private const CENSUS_FIELDS = ['social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf'];
+    private const CENSUS_FIELDS = ['social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf', 'rg_number', 'birth_certificate'];
 
     private const ADDRESS_LIMITS = ['address_street' => 180, 'address_number' => 20, 'address_district' => 120, 'postal_code' => 9, 'residence_zone' => 5];
 
@@ -546,6 +547,8 @@ class ConfirmedStudentImportController extends Controller
                 'nationality' => isset(StudentRecordController::NATIONALITY_LABELS[$value]),
                 'birthplace_state' => isset(BrazilianStates::NAMES[$value]),
                 'cpf' => Cpf::normalize($value) === $value && Cpf::isValid($value),
+                'rg_number' => IdentityDocuments::rgIsValid($value),
+                'birth_certificate' => IdentityDocuments::birthCertificateIsValid($value),
             });
             if (! $valid) {
                 throw ValidationException::withMessages(['lote' => 'Dados do Censo inválidos na conferência. Reenvie o arquivo.']);

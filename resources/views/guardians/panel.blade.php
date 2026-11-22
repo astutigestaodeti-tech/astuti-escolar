@@ -54,6 +54,9 @@
                                 <a class="responsavel-whatsapp" href="{{ $whatsapp }}" target="_blank" rel="noopener" aria-label="Abrir conversa no WhatsApp com {{ $responsavel->full_name }}">WhatsApp</a>
                             @endif
                         </dd></div>
+                        @if ($responsavel->rg_number)
+                            <div><dt>RG</dt><dd class="numero">{{ \App\Validation\IdentityDocuments::formatRg($responsavel->rg_number) }} {{ $responsavel->rg_state }}</dd></div>
+                        @endif
                         @if ($responsavel->phone_secondary)
                             <div><dt>Outro telefone</dt><dd class="numero"><a href="tel:+55{{ $responsavel->phone_secondary }}">{{ \App\Models\Tenant\Guardian::formatPhone($responsavel->phone_secondary) }}</a></dd></div>
                         @endif
