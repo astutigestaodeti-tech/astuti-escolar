@@ -14,6 +14,7 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
 use App\Http\Controllers\SchoolStudentController;
+use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
 use App\Http\Controllers\StudentRecordController;
 use App\Http\Middleware\RequireConfirmedTwoFactor;
@@ -78,6 +79,10 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->name('school.students.guardians.unlink.form');
     Route::post('/escolas/{escola}/alunos/{aluno}/responsaveis/{vinculo}/desvincular', [GuardianController::class, 'unlink'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.students.guardians.unlink');
+
+    // Saída de alunos (portão): consulta da escola basta; registra a quem o aluno foi entregue.
+    Route::get('/escolas/{escola}/saida', [StudentExitController::class, 'index'])->whereUuid('escola')->name('school.exits.index');
+    Route::post('/escolas/{escola}/saida/{aluno}', [StudentExitController::class, 'store'])->whereUuid('escola')->whereUuid('aluno')->name('school.exits.store');
 
     // Foto de identificação: consulta com a permissão da escola; envio e remoção com segundo fator.
     Route::get('/escolas/{escola}/fotos/{tipo}/{id}', [IdentificationPhotoController::class, 'show'])

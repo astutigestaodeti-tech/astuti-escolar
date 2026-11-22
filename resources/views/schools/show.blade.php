@@ -42,6 +42,13 @@
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar alunos desta escola <x-icon name="seta" :size="16" /></a>
         </section>
 
+        <section class="folha cartao" aria-labelledby="titulo-saida">
+            <span class="acao-icone"><x-icon name="alunos" /></span>
+            <h2 id="titulo-saida">Saída de alunos</h2>
+            <p>No portão: confira pela foto quem veio buscar e registre a entrega.</p>
+            <a class="botao secundario" style="margin-top:12px" href="{{ route('school.exits.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Abrir saída de alunos <x-icon name="seta" :size="16" /></a>
+        </section>
+
         <section class="folha cartao" aria-labelledby="titulo-matriculas">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-matriculas">Matrículas</h2>

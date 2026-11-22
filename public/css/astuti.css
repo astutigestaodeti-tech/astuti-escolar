@@ -617,3 +617,26 @@ select.entrada{cursor:pointer}
 .ficha-cabecalho-foto{display:flex;align-items:center;gap:18px;justify-content:flex-start}
 .responsavel-topo{align-items:center}
 .status-erro{display:flex;gap:8px;align-items:center;margin:0 0 16px;padding:12px 16px;border-radius:var(--raio-controle);background:#fbe9e6;color:#8a2c22;font-weight:600}
+
+/* Saída de alunos (portão) */
+.saida-busca{padding:20px 22px}
+.saida-busca input{font-size:18px}
+.saida-aviso{margin:0 22px 18px}
+.saida-aluno{padding:20px 22px;margin-top:18px}
+.saida-aluno+.folha{margin-top:18px}
+.saida-aluno-cabecalho{display:flex;gap:18px;align-items:center;margin-bottom:16px}
+.saida-aluno-cabecalho h2{margin:0 0 4px;font-size:24px}
+.saida-aluno-cabecalho p{margin:0;color:var(--tinta-2)}
+.saida-ja-saiu{margin-top:8px!important}
+.saida-pessoas{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.saida-pessoa{border:1px solid var(--pauta);border-radius:var(--raio-controle);padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.saida-pessoa strong{font-size:16px;color:var(--tinta)}
+.saida-pessoa span{font-size:14px;color:var(--tinta-2)}
+.saida-pessoa form{margin-top:auto;padding-top:8px;width:100%}
+.saida-pessoa .botao{width:100%;justify-content:center}
+.saida-documento{font-size:13px!important}
+.saida-sem-autorizados{padding:14px 16px;border-radius:var(--raio-controle);background:#fbe9e6;color:#8a2c22}
+.saida-sem-autorizados p{margin:4px 0 0}
+.saida-nao-esta{margin-top:14px;font-size:14px}
+.saida-nao-esta summary{cursor:pointer;font-weight:700;color:#8a2c22}
+.saida-nao-esta p{margin:8px 0 0;color:var(--tinta-2)}
