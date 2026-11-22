@@ -31,19 +31,27 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
         $this->assertFalse(app(TenantContext::class)->hasActive());
     }
 
-    public function test_ficha_mostra_data_completa_idade_atual_e_idade_na_data_de_corte(): void
+    public function test_ficha_mostra_uma_idade_so_e_cita_a_data_de_corte_apenas_quando_difere(): void
     {
         $user = $this->criarUsuario('ficha-idade@example.invalid');
         $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
-        // Aniversário em 02/04: em 31/03/2027 (data de corte) ainda tem 9 anos.
-        $studentId = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluna da Data de Corte', 'active', '2017-04-02');
+        // Aniversário em 02/04: hoje (22/11/2026) tem 9 anos e em 31/03/2027 ainda terá 9.
+        $igual = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluna da Mesma Idade', 'active', '2017-04-02');
+        // Aniversário em 10/01: hoje tem 9 anos e em 31/03/2027 terá 10.
+        $diferente = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluno de Idade Diferente', 'active', '2017-01-10');
 
         Carbon::setTestNow('2026-11-22 10:00:00');
         try {
-            $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
+            $ficha = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/';
+            $this->actingAs($user)->get($ficha.$igual)
                 ->assertOk()
-                ->assertSeeInOrder(['Data de nascimento', '02/04/2017', '9 anos', 'Idade em 31/03/2027', 'data de corte', '9 anos'])
+                ->assertSeeInOrder(['Data de nascimento', '02/04/2017', '9 anos'])
+                ->assertDontSee('data de corte')
                 ->assertDontSee('Ano de nascimento');
+
+            $this->actingAs($user)->get($ficha.$diferente)
+                ->assertOk()
+                ->assertSee('9 anos; <abbr title="Idade em 31/03/2027, que define a etapa e a série do ano letivo">10 na data de corte</abbr>', false);
 
             $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos')
                 ->assertOk()

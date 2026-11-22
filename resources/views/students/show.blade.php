@@ -46,25 +46,23 @@
                     <dl>
                         <div><dt>Nome completo</dt><dd>{{ $student->full_name }}</dd></div>
                         <div><dt>RA</dt><dd class="numero">{{ $student->ra ?? 'Não informado' }}</dd></div>
+                        @php
+                            // Uma idade só: a de hoje. A da data de corte (31/03 do ano letivo),
+                            // que define etapa e série, aparece apenas quando é diferente.
+                            $idadeHoje = $student->birth_date ? $student->ageOn(now()) : null;
+                            $anoLetivoAtual = $enrollments->firstWhere('status', 'active')?->schoolYear?->year;
+                            $idadeCorte = $anoLetivoAtual ? $student->ageOn(\Illuminate\Support\Carbon::create((int) $anoLetivoAtual, 3, 31)) : null;
+                        @endphp
                         <div><dt>Data de nascimento</dt><dd class="numero">
                             @if ($student->birth_date)
                                 {{ $student->birth_date->format('d/m/Y') }}
-                                @if (($idadeHoje = $student->ageOn(now())) !== null)
-                                    <small class="ficha-idade">{{ $idadeHoje }} {{ $idadeHoje === 1 ? 'ano' : 'anos' }}</small>
+                                @if ($idadeHoje !== null)
+                                    <small class="ficha-idade">{{ $idadeHoje }} {{ $idadeHoje === 1 ? 'ano' : 'anos' }}@if ($idadeCorte !== null && $idadeCorte !== $idadeHoje); <abbr title="Idade em 31/03/{{ $anoLetivoAtual }}, que define a etapa e a série do ano letivo">{{ $idadeCorte }} na data de corte</abbr>@endif</small>
                                 @endif
                             @else
                                 Não informada
                             @endif
                         </dd></div>
-                        @php
-                            // Data de corte (31/03 do ano letivo): define a etapa e a série pela idade.
-                            $anoLetivoAtual = $enrollments->firstWhere('status', 'active')?->schoolYear?->year;
-                            $dataCorte = $anoLetivoAtual ? \Illuminate\Support\Carbon::create((int) $anoLetivoAtual, 3, 31) : null;
-                            $idadeCorte = $dataCorte ? $student->ageOn($dataCorte) : null;
-                        @endphp
-                        @if ($idadeCorte !== null)
-                            <div><dt>Idade em 31/03/{{ $anoLetivoAtual }} <small class="ficha-idade">data de corte</small></dt><dd class="numero">{{ $idadeCorte }} {{ $idadeCorte === 1 ? 'ano' : 'anos' }}</dd></div>
-                        @endif
                         @if ($student->social_name)
                             <div><dt>Nome social</dt><dd>{{ $student->social_name }}</dd></div>
                         @endif

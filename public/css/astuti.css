@@ -512,7 +512,8 @@ select.entrada{cursor:pointer}
 .ficha-grupo h3{margin:4px 0 0;font-size:13px;font-weight:700;color:var(--tinta-3);text-transform:none}
 .ficha-escola .ficha-grupo dl{padding:2px 0 6px}
 .ficha-escola .ficha-grupo dd{max-width:62%;overflow-wrap:anywhere}
-.ficha-idade{display:block;font-weight:400;font-size:.8em;color:#4f5d70}
+.ficha-idade{display:block;font-weight:400;font-size:.8em;color:#4f5d70;white-space:nowrap}
+.ficha-idade abbr{text-decoration:underline dotted;cursor:help}
 .ficha-vazio{margin:10px 0 0;padding:12px 14px;border:1px dashed var(--pauta);border-radius:var(--raio-controle);color:var(--tinta-3);font-size:14px}
 .ficha-vazio a{display:inline-block;margin-left:4px;font-weight:700;color:var(--caneta)}
 @media (max-width:960px){.ficha-grupos{grid-template-columns:1fr}}
