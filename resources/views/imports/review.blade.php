@@ -26,7 +26,9 @@
             'observacao' => 'observações da escola',
             'censo' => 'dados do Censo fora das opções (sexo, cor/raça, nacionalidade ou naturalidade)',
             'cpf' => 'CPF do aluno inválido ou repetido',
+            'responsavel' => 'responsáveis com telefone ou CPF a conferir',
         ];
+        $parentescos = ['mother' => 'Mãe', 'father' => 'Pai', 'other' => 'Responsável'];
         $censusLabels = [
             'sex' => \App\Http\Controllers\StudentRecordController::SEX_LABELS,
             'race_color' => \App\Http\Controllers\StudentRecordController::RACE_LABELS,
@@ -74,7 +76,17 @@
                 isset($census['birthplace_city']) ? 'Natural de '.$census['birthplace_city'].(isset($census['birthplace_state']) ? '/'.$census['birthplace_state'] : '') : null,
                 isset($census['cpf']) ? 'CPF válido' : null,
             ]));
-            $view[$index] = ['status' => $status, 'row' => $row, 'address_label' => implode(' · ', $addressParts), 'census_label' => implode(' · ', $censusParts)];
+            $guardian = $row['guardian'] ?? null;
+            $guardianLabel = '';
+            if (is_array($guardian)) {
+                $fone = $guardian['phone'] ?? null;
+                $guardianLabel = implode(' · ', array_filter([
+                    $guardian['name'].' ('.($parentescos[$guardian['relationship']] ?? 'Responsável').')',
+                    $fone ? '('.substr($fone, 0, 2).') '.substr($fone, 2, strlen($fone) - 6).'-'.substr($fone, -4) : null,
+                    ($guardian['cpf'] ?? null) ? 'CPF válido' : null,
+                ]));
+            }
+            $view[$index] = ['status' => $status, 'row' => $row, 'address_label' => implode(' · ', $addressParts), 'census_label' => implode(' · ', $censusParts), 'guardian_label' => $guardianLabel];
         }
         $toSave = count($rows) - $counts['ignorado'];
         $statusText = [
@@ -105,7 +117,7 @@
     @if ($later !== [])
         <div class="nota conf-depois"><x-icon name="info" /><div>
             <strong>Fica para completar depois</strong>
-            <p>A importação aproveita também os campos de endereço e do Censo informados na planilha. Os dados abaixo estão ausentes ou incompletos e não impedem a gravação:
+            <p>A importação aproveita também o endereço, os dados do Censo e o responsável (com telefone) informados na planilha. Os dados abaixo estão ausentes ou incompletos e não impedem a gravação:
                 @foreach ($later as $field => $total)
                     {{ $laterLabels[$field] }} ({{ $total }} {{ $total === 1 ? 'aluno' : 'alunos' }}){{ $loop->last ? '.' : ';' }}
                 @endforeach
@@ -133,6 +145,9 @@
                                     @endif
                                     @if ($item['census_label'] !== '')
                                         <span class="conf-origem">Censo: {{ $item['census_label'] }}</span>
+                                    @endif
+                                    @if ($item['guardian_label'] !== '')
+                                        <span class="conf-origem">Responsável: {{ $item['guardian_label'] }}</span>
                                     @endif
                                 </td>
                                 <td class="conf-numero">
@@ -163,7 +178,7 @@
                                         @if ($row['address_target_id'] ?? null)
                                             <label class="conf-marca">
                                                 <input type="checkbox" name="completar_enderecos[]" value="{{ $index }}">
-                                                <span>Completar somente os campos vazios deste aluno (endereço e dados do Censo), sem substituir os já preenchidos.</span>
+                                                <span>Completar somente o que está vazio neste aluno (endereço, dados do Censo e responsável, se ainda não houver nenhum), sem substituir o que já está preenchido.</span>
                                             </label>
                                         @endif
                                     @else
@@ -205,5 +220,5 @@
         @endif
     </form>
 
-    <div class="nota conf-lgpd"><x-icon name="escudo" /><div><strong>Como a gravação funciona</strong><p>Alunos já cadastrados continuam ignorados para novas inclusões. Só com sua marcação os campos vazios de endereço e do Censo podem ser completados. CPF inválido, repetido ou já usado por outro aluno nunca é gravado. Tudo é gravado junto, ou nada, se houver falha. Nenhum RA é reaproveitado e nenhum dado é inventado. A conferência vale por uma hora e só pode ser confirmada por esta conta.</p></div></div>
+    <div class="nota conf-lgpd"><x-icon name="escudo" /><div><strong>Como a gravação funciona</strong><p>Alunos já cadastrados continuam ignorados para novas inclusões. Só com sua marcação os campos vazios de endereço e do Censo podem ser completados. CPF inválido, repetido ou já usado por outro aluno nunca é gravado. Irmãos com o mesmo responsável (mesmo CPF, ou mesmo nome e telefone) ficam ligados a um cadastro só. Tudo é gravado junto, ou nada, se houver falha. Nenhum RA é reaproveitado e nenhum dado é inventado. A conferência vale por uma hora e só pode ser confirmada por esta conta.</p></div></div>
 @endsection

@@ -26,6 +26,14 @@ final class ImportedStudent
     public array $census = [];
 
     /**
+     * Responsável lido da planilha (nome, parentesco pelo título da coluna,
+     * telefone só com DDD e CPF só se válido). Null quando não há nome.
+     *
+     * @var array{name: string, relationship: string, phone: ?string, cpf: ?string}|null
+     */
+    public ?array $guardian = null;
+
+    /**
      * @param  list<string>  $sources  "Aba X, linha N"
      * @param  array<string, string>  $hints  pistas que nao viram cadastro sozinhas (mae, telefone, CPF, observacao)
      */

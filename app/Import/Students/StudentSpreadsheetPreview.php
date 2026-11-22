@@ -22,7 +22,7 @@ final class StudentSpreadsheetPreview
         'ra' => ['ra', 'r a', 'registro do aluno', 'ra sed'],
         'class' => ['serie turma', 'turma', 'classe', 'ano turma'],
         'grade' => ['ano', 'serie', 'ano serie', 'ano escolar'],
-        'guardian' => ['mae', 'nome da mae', 'responsavel', 'pai ou mae', 'responsavel legal', 'nome do responsavel'],
+        'guardian' => ['mae', 'nome da mae', 'responsavel', 'pai ou mae', 'responsavel legal', 'nome do responsavel', 'pai', 'nome do pai'],
         'phone' => ['telefone', 'fone', 'tel', 'celular', 'contato', 'telefone do responsavel'],
         'cpf' => ['cpf resp', 'cpf do responsavel', 'cpf responsavel', 'cpf'],
         'address' => ['endereco', 'endereco completo', 'logradouro'],
@@ -85,6 +85,13 @@ final class StudentSpreadsheetPreview
                 continue;
             }
 
+            // O título da coluna diz o parentesco: "Mãe" e "Pai" sim; "Responsável" não.
+            $guardianRelationship = match (isset($columns['guardian']) ? ImportText::key(ImportText::clean($sheet->rows[$headerRow][$columns['guardian']] ?? null)) : '') {
+                'mae', 'nome da mae' => 'mother',
+                'pai', 'nome do pai' => 'father',
+                default => 'other',
+            };
+
             foreach ($sheet->rows as $rowNumber => $cells) {
                 if ($rowNumber <= $headerRow) {
                     continue;
@@ -93,7 +100,7 @@ final class StudentSpreadsheetPreview
                 // PDF e foto: "Página 2, linha 5"; planilha: "Aba Alunos, linha 5".
                 $place = ($sheet->name === 'Documento' || str_starts_with($sheet->name, 'Página ')) ? $sheet->name : 'Aba '.$sheet->name;
                 $source = $place.', linha '.$rowNumber;
-                $student = $this->student($sheet, $cells, $columns, $target, $source, $preview);
+                $student = $this->student($sheet, $cells, $columns, $target, $source, $preview, $guardianRelationship);
                 if ($student !== null) {
                     $reading = $sheet->confidence[$rowNumber] ?? null;
                     if ($reading !== null && $reading < self::OCR_CONFIDENCE_MIN) {
@@ -141,7 +148,7 @@ final class StudentSpreadsheetPreview
      * @param  array<int, mixed>  $cells
      * @param  array<string, int>  $columns
      */
-    private function student(XlsxSheet $sheet, array $cells, array $columns, ImportTarget $target, string $source, ImportPreview $preview): ?ImportedStudent
+    private function student(XlsxSheet $sheet, array $cells, array $columns, ImportTarget $target, string $source, ImportPreview $preview, string $guardianRelationship = 'other'): ?ImportedStudent
     {
         $cell = fn (string $field): mixed => isset($columns[$field]) ? ($cells[$columns[$field]] ?? null) : null;
 
@@ -245,6 +252,7 @@ final class StudentSpreadsheetPreview
             $student->addIssue(ImportIssue::PENDING, 'zona_residencia', 'Zona de residência inválida na planilha; escolha Urbana ou Rural no cadastro.');
         }
         $this->readCensus($student, $cell, $columns);
+        $this->readGuardian($student, $guardianRelationship);
         if (isset($student->hints['observacao'])) {
             $student->addIssue(ImportIssue::PENDING, 'observacao', 'Observação da escola para a etapa de inclusão: "'.$student->hints['observacao'].'".');
         }
@@ -318,6 +326,35 @@ final class StudentSpreadsheetPreview
         }
 
         $student->census = $census;
+    }
+
+    /**
+     * Responsável a partir das pistas da linha. Telefone sem DDD e CPF com
+     * dígitos errados não são inventados nem corrigidos: viram pendência.
+     */
+    private function readGuardian(ImportedStudent $student, string $relationship): void
+    {
+        $name = $student->hints['responsavel'] ?? null;
+        if ($name === null || mb_strlen($name) < 5 || mb_strlen($name) > 180 || preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $name) !== 1) {
+            return;
+        }
+
+        $phoneRaw = $student->hints['telefone'] ?? null;
+        $phone = ImportText::phone($phoneRaw);
+        $cpfRaw = $student->hints['cpf_responsavel'] ?? null;
+        $cpf = $cpfRaw === null ? null : Cpf::normalize($cpfRaw);
+        if ($cpf !== null && ! Cpf::isValid($cpf)) {
+            $cpf = null;
+        }
+
+        $student->guardian = ['name' => $name, 'relationship' => $relationship, 'phone' => $phone, 'cpf' => $cpf];
+
+        if ($phoneRaw !== null && $phone === null) {
+            $student->addIssue(ImportIssue::PENDING, 'responsavel', 'Telefone de '.$name.' sem DDD ou incompleto ("'.$phoneRaw.'"); confira com a família.');
+        }
+        if ($cpfRaw !== null && $cpf === null) {
+            $student->addIssue(ImportIssue::PENDING, 'responsavel', 'CPF de '.$name.' inválido na planilha; o responsável entra sem CPF. Confira o documento.');
+        }
     }
 
     /** @return array{?string, ?string} id da turma e, se nao resolvida, o motivo */
@@ -414,6 +451,7 @@ final class StudentSpreadsheetPreview
                         $first->addIssue(ImportIssue::PENDING, 'censo', 'Dados do Censo diferentes entre as linhas repetidas; o campo não foi importado. Confira na ficha.');
                     }
                 }
+                $first->guardian ??= $other->guardian;
                 // Pendências de outras ocorrências não podem sumir na consolidação.
                 $first->issues = [...$first->issues, ...$other->issues];
                 $first->sources = [...$first->sources, ...$other->sources];

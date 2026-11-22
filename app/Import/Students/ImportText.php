@@ -207,6 +207,22 @@ final class ImportText
         return ['city' => $city, 'state' => $state];
     }
 
+    /** Telefone com DDD: 10 ou 11 dígitos (com ou sem 55 na frente). Sem DDD, null. */
+    public static function phone(mixed $value): ?string
+    {
+        $text = self::clean($value);
+        if ($text === null) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $text) ?? '';
+        if (strlen($digits) >= 12 && str_starts_with($digits, '55')) {
+            $digits = substr($digits, 2);
+        }
+
+        return in_array(strlen($digits), [10, 11], true) ? $digits : null;
+    }
+
     /** RA da SED: digitos, digito verificador e UF. */
     public static function ra(mixed $value): ?string
     {

@@ -7,17 +7,20 @@ use App\Audit\AuditTrail;
 use App\Import\Ocr\DocumentTableReader;
 use App\Import\Ocr\OcrReadException;
 use App\Import\Students\ClassOption;
+use App\Import\Students\ImportedGuardianLinker;
 use App\Import\Students\ImportedStudent;
 use App\Import\Students\ImportIssue;
 use App\Import\Students\ImportTarget;
 use App\Import\Students\StudentSpreadsheetPreview;
 use App\Import\Xlsx\XlsxReadException;
 use App\Models\Platform\Municipality;
+use App\Models\Tenant\Guardian;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
+use App\Models\Tenant\StudentGuardian;
 use App\Security\TwoFactorSession;
 use App\Validation\Cpf;
 use Closure;
@@ -142,11 +145,16 @@ class ConfirmedStudentImportController extends Controller
                 }
             }
 
-            // Aluno já cadastrado: endereço e Censo só completam campos vazios, com marcação.
+            $guardian = $this->importedGuardian($student->guardian, $pending);
+
+            // Aluno já cadastrado: endereço, Censo e responsável só completam o que está vazio, com marcação.
             $addressTargetId = null;
             $completable = [...$address, ...$census];
-            if ($candidate !== null && array_filter($completable, fn (?string $value): bool => $value !== null) !== []
-                && $this->missingAddressFields($candidate, $completable) !== []) {
+            $guardianMissing = $candidate !== null && $guardian !== null
+                && ! StudentGuardian::query()->where('student_id', $candidate->id)->exists();
+            if ($candidate !== null && (($guardianMissing)
+                || (array_filter($completable, fn (?string $value): bool => $value !== null) !== []
+                    && $this->missingAddressFields($candidate, $completable) !== []))) {
                 $addressTargetId = $candidate->id;
             }
 
@@ -167,6 +175,7 @@ class ConfirmedStudentImportController extends Controller
                 'sources' => $student->sources,
                 'address' => $address,
                 'census' => $census,
+                'guardian' => $guardian,
                 'address_target_id' => $addressTargetId,
             ];
         }
@@ -249,6 +258,7 @@ class ConfirmedStudentImportController extends Controller
 
             $this->validatedAddress($row);
             $this->validatedCensus($row);
+            $this->validatedGuardian($row);
 
             if ($this->hasConfirmation($row, 'ja_cadastrado')) {
                 $ignoredCount++;
@@ -292,8 +302,9 @@ class ConfirmedStudentImportController extends Controller
         }
 
         $completedAddresses = 0;
+        $linkedGuardians = 0;
         try {
-            DB::connection('tenant')->transaction(function () use ($payload, $acceptedRows, $ignoredCount, $completeAddresses, &$completedAddresses, $school, $request): void {
+            DB::connection('tenant')->transaction(function () use ($payload, $acceptedRows, $ignoredCount, $completeAddresses, &$completedAddresses, &$linkedGuardians, $school, $request): void {
                 $year = SchoolYear::query()->whereIn('status', ['active', 'planned'])->lockForUpdate()->find($payload['year_id'] ?? null);
                 if ($year === null || School::query()->where('status', 'active')->whereKey($school->id)->lockForUpdate()->first() === null) {
                     throw ValidationException::withMessages(['lote' => 'Escola ou ano letivo deixou de estar disponível. Refaça a conferência.']);
@@ -328,8 +339,12 @@ class ConfirmedStudentImportController extends Controller
                             }
                             $missing = $this->missingAddressFields($existing, [...$this->validatedAddress($row), ...$this->validatedCensus($row)]);
                             $this->assertCpfStillFree($missing['cpf'] ?? null, $existing->id);
-                            if ($missing !== []) {
-                                $addressUpdates[] = [$existing, $missing];
+                            $guardian = $this->validatedGuardian($row);
+                            if ($guardian !== null && StudentGuardian::query()->where('student_id', $existing->id)->exists()) {
+                                $guardian = null;
+                            }
+                            if ($missing !== [] || $guardian !== null) {
+                                $addressUpdates[] = [$existing, $missing, $guardian];
                             }
                         }
 
@@ -356,9 +371,15 @@ class ConfirmedStudentImportController extends Controller
                     'created_at' => now(),
                 ]);
 
-                foreach ($addressUpdates as [$existing, $missing]) {
-                    $existing->fill($missing);
-                    $existing->save();
+                $guardians = new ImportedGuardianLinker;
+                foreach ($addressUpdates as [$existing, $missing, $guardian]) {
+                    if ($missing !== []) {
+                        $existing->fill($missing);
+                        $existing->save();
+                    }
+                    if ($guardian !== null) {
+                        $guardians->link($existing, $guardian);
+                    }
                     $completedAddresses++;
                 }
 
@@ -371,6 +392,9 @@ class ConfirmedStudentImportController extends Controller
                         ...$this->validatedAddress($row),
                         ...array_filter($this->validatedCensus($row), fn (?string $value): bool => $value !== null),
                     ]);
+                    if (($guardian = $this->validatedGuardian($row)) !== null) {
+                        $guardians->link($student, $guardian);
+                    }
                     StudentEnrollment::query()->create([
                         'id' => (string) Str::uuid(),
                         'student_id' => $student->id,
@@ -390,7 +414,9 @@ class ConfirmedStudentImportController extends Controller
                     'student_count' => count($acceptedRows),
                     'ignored_count' => $ignoredCount,
                     'address_completed_count' => $completedAddresses,
+                    'guardian_link_count' => $guardians->linked,
                 ]);
+                $linkedGuardians = $guardians->linked;
             });
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23505') {
@@ -401,7 +427,8 @@ class ConfirmedStudentImportController extends Controller
         }
 
         return redirect()->route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id])
-            ->with('status', count($acceptedRows).' alunos e matrículas importados; '.$ignoredCount.' já cadastrados ignorados; '.$completedAddresses.' '.($completedAddresses === 1 ? 'cadastro completado' : 'cadastros completados').' (endereço e dados do Censo) com auditoria.');
+            ->with('status', count($acceptedRows).' alunos e matrículas importados; '.$ignoredCount.' já cadastrados ignorados; '.$completedAddresses.' '.($completedAddresses === 1 ? 'cadastro completado' : 'cadastros completados').' (endereço, Censo e responsável); '
+                .$linkedGuardians.' '.($linkedGuardians === 1 ? 'responsável vinculado' : 'responsáveis vinculados').', tudo com auditoria.');
     }
 
     /** @return array{0: mixed, 1: School} */
@@ -527,6 +554,61 @@ class ConfirmedStudentImportController extends Controller
         }
 
         return $census;
+    }
+
+    /**
+     * Responsável da planilha para a prévia. Sem telefone com DDD só entra se
+     * o CPF já existir na rede; CPF de outra pessoa nunca é usado.
+     *
+     * @param  array{name: string, relationship: string, phone: ?string, cpf: ?string}|null  $guardian
+     * @param  list<array{field: string, message: string}>  $pending
+     * @return array{name: string, relationship: string, phone: ?string, cpf: ?string}|null
+     */
+    private function importedGuardian(?array $guardian, array &$pending): ?array
+    {
+        if ($guardian === null) {
+            return null;
+        }
+
+        $existing = $guardian['cpf'] === null ? null : Guardian::query()->where('cpf', $guardian['cpf'])->first();
+        if ($existing !== null && ImportedGuardianLinker::normalizedName($existing->full_name) !== ImportedGuardianLinker::normalizedName($guardian['name'])) {
+            $pending[] = ['field' => 'responsavel', 'message' => 'O CPF informado para '.$guardian['name'].' já está cadastrado na rede com outro nome; o responsável não foi vinculado. Confira o documento.'];
+
+            return null;
+        }
+        if ($existing === null && $guardian['phone'] === null) {
+            $pending[] = ['field' => 'responsavel', 'message' => $guardian['name'].' não foi cadastrado como responsável porque falta telefone com DDD. Cadastre na ficha.'];
+
+            return null;
+        }
+
+        return $guardian;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array{name: string, relationship: string, phone: ?string, cpf: ?string}|null
+     */
+    private function validatedGuardian(array $row): ?array
+    {
+        $guardian = $row['guardian'] ?? null;
+        if ($guardian === null) {
+            return null;
+        }
+
+        $valid = is_array($guardian)
+            && array_keys($guardian) === ['name', 'relationship', 'phone', 'cpf']
+            && is_string($guardian['name']) && mb_strlen($guardian['name']) >= 5 && mb_strlen($guardian['name']) <= 180
+            && preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $guardian['name']) === 1
+            && in_array($guardian['relationship'], ImportedGuardianLinker::RELATIONSHIPS, true)
+            && ($guardian['phone'] === null || (is_string($guardian['phone']) && preg_match('/\A\d{10,11}\z/', $guardian['phone']) === 1))
+            && ($guardian['cpf'] === null || (is_string($guardian['cpf']) && Cpf::normalize($guardian['cpf']) === $guardian['cpf'] && Cpf::isValid($guardian['cpf'])))
+            && ($guardian['phone'] !== null || $guardian['cpf'] !== null);
+        if (! $valid) {
+            throw ValidationException::withMessages(['lote' => 'Dados de responsável inválidos na conferência. Reenvie o arquivo.']);
+        }
+
+        return $guardian;
     }
 
     /** Sob o lock da importação: o CPF não pode ter ido para outro aluno depois da prévia. */
