@@ -117,3 +117,9 @@ Registro unico desta sessao. Testes completos e Pint sao condicionantes de entre
 - Nome coincidente com nascimento ausente exige confirmar `homonimo` como outra pessoa antes da inclusao.
 - Confirmacao revalida os cadastros sob advisory lock e grava de forma transacional somente as linhas aceitas.
 - Testes cobrem reenvio da E02 (58 ignorados, zero gravados), E02 com uma aluna nova e homonimo sem data; formatacao e CI exigidos antes da integracao.
+
+## 2026-11-22 | Pessoas autorizadas a buscar o aluno
+
+- Ficha escolar distingue os responsáveis vinculados (automaticamente autorizados) das pessoas adicionais para retirada, com nome, relação, telefone, documento opcional, observação e validade inclusiva.
+- Autorizações vencidas aparecem riscadas e não contam como vigentes; consulta liberada à escola autorizada e alterações só por quem gerencia alunos, com segundo fator.
+- Remoção por POST exige motivo de 10 a 500 caracteres e segundo fator recente. Auditoria inclui antes/depois e oculta documento e telefone, com testes para acesso e isolamento.
