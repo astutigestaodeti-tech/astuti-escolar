@@ -5,6 +5,7 @@ namespace App\Models\Tenant;
 use App\Models\Tenant\Concerns\HasSchoolHistory;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Student extends TenantModel
 {
@@ -38,5 +39,10 @@ class Student extends TenantModel
     public function enrollments(): HasMany
     {
         return $this->hasMany(StudentEnrollment::class);
+    }
+
+    public function primaryGuardianLink(): HasOne
+    {
+        return $this->hasOne(StudentGuardian::class)->where('is_primary_contact', true);
     }
 }
