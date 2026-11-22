@@ -14,7 +14,6 @@
     @php
         $alreadyCount = count(array_filter($rows, fn ($row) => in_array('ja_cadastrado', array_column($row['confirmation'], 'field'), true)));
     @endphp
-    <a class="voltar" href="{{ route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Voltar à tela anterior</a>
     <div class="folha-titulo">
         <div>
             <span class="contexto">{{ $school->name }} - Ano letivo {{ $year->year }}</span>

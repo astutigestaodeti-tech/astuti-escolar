@@ -110,8 +110,12 @@ class OcrStudentImportScreenTest extends TwoMunicipalityTestCase
         $this->turmas(self::ESCOLA_EMEI, ['MII-A' => 'Integral', 'PI-A' => 'Manhã', 'PII-A' => 'Tarde']);
         $this->entrar([self::ESCOLA_EMEI]);
 
+        $envio = $this->get($this->url(self::ESCOLA_EMEI))->assertOk()->getContent();
+        $this->assertSame(1, substr_count($envio, 'Voltar à tela anterior'), 'Um botao voltar so.');
+
         [$token, $html] = $this->enviar(self::ESCOLA_EMEI, 'lista_digital_E01.pdf');
         $this->assertSame([], $this->indices($html, 'leituras'));
+        $this->assertSame(1, substr_count($html, 'Voltar à tela anterior'), 'Um botao voltar so na conferencia.');
 
         $this->post($this->url(self::ESCOLA_EMEI).'/confirmar', ['lote' => $token])->assertRedirect();
         $this->assertSame(40, $this->alunos());

@@ -11,7 +11,6 @@
 @endsection
 
 @section('content')
-    <a class="voltar" href="{{ route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Voltar à tela anterior</a>
     <div class="folha-titulo">
         <div>
             <span class="contexto">Importação assistida</span>

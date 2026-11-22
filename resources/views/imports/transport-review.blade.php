@@ -11,7 +11,6 @@
 @endsection
 
 @section('content')
-    <a class="voltar" href="{{ route('school.imports.transport.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Voltar à tela anterior</a>
     <div class="folha-titulo"><div>
         <span class="contexto">{{ $school->name }} - Ano letivo {{ $year->year }}</span>
         <h1>Conferir transporte</h1>

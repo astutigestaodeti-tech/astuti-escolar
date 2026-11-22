@@ -119,7 +119,7 @@
 
             <div class="formulario-acoes">
                 <button class="botao" type="submit">Confirmar {{ strtolower($titulo) }}</button>
-                <a class="botao secundario" href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">Voltar à tela anterior</a>
+                <a class="botao secundario" href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">Cancelar</a>
             </div>
         </form>
     </section>

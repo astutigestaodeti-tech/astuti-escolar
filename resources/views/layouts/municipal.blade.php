@@ -34,7 +34,13 @@
         'schools.index' => route('home'),
         'schools.show' => route('schools.index', $parametrosMunicipio),
         'school.classes.index', 'school.students.index', 'school.enrollments.index' => route('schools.show', $parametrosEscola),
-        'school.students.show' => route('school.students.index', $parametrosEscola),
+        'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
+        'school.students.edit',
+        'school.enrollments.transfer.form', 'school.enrollments.end.form', 'school.enrollments.delete-registration.form'
+            => route('school.students.show', [...$parametrosEscola, 'aluno' => request()->route('aluno')]),
+        'school.imports.students.index', 'school.imports.transport.index' => route('schools.show', $parametrosEscola),
+        'school.imports.students.preview' => route('school.imports.students.index', $parametrosEscola),
+        'school.imports.transport.preview' => route('school.imports.transport.index', $parametrosEscola),
         default => route('schools.index', $parametrosMunicipio),
     };
 @endphp
