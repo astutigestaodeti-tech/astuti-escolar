@@ -10,6 +10,7 @@ use App\Import\Students\ImportIssue;
 use App\Import\Students\ImportTarget;
 use App\Import\Students\StudentSpreadsheetPreview;
 use App\Import\Xlsx\XlsxReadException;
+use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
@@ -146,6 +147,18 @@ class ConfirmedStudentImportController extends Controller
     public function confirm(Request $request, string $municipio, string $escola): RedirectResponse
     {
         [$municipality, $school] = $this->authorizeSchool($request, $escola);
+
+        try {
+            return $this->confirmBatch($request, $municipality, $school);
+        } catch (ValidationException $exception) {
+            // A conferencia e a resposta de um POST: "voltar" para ela daria
+            // 405. A recusa volta para a pagina de envio, com a mensagem.
+            throw $exception->redirectTo(route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]));
+        }
+    }
+
+    private function confirmBatch(Request $request, Municipality $municipality, School $school): RedirectResponse
+    {
         $data = $request->validate([
             'lote' => ['required', 'string', 'max:500000'],
             'confirmados' => ['nullable', 'array', 'max:500'],

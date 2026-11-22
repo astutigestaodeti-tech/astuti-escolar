@@ -143,6 +143,37 @@ class OcrStudentImportScreenTest extends TwoMunicipalityTestCase
         $this->assertSame(0, $this->alunos(), 'A previa nao grava nada.');
     }
 
+    public function test_recusa_na_conferencia_volta_para_a_pagina_de_envio_e_nao_para_a_previa(): void
+    {
+        $this->turmas(self::ESCOLA_A1, ['1A' => 'Manhã', '2A' => 'Manhã', '3A' => 'Manhã', '4A' => 'Tarde', '5A' => 'Tarde']);
+        $this->entrar([self::ESCOLA_A1]);
+        $html = $this->post($this->url(self::ESCOLA_A1).'/previa', [
+            'arquivo' => new UploadedFile(self::KIT.'E02_EMEF_Sebastiao_alunos_2027.xlsx', 'E02.xlsx', null, null, true),
+            'school_year_id' => $this->yearId,
+        ])->assertOk()->getContent();
+        $this->assertSame(1, preg_match('/name="lote" value="([^"]+)"/', $html, $m));
+
+        // Sem confirmar as repeticoes: antes, a recusa voltava para GET /previa (405).
+        $this->from($this->url(self::ESCOLA_A1).'/previa')
+            ->post($this->url(self::ESCOLA_A1).'/confirmar', ['lote' => $m[1]])
+            ->assertRedirect($this->url(self::ESCOLA_A1))
+            ->assertSessionHasErrors('confirmados');
+
+        // Lote adulterado tambem volta para a pagina de envio.
+        $this->from($this->url(self::ESCOLA_A1).'/previa')
+            ->post($this->url(self::ESCOLA_A1).'/confirmar', ['lote' => 'adulterado'])
+            ->assertRedirect($this->url(self::ESCOLA_A1))
+            ->assertSessionHasErrors('lote');
+
+        // Seguindo o redirecionamento, a pessoa ve a pagina de envio com a mensagem.
+        $this->followingRedirects()->from($this->url(self::ESCOLA_A1).'/previa')
+            ->post($this->url(self::ESCOLA_A1).'/confirmar', ['lote' => $m[1]])
+            ->assertOk()
+            ->assertSee('Não foi possível concluir.')
+            ->assertSee('Confirme explicitamente cada repetição de aluno antes de gravar.');
+        $this->get($this->url(self::ESCOLA_A1).'/previa')->assertStatus(405);
+    }
+
     public function test_arquivo_com_extensao_trocada_e_recusado(): void
     {
         $this->turmas(self::ESCOLA_A1, ['1A' => 'Manhã']);
