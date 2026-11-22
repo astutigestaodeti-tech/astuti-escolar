@@ -245,7 +245,10 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
 
         $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1)
             ->assertOk()
-            ->assertSee('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos');
+            ->assertSee('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos')
+            ->assertSee('class="rodape-versao"', false)
+            // Fora do ambiente de desenvolvimento, o rodapé não revela o banco.
+            ->assertDontSee('Plataforma:');
     }
 
     private function matricularAluno(Municipality $municipio, string $escola, string $nome, string $status = 'active'): void
