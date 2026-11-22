@@ -536,6 +536,7 @@ select.entrada{cursor:pointer}
 .ficha-escola .responsavel dd{overflow-wrap:anywhere}
 .responsavel dd a{color:var(--caneta)}
 .responsavel-editar{align-self:flex-start;font-weight:700;font-size:14px;color:var(--caneta)}
+.responsavel-whatsapp{margin-left:8px;font-size:13px;font-weight:700;color:var(--verde)!important}
 .responsavel-acoes{display:flex;flex-wrap:wrap;gap:14px;margin-top:auto}
 .responsavel-desvincular{color:var(--tinta-2)}
 .responsaveis-sem-principal{margin:0 22px 18px;padding:12px 14px}

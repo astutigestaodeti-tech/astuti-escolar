@@ -100,7 +100,7 @@ class GuardianController extends Controller
                     }
 
                     $beforeGuardian = $this->guardianSnapshot($guardian);
-                    foreach (['phone', 'email'] as $field) {
+                    foreach (['phone', 'email', 'phone_secondary', 'workplace', 'work_phone'] as $field) {
                         if (filled($data[$field] ?? null) && $guardian->{$field} !== $data[$field]) {
                             $guardian->{$field} = $data[$field];
                         }
@@ -139,6 +139,12 @@ class GuardianController extends Controller
         if ($principalAnterior !== null) {
             $promotion = "{$guardianName} passou a ser o contato principal (antes: {$principalAnterior}).";
             $message = $reused ? $message.' '.$promotion : $promotion;
+        }
+
+        if ($request->input('depois') === 'outro') {
+            return redirect()->route('school.students.guardians.create', [
+                'municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $aluno,
+            ])->with('status', $message.' Agora informe o próximo responsável.');
         }
 
         return redirect()->route('school.students.show', [
@@ -305,12 +311,17 @@ class GuardianController extends Controller
         $cpf = $request->input('cpf');
         $phone = $request->input('phone');
         $email = $request->input('email');
+        $digits = fn (mixed $value): mixed => is_string($value) ? (preg_replace('/\D/', '', $value) ?: null) : $value;
+        $workplace = $request->input('workplace');
 
         $request->merge([
             'full_name' => is_string($name) ? preg_replace('/\s+/u', ' ', trim($name)) : $name,
             'cpf' => is_string($cpf) && trim($cpf) !== '' ? (Cpf::normalize($cpf) ?? trim($cpf)) : $cpf,
             'phone' => is_string($phone) ? preg_replace('/\D/', '', $phone) : $phone,
             'email' => is_string($email) ? trim($email) : $email,
+            'phone_secondary' => $digits($request->input('phone_secondary')),
+            'workplace' => is_string($workplace) ? (preg_replace('/\s+/u', ' ', trim($workplace)) ?: null) : $workplace,
+            'work_phone' => $digits($request->input('work_phone')),
             'is_legal_guardian' => $request->boolean('is_legal_guardian'),
             'is_primary_contact' => $request->boolean('is_primary_contact'),
         ]);
@@ -320,6 +331,9 @@ class GuardianController extends Controller
             'cpf' => ['nullable', 'string', new Cpf],
             'phone' => [$editing ? 'required' : 'nullable', 'string', 'regex:/\A\d{10,11}\z/D'],
             'email' => ['nullable', 'email', 'max:255'],
+            'phone_secondary' => ['nullable', 'string', 'regex:/\A\d{10,11}\z/D'],
+            'workplace' => ['nullable', 'string', 'max:120'],
+            'work_phone' => ['nullable', 'string', 'regex:/\A\d{10,11}\z/D'],
             'relationship' => ['required', Rule::in(array_keys(self::RELATIONSHIPS))],
             'is_legal_guardian' => ['boolean'],
             'is_primary_contact' => ['boolean'],
@@ -328,18 +342,28 @@ class GuardianController extends Controller
             'phone.required' => 'Informe um telefone para contato.',
             'phone.regex' => 'Informe um telefone com DDD e 10 ou 11 números.',
             'email.email' => 'Informe um e-mail válido.',
+            'phone_secondary.regex' => 'O outro telefone precisa ter DDD e 10 ou 11 números.',
+            'work_phone.regex' => 'O telefone do trabalho precisa ter DDD e 10 ou 11 números.',
+            'workplace.max' => 'O local de trabalho aceita até 120 caracteres.',
             'relationship.required' => 'Selecione o parentesco com o aluno.',
             'relationship.in' => 'Selecione um parentesco válido.',
         ], [
             'full_name' => 'Nome completo', 'cpf' => 'CPF', 'phone' => 'Telefone',
             'email' => 'E-mail', 'relationship' => 'Parentesco',
+            'phone_secondary' => 'Outro telefone', 'workplace' => 'Onde trabalha', 'work_phone' => 'Telefone do trabalho',
             'is_legal_guardian' => 'Responsável legal', 'is_primary_contact' => 'Contato principal',
         ]);
     }
 
     private function guardianFields(array $data): array
     {
-        return array_intersect_key($data, array_flip(['full_name', 'cpf', 'phone', 'email']));
+        $fields = array_intersect_key($data, array_flip(['full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone']));
+        // O mesmo número repetido como "outro telefone" não acrescenta contato.
+        if (($fields['phone_secondary'] ?? null) !== null && $fields['phone_secondary'] === ($fields['phone'] ?? null)) {
+            $fields['phone_secondary'] = null;
+        }
+
+        return $fields;
     }
 
     private function linkFields(array $data): array
@@ -349,7 +373,7 @@ class GuardianController extends Controller
 
     private function guardianSnapshot(Guardian $guardian): array
     {
-        return $guardian->only(['id', 'full_name', 'cpf', 'phone', 'email']);
+        return $guardian->only(['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone']);
     }
 
     private function linkSnapshot(StudentGuardian $link): array

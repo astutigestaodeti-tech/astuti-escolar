@@ -365,7 +365,7 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
 
         $this->get($this->url().'/'.$linkId.'/editar')
             ->assertOk()
-            ->assertSee('Este responsável está ligado a 2 alunos. Nome, CPF, telefone e e-mail alterados aqui valem para todos eles.');
+            ->assertSee('Este responsável está ligado a 2 alunos. Nome, CPF, telefones, e-mail e trabalho alterados aqui valem para todos eles.');
     }
 
     public function test_telefone_com_dez_digitos_aparece_formatado_na_ficha(): void
@@ -552,5 +552,51 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
             'motivo' => 'Tentar remover vínculo do outro aluno fictício.',
         ])->assertNotFound();
         $this->assertSame(2, $this->inMunicipality(fn (): int => StudentGuardian::query()->count()));
+    }
+
+    public function test_outro_telefone_e_trabalho_ficam_na_ficha_com_auditoria_mascarada(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data([
+            'phone_secondary' => '(11) 4444-5555',
+            'workplace' => '  Padaria   Fictícia do Bairro ',
+            'work_phone' => '(11) 3333-2222',
+        ]))->assertRedirect();
+
+        $guardian = $this->inMunicipality(fn (): Guardian => Guardian::query()->sole());
+        $this->assertSame(['1144445555', 'Padaria Fictícia do Bairro', '1133332222'], [$guardian->phone_secondary, $guardian->workplace, $guardian->work_phone]);
+
+        $audit = $this->inMunicipality(fn () => AuditLog::query()->where('auditable_type', Guardian::class)->where('action', 'created')->sole());
+        $this->assertSame('[REDACTED]', $audit->after['phone_secondary']);
+        $this->assertSame('[REDACTED]', $audit->after['work_phone']);
+        $this->assertSame('Padaria Fictícia do Bairro', $audit->after['workplace']);
+
+        // Celular ganha atalho do WhatsApp; fixo, não.
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->studentA)
+            ->assertOk()
+            ->assertSee('href="https://wa.me/5511987654321"', false)
+            ->assertDontSee('wa.me/551144445555', false)
+            ->assertSee('(11) 4444-5555')
+            ->assertSee('Padaria Fictícia do Bairro')
+            ->assertSee('(11) 3333-2222');
+    }
+
+    public function test_outro_telefone_igual_ao_principal_e_ignorado_e_formato_invalido_e_recusado(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data(['phone_secondary' => '1234']))
+            ->assertSessionHasErrors(['phone_secondary' => 'O outro telefone precisa ter DDD e 10 ou 11 números.']);
+
+        $this->post($this->url(), $this->data(['phone_secondary' => '(11) 98765-4321']))->assertRedirect();
+        $this->assertNull($this->inMunicipality(fn (): ?string => Guardian::query()->sole()->phone_secondary));
+    }
+
+    public function test_vincular_e_adicionar_outro_volta_para_o_formulario(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+
+        $this->post($this->url(), $this->data(['depois' => 'outro']))
+            ->assertRedirect($this->url().'/novo')
+            ->assertSessionHas('status', fn (string $message): bool => str_ends_with($message, 'Agora informe o próximo responsável.'));
     }
 }

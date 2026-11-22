@@ -63,15 +63,32 @@
                     @error('cpf')<p class="campo-erro">{{ $message }}</p>@enderror
                 </div>
                 <div class="formulario-campo">
-                    <label class="rotulo" for="phone">Telefone com DDD</label>
+                    <label class="rotulo" for="phone">Telefone principal com DDD</label>
                     <input class="entrada" id="phone" name="phone" type="tel" inputmode="tel" data-guardian-phone maxlength="15" @if ($editando) required @endif placeholder="(11) 99999-9999" value="{{ old('phone', $guardian?->phone) }}">
-                    <p class="texto-ajuda">O telefone é obrigatório para um novo cadastro. Ao vincular um CPF já existente, pode ficar em branco.</p>
+                    <p class="texto-ajuda">De preferência o celular: se for celular, a ficha já mostra o atalho do WhatsApp. Obrigatório para um novo cadastro; ao vincular um CPF já existente, pode ficar em branco.</p>
                     @error('phone')<p class="campo-erro">{{ $message }}</p>@enderror
+                </div>
+                <div class="formulario-campo">
+                    <label class="rotulo" for="phone_secondary">Outro telefone (opcional)</label>
+                    <input class="entrada" id="phone_secondary" name="phone_secondary" type="tel" inputmode="tel" data-guardian-phone maxlength="15" placeholder="(11) 4444-5555" value="{{ old('phone_secondary', $guardian?->phone_secondary) }}">
+                    <p class="texto-ajuda">Fixo de casa ou número de recado.</p>
+                    @error('phone_secondary')<p class="campo-erro">{{ $message }}</p>@enderror
                 </div>
                 <div class="formulario-campo">
                     <label class="rotulo" for="email">E-mail (opcional)</label>
                     <input class="entrada" type="email" id="email" name="email" maxlength="255" value="{{ old('email', $guardian?->email) }}">
                     @error('email')<p class="campo-erro">{{ $message }}</p>@enderror
+                </div>
+                <div class="formulario-campo">
+                    <label class="rotulo" for="workplace">Onde trabalha (opcional)</label>
+                    <input class="entrada" id="workplace" name="workplace" maxlength="120" placeholder="Nome da empresa ou do local" value="{{ old('workplace', $guardian?->workplace) }}">
+                    @error('workplace')<p class="campo-erro">{{ $message }}</p>@enderror
+                </div>
+                <div class="formulario-campo">
+                    <label class="rotulo" for="work_phone">Telefone do trabalho (opcional)</label>
+                    <input class="entrada" id="work_phone" name="work_phone" type="tel" inputmode="tel" data-guardian-phone maxlength="15" placeholder="(11) 4444-5555" value="{{ old('work_phone', $guardian?->work_phone) }}">
+                    <p class="texto-ajuda">Para a escola achar a família numa emergência, durante o expediente.</p>
+                    @error('work_phone')<p class="campo-erro">{{ $message }}</p>@enderror
                 </div>
                 <div class="formulario-campo">
                     <label class="rotulo" for="relationship">Parentesco *</label>
@@ -94,11 +111,14 @@
             </div>
 
             @if ($editando && $linkedStudentsCount > 1)
-                <div class="nota" role="note">Este responsável está ligado a {{ $linkedStudentsCount }} alunos. Nome, CPF, telefone e e-mail alterados aqui valem para todos eles.</div>
+                <div class="nota" role="note">Este responsável está ligado a {{ $linkedStudentsCount }} alunos. Nome, CPF, telefones, e-mail e trabalho alterados aqui valem para todos eles.</div>
             @endif
 
             <div class="formulario-acoes">
                 <button class="botao" type="submit">{{ $editando ? 'Salvar alterações' : 'Vincular responsável' }}</button>
+                @unless ($editando)
+                    <button class="botao secundario" type="submit" name="depois" value="outro">Vincular e adicionar outro</button>
+                @endunless
                 <a class="botao secundario" href="{{ $voltar }}">Cancelar</a>
             </div>
         </form>

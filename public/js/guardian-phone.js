@@ -19,6 +19,5 @@ export function maskGuardianPhoneField(input) {
 }
 
 if (typeof document !== 'undefined') {
-    const phone = document.querySelector('[data-guardian-phone]');
-    if (phone) maskGuardianPhoneField(phone);
+    document.querySelectorAll('[data-guardian-phone]').forEach(maskGuardianPhoneField);
 }

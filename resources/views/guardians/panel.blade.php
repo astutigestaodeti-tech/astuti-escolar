@@ -46,7 +46,18 @@
                         </div>
                     @endif
                     <dl>
-                        <div><dt>Telefone</dt><dd class="numero"><a href="tel:+55{{ preg_replace('/\D/', '', (string) $responsavel->phone) }}">{{ $responsavel->formatted_phone }}</a></dd></div>
+                        <div><dt>Telefone</dt><dd class="numero">
+                            <a href="tel:+55{{ preg_replace('/\D/', '', (string) $responsavel->phone) }}">{{ $responsavel->formatted_phone }}</a>
+                            @if ($whatsapp = \App\Models\Tenant\Guardian::whatsappLink($responsavel->phone))
+                                <a class="responsavel-whatsapp" href="{{ $whatsapp }}" target="_blank" rel="noopener" aria-label="Abrir conversa no WhatsApp com {{ $responsavel->full_name }}">WhatsApp</a>
+                            @endif
+                        </dd></div>
+                        @if ($responsavel->phone_secondary)
+                            <div><dt>Outro telefone</dt><dd class="numero"><a href="tel:+55{{ $responsavel->phone_secondary }}">{{ \App\Models\Tenant\Guardian::formatPhone($responsavel->phone_secondary) }}</a></dd></div>
+                        @endif
+                        @if ($responsavel->workplace || $responsavel->work_phone)
+                            <div><dt>Trabalho</dt><dd>{{ $responsavel->workplace ?? 'Telefone' }}@if ($responsavel->work_phone)<br><a class="numero" href="tel:+55{{ $responsavel->work_phone }}">{{ \App\Models\Tenant\Guardian::formatPhone($responsavel->work_phone) }}</a>@endif</dd></div>
+                        @endif
                         <div><dt>E-mail</dt><dd>@if ($responsavel->email)<a href="mailto:{{ $responsavel->email }}">{{ $responsavel->email }}</a>@else Não informado @endif</dd></div>
                     </dl>
                     @if ($canManage)
