@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Audit\AuditTrail;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
+use App\Models\Tenant\StudentGuardian;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -58,11 +59,18 @@ class SchoolStudentController extends Controller
             ->get()
             ->sortByDesc(fn ($enrollment): int => (int) ($enrollment->schoolYear?->year ?? 0));
 
+        $guardianLinks = StudentGuardian::query()
+            ->where('student_id', $student->id)
+            ->with('guardian')
+            ->orderByDesc('is_primary_contact')
+            ->orderBy('created_at')
+            ->get();
+
         app(AuditTrail::class)->record('tenant', 'student.viewed', Student::class, $student->id);
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $canDeleteEnrollment = Gate::allows('deleteEnrollment', [$school, $municipality]);
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment'));
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks'));
     }
 }

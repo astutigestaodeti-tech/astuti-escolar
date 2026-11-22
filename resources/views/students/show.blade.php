@@ -97,6 +97,8 @@
             </div>
         </section>
 
+        @include('guardians.panel')
+
         <section class="folha cartao" aria-labelledby="titulo-vinculos">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-vinculos">Histórico de vínculos nesta escola</h2>
