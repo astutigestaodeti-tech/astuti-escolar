@@ -30,6 +30,19 @@ final class StudentSpreadsheetPreview
         'residence_zone' => ['zona de residencia', 'zona residencial', 'zona'],
         'transport' => ['transp', 'transporte', 'onibus', 'transporte escolar', 'usa transporte'],
         'notes' => ['obs', 'observacao', 'observacoes'],
+        // Dados do Censo Escolar (exportações da SED e listas completas).
+        'social_name' => ['nome social', 'nome social do aluno'],
+        'sex' => ['sexo', 'sexo do aluno'],
+        'race_color' => ['cor raca', 'raca cor', 'cor ou raca', 'cor da pele', 'raca', 'cor'],
+        'nationality' => ['nacionalidade'],
+        'birthplace' => ['naturalidade', 'municipio de nascimento', 'cidade de nascimento', 'local de nascimento', 'cidade natal'],
+        'birthplace_state' => ['uf de nascimento', 'uf nascimento', 'uf natal', 'estado de nascimento'],
+        'student_cpf' => ['cpf do aluno', 'cpf aluno', 'cpf da crianca', 'cpf do estudante', 'cpf do a aluno', 'cpf ficticio'],
+    ];
+
+    /** Rótulos das pendências do Censo, na linguagem da secretaria. */
+    private const CENSUS_LABELS = [
+        'sex' => 'Sexo', 'race_color' => 'Cor/raça', 'nationality' => 'Nacionalidade',
     ];
 
     private const HEADER_SEARCH_ROWS = 20;
@@ -229,11 +242,80 @@ final class StudentSpreadsheetPreview
         if (isset($columns['residence_zone']) && $residenceZone === null && ImportText::clean($cell('residence_zone')) !== null) {
             $student->addIssue(ImportIssue::PENDING, 'zona_residencia', 'Zona de residência inválida na planilha; escolha Urbana ou Rural no cadastro.');
         }
+        $this->readCensus($student, $cell, $columns);
         if (isset($student->hints['observacao'])) {
             $student->addIssue(ImportIssue::PENDING, 'observacao', 'Observação da escola para a etapa de inclusão: "'.$student->hints['observacao'].'".');
         }
 
         return $student;
+    }
+
+    /**
+     * Lê as colunas do Censo que existirem. Valor reconhecido vai para o
+     * cadastro; valor estranho vira pendência com o que estava escrito, para
+     * a secretaria completar na ficha. Coluna ausente não gera pendência.
+     *
+     * @param  array<string, int>  $columns
+     */
+    private function readCensus(ImportedStudent $student, \Closure $cell, array $columns): void
+    {
+        $census = [];
+
+        if (isset($columns['social_name'])) {
+            $social = ImportText::personName($cell('social_name'));
+            if ($social !== null && mb_strlen($social) >= 3 && mb_strlen($social) <= 180
+                && preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $social) === 1
+                && ImportText::key($social) !== ImportText::key($student->name)) {
+                $census['social_name'] = $social;
+            } elseif ($social !== null && ImportText::key($social) !== ImportText::key($student->name)) {
+                $student->addIssue(ImportIssue::PENDING, 'censo', 'Nome social com caracteres não aceitos ("'.$social.'"); informe na ficha.');
+            }
+        }
+
+        foreach (['sex' => 'sex', 'race_color' => 'raceColor', 'nationality' => 'nationality'] as $field => $parser) {
+            if (! isset($columns[$field])) {
+                continue;
+            }
+            $raw = ImportText::clean($cell($field));
+            $value = ImportText::{$parser}($raw);
+            if ($value !== null) {
+                $census[$field] = $value;
+            } elseif ($raw !== null) {
+                $student->addIssue(ImportIssue::PENDING, 'censo', self::CENSUS_LABELS[$field].' "'.$raw.'" não corresponde às opções do Censo; escolha na ficha.');
+            }
+        }
+
+        if (isset($columns['birthplace'])) {
+            $raw = ImportText::clean($cell('birthplace'));
+            $place = ImportText::birthplace($raw);
+            if (isset($columns['birthplace_state']) && $place['state'] === null) {
+                $uf = strtoupper((string) ImportText::clean($cell('birthplace_state')));
+                $place['state'] = isset(\App\Address\BrazilianStates::NAMES[$uf]) ? $uf : null;
+            }
+            if ($place['city'] !== null) {
+                $census['birthplace_city'] = $place['city'];
+            }
+            if ($place['state'] !== null) {
+                $census['birthplace_state'] = $place['state'];
+            }
+            if ($raw !== null && ($place['city'] === null || $place['state'] === null)) {
+                $student->addIssue(ImportIssue::PENDING, 'censo', 'Naturalidade "'.$raw.'" sem cidade e UF reconhecidas (exemplo: Recife/PE); complete na ficha.');
+            }
+        }
+
+        if (isset($columns['student_cpf'])) {
+            $raw = ImportText::clean($cell('student_cpf'));
+            $cpf = $raw === null ? null : \App\Validation\Cpf::normalize($raw);
+            if ($cpf !== null && \App\Validation\Cpf::isValid($cpf)) {
+                $census['cpf'] = $cpf;
+            } elseif ($raw !== null) {
+                $student->addIssue(ImportIssue::PENDING, 'cpf', $cpf === null
+                    ? 'CPF do aluno com formato não reconhecido; não foi importado. Informe na ficha conferindo o documento.'
+                    : 'CPF do aluno inválido (os dígitos verificadores não conferem); não foi importado. Confira o documento e informe na ficha.');
+            }
+        }
+
+        $student->census = $census;
     }
 
     /** @return array{?string, ?string} id da turma e, se nao resolvida, o motivo */
@@ -290,6 +372,7 @@ final class StudentSpreadsheetPreview
         $result = [];
         foreach ($groups as $group) {
             $first = array_shift($group);
+            $censusConflicts = [];
             foreach ($group as $other) {
                 foreach (['ra', 'classId', 'grade', 'usesTransport', 'street', 'number', 'district', 'postalCode', 'residenceZone'] as $field) {
                     if ($field === 'district' && ($first->districtConflict || $other->districtConflict)) {
@@ -314,6 +397,19 @@ final class StudentSpreadsheetPreview
                         } else {
                             $first->addIssue(ImportIssue::CONFIRM, $field, 'Valores diferentes entre as linhas repetidas: "'.$this->text($first->{$field}).'" e "'.$this->text($other->{$field}).'".');
                         }
+                    }
+                }
+                foreach ($other->census as $field => $value) {
+                    if (isset($censusConflicts[$field])) {
+                        continue;
+                    }
+                    if (! isset($first->census[$field])) {
+                        $first->census[$field] = $value;
+                    } elseif ($first->census[$field] !== $value) {
+                        // Duas linhas discordam: nada do Censo é escolhido no escuro.
+                        unset($first->census[$field]);
+                        $censusConflicts[$field] = true;
+                        $first->addIssue(ImportIssue::PENDING, 'censo', 'Dados do Censo diferentes entre as linhas repetidas; o campo não foi importado. Confira na ficha.');
                     }
                 }
                 // Pendências de outras ocorrências não podem sumir na consolidação.

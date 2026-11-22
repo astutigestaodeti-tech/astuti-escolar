@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Address\BrazilianStates;
 use App\Audit\AuditTrail;
 use App\Import\Ocr\DocumentTableReader;
 use App\Import\Ocr\OcrReadException;
@@ -18,6 +19,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Security\TwoFactorSession;
+use App\Validation\Cpf;
 use Closure;
 use DateTimeImmutable;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -41,6 +43,8 @@ use JsonException;
 class ConfirmedStudentImportController extends Controller
 {
     private const MAX_STUDENTS = 500;
+
+    private const CENSUS_FIELDS = ['social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf'];
 
     private const ADDRESS_LIMITS = ['address_street' => 180, 'address_number' => 20, 'address_district' => 120, 'postal_code' => 9, 'residence_zone' => 5];
 
@@ -96,6 +100,9 @@ class ConfirmedStudentImportController extends Controller
             $classNames[$class->id] = $class->code;
         }
 
+        // O mesmo CPF em dois alunos da planilha não identifica ninguém: nenhum dos dois o recebe.
+        $cpfCount = array_count_values(array_filter(array_map(fn (ImportedStudent $student): ?string => $student->census['cpf'] ?? null, $preview->students)));
+
         $rows = [];
         foreach ($preview->students as $student) {
             $confirmation = [];
@@ -118,12 +125,29 @@ class ConfirmedStudentImportController extends Controller
             $ra = $this->canonicalRa($student->ra);
             $match = $this->existingStatus($student->name, $birthDate, $ra);
             $address = $this->importedAddress($student, $pending);
-            $addressTargetId = null;
-            if ($match === 'existing' && array_filter($address, fn (?string $value): bool => $value !== null) !== []) {
-                $candidate = $this->eligibleAddressStudent($student->name, $birthDate, $ra, $school->id, $year->id);
-                if ($candidate !== null && $this->missingAddressFields($candidate, $address) !== []) {
-                    $addressTargetId = $candidate->id;
+            $census = $student->census;
+            $candidate = $match === 'existing'
+                ? $this->eligibleAddressStudent($student->name, $birthDate, $ra, $school->id, $year->id)
+                : null;
+            if (isset($census['cpf'])) {
+                // Se o CPF já tem dono na rede, só o próprio aluno o mantém; sem dono,
+                // repetido na planilha não identifica ninguém.
+                $owner = Student::query()->where('cpf', $census['cpf'])->value('id');
+                if ($owner !== null && $owner !== $candidate?->id) {
+                    unset($census['cpf']);
+                    $pending[] = ['field' => 'cpf', 'message' => 'Este CPF já está no cadastro de outro aluno da rede; não foi importado. Confira o documento.'];
+                } elseif ($owner === null && ($cpfCount[$census['cpf']] ?? 0) > 1) {
+                    unset($census['cpf']);
+                    $pending[] = ['field' => 'cpf', 'message' => 'O mesmo CPF aparece em mais de um aluno desta planilha; não foi importado. Confira os documentos e informe na ficha.'];
                 }
+            }
+
+            // Aluno já cadastrado: endereço e Censo só completam campos vazios, com marcação.
+            $addressTargetId = null;
+            $completable = [...$address, ...$census];
+            if ($candidate !== null && array_filter($completable, fn (?string $value): bool => $value !== null) !== []
+                && $this->missingAddressFields($candidate, $completable) !== []) {
+                $addressTargetId = $candidate->id;
             }
 
             if ($match === 'existing') {
@@ -142,6 +166,7 @@ class ConfirmedStudentImportController extends Controller
                 'pending' => $pending,
                 'sources' => $student->sources,
                 'address' => $address,
+                'census' => $census,
                 'address_target_id' => $addressTargetId,
             ];
         }
@@ -223,6 +248,7 @@ class ConfirmedStudentImportController extends Controller
             }
 
             $this->validatedAddress($row);
+            $this->validatedCensus($row);
 
             if ($this->hasConfirmation($row, 'ja_cadastrado')) {
                 $ignoredCount++;
@@ -300,7 +326,8 @@ class ConfirmedStudentImportController extends Controller
                             if ($existing === null || $existing->id !== $row['address_target_id']) {
                                 throw ValidationException::withMessages(['lote' => 'A identificação ou o vínculo escolar mudou depois da prévia. Refaça a conferência; nenhum endereço foi alterado.']);
                             }
-                            $missing = $this->missingAddressFields($existing, $this->validatedAddress($row));
+                            $missing = $this->missingAddressFields($existing, [...$this->validatedAddress($row), ...$this->validatedCensus($row)]);
+                            $this->assertCpfStillFree($missing['cpf'] ?? null, $existing->id);
                             if ($missing !== []) {
                                 $addressUpdates[] = [$existing, $missing];
                             }
@@ -310,6 +337,7 @@ class ConfirmedStudentImportController extends Controller
                     }
 
                     $this->validateStudent($row, $classIds);
+                    $this->assertCpfStillFree($this->validatedCensus($row)['cpf'] ?? null);
                     if ($match === 'existing') {
                         throw ValidationException::withMessages(['lote' => 'Um aluno ou RA foi cadastrado depois da prévia. Refaça a conferência; nenhum registro foi gravado.']);
                     }
@@ -341,6 +369,7 @@ class ConfirmedStudentImportController extends Controller
                         'birth_date' => $row['birth_date'],
                         'ra' => $row['ra'],
                         ...$this->validatedAddress($row),
+                        ...array_filter($this->validatedCensus($row), fn (?string $value): bool => $value !== null),
                     ]);
                     StudentEnrollment::query()->create([
                         'id' => (string) Str::uuid(),
@@ -365,14 +394,14 @@ class ConfirmedStudentImportController extends Controller
             });
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23505') {
-                throw ValidationException::withMessages(['lote' => 'O lote ou um RA já foi cadastrado. Confira os dados antes de tentar novamente.']);
+                throw ValidationException::withMessages(['lote' => 'O lote, um RA ou um CPF já foi cadastrado. Confira os dados antes de tentar novamente.']);
             }
 
             throw $exception;
         }
 
         return redirect()->route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id])
-            ->with('status', count($acceptedRows).' alunos e matrículas importados; '.$ignoredCount.' já cadastrados ignorados; '.$completedAddresses.' '.($completedAddresses === 1 ? 'endereço completado' : 'endereços completados').' com auditoria.');
+            ->with('status', count($acceptedRows).' alunos e matrículas importados; '.$ignoredCount.' já cadastrados ignorados; '.$completedAddresses.' '.($completedAddresses === 1 ? 'cadastro completado' : 'cadastros completados').' (endereço e dados do Censo) com auditoria.');
     }
 
     /** @return array{0: mixed, 1: School} */
@@ -463,6 +492,56 @@ class ConfirmedStudentImportController extends Controller
         }
 
         return $address;
+    }
+
+    /**
+     * Dados do Censo vindos da conferência cifrada, revalidados como no
+     * cadastro manual. Qualquer valor fora das opções invalida a prévia.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, ?string>
+     */
+    private function validatedCensus(array $row): array
+    {
+        $source = $row['census'] ?? [];
+        if (! is_array($source) || array_diff(array_keys($source), self::CENSUS_FIELDS) !== []) {
+            throw ValidationException::withMessages(['lote' => 'Dados do Censo inválidos na conferência. Reenvie o arquivo.']);
+        }
+
+        $census = [];
+        foreach (self::CENSUS_FIELDS as $field) {
+            $value = $source[$field] ?? null;
+            $valid = $value === null || (is_string($value) && match ($field) {
+                'social_name' => mb_strlen($value) >= 3 && mb_strlen($value) <= 180 && preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $value) === 1,
+                'birthplace_city' => mb_strlen($value) <= 120 && preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $value) === 1,
+                'sex' => isset(StudentRecordController::SEX_LABELS[$value]),
+                'race_color' => isset(StudentRecordController::RACE_LABELS[$value]),
+                'nationality' => isset(StudentRecordController::NATIONALITY_LABELS[$value]),
+                'birthplace_state' => isset(BrazilianStates::NAMES[$value]),
+                'cpf' => Cpf::normalize($value) === $value && Cpf::isValid($value),
+            });
+            if (! $valid) {
+                throw ValidationException::withMessages(['lote' => 'Dados do Censo inválidos na conferência. Reenvie o arquivo.']);
+            }
+            $census[$field] = $value;
+        }
+
+        return $census;
+    }
+
+    /** Sob o lock da importação: o CPF não pode ter ido para outro aluno depois da prévia. */
+    private function assertCpfStillFree(?string $cpf, ?string $exceptStudentId = null): void
+    {
+        if ($cpf === null) {
+            return;
+        }
+
+        $taken = Student::query()->where('cpf', $cpf)
+            ->when($exceptStudentId !== null, fn ($query) => $query->whereKeyNot($exceptStudentId))
+            ->exists();
+        if ($taken) {
+            throw ValidationException::withMessages(['lote' => 'Um CPF desta planilha foi cadastrado em outro aluno depois da prévia. Refaça a conferência; nenhum registro foi gravado.']);
+        }
     }
 
     /** @param array<string, mixed> $row

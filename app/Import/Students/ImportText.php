@@ -2,6 +2,7 @@
 
 namespace App\Import\Students;
 
+use App\Address\BrazilianStates;
 use App\Import\Xlsx\ExcelDate;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -140,6 +141,70 @@ final class ImportText
         }
 
         return new DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $day), new DateTimeZone('UTC'));
+    }
+
+    /** Sexo como o Censo Escolar registra: "female" ou "male"; o resto fica pendente. */
+    public static function sex(mixed $value): ?string
+    {
+        return match (self::key(self::clean($value))) {
+            'f', 'fem', 'feminino', 'menina', 'mulher' => 'female',
+            'm', 'masc', 'masculino', 'menino', 'homem' => 'male',
+            default => null,
+        };
+    }
+
+    /** Cor/raça nas categorias do IBGE usadas pelo Censo Escolar. */
+    public static function raceColor(mixed $value): ?string
+    {
+        return match (self::key(self::clean($value))) {
+            'branca', 'branco' => 'branca',
+            'preta', 'preto' => 'preta',
+            'parda', 'pardo' => 'parda',
+            'amarela', 'amarelo' => 'amarela',
+            'indigena' => 'indigena',
+            'nao declarada', 'nao declarado', 'nd', 'n d' => 'nao_declarada',
+            default => null,
+        };
+    }
+
+    public static function nationality(mixed $value): ?string
+    {
+        return match (self::key(self::clean($value))) {
+            'brasileira', 'brasileiro', 'brasil', 'br' => 'brasileira',
+            'naturalizada', 'naturalizado', 'brasileira naturalizada', 'brasileiro naturalizado',
+            'brasileira nascida no exterior ou naturalizada', 'brasileiro nascido no exterior ou naturalizado',
+            'nascida no exterior', 'nascido no exterior' => 'naturalizada',
+            'estrangeira', 'estrangeiro' => 'estrangeira',
+            default => null,
+        };
+    }
+
+    /**
+     * Naturalidade "Recife/PE", "Recife - PE", "Recife (PE)" ou "Recife, PE".
+     * A UF só é aceita se for uma sigla válida; a cidade sem UF continua pendente.
+     *
+     * @return array{city: ?string, state: ?string}
+     */
+    public static function birthplace(mixed $value): array
+    {
+        $text = self::clean($value);
+        if ($text === null) {
+            return ['city' => null, 'state' => null];
+        }
+
+        $state = null;
+        if (preg_match('/\A(.+?)\s*(?:\/|-|,|\()\s*([A-Za-z]{2})\)?\z/u', $text, $m) === 1
+            && isset(BrazilianStates::NAMES[strtoupper($m[2])])) {
+            $text = $m[1];
+            $state = strtoupper($m[2]);
+        }
+
+        $city = self::personName(trim($text, " \t-/,"));
+        if ($city === null || mb_strlen($city) > 120 || preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $city) !== 1) {
+            return ['city' => null, 'state' => $state];
+        }
+
+        return ['city' => $city, 'state' => $state];
     }
 
     /** RA da SED: digitos, digito verificador e UF. */
