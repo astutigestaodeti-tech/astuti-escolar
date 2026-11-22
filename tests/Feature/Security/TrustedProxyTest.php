@@ -90,4 +90,21 @@ class TrustedProxyTest extends TestCase
             ->assertJsonPath('secure', false)
             ->assertJsonPath('host', 'escolar.example.test');
     }
+
+    public function test_configuracao_cacheada_do_proxy_e_aplicada_na_requisicao(): void
+    {
+        config()->set('trustedproxy.proxies', ['127.0.0.1']);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])
+            ->withHeaders([
+                'X-Forwarded-For' => '203.0.113.10',
+                'X-Forwarded-Proto' => 'https',
+                'X-Forwarded-Host' => 'host-falso.invalid',
+            ])
+            ->get('http://escolar.example.test/__teste_proxy')
+            ->assertOk()
+            ->assertJsonPath('ip', '203.0.113.10')
+            ->assertJsonPath('secure', true)
+            ->assertJsonPath('host', 'escolar.example.test');
+    }
 }
