@@ -1,5 +1,12 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-22 | Homologação | União segura dos PRs #26 e #27 sobre o #30
+
+- Branch de integração em rascunho reúne o importador de transporte da SME (#26) e o layout compacto de ficha/endereço (#27) sobre o endereço inteligente e seus avisos (#28, #29 e #30). Os PRs originais permanecem abertos e sem rebase ou merge.
+- CSS, formulário, ficha e testes de StudentRecordWriteTest foram combinados por união: preservam CEP primeiro, complemento, cidade e UF, âncora de edição, apresentação lado a lado, campos manuais e alertas azuis. Nove arquivos não conflitantes do #26 reaproveitam exatamente os blobs revisados.
+- Testes específicos de ficha vazia, isolamento e endereço persistente acompanham a implementação. Pint e suíte PHP/Node/PostgreSQL serão avaliados pelo CI deste PR, sem alterar bancos reais ou notebooks.
+
+
 ## 2026-11-22 | Cadastro manual | Contraste da orientação de CEP
 
 - A dica permanente do CEP usa fonte maior, peso mais forte e texto escuro. A resposta da consulta ganha caixa azul informativa e borda lateral, exibida somente quando houver mensagem.

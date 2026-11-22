@@ -493,3 +493,33 @@ select.entrada{cursor:pointer}
 .conf-lembrete{margin-top:10px;font-size:14px;color:#6b4a0c}
 .conf-lgpd{margin-top:22px}
 @media (max-width:640px){.conf-resumo{grid-template-columns:1fr 1fr}.conf-resumo-item dd{font-size:24px}}
+
+/* Envio de arquivos para importação */
+.envio-form{display:grid;gap:6px;max-width:720px;padding:6px 22px 22px}
+.envio-form .rotulo{margin-top:12px}
+.envio-form .botao{margin-top:18px;justify-self:start}
+.envio-arquivo{padding:9px 10px;cursor:pointer}
+.envio-arquivo::file-selector-button{margin-right:12px;padding:6px 12px;border:1px solid var(--pauta);border-radius:var(--raio-controle);background:var(--caneta-clara);color:var(--caneta-escura);font:inherit;font-weight:700;cursor:pointer}
+.nota.nota-erro{background:#fbeceb;border-color:#efc4bf}
+.nota.nota-erro .icone{color:#8c2f25}
+.nota.nota-erro strong{color:#8c2f25}
+.nota ul{margin:6px 0 0;padding-left:18px}
+.conf-confirmacao{margin-top:16px}
+.conf-fora{margin-top:22px}
+
+/* Ficha do aluno: identificação e endereço lado a lado no mesmo quadro */
+.ficha-grupos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;padding:0 22px 14px}
+.ficha-grupo h3{margin:4px 0 0;font-size:13px;font-weight:700;color:var(--tinta-3);text-transform:none}
+.ficha-escola .ficha-grupo dl{padding:2px 0 6px}
+.ficha-escola .ficha-grupo dd{max-width:62%;overflow-wrap:anywhere}
+.ficha-vazio{margin:10px 0 0;padding:12px 14px;border:1px dashed var(--pauta);border-radius:var(--raio-controle);color:var(--tinta-3);font-size:14px}
+.ficha-vazio a{display:inline-block;margin-left:4px;font-weight:700;color:var(--caneta)}
+@media (max-width:960px){.ficha-grupos{grid-template-columns:1fr}}
+/* Endereço no formulário: logradouro e número na mesma linha; bairro, CEP e zona na seguinte */
+@media (min-width:641px){
+    .grade-endereco{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .grade-endereco .end-logradouro{grid-column:span 3}
+    .grade-endereco .end-complemento{grid-column:span 2}
+    .grade-endereco .end-bairro{grid-column:span 2}
+    .grade-endereco .end-cidade{grid-column:span 2}
+}

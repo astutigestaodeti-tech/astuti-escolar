@@ -273,4 +273,73 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         // O POST acima verifica o erro; este GET verifica a rota de retorno.
         $this->get($this->url())->assertOk()->assertSee('Transporte escolar');
     }
+
+    public function test_lista_da_secretaria_sem_ra_acha_pelo_nome_e_data_e_exige_conferencia(): void
+    {
+        $user = $this->entrar();
+        $csv = "NOME ALUNO;DT NASC;ESCOLA;LINHA;PONTO EMBARQUE;ADAPTADO;SITUACAO\n"
+            ."JOAO FERREIRA;01/01/2017;EMEF A1;LINHA 01;RUA FICTICIA, 10;SIM;ATIVO\n"
+            ."ERICA SILVA;01/01/2018;EMEF A2;LINHA 02;RUA FICTICIA, 20;;ATIVO\n"
+            ."JOAO FERREIRA;02/02/2016;EMEF A1;LINHA 01;RUA FICTICIA, 30;;CANCELADO\n";
+        $response = $this->post($this->url().'/previa', [
+            'arquivo' => $this->csv(iconv('UTF-8', 'Windows-1252', $csv)), 'school_year_id' => $this->yearId,
+        ])->assertOk();
+        $html = $response->getContent();
+
+        $this->assertStringContainsString('Achados pelo nome (confira)', $html);
+        $this->assertStringContainsString('Nome e data de nascimento', $html);
+        $this->assertStringContainsString('Linhas que ficam de fora', $html);
+        $this->assertStringContainsString('EMEF A2', $html);
+        $this->assertSame(2, substr_count($html, 'Não encontrado entre as matrículas ativas desta escola neste ano.'));
+        $this->assertStringNotContainsString('RUA FICTICIA', $html, 'Ponto de embarque nao aparece nem e guardado.');
+        $this->assertStringContainsString('name="conferido_nomes"', $html);
+        $this->assertSame(1, preg_match('/name="lote" value="([^"]+)"/', $html, $match));
+
+        // Sem marcar a conferencia dos alunos achados pelo nome, nada muda.
+        $this->post($this->url().'/confirmar', ['lote' => $match[1]])->assertSessionHasErrors('conferido_nomes');
+        $this->assertNull($this->transportStatus($this->enrollmentA));
+
+        $this->post($this->url().'/confirmar', ['lote' => $match[1], 'conferido_nomes' => '1'])
+            ->assertRedirect($this->url())->assertSessionHas('status');
+        $this->assertSame('active', $this->transportStatus($this->enrollmentA));
+        $this->assertNull($this->transportStatus($this->enrollmentB), 'Aluno de outra escola nao muda.');
+        $this->assertSame(1, app(TenantContext::class)->runFor($this->municipioA, fn (): int => AuditLog::query()
+            ->where('auditable_type', StudentEnrollment::class)->where('action', 'updated')->where('user_id', $user->id)->count()));
+    }
+
+    public function test_homonimo_com_mesma_data_fica_de_fora_e_pede_ra(): void
+    {
+        $this->entrar();
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $twin = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'João Ferreira', 'birth_date' => '2017-01-01']);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $twin->id,
+                'school_id' => self::ESCOLA_A1, 'school_year_id' => $this->yearId, 'status' => 'active',
+            ]);
+        });
+
+        $this->from($this->url())->post($this->url().'/previa', [
+            'arquivo' => $this->csv("NOME;DT NASC;SITUACAO\nJoão Ferreira;01/01/2017;SIM\n"), 'school_year_id' => $this->yearId,
+        ])->assertRedirect($this->url())->assertSessionHasErrors('arquivo');
+
+        $html = $this->post($this->url().'/previa', [
+            'arquivo' => $this->csv("RA;NOME;DT NASC;SITUACAO\n999000000001-6/SP;João Ferreira;01/01/2017;SIM\n;João Ferreira;01/01/2017;NÃO\n"),
+            'school_year_id' => $this->yearId,
+        ])->assertOk()->getContent();
+        $this->assertStringContainsString('Mais de um aluno desta escola com este nome e data. Use o RA.', $html);
+        $this->assertStringNotContainsString('name="conferido_nomes"', $html, 'Achado pelo RA nao pede conferencia por nome.');
+    }
+
+    public function test_cancelado_na_lista_mista_fica_de_fora_sem_travar_os_demais(): void
+    {
+        $this->entrar();
+        app(TenantContext::class)->runFor($this->municipioA, fn () => StudentEnrollment::query()->findOrFail($this->enrollmentA)->update(['transport_status' => 'cancelled']));
+        $html = $this->post($this->url().'/previa', [
+            'arquivo' => $this->csv("RA;SITUACAO\n999000000001-6/SP;ATIVO\n999000000002-8/SP;SIM\n"),
+            'school_year_id' => $this->yearId,
+        ]);
+        // Nenhuma linha aplicavel: cancelado nao reativa e o outro RA e de outra escola.
+        $html->assertSessionHasErrors('arquivo');
+        $this->assertSame('cancelled', $this->transportStatus($this->enrollmentA));
+    }
 }

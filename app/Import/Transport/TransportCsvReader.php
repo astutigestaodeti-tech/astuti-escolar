@@ -12,7 +12,7 @@ class TransportCsvReader
 {
     private const MAX_ROWS = 500;
 
-    /** @return list<array{ra: string, name: ?string, status: string, line: int}> */
+    /** @return list<array{ra: ?string, name: ?string, birth_date: ?string, school: ?string, status: string, line: int}> */
     public function read(string $path): array
     {
         $stream = fopen($path, 'rb');
@@ -59,21 +59,36 @@ class TransportCsvReader
                     continue;
                 }
 
-                $ra = ImportText::ra($cells[$columns['ra']] ?? null);
-                if ($ra === null) {
-                    throw new TransportCsvException('RA ausente ou inválido na linha '.$line.'.');
+                // Identificação: RA quando houver; senão, nome com data de nascimento.
+                // A lista da Secretaria (SME) não traz RA e cobre várias escolas.
+                $rawRa = isset($columns['ra']) ? ImportText::clean($cells[$columns['ra']] ?? null) : null;
+                $ra = null;
+                if ($rawRa !== null) {
+                    $ra = ImportText::ra($rawRa);
+                    if ($ra === null) {
+                        throw new TransportCsvException('RA inválido na linha '.$line.': "'.$rawRa.'".');
+                    }
+                    $ra = preg_replace('/\A(\d{9,12})-?([\dX]\/\w{2})\z/', '$1-$2', strtoupper($ra)) ?? $ra;
                 }
 
-                $ra = preg_replace('/\A(\d{9,12})-?([\dX]\/\w{2})\z/', '$1-$2', strtoupper($ra)) ?? $ra;
-                $key = str_replace('-', '', $ra);
+                $name = isset($columns['name']) ? ImportText::personName($cells[$columns['name']] ?? null) : null;
+                $birth = isset($columns['birth']) ? $this->date($cells[$columns['birth']] ?? null) : null;
+                $school = isset($columns['school']) ? ImportText::clean($cells[$columns['school']] ?? null) : null;
+                if ($ra === null && $name === null) {
+                    throw new TransportCsvException('A linha '.$line.' não tem RA nem nome do aluno.');
+                }
+
+                $key = $ra !== null
+                    ? 'ra:'.str_replace('-', '', $ra)
+                    : 'nome:'.ImportText::key($name).'|'.($birth ?? '').'|'.ImportText::key($school);
                 if (isset($seen[$key])) {
-                    throw new TransportCsvException('RA repetido nas linhas '.$seen[$key].' e '.$line.'.');
+                    throw new TransportCsvException(($ra !== null ? 'RA repetido' : 'Aluno repetido').' nas linhas '.$seen[$key].' e '.$line.'.');
                 }
                 $seen[$key] = $line;
 
                 $status = match (ImportText::key($cells[$columns['status']] ?? null)) {
-                    'sim', 'ativo', 'ativa', 'atendido', 'atendida' => 'active',
-                    'nao', 'sem transporte' => 'not_requested',
+                    'sim', 's', 'ativo', 'ativa', 'atendido', 'atendida' => 'active',
+                    'nao', 'n', 'sem transporte' => 'not_requested',
                     'cancelado', 'cancelada' => 'cancelled',
                     default => null,
                 };
@@ -81,8 +96,7 @@ class TransportCsvReader
                     throw new TransportCsvException('Situação de transporte desconhecida na linha '.$line.'.');
                 }
 
-                $name = isset($columns['name']) ? ImportText::personName($cells[$columns['name']] ?? null) : null;
-                $rows[] = ['ra' => $ra, 'name' => $name, 'status' => $status, 'line' => $line];
+                $rows[] = ['ra' => $ra, 'name' => $name, 'birth_date' => $birth, 'school' => $school, 'status' => $status, 'line' => $line];
                 if (count($rows) > self::MAX_ROWS) {
                     throw new TransportCsvException('O CSV excede 500 alunos. Divida a lista por escola.');
                 }
@@ -98,34 +112,59 @@ class TransportCsvReader
         }
     }
 
+    private const HEADERS = [
+        'ra' => ['ra', 'r a', 'ra sed', 'ra do aluno', 'registro do aluno', 'ra ficticio'],
+        'status' => ['situacao', 'status', 'transporte', 'utiliza transporte', 'utiliza transporte escolar', 'situacao do transporte'],
+        'name' => ['nome', 'aluno', 'nome aluno', 'nome do aluno', 'nome completo'],
+        'birth' => ['dt nasc', 'data nasc', 'nascimento', 'data de nascimento', 'data nascimento', 'dt nascimento'],
+        'school' => ['escola', 'unidade', 'unidade escolar', 'nome da escola'],
+    ];
+
+    private const LABELS = ['ra' => 'RA', 'status' => 'situação do transporte', 'name' => 'nome', 'birth' => 'data de nascimento', 'school' => 'escola'];
+
     private function columns(array $header): array
     {
         $columns = [];
         foreach ($header as $index => $value) {
             $key = ImportText::key($value);
-            if (in_array($key, ['ra', 'r a', 'ra sed', 'registro do aluno'], true)) {
-                if (isset($columns['ra'])) {
-                    throw new TransportCsvException('Cabeçalho ambíguo: mais de uma coluna de RA.');
+            foreach (self::HEADERS as $field => $names) {
+                if (in_array($key, $names, true)) {
+                    if (isset($columns[$field])) {
+                        throw new TransportCsvException('Cabeçalho ambíguo: mais de uma coluna de '.self::LABELS[$field].'.');
+                    }
+                    $columns[$field] = $index;
                 }
-                $columns['ra'] = $index;
-            } elseif (in_array($key, ['situacao', 'status', 'transporte', 'utiliza transporte escolar', 'situacao do transporte'], true)) {
-                if (isset($columns['status'])) {
-                    throw new TransportCsvException('Cabeçalho ambíguo: mais de uma coluna de situação do transporte.');
-                }
-                $columns['status'] = $index;
-            } elseif (in_array($key, ['nome', 'aluno', 'nome do aluno', 'nome completo'], true)) {
-                if (isset($columns['name'])) {
-                    throw new TransportCsvException('Cabeçalho ambíguo: mais de uma coluna de nome.');
-                }
-                $columns['name'] = $index;
             }
         }
 
-        if (isset($columns['ra'], $columns['status']) === false) {
-            throw new TransportCsvException('O CSV precisa das colunas RA e situação do transporte.');
+        if (! isset($columns['status']) || (! isset($columns['ra']) && ! isset($columns['name']))) {
+            $found = array_map(fn (string $field): string => self::LABELS[$field], array_keys($columns));
+            throw new TransportCsvException(
+                'O CSV precisa da coluna Situação e de uma forma de identificar o aluno: RA, ou Nome com Data de nascimento. '
+                .($found === [] ? 'Nenhuma dessas colunas foi reconhecida no cabeçalho.' : 'Colunas reconhecidas: '.implode(', ', $found).'.')
+            );
         }
 
         return $columns;
+    }
+
+    /** Aceita 31/12/2019, 31-12-2019 e 2019-12-31; data impossível vira null. */
+    private function date(?string $value): ?string
+    {
+        $value = ImportText::clean($value);
+        if ($value === null) {
+            return null;
+        }
+
+        if (preg_match('/\A(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\z/', $value, $m) === 1) {
+            [$day, $month, $year] = [(int) $m[1], (int) $m[2], (int) $m[3]];
+        } elseif (preg_match('/\A(\d{4})-(\d{2})-(\d{2})\z/', $value, $m) === 1) {
+            [$year, $month, $day] = [(int) $m[1], (int) $m[2], (int) $m[3]];
+        } else {
+            return null;
+        }
+
+        return checkdate($month, $day, $year) ? sprintf('%04d-%02d-%02d', $year, $month, $day) : null;
     }
 
     private function toUtf8(string $value): string

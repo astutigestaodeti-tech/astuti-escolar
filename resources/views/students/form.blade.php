@@ -122,11 +122,11 @@
                     <p class="texto-ajuda">A turma deve pertencer a esta escola e ao mesmo ano letivo da matrícula. Se ainda não foi definida, deixe em branco.</p>
                 </div>
 
-                <fieldset class="grupo-endereco"
+                <fieldset class="grupo-endereco" id="endereco"
                           data-postal-lookup-url="{{ route('school.students.postal.lookup', ['municipio' => $municipality->slug, 'escola' => $school->id, 'cep' => '__CEP__']) }}">
                     <legend>Endereço</legend>
                     <p class="texto-ajuda">Comece pelo CEP. O sistema sugere rua, bairro, cidade e estado quando disponíveis. Confira e corrija o que precisar. Todos os campos são opcionais.</p>
-                    <div class="formulario-grade">
+                    <div class="formulario-grade grade-endereco">
                         <div class="formulario-campo largo">
                             <label class="rotulo" for="postal_code">CEP</label>
                             <div class="cep-busca">
@@ -140,7 +140,7 @@
                             <p class="texto-ajuda" id="postal-lookup-status" data-postal-status role="status" aria-live="polite"></p>
                             @error('postal_code')<p class="campo-erro" id="postal_code-erro">{{ $message }}</p>@enderror
                         </div>
-                        <div class="formulario-campo largo">
+                        <div class="formulario-campo end-logradouro">
                             <label class="rotulo" for="address_street">Logradouro</label>
                             <input class="entrada" id="address_street" name="address_street" type="text" maxlength="180" autocomplete="address-line1"
                                    value="{{ old('address_street', $student?->address_street) }}"
@@ -154,21 +154,21 @@
                                    @error('address_number') aria-invalid="true" aria-describedby="address_number-erro" @enderror>
                             @error('address_number')<p class="campo-erro" id="address_number-erro">{{ $message }}</p>@enderror
                         </div>
-                        <div class="formulario-campo">
+                        <div class="formulario-campo end-complemento">
                             <label class="rotulo" for="address_complement">Complemento</label>
                             <input class="entrada" id="address_complement" name="address_complement" type="text" maxlength="180" autocomplete="address-line2"
                                    value="{{ old('address_complement', $student?->address_complement) }}"
                                    @error('address_complement') aria-invalid="true" aria-describedby="address_complement-erro" @enderror>
                             @error('address_complement')<p class="campo-erro" id="address_complement-erro">{{ $message }}</p>@enderror
                         </div>
-                        <div class="formulario-campo">
+                        <div class="formulario-campo end-bairro">
                             <label class="rotulo" for="address_district">Bairro</label>
                             <input class="entrada" id="address_district" name="address_district" type="text" maxlength="120"
                                    value="{{ old('address_district', $student?->address_district) }}"
                                    @error('address_district') aria-invalid="true" aria-describedby="address_district-erro" @enderror>
                             @error('address_district')<p class="campo-erro" id="address_district-erro">{{ $message }}</p>@enderror
                         </div>
-                        <div class="formulario-campo">
+                        <div class="formulario-campo end-cidade">
                             <label class="rotulo" for="address_city">Cidade</label>
                             <input class="entrada" id="address_city" name="address_city" type="text" maxlength="120" autocomplete="address-level2"
                                    value="{{ old('address_city', $student?->address_city) }}"
