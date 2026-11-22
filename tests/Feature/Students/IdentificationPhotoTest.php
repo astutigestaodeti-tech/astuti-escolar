@@ -10,6 +10,7 @@ use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentGuardian;
 use App\Models\User;
 use App\Security\Totp;
+use App\Support\UploadLimit;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -165,6 +166,46 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
 
         $this->user('school_secretary', [self::ESCOLA_A2]);
         $this->get($this->url('aluno', $this->student))->assertForbidden();
+    }
+
+    public function test_foto_acima_do_limite_do_servidor_explica_o_motivo_e_png_grande_e_aceito(): void
+    {
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        // O PHP descarta o arquivo acima de upload_max_filesize e marca o erro de tamanho.
+        $temp = tempnam(sys_get_temp_dir(), 'foto');
+        $rejected = new UploadedFile($temp, 'menina.png', 'image/png', UPLOAD_ERR_INI_SIZE, true);
+        $this->from('/ficha')->post($this->url('aluno', $this->student), ['foto' => $rejected])
+            ->assertRedirect('/ficha')
+            ->assertSessionHasErrors(['foto' => 'A foto é maior que o limite de envio deste servidor ('.UploadLimit::label().'). Escolha uma foto menor ou recorte a imagem.']);
+
+        $partial = new UploadedFile($temp, 'menina.png', 'image/png', UPLOAD_ERR_PARTIAL, true);
+        $this->post($this->url('aluno', $this->student), ['foto' => $partial])
+            ->assertSessionHasErrors(['foto' => 'A foto não chegou completa. Tente enviar de novo.']);
+
+        // PNG quadrado grande, como os gerados por IA, entra normalmente.
+        $image = imagecreatetruecolor(1254, 1254);
+        imagefill($image, 0, 0, imagecolorallocate($image, 220, 90, 80));
+        ob_start();
+        imagepng($image);
+        $png = UploadedFile::fake()->createWithContent('menina.png', (string) ob_get_clean());
+        $this->post($this->url('aluno', $this->student), ['foto' => $png])->assertSessionHas('status', 'Foto adicionada.');
+    }
+
+    public function test_ficha_reduz_a_foto_no_navegador_e_envio_grande_demais_mostra_pagina_clara(): void
+    {
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->student)
+            ->assertOk()
+            ->assertSee('data-foto-reduzir data-limite-bytes="'.UploadLimit::bytes().'"', false)
+            ->assertSee('js/foto-identificacao.js', false)
+            ->assertSee('class="foto-id-situacao" aria-live="polite"', false);
+
+        $this->call('POST', $this->url('aluno', $this->student), [], [], [], ['CONTENT_LENGTH' => (string) (UploadLimit::iniBytes((string) ini_get('post_max_size')) + 1)])
+            ->assertStatus(413)
+            ->assertSee('Arquivo grande demais')
+            ->assertSee('escolha um arquivo menor ou recorte a imagem');
     }
 
     public function test_foto_do_aluno_com_mais_de_um_ano_pede_atualizacao(): void

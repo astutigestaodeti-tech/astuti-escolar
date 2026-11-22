@@ -20,8 +20,9 @@
             <form method="POST" action="{{ route('school.photos.update', $rotaFoto) }}" enctype="multipart/form-data">
                 @csrf
                 <label class="sr-only" for="foto-{{ $tipo }}-{{ $id }}">Foto de {{ $nome }}</label>
-                <input id="foto-{{ $tipo }}-{{ $id }}" type="file" name="foto" accept="image/jpeg,image/png,image/webp" required>
+                <input id="foto-{{ $tipo }}-{{ $id }}" type="file" name="foto" accept="image/jpeg,image/png,image/webp" required data-foto-reduzir data-limite-bytes="{{ \App\Support\UploadLimit::bytes() }}">
                 <button class="botao secundario" type="submit">Enviar foto</button>
+                <p class="foto-id-situacao" aria-live="polite"></p>
             </form>
             @if ($temFoto)
                 <form method="POST" action="{{ route('school.photos.destroy', $rotaFoto) }}">
@@ -33,3 +34,8 @@
         </details>
     @endif
 </div>
+@if ($podeAlterar)
+    @once
+        <script type="module" src="{{ asset('js/foto-identificacao.js') }}?v={{ filemtime(public_path('js/foto-identificacao.js')) }}"></script>
+    @endonce
+@endif
