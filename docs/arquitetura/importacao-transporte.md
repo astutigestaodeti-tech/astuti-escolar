@@ -28,3 +28,13 @@ O arquivo não é guardado no servidor. O token de confirmação guarda apenas I
 ## Limitação assumida
 
 O CSV original da lista de transporte da pasta 02 de Monte Sereno **não está no repositório**. Os testes demonstram o formato documentado usando alunos sintéticos. Antes de afirmar compatibilidade com o arquivo real, é obrigatório confrontar os cabeçalhos e valores da fonte recebida e ajustar o leitor, sem importar dados reais em desenvolvimento.
+
+## Lista da Secretaria sem RA (21/11/2026)
+
+A lista real do kit (`SME_lista_transporte_escolar.csv`) vem da Secretaria, sem RA, em Windows-1252, com nomes em caixa alta e sem acento, e cobre as três escolas.
+
+- Identificação: RA quando houver; senão, nome sem acento mais data de nascimento, só entre as matrículas ativas da escola e do ano escolhidos. Sem data, a identificação é só pelo nome.
+- Alunos achados pelo nome exigem a marcação "Conferi..." antes de gravar (`conferido_nomes`).
+- Linhas que não correspondem a uma matrícula ativa da escola (outras escolas, transferidos), homônimos e transporte cancelado que o arquivo tenta reativar não travam o lote: aparecem em "Linhas que ficam de fora" e não são gravadas. A mensagem não revela se o aluno existe em outra escola.
+- Nome que contradiz o RA e o mesmo aluno em duas linhas continuam recusando o arquivo inteiro. Se nenhuma linha puder ser aplicada, o arquivo é recusado com explicação.
+- Linha, ponto de embarque e "adaptado" são ignorados e não são guardados.

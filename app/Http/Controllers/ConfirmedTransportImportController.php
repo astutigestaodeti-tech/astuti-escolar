@@ -68,24 +68,65 @@ class ConfirmedTransportImportController extends Controller
             throw ValidationException::withMessages(['arquivo' => $exception->getMessage()]);
         }
 
+        // Matrículas ativas desta escola e ano, indexadas por nome sem acento.
+        $active = StudentEnrollment::query()->where('school_id', $school->id)
+            ->where('school_year_id', $year->id)->where('status', 'active')->get()->groupBy('student_id');
+        $studentsById = Student::query()->whereIn('id', $active->keys())->get()->keyBy('id');
+        $byName = [];
+        foreach ($studentsById as $student) {
+            $byName[ImportText::key($student->full_name)][] = $student;
+        }
+
         $rows = [];
         $payloadRows = [];
+        $skipped = [];
+        $usedEnrollments = [];
         foreach ($inputRows as $entry) {
-            $student = Student::query()->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$entry['ra']])->first();
-            $enrollments = $student === null ? collect() : StudentEnrollment::query()
-                ->where('student_id', $student->id)->where('school_id', $school->id)
-                ->where('school_year_id', $year->id)->where('status', 'active')->limit(2)->get();
-            $enrollment = $enrollments->count() === 1 ? $enrollments->first() : null;
+            $match = 'ra';
+            $student = null;
+            if ($entry['ra'] !== null) {
+                $student = Student::query()->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$entry['ra']])->first();
+                // Nome diferente do RA é dado contraditório: nada é gravado.
+                if ($student !== null && $entry['name'] !== null && ImportText::key($entry['name']) !== ImportText::key($student->full_name)) {
+                    throw ValidationException::withMessages(['arquivo' => 'O nome da linha '.$entry['line'].' não confere com o RA. Nenhuma alteração foi feita.']);
+                }
+            } else {
+                $match = $entry['birth_date'] !== null ? 'nome_data' : 'nome';
+                $candidates = array_values(array_filter(
+                    $byName[ImportText::key($entry['name'])] ?? [],
+                    fn (Student $candidate): bool => $entry['birth_date'] === null
+                        || $candidate->birth_date?->format('Y-m-d') === $entry['birth_date'],
+                ));
+                if (count($candidates) > 1) {
+                    $skipped[] = $this->skippedRow($entry, 'Mais de um aluno desta escola com este nome'.($entry['birth_date'] === null ? '' : ' e data').'. Use o RA.');
 
-            // A mensagem evita revelar se o RA pertence a outra escola.
-            if ($enrollment === null || $student === null) {
-                throw ValidationException::withMessages(['arquivo' => 'A linha '.$entry['line'].' não corresponde a matrícula ativa desta escola e ano. Confira o RA.']);
+                    continue;
+                }
+                $student = $candidates[0] ?? null;
             }
-            if ($entry['name'] !== null && ImportText::key($entry['name']) !== ImportText::key($student->full_name)) {
-                throw ValidationException::withMessages(['arquivo' => 'O nome da linha '.$entry['line'].' não confere com o RA. Nenhuma alteração foi feita.']);
+
+            $enrollments = $student === null ? collect() : ($active->get($student->id) ?? collect());
+            // A mensagem não revela se o aluno existe em outra escola.
+            if ($student === null || $enrollments->count() === 0) {
+                $skipped[] = $this->skippedRow($entry, 'Não encontrado entre as matrículas ativas desta escola neste ano.');
+
+                continue;
             }
+            if ($enrollments->count() > 1) {
+                $skipped[] = $this->skippedRow($entry, 'O aluno tem mais de uma matrícula ativa nesta escola. Resolva antes na ficha do aluno.');
+
+                continue;
+            }
+            $enrollment = $enrollments->first();
+            if (isset($usedEnrollments[$enrollment->id])) {
+                throw ValidationException::withMessages(['arquivo' => 'As linhas '.$usedEnrollments[$enrollment->id].' e '.$entry['line'].' indicam o mesmo aluno. Corrija o arquivo.']);
+            }
+            $usedEnrollments[$enrollment->id] = $entry['line'];
+
             if ($enrollment->transport_status === 'cancelled' && $entry['status'] !== 'cancelled') {
-                throw ValidationException::withMessages(['arquivo' => 'A linha '.$entry['line'].' tenta reativar transporte cancelado. Encaminhe para revisão manual.']);
+                $skipped[] = $this->skippedRow($entry, 'O transporte deste aluno está cancelado. Reativar só por revisão manual.');
+
+                continue;
             }
 
             $version = DB::connection('tenant')->selectOne('SELECT xmin::text AS row_version FROM student_enrollments WHERE id = ?', [$enrollment->id]);
@@ -93,17 +134,23 @@ class ConfirmedTransportImportController extends Controller
                 'name' => $student->full_name,
                 'ra' => $student->ra,
                 'line' => $entry['line'],
+                'match' => $match,
                 'current_status' => $enrollment->transport_status,
                 'desired_status' => $entry['status'],
             ];
             $payloadRows[] = [
                 'enrollment_id' => $enrollment->id,
                 'student_id' => $student->id,
-                'ra' => $entry['ra'],
+                'ra' => (string) $student->ra,
+                'match' => $match,
                 'current_status' => $enrollment->transport_status,
                 'desired_status' => $entry['status'],
                 'version' => $version->row_version,
             ];
+        }
+
+        if ($payloadRows === []) {
+            throw ValidationException::withMessages(['arquivo' => 'Nenhuma linha do arquivo corresponde a uma matrícula ativa desta escola em '.$year->year.' que possa ser atualizada. Confira a escola, o ano letivo e o arquivo.']);
         }
 
         $payload = [
@@ -117,7 +164,7 @@ class ConfirmedTransportImportController extends Controller
         ];
         $token = Crypt::encryptString(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
 
-        return view('imports.transport-review', compact('municipality', 'school', 'year', 'rows', 'token'));
+        return view('imports.transport-review', compact('municipality', 'school', 'year', 'rows', 'skipped', 'token'));
     }
 
     public function confirm(Request $request, string $municipio, string $escola): RedirectResponse
@@ -159,11 +206,18 @@ class ConfirmedTransportImportController extends Controller
                 || ! in_array($row['desired_status'] ?? null, ['active', 'not_requested', 'cancelled'], true)
                 || ! in_array($row['current_status'] ?? null, [null, 'active', 'not_requested', 'cancelled'], true)
                 || ! is_string($row['ra'] ?? null)
+                || ! in_array($row['match'] ?? 'ra', ['ra', 'nome_data', 'nome'], true)
                 || ! is_string($row['version'] ?? null)
                 || isset($seen[$row['enrollment_id']])) {
                 throw ValidationException::withMessages(['lote' => 'A prévia contém registros inválidos ou repetidos.']);
             }
             $seen[$row['enrollment_id']] = true;
+        }
+
+        // Alunos achados pelo nome (lista da Secretaria, sem RA) exigem conferência explícita.
+        $byName = array_filter($payload['rows'], fn (array $row): bool => ($row['match'] ?? 'ra') !== 'ra');
+        if ($byName !== [] && ! $request->boolean('conferido_nomes')) {
+            throw ValidationException::withMessages(['conferido_nomes' => 'Confira os alunos identificados pelo nome e marque a confirmação antes de gravar.']);
         }
 
         try {
@@ -259,5 +313,16 @@ class ConfirmedTransportImportController extends Controller
         return app(TwoFactorSession::class)->isVerified($request, $request->user()->fresh())
             ? null
             : redirect()->guest(route('two-factor.challenge'));
+    }
+
+    /** Linha que não será aplicada: só dados do próprio arquivo, sem consultar outras escolas. */
+    private function skippedRow(array $entry, string $reason): array
+    {
+        return [
+            'line' => $entry['line'],
+            'name' => $entry['name'] ?? $entry['ra'],
+            'school' => $entry['school'],
+            'reason' => $reason,
+        ];
     }
 }

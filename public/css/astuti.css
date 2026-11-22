@@ -488,3 +488,16 @@ select.entrada{cursor:pointer}
 .conf-lembrete{margin-top:10px;font-size:14px;color:#6b4a0c}
 .conf-lgpd{margin-top:22px}
 @media (max-width:640px){.conf-resumo{grid-template-columns:1fr 1fr}.conf-resumo-item dd{font-size:24px}}
+
+/* Envio de arquivos para importação */
+.envio-form{display:grid;gap:6px;max-width:720px;padding:6px 22px 22px}
+.envio-form .rotulo{margin-top:12px}
+.envio-form .botao{margin-top:18px;justify-self:start}
+.envio-arquivo{padding:9px 10px;cursor:pointer}
+.envio-arquivo::file-selector-button{margin-right:12px;padding:6px 12px;border:1px solid var(--pauta);border-radius:var(--raio-controle);background:var(--caneta-clara);color:var(--caneta-escura);font:inherit;font-weight:700;cursor:pointer}
+.nota.nota-erro{background:#fbeceb;border-color:#efc4bf}
+.nota.nota-erro .icone{color:#8c2f25}
+.nota.nota-erro strong{color:#8c2f25}
+.nota ul{margin:6px 0 0;padding-left:18px}
+.conf-confirmacao{margin-top:16px}
+.conf-fora{margin-top:22px}

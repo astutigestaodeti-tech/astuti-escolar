@@ -26,7 +26,7 @@ class TransportCsvReaderTest extends TestCase
         $rows = $this->ler(iconv('UTF-8', 'Windows-1252', $csv));
 
         $this->assertCount(3, $rows);
-        $this->assertSame(['ra' => '999000000001-6/SP', 'name' => 'João Ferreira', 'status' => 'active', 'line' => 2], $rows[0]);
+        $this->assertSame(['ra' => '999000000001-6/SP', 'name' => 'João Ferreira', 'birth_date' => null, 'school' => null, 'status' => 'active', 'line' => 2], $rows[0]);
         $this->assertSame('not_requested', $rows[1]['status']);
         $this->assertSame('Érica Silva', $rows[1]['name']);
         $this->assertSame('cancelled', $rows[2]['status']);
@@ -60,7 +60,7 @@ class TransportCsvReaderTest extends TestCase
     public function test_rejeita_arquivo_sem_colunas_essenciais(): void
     {
         $this->expectException(TransportCsvException::class);
-        $this->expectExceptionMessage('RA e situação');
+        $this->expectExceptionMessage('O CSV precisa da coluna Situação e de uma forma de identificar o aluno');
 
         $this->ler("ALUNO;TELEFONE\nEstudante fictício;000000000\n");
     }
@@ -96,5 +96,31 @@ class TransportCsvReaderTest extends TestCase
         $this->assertCount(1, $rows);
         $this->assertSame('active', $rows[0]['status']);
         $this->assertArrayNotHasKey('observacao', $rows[0]);
+    }
+
+    public function test_le_a_lista_da_secretaria_do_kit_sem_ra(): void
+    {
+        $rows = (new TransportCsvReader)->read(__DIR__.'/../../Fixtures/kit-monte-sereno/SME_lista_transporte_escolar.csv');
+
+        $this->assertCount(28, $rows);
+        $this->assertSame(['active' => 26, 'cancelled' => 2], array_count_values(array_column($rows, 'status')));
+        $this->assertSame([null], array_values(array_unique(array_column($rows, 'ra'))));
+        $this->assertSame(['ra' => null, 'name' => 'Yasmin Costa Dias', 'birth_date' => '2023-10-01', 'school' => 'EMEI AURORA', 'status' => 'active', 'line' => 2], $rows[0]);
+        $this->assertNotContains(null, array_column($rows, 'birth_date'));
+    }
+
+    public function test_sem_ra_nem_nome_explica_as_colunas_reconhecidas(): void
+    {
+        $this->expectException(TransportCsvException::class);
+        $this->expectExceptionMessage('Colunas reconhecidas: situação do transporte, escola.');
+
+        $this->ler("SITUACAO;ESCOLA;LINHA\nATIVO;EMEF;LINHA 01\n");
+    }
+
+    public function test_data_impossivel_nao_vira_data(): void
+    {
+        $rows = $this->ler("NOME;DT NASC;SITUACAO\nAluno Ficticio;31/02/2019;SIM\n");
+
+        $this->assertNull($rows[0]['birth_date']);
     }
 }
