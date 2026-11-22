@@ -418,7 +418,7 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         [$withSelection, , $html] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
         $this->assertStringContainsString('name="completar_enderecos[]"', $html);
         $this->post($this->url().'/confirmar', ['lote' => $withSelection, 'completar_enderecos' => [0]])
-            ->assertRedirect($this->url())->assertSessionHas('status', fn (string $message): bool => str_contains($message, '1 endereço'));
+            ->assertRedirect($this->url())->assertSessionHas('status', fn (string $message): bool => str_contains($message, '1 cadastro completado'));
 
         [$after, $audits] = app(TenantContext::class)->runFor($this->municipioA, fn (): array => [
             Student::query()->findOrFail($studentId),
@@ -629,13 +629,209 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
      * Monta um XLSX verdadeiro a partir das linhas da E02 já conferidas,
      * acrescentando uma aluna fictícia para testar a prévia completa.
      */
+    /** Lista fictícia no formato da SED, com as colunas do Censo Escolar. */
+    private const CABECALHO_CENSO = ['Nome', 'Data de nascimento', 'Turma', 'Sexo', 'Cor/Raça', 'Nacionalidade', 'Naturalidade', 'CPF do aluno', 'Nome social'];
+
+    /** @return list<array<string, mixed>> */
+    private function linhasDoLote(string $token): array
+    {
+        return json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR)['rows'];
+    }
+
+    private function linhaDe(array $rows, string $name): array
+    {
+        foreach ($rows as $row) {
+            if ($row['name'] === $name) {
+                return $row;
+            }
+        }
+        $this->fail('Aluno '.$name.' não está na prévia.');
+    }
+
+    public function test_importacao_grava_dados_do_censo_e_deixa_invalidos_e_repetidos_pendentes(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $file = $this->planilha([
+            self::CABECALHO_CENSO,
+            ['ANA CLARA FICTÍCIA', '01/02/2020', '1A', 'F', 'Parda', 'Brasileira', 'RECIFE/PE', '529.982.247-25', ''],
+            ['Bruno Teste Fictício', '03/04/2020', '1A', 'Masculino', 'Azul', 'brasileiro', 'Monte Sereno', '111.222.333-44', 'Bruna Teste'],
+            ['Carla Repetida Um', '05/06/2020', '1A', 'Feminino', 'Branca', 'Estrangeira', 'Lisboa', '39053344705', ''],
+            ['Daniel Repetido Dois', '07/08/2020', '1A', 'M', 'Não declarada', 'Naturalizado', 'Guarulhos - SP', '390.533.447-05', ''],
+        ]);
+        try {
+            [$token, , $html] = $this->preparar('censo.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        // A tela mostra que o CPF foi conferido, sem exibir o número.
+        $this->assertStringNotContainsString('529.982.247-25', $html);
+        $this->assertStringContainsString('CPF válido', $html);
+        $this->assertStringContainsString('Natural de Recife/PE', $html);
+
+        $rows = $this->linhasDoLote($token);
+        $this->assertSame([
+            'sex' => 'female', 'race_color' => 'parda', 'nationality' => 'brasileira',
+            'birthplace_city' => 'Recife', 'birthplace_state' => 'PE', 'cpf' => '529.982.247-25',
+        ], $this->linhaDe($rows, 'Ana Clara Fictícia')['census']);
+
+        $bruno = $this->linhaDe($rows, 'Bruno Teste Fictício');
+        $this->assertSame(['social_name' => 'Bruna Teste', 'sex' => 'male', 'nationality' => 'brasileira', 'birthplace_city' => 'Monte Sereno'], $bruno['census']);
+        $pendencias = implode(' | ', array_column($bruno['pending'], 'message'));
+        $this->assertStringContainsString('Cor/raça "Azul" não corresponde', $pendencias);
+        $this->assertStringContainsString('Naturalidade "Monte Sereno" sem cidade e UF', $pendencias);
+        $this->assertStringContainsString('CPF do aluno inválido', $pendencias);
+
+        foreach (['Carla Repetida Um', 'Daniel Repetido Dois'] as $name) {
+            $row = $this->linhaDe($rows, $name);
+            $this->assertArrayNotHasKey('cpf', $row['census']);
+            $this->assertContains('O mesmo CPF aparece em mais de um aluno desta planilha; não foi importado. Confira os documentos e informe na ficha.', array_column($row['pending'], 'message'));
+        }
+        $this->assertSame('naturalizada', $this->linhaDe($rows, 'Daniel Repetido Dois')['census']['nationality']);
+        $this->assertSame('SP', $this->linhaDe($rows, 'Daniel Repetido Dois')['census']['birthplace_state']);
+
+        // Pendências do Censo não impedem a gravação.
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+        $this->assertSame([4, 4, 1], $this->contagens());
+
+        [$ana, $brunoSalvo] = app(TenantContext::class)->runFor($this->municipioA, fn (): array => [
+            Student::query()->where('full_name', 'Ana Clara Fictícia')->firstOrFail(),
+            Student::query()->where('full_name', 'Bruno Teste Fictício')->firstOrFail(),
+        ]);
+        $this->assertSame(['female', 'parda', 'brasileira', 'Recife', 'PE', '529.982.247-25'], [$ana->sex, $ana->race_color, $ana->nationality, $ana->birthplace_city, $ana->birthplace_state, $ana->cpf]);
+        $this->assertSame(['Bruna Teste', 'male', null, null], [$brunoSalvo->social_name, $brunoSalvo->sex, $brunoSalvo->race_color, $brunoSalvo->cpf]);
+    }
+
+    public function test_cpf_de_outro_aluno_nao_e_importado_e_reimportacao_so_completa_censo_vazio_com_marcacao(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $primeira = $this->planilha([
+            self::CABECALHO_CENSO,
+            ['Ana Clara Fictícia', '01/02/2020', '1A', 'F', '', '', '', '529.982.247-25', ''],
+        ]);
+        try {
+            [$token] = $this->preparar('censo.xlsx', self::ESCOLA_A1, $primeira);
+        } finally {
+            unlink($primeira);
+        }
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+
+        $segunda = $this->planilha([
+            self::CABECALHO_CENSO,
+            // Já cadastrada: sexo divergente não substitui; cor/raça e naturalidade vazias são completadas.
+            ['Ana Clara Fictícia', '01/02/2020', '1A', 'Masculino', 'Parda', 'Brasileira', 'Recife/PE', '529.982.247-25', ''],
+            // Aluno novo com o CPF que já é da Ana: entra sem o CPF.
+            ['Eva Nova Fictícia', '09/10/2020', '1A', 'F', 'Branca', 'Brasileira', 'Recife/PE', '529.982.247-25', ''],
+        ]);
+        try {
+            [$token, , $html] = $this->preparar('censo.xlsx', self::ESCOLA_A1, $segunda);
+        } finally {
+            unlink($segunda);
+        }
+
+        $rows = $this->linhasDoLote($token);
+        $ana = $this->linhaDe($rows, 'Ana Clara Fictícia');
+        $eva = $this->linhaDe($rows, 'Eva Nova Fictícia');
+        $this->assertNotNull($ana['address_target_id']);
+        $this->assertSame('529.982.247-25', $ana['census']['cpf']);
+        $this->assertArrayNotHasKey('cpf', $eva['census']);
+        $this->assertContains('Este CPF já está no cadastro de outro aluno da rede; não foi importado. Confira o documento.', array_column($eva['pending'], 'message'));
+        $this->assertStringContainsString('endereço e dados do Censo', $html);
+
+        $indice = array_search('Ana Clara Fictícia', array_column($rows, 'name'), true);
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'completar_enderecos' => [$indice]])
+            ->assertRedirect($this->url())
+            ->assertSessionHas('status', fn (string $message): bool => str_contains($message, '1 cadastro completado'));
+
+        [$anaSalva, $evaSalva, $auditoria] = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            $ana = Student::query()->where('full_name', 'Ana Clara Fictícia')->firstOrFail();
+
+            return [
+                $ana,
+                Student::query()->where('full_name', 'Eva Nova Fictícia')->firstOrFail(),
+                AuditLog::query()->where('auditable_type', Student::class)->where('auditable_id', $ana->id)->where('action', 'updated')->get()->last(),
+            ];
+        });
+        $this->assertSame(['female', 'parda', 'brasileira', 'Recife', 'PE'], [$anaSalva->sex, $anaSalva->race_color, $anaSalva->nationality, $anaSalva->birthplace_city, $anaSalva->birthplace_state]);
+        $this->assertNull($evaSalva->cpf);
+        $this->assertSame('branca', $evaSalva->race_color);
+        // A auditoria registra que a cor/raça mudou, sem guardar o valor.
+        $this->assertNotNull($auditoria);
+        $this->assertSame('[REDACTED]', $auditoria->after['race_color'] ?? null);
+    }
+
+    public function test_conferencia_com_dado_do_censo_fora_das_opcoes_e_recusada(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $file = $this->planilha([self::CABECALHO_CENSO, ['Ana Clara Fictícia', '01/02/2020', '1A', 'F', 'Parda', '', '', '', '']]);
+        try {
+            [$token] = $this->preparar('censo.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $payload = json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR);
+        $payload['rows'][0]['census']['race_color'] = 'azul';
+        $adulterado = Crypt::encryptString(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+
+        $this->post($this->url().'/confirmar', ['lote' => $adulterado])
+            ->assertSessionHasErrors(['lote' => 'Dados do Censo inválidos na conferência. Reenvie o arquivo.']);
+        $this->assertSame([0, 0, 0], $this->contagens());
+    }
+
     private function planilhaComAlunoNovo(array $rows, bool $withAddresses = false): string
+    {
+        $data = [$withAddresses ? ['Nome', 'Data de nascimento', 'RA', 'Turma', 'Endereço completo'] : ['Nome', 'Data de nascimento', 'RA', 'Turma']];
+        foreach ($rows as $row) {
+            $data[] = [
+                $row['name'],
+                $row['birth_date'] === null ? '' : date('d/m/Y', strtotime($row['birth_date'])),
+                $row['ra'] ?? '',
+                $row['class_name'],
+                ...($withAddresses ? [trim(($row['address']['address_street'] ?? '').', '.($row['address']['address_number'] ?? '').' - '.($row['address']['address_district'] ?? ''))] : []),
+            ];
+        }
+        $data[] = ['Nova Aluna Fictícia de Teste', '01/01/2021', '999999999999-1/SP', '1A', ...($withAddresses ? [''] : [])];
+
+        return $this->planilha($data);
+    }
+
+    /** Planilha .xlsx mínima (aba "Alunos") com as linhas dadas, a primeira sendo o cabeçalho. */
+    private function planilha(array $data): string
     {
         $path = tempnam(sys_get_temp_dir(), 'astuti_xlsx_');
         $this->assertNotFalse($path);
         $zip = new ZipArchive;
         $this->assertTrue($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        $this->estruturaXlsx($zip);
 
+        $xml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+        foreach ($data as $i => $cells) {
+            $number = $i + 1;
+            $xml .= '<row r="'.$number.'">';
+            foreach ($cells as $j => $value) {
+                $ref = chr(65 + $j).$number;
+                $xml .= '<c r="'.$ref.'" t="inlineStr"><is><t>'
+                    .htmlspecialchars((string) $value, ENT_XML1, 'UTF-8')
+                    .'</t></is></c>';
+            }
+            $xml .= '</row>';
+        }
+        $xml .= '</sheetData></worksheet>';
+        $zip->addFromString('xl/worksheets/sheet1.xml', $xml);
+        $this->assertTrue($zip->close());
+
+        return $path;
+    }
+
+    private function estruturaXlsx(ZipArchive $zip): void
+    {
         $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?>'
             .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
             .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
@@ -655,35 +851,5 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
             .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
             .'</Relationships>');
-
-        $data = [$withAddresses ? ['Nome', 'Data de nascimento', 'RA', 'Turma', 'Endereço completo'] : ['Nome', 'Data de nascimento', 'RA', 'Turma']];
-        foreach ($rows as $row) {
-            $data[] = [
-                $row['name'],
-                $row['birth_date'] === null ? '' : date('d/m/Y', strtotime($row['birth_date'])),
-                $row['ra'] ?? '',
-                $row['class_name'],
-                ...($withAddresses ? [trim(($row['address']['address_street'] ?? '').', '.($row['address']['address_number'] ?? '').' - '.($row['address']['address_district'] ?? ''))] : []),
-            ];
-        }
-        $data[] = ['Nova Aluna Fictícia de Teste', '01/01/2021', '999999999999-1/SP', '1A', ...($withAddresses ? [''] : [])];
-
-        $xml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
-        foreach ($data as $i => $cells) {
-            $number = $i + 1;
-            $xml .= '<row r="'.$number.'">';
-            foreach ($cells as $j => $value) {
-                $ref = chr(65 + $j).$number;
-                $xml .= '<c r="'.$ref.'" t="inlineStr"><is><t>'
-                    .htmlspecialchars((string) $value, ENT_XML1, 'UTF-8')
-                    .'</t></is></c>';
-            }
-            $xml .= '</row>';
-        }
-        $xml .= '</sheetData></worksheet>';
-        $zip->addFromString('xl/worksheets/sheet1.xml', $xml);
-        $this->assertTrue($zip->close());
-
-        return $path;
     }
 }

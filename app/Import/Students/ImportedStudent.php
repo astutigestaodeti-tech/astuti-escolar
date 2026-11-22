@@ -17,6 +17,15 @@ final class ImportedStudent
     public bool $districtConflict = false;
 
     /**
+     * Dados do Censo Escolar já no formato do cadastro (sexo, cor/raça,
+     * nacionalidade, naturalidade, CPF e nome social). Só entram valores
+     * reconhecidos; o resto vira pendência para a ficha.
+     *
+     * @var array<string, string>
+     */
+    public array $census = [];
+
+    /**
      * @param  list<string>  $sources  "Aba X, linha N"
      * @param  array<string, string>  $hints  pistas que nao viram cadastro sozinhas (mae, telefone, CPF, observacao)
      */
