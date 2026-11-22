@@ -356,6 +356,7 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
         ]))->assertRedirect();
         $this->assertSame(1, $this->inMunicipality(fn (): int => Guardian::query()->whereNull('cpf')->count()));
     }
+
     public function test_edicao_avisa_que_o_responsavel_compartilhado_sera_alterado_para_todos(): void
     {
         $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
