@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use JsonException;
 
-/** Importa apenas a situação do transporte em matrículas existentes. */
+/** Importa situação e dados operacionais do transporte em matrículas existentes. */
 class ConfirmedTransportImportController extends Controller
 {
     public function index(Request $request, string $municipio, string $escola): View|RedirectResponse
@@ -137,6 +137,14 @@ class ConfirmedTransportImportController extends Controller
                 'match' => $match,
                 'current_status' => $enrollment->transport_status,
                 'desired_status' => $entry['status'],
+                'transport_route' => $entry['transport_route'],
+                'transport_stop' => $entry['transport_stop'],
+                'transport_adapted_vehicle' => $entry['transport_adapted_vehicle'],
+                'will_change' => $enrollment->transport_status !== $entry['status']
+                    || ($entry['transport_route'] !== null && $enrollment->transport_route !== $entry['transport_route'])
+                    || ($entry['transport_stop'] !== null && $enrollment->transport_stop !== $entry['transport_stop'])
+                    || ($entry['transport_adapted_vehicle'] !== null
+                        && $enrollment->transport_adapted_vehicle !== $entry['transport_adapted_vehicle']),
             ];
             $payloadRows[] = [
                 'enrollment_id' => $enrollment->id,
@@ -145,6 +153,9 @@ class ConfirmedTransportImportController extends Controller
                 'match' => $match,
                 'current_status' => $enrollment->transport_status,
                 'desired_status' => $entry['status'],
+                'transport_route' => $entry['transport_route'],
+                'transport_stop' => $entry['transport_stop'],
+                'transport_adapted_vehicle' => $entry['transport_adapted_vehicle'],
                 'version' => $version->row_version,
             ];
         }
@@ -208,6 +219,14 @@ class ConfirmedTransportImportController extends Controller
                 || ! is_string($row['ra'] ?? null)
                 || ! in_array($row['match'] ?? 'ra', ['ra', 'nome_data', 'nome'], true)
                 || ! is_string($row['version'] ?? null)
+                || ! array_key_exists('transport_route', $row)
+                || ! array_key_exists('transport_stop', $row)
+                || ! array_key_exists('transport_adapted_vehicle', $row)
+                || ($row['transport_route'] !== null
+                    && (! is_string($row['transport_route']) || mb_strlen($row['transport_route']) > 60))
+                || ($row['transport_stop'] !== null
+                    && (! is_string($row['transport_stop']) || mb_strlen($row['transport_stop']) > 160))
+                || ($row['transport_adapted_vehicle'] !== null && ! is_bool($row['transport_adapted_vehicle']))
                 || isset($seen[$row['enrollment_id']])) {
                 throw ValidationException::withMessages(['lote' => 'A prévia contém registros inválidos ou repetidos.']);
             }
@@ -255,8 +274,19 @@ class ConfirmedTransportImportController extends Controller
                         throw ValidationException::withMessages(['lote' => 'Transporte cancelado não pode ser reativado por importação.']);
                     }
 
+                    $updates = [];
                     if ($enrollment->transport_status !== $row['desired_status']) {
-                        $enrollment->update(['transport_status' => $row['desired_status']]);
+                        $updates['transport_status'] = $row['desired_status'];
+                    }
+                    // Coluna ausente ou célula vazia nunca apaga dado já conferido.
+                    foreach (['transport_route', 'transport_stop', 'transport_adapted_vehicle'] as $field) {
+                        if ($row[$field] !== null && $enrollment->{$field} !== $row[$field]) {
+                            $updates[$field] = $row[$field];
+                        }
+                    }
+                    if ($updates !== []) {
+                        // Uma única gravação do modelo gera auditoria antes/depois no mesmo lote.
+                        $enrollment->update($updates);
                         $changed++;
                     }
                 }

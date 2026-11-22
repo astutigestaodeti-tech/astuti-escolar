@@ -271,9 +271,9 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
     }
 
     /** @param array<string, mixed> $dados */
-    private function alunoCom(string $nome, array $dados = [], ?string $transporte = null): string
+    private function alunoCom(string $nome, array $dados = [], ?string $transporte = null, array $detalhes = []): string
     {
-        return app(TenantContext::class)->runFor($this->municipioA, function () use ($nome, $dados, $transporte): string {
+        return app(TenantContext::class)->runFor($this->municipioA, function () use ($nome, $dados, $transporte, $detalhes): string {
             $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => $nome, ...$dados]);
             StudentEnrollment::query()->create([
                 'id' => (string) Str::uuid(),
@@ -282,6 +282,7 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
                 'school_year_id' => $this->anoLetivo(2027)->id,
                 'status' => 'active',
                 'transport_status' => $transporte,
+                ...$detalhes,
             ]);
 
             return $student->id;
@@ -372,5 +373,60 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
                 'status' => 'active',
             ],
         );
+    }
+
+    public function test_filtro_adaptado_e_linha_sao_restritos_a_escola_e_a_permissao_de_consulta(): void
+    {
+        $secretaria = $this->criarUsuario('transporte-adaptado@example.invalid');
+        $this->vincular($secretaria, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $this->alunoCom('Ana Veículo Adaptado', [], 'active', [
+            'transport_route' => 'Linha 12', 'transport_stop' => 'Parada das Flores',
+            'transport_adapted_vehicle' => true,
+        ]);
+        $this->alunoCom('Bia Transporte Regular', [], 'active', [
+            'transport_route' => 'Linha 15', 'transport_adapted_vehicle' => false,
+        ]);
+        $this->alunoCom('Caio Sem Informação');
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'Segredo de Outra Escola']);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $student->id,
+                'school_id' => self::ESCOLA_A2, 'school_year_id' => $this->anoLetivo(2027)->id,
+                'status' => 'active', 'transport_status' => 'active',
+                'transport_route' => 'Linha Reservada', 'transport_adapted_vehicle' => true,
+            ]);
+        });
+
+        $lista = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos';
+        $this->actingAs($secretaria)->get($lista)
+            ->assertOk()->assertSee('Veículo adaptado')->assertSee('Linha 12')
+            ->assertDontSee('Linha Reservada')->assertDontSee('Segredo de Outra Escola');
+        $this->get($lista.'?transporte=adaptado')
+            ->assertOk()->assertSee('Ana Veículo Adaptado')
+            ->assertDontSee('Bia Transporte Regular')->assertDontSee('Caio Sem Informação')
+            ->assertDontSee('Segredo de Outra Escola');
+        $this->get($lista.'?busca=Ana&transporte=adaptado')
+            ->assertOk()->assertSee('Ana Veículo Adaptado')->assertDontSee('Bia Transporte Regular');
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A2.'/alunos?transporte=adaptado')
+            ->assertForbidden();
+
+        $teacher = $this->criarUsuario('professor-transporte@example.invalid');
+        $this->vincular($teacher, $this->municipioA, 'teacher', [self::ESCOLA_A1]);
+        $this->actingAs($teacher)->get($lista.'?transporte=adaptado')
+            ->assertOk()->assertSee('Ana Veículo Adaptado');
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A2.'/alunos?transporte=adaptado')->assertForbidden();
+    }
+
+    public function test_ficha_exibe_ponto_e_veiculo_adaptado_sem_alterar_a_view_principal(): void
+    {
+        $user = $this->criarUsuario('ficha-transporte@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $studentId = $this->alunoCom('Eva Transporte', [], 'active', [
+            'transport_route' => 'Linha 08', 'transport_stop' => 'Ponto do Bosque',
+            'transport_adapted_vehicle' => true,
+        ]);
+
+        $this->actingAs($user)->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$studentId)
+            ->assertOk()->assertSee('Linha 08')->assertSee('Ponto do Bosque')->assertSee('Veículo adaptado');
     }
 }

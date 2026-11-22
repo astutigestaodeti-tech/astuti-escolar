@@ -291,7 +291,9 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         $this->assertStringContainsString('Linhas que ficam de fora', $html);
         $this->assertStringContainsString('EMEF A2', $html);
         $this->assertSame(2, substr_count($html, 'Não encontrado entre as matrículas ativas desta escola neste ano.'));
-        $this->assertStringNotContainsString('RUA FICTICIA', $html, 'Ponto de embarque nao aparece nem e guardado.');
+        $this->assertStringContainsString('RUA FICTICIA, 10', $html);
+        $this->assertStringNotContainsString('RUA FICTICIA, 20', $html, 'Endereço de outra escola não aparece na prévia.');
+        $this->assertStringNotContainsString('RUA FICTICIA, 30', $html, 'Linha ignorada não mostra ponto de embarque.');
         $this->assertStringContainsString('name="conferido_nomes"', $html);
         $this->assertSame(1, preg_match('/name="lote" value="([^"]+)"/', $html, $match));
 
@@ -341,5 +343,75 @@ class ConfirmedTransportImportTest extends TwoMunicipalityTestCase
         // Nenhuma linha aplicavel: cancelado nao reativa e o outro RA e de outra escola.
         $html->assertSessionHasErrors('arquivo');
         $this->assertSame('cancelled', $this->transportStatus($this->enrollmentA));
+    }
+
+    public function test_previa_e_gravacao_salvam_linha_ponto_e_adaptado_com_auditoria(): void
+    {
+        $user = $this->entrar();
+        $csv = "RA;SITUACAO;LINHA;PONTO EMBARQUE;ADAPTADO\n"
+            ."999000000001-6/SP;ATIVO;Linha 09;Praça das Acácias;X\n";
+        $response = $this->post($this->url().'/previa', [
+            'arquivo' => $this->csv($csv), 'school_year_id' => $this->yearId,
+        ])->assertOk()->assertSee('Linha 09')->assertSee('Praça das Acácias')->assertSee('Veículo adaptado');
+
+        $this->assertSame(1, preg_match('/name="lote" value="([^"]+)"/', $response->getContent(), $match));
+        $this->assertNull($this->transportStatus($this->enrollmentA));
+        $this->post($this->url().'/confirmar', ['lote' => $match[1]])
+            ->assertRedirect($this->url())->assertSessionHas('status');
+
+        $stored = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            $e = StudentEnrollment::query()->findOrFail($this->enrollmentA);
+
+            return [$e->transport_status, $e->transport_route, $e->transport_stop, $e->transport_adapted_vehicle];
+        });
+        $this->assertSame(['active', 'Linha 09', 'Praça das Acácias', true], $stored);
+
+        $audit = app(TenantContext::class)->runFor($this->municipioA, fn (): AuditLog => AuditLog::query()
+            ->where('auditable_type', StudentEnrollment::class)->where('auditable_id', $this->enrollmentA)
+            ->where('action', 'updated')->where('user_id', $user->id)->latest('occurred_at')->firstOrFail());
+        $this->assertNull($audit->before['transport_route']);
+        $this->assertSame('Linha 09', $audit->after['transport_route']);
+        $this->assertSame('[REDACTED]', $audit->after['transport_stop']);
+        $this->assertSame('[REDACTED]', $audit->after['transport_adapted_vehicle']);
+    }
+
+    public function test_planilha_com_campos_vazios_preserva_detalhes_e_aceita_nao_explicito(): void
+    {
+        $this->entrar();
+        $token = $this->previa("RA;SITUACAO;ROTA;PONTO;VEICULO ADAPTADO\n"
+            ."999000000001-6/SP;SIM;Linha 05;Parada Fictícia;S\n");
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertSessionHas('status');
+
+        $emptyToken = $this->previa("RA;SITUACAO;LINHA;PONTO;ADAPTADO\n999000000001-6/SP;SIM;;;\n");
+        $this->post($this->url().'/confirmar', ['lote' => $emptyToken])
+            ->assertRedirect($this->url())->assertSessionHas('status', '0 matrícula(s) atualizada(s) com auditoria.');
+
+        $stored = app(TenantContext::class)->runFor($this->municipioA, fn (): StudentEnrollment => StudentEnrollment::query()->findOrFail($this->enrollmentA));
+        $this->assertSame('Linha 05', $stored->transport_route);
+        $this->assertSame('Parada Fictícia', $stored->transport_stop);
+        $this->assertTrue($stored->transport_adapted_vehicle);
+
+        $noToken = $this->previa("RA;SITUACAO;VEÍCULO ADAPTADO\n999000000001-6/SP;SIM;NÃO\n");
+        $this->post($this->url().'/confirmar', ['lote' => $noToken])->assertSessionHas('status');
+        $stored = app(TenantContext::class)->runFor($this->municipioA, fn (): StudentEnrollment => StudentEnrollment::query()->findOrFail($this->enrollmentA));
+        $this->assertFalse($stored->transport_adapted_vehicle);
+        $this->assertSame('Linha 05', $stored->transport_route);
+        $this->assertSame('Parada Fictícia', $stored->transport_stop);
+    }
+
+    public function test_concorrencia_dos_detalhes_desfaz_lote_e_preserva_auditoria(): void
+    {
+        $this->entrar();
+        $token = $this->previa("RA;SITUACAO;LINHA;PONTO\n999000000001-6/SP;SIM;Linha 03;Rua Fictícia\n");
+        app(TenantContext::class)->runFor($this->municipioA, fn () => StudentEnrollment::query()
+            ->findOrFail($this->enrollmentA)->update(['transport_route' => 'Linha 04']));
+
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertSessionHasErrors('lote');
+        $stored = app(TenantContext::class)->runFor($this->municipioA, fn (): StudentEnrollment => StudentEnrollment::query()->findOrFail($this->enrollmentA));
+        $this->assertSame('Linha 04', $stored->transport_route);
+        $this->assertNull($stored->transport_stop);
+        $this->assertNull($stored->transport_status);
+        $this->assertSame(0, app(TenantContext::class)->runFor($this->municipioA, fn (): int => DB::connection('tenant')
+            ->table('transport_import_receipts')->count()));
     }
 }

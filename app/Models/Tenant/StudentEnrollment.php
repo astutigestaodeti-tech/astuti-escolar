@@ -23,11 +23,14 @@ class StudentEnrollment extends TenantModel
         'started_at',
         'ended_at',
         'transport_status',
+        'transport_route',
+        'transport_stop',
+        'transport_adapted_vehicle',
     ];
 
     protected function casts(): array
     {
-        return ['started_at' => 'date', 'ended_at' => 'date'];
+        return ['started_at' => 'date', 'ended_at' => 'date', 'transport_adapted_vehicle' => 'boolean'];
     }
 
     public function student(): BelongsTo

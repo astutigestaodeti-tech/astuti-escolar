@@ -56,6 +56,7 @@
                 'nao_solicitado' => $transportCounts['not_requested'] ?? 0,
                 'cancelado' => $transportCounts['cancelled'] ?? 0,
                 'sem_informacao' => $transportCounts['sem_informacao'] ?? 0,
+                'adaptado' => $transportCounts['adaptado'] ?? 0,
             ];
         @endphp
         <nav class="filtro-transporte" aria-label="Filtrar por transporte escolar">
@@ -79,7 +80,7 @@
                                 @if ($student->ra)<small class="lista-ra numero">RA {{ $student->ra }}</small>@endif</td>
                             <td class="numero">{{ $student->birth_date?->format('d/m/Y') ?? 'Não informada' }}</td>
                             @php($situacaoTransporte = $student->enrollments->first()?->transport_status)
-                            <td>@include('students.partials.transporte', ['situacao' => $situacaoTransporte])</td>
+                            <td>@include('students.partials.transporte', ['situacao' => $situacaoTransporte, 'matricula' => $student->enrollments->first(), 'apenasLinha' => true])</td>
                         </tr>
                     @endforeach
                     </tbody>
