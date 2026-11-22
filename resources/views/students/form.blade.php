@@ -195,6 +195,51 @@
                     </div>
                 </fieldset>
 
+                <fieldset class="grupo-endereco grupo-documentos" id="documentos">
+                    <legend>Documentos</legend>
+                    <p class="texto-ajuda">Opcionais. Copie da certidão e do RG apresentados na matrícula; o sistema aceita com ou sem pontuação.</p>
+                    <div class="formulario-grade">
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="rg_number">RG</label>
+                            <input class="entrada" id="rg_number" name="rg_number" maxlength="20" inputmode="text" autocomplete="off" placeholder="12.345.678-9"
+                                   value="{{ old('rg_number', \App\Validation\IdentityDocuments::formatRg($student?->rg_number)) }}"
+                                   @error('rg_number') aria-invalid="true" aria-describedby="rg_number-erro" @enderror>
+                            @error('rg_number')<p class="campo-erro" id="rg_number-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="rg_issuer">Órgão emissor</label>
+                            <input class="entrada" id="rg_issuer" name="rg_issuer" maxlength="20" placeholder="SSP" value="{{ old('rg_issuer', $student?->rg_issuer) }}"
+                                   @error('rg_issuer') aria-invalid="true" aria-describedby="rg_issuer-erro" @enderror>
+                            @error('rg_issuer')<p class="campo-erro" id="rg_issuer-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="rg_state">UF do RG</label>
+                            <select class="entrada" id="rg_state" name="rg_state" @error('rg_state') aria-invalid="true" aria-describedby="rg_state-erro" @enderror>
+                                <option value="">Não informada</option>
+                                @foreach (\App\Address\BrazilianStates::NAMES as $uf => $estado)
+                                    <option value="{{ $uf }}" @selected(old('rg_state', $student?->rg_state) === $uf)>{{ $uf }} - {{ $estado }}</option>
+                                @endforeach
+                            </select>
+                            @error('rg_state')<p class="campo-erro" id="rg_state-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="rg_issued_at">Data de expedição do RG</label>
+                            <input class="entrada" id="rg_issued_at" name="rg_issued_at" type="date" value="{{ old('rg_issued_at', $student?->rg_issued_at?->format('Y-m-d')) }}"
+                                   @error('rg_issued_at') aria-invalid="true" aria-describedby="rg_issued_at-erro" @enderror>
+                            @error('rg_issued_at')<p class="campo-erro" id="rg_issued_at-erro">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="formulario-campo formulario-campo-largo">
+                            <label class="rotulo" for="birth_certificate">Certidão de nascimento</label>
+                            <input class="entrada" id="birth_certificate" name="birth_certificate" maxlength="80" autocomplete="off"
+                                   placeholder="Matrícula de 32 números ou livro, folha e termo"
+                                   value="{{ old('birth_certificate', \App\Validation\IdentityDocuments::formatBirthCertificate($student?->birth_certificate)) }}"
+                                   @error('birth_certificate') aria-invalid="true" aria-describedby="birth_certificate-erro" @enderror>
+                            <p class="texto-ajuda">Certidão nova: a matrícula de 32 números. Certidão antiga: livro, folha e termo.</p>
+                            @error('birth_certificate')<p class="campo-erro" id="birth_certificate-erro">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                </fieldset>
+
                 <fieldset class="grupo-endereco" id="endereco"
                           data-postal-lookup-url="{{ route('school.students.postal.lookup', ['municipio' => $municipality->slug, 'escola' => $school->id, 'cep' => '__CEP__']) }}">
                     <legend>Endereço</legend>

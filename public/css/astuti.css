@@ -640,3 +640,8 @@ select.entrada{cursor:pointer}
 .saida-nao-esta{margin-top:14px;font-size:14px}
 .saida-nao-esta summary{cursor:pointer;font-weight:700;color:#8a2c22}
 .saida-nao-esta p{margin:8px 0 0;color:var(--tinta-2)}
+
+/* Campo que ocupa a linha inteira da grade do formulário */
+.formulario-grade .formulario-campo-largo{grid-column:1/-1}
+
+.campo-rg{display:grid;grid-template-columns:1fr 96px;gap:8px}

@@ -11,6 +11,7 @@ use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Security\TwoFactorSession;
 use App\Validation\Cpf;
+use App\Validation\IdentityDocuments;
 use App\Validation\SedRa;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +52,9 @@ class StudentRecordController extends Controller
     /** Dados do Censo Escolar (Educacenso), todos opcionais. */
     private const CENSUS_FIELDS = ['social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf'];
 
+    /** Documentos opcionais: RG e certidão de nascimento. */
+    private const DOCUMENT_FIELDS = ['rg_number', 'rg_issuer', 'rg_state', 'rg_issued_at', 'birth_certificate'];
+
     public const SEX_LABELS = ['female' => 'Feminino', 'male' => 'Masculino'];
 
     public const RACE_LABELS = ['branca' => 'Branca', 'preta' => 'Preta', 'parda' => 'Parda', 'amarela' => 'Amarela', 'indigena' => 'Indígena', 'nao_declarada' => 'Não declarada'];
@@ -69,6 +73,12 @@ class StudentRecordController extends Controller
         'address_state.in' => 'Selecione uma UF válida.',
         'address_state.size' => 'Selecione uma UF válida.',
         'residence_zone.in' => 'Selecione a zona de residência: Urbana ou Rural.',
+        'rg_number.regex' => 'O RG aceita só números (e o X final, quando houver). Exemplo: 12.345.678-9.',
+        'rg_issuer.regex' => 'O órgão emissor aceita só letras. Exemplo: SSP.',
+        'rg_state.in' => 'Selecione a UF do RG.',
+        'rg_state.size' => 'Selecione a UF do RG.',
+        'rg_issued_at.before_or_equal' => 'A data de expedição do RG não pode ser no futuro.',
+        'rg_issued_at.date' => 'Informe a data de expedição do RG.',
     ];
 
     private const VALIDATION_ATTRIBUTES = [
@@ -88,6 +98,11 @@ class StudentRecordController extends Controller
         'birthplace_city' => 'Cidade de nascimento',
         'birthplace_state' => 'UF de nascimento',
         'cpf' => 'CPF',
+        'rg_number' => 'RG',
+        'rg_issuer' => 'Órgão emissor',
+        'rg_state' => 'UF do RG',
+        'rg_issued_at' => 'Data de expedição do RG',
+        'birth_certificate' => 'Certidão de nascimento',
     ];
 
     public function create(Request $request, string $municipio, string $escola): View|RedirectResponse
@@ -166,7 +181,7 @@ class StudentRecordController extends Controller
                     'address_complement' => $data['address_complement'] ?? null,
                     'address_city' => $data['address_city'] ?? null,
                     'address_state' => $data['address_state'] ?? null,
-                    ...array_map(fn (string $field): mixed => $data[$field] ?? null, array_combine(self::CENSUS_FIELDS, self::CENSUS_FIELDS)),
+                    ...array_map(fn (string $field): mixed => $data[$field] ?? null, array_combine([...self::CENSUS_FIELDS, ...self::DOCUMENT_FIELDS], [...self::CENSUS_FIELDS, ...self::DOCUMENT_FIELDS])),
                     'address_district' => $data['address_district'] ?? null,
                     'postal_code' => $data['postal_code'] ?? null,
                     'residence_zone' => $data['residence_zone'] ?? null,
@@ -227,7 +242,7 @@ class StudentRecordController extends Controller
 
         $raSubmitted = $request->exists('ra');
         $addressFieldsSubmitted = array_values(array_filter(
-            [...self::ADDRESS_FIELDS, ...self::CENSUS_FIELDS],
+            [...self::ADDRESS_FIELDS, ...self::CENSUS_FIELDS, ...self::DOCUMENT_FIELDS],
             fn (string $field): bool => $request->exists($field),
         ));
         $request->merge([
@@ -425,6 +440,17 @@ class StudentRecordController extends Controller
             'birthplace_city' => ['nullable', 'string', 'max:120'],
             'birthplace_state' => ['nullable', 'string', 'size:2', BrazilianStates::VALIDATION_RULE],
             'cpf' => ['nullable', 'string', 'max:20', new Cpf],
+            'rg_number' => ['nullable', 'string', 'regex:/\A[0-9]{4,14}[0-9X]?\z/'],
+            'rg_issuer' => ['nullable', 'string', 'max:20', 'regex:/\A[\p{L}\/ .-]+\z/u'],
+            'rg_state' => ['nullable', 'string', 'size:2', BrazilianStates::VALIDATION_RULE],
+            'rg_issued_at' => ['nullable', 'date', 'before_or_equal:today', 'after:1900-01-01'],
+            'birth_certificate' => ['nullable', 'string', 'max:80', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (is_string($value) && ! IdentityDocuments::birthCertificateIsValid($value)) {
+                    $fail(ctype_digit($value)
+                        ? 'A matrícula da certidão tem 32 números. Confira na certidão.'
+                        : 'Use só letras, números e a pontuação da certidão (exemplo: Livro A-12, folha 34, termo 5678).');
+                }
+            }],
         ];
     }
 
@@ -453,6 +479,22 @@ class StudentRecordController extends Controller
         if ($request->exists('cpf')) {
             $value = $request->input('cpf');
             $merge['cpf'] = is_string($value) && trim($value) !== '' ? (Cpf::normalize($value) ?? trim($value)) : null;
+        }
+        if ($request->exists('rg_number')) {
+            $merge['rg_number'] = IdentityDocuments::normalizeRg(is_string($request->input('rg_number')) ? $request->input('rg_number') : null);
+        }
+        if ($request->exists('rg_issuer')) {
+            $value = $request->input('rg_issuer');
+            $merge['rg_issuer'] = is_string($value) && trim($value) !== '' ? strtoupper(trim($value)) : null;
+        }
+        foreach (['rg_state', 'rg_issued_at'] as $field) {
+            if ($request->exists($field)) {
+                $value = $request->input($field);
+                $merge[$field] = is_string($value) && trim($value) !== '' ? ($field === 'rg_state' ? strtoupper(trim($value)) : trim($value)) : null;
+            }
+        }
+        if ($request->exists('birth_certificate')) {
+            $merge['birth_certificate'] = IdentityDocuments::normalizeBirthCertificate(is_string($request->input('birth_certificate')) ? $request->input('birth_certificate') : null);
         }
         $request->merge($merge);
     }

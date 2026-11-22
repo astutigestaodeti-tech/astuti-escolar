@@ -633,6 +633,43 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         $this->assertSame(1, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
     }
 
+    public function test_rg_e_certidao_gravam_formatados_com_auditoria_mascarada_e_erros_claros(): void
+    {
+        $user = $this->conta('documentos@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->post($this->url(), $this->dados(['rg_number' => '12.345.678-x', 'rg_issued_at' => now()->addDay()->format('Y-m-d')]))
+            ->assertSessionHasErrors(['rg_issued_at' => 'A data de expedição do RG não pode ser no futuro.']);
+        $this->post($this->url(), $this->dados(['rg_number' => 'ABC-12']))
+            ->assertSessionHasErrors(['rg_number' => 'O RG aceita só números (e o X final, quando houver). Exemplo: 12.345.678-9.']);
+        $this->post($this->url(), $this->dados(['birth_certificate' => '1234 5678']))
+            ->assertSessionHasErrors(['birth_certificate' => 'A matrícula da certidão tem 32 números. Confira na certidão.']);
+
+        $this->post($this->url(), $this->dados([
+            'rg_number' => '12.345.678-x', 'rg_issuer' => ' ssp ', 'rg_state' => 'sp', 'rg_issued_at' => '2024-03-15',
+            'birth_certificate' => '123456 01 55 2019 1 00012 034 0001234 56',
+        ]))->assertRedirect();
+
+        $aluno = $this->noMunicipio($this->municipioA, fn (): Student => Student::query()->firstOrFail());
+        $this->assertSame(['12345678X', 'SSP', 'SP', '2024-03-15', '12345601552019100012034000123456'],
+            [$aluno->rg_number, $aluno->rg_issuer, $aluno->rg_state, $aluno->rg_issued_at->format('Y-m-d'), $aluno->birth_certificate]);
+
+        $after = $this->noMunicipio($this->municipioA, fn (): array => AuditLog::query()
+            ->where('auditable_type', Student::class)->where('auditable_id', $aluno->id)->where('action', 'created')->firstOrFail()->after);
+        $this->assertSame('[REDACTED]', $after['rg_number']);
+        $this->assertSame('[REDACTED]', $after['birth_certificate']);
+        $this->assertSame('SSP', $after['rg_issuer']);
+
+        $this->get($this->url('/'.$aluno->id))->assertOk()
+            ->assertSee('12.345.678-X SSP/SP')
+            ->assertSee('expedido em 15/03/2024')
+            ->assertSee('123456 01 55 2019 1 00012 034 0001234 56');
+
+        // Certidão antiga: livro, folha e termo, como texto.
+        $this->post($this->url(), $this->dados(['full_name' => 'Outra Criança Fictícia', 'ra' => null, 'birth_certificate' => 'Livro A-12, folha 34, termo 5678']))->assertRedirect();
+        $this->assertSame('Livro A-12, folha 34, termo 5678', $this->noMunicipio($this->municipioA, fn (): string => Student::query()->where('full_name', 'Outra Criança Fictícia')->firstOrFail()->birth_certificate));
+    }
+
     public function test_formulario_tem_o_grupo_do_censo_com_as_opcoes_do_educacenso(): void
     {
         $user = $this->conta('censo-form@example.invalid', 'school_director', [self::ESCOLA_A1]);

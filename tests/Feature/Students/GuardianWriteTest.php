@@ -599,4 +599,17 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
             ->assertRedirect($this->url().'/novo')
             ->assertSessionHas('status', fn (string $message): bool => str_ends_with($message, 'Agora informe o próximo responsável.'));
     }
+
+    public function test_rg_do_responsavel_grava_mascarado_na_auditoria_e_aparece_no_cartao(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data(['rg_number' => 'X1']))->assertSessionHasErrors('rg_number');
+        $this->post($this->url(), $this->data(['rg_number' => '12.345.678-9', 'rg_state' => 'mg']))->assertRedirect();
+
+        $this->assertSame(['123456789', 'MG'], $this->inMunicipality(fn (): array => array_values(Guardian::query()->sole()->only(['rg_number', 'rg_state']))));
+        $after = $this->inMunicipality(fn (): array => AuditLog::query()->where('auditable_type', Guardian::class)->where('action', 'created')->sole()->after);
+        $this->assertSame('[REDACTED]', $after['rg_number']);
+
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->studentA)->assertOk()->assertSee('12.345.678-9 MG');
+    }
 }

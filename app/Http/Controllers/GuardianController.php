@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Address\BrazilianStates;
 use App\Audit\AuditTrail;
 use App\Models\Tenant\Guardian;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentGuardian;
 use App\Validation\Cpf;
+use App\Validation\IdentityDocuments;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -100,7 +102,7 @@ class GuardianController extends Controller
                     }
 
                     $beforeGuardian = $this->guardianSnapshot($guardian);
-                    foreach (['phone', 'email', 'phone_secondary', 'workplace', 'work_phone'] as $field) {
+                    foreach (['phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'rg_number', 'rg_state'] as $field) {
                         if (filled($data[$field] ?? null) && $guardian->{$field} !== $data[$field]) {
                             $guardian->{$field} = $data[$field];
                         }
@@ -322,6 +324,8 @@ class GuardianController extends Controller
             'phone_secondary' => $digits($request->input('phone_secondary')),
             'workplace' => is_string($workplace) ? (preg_replace('/\s+/u', ' ', trim($workplace)) ?: null) : $workplace,
             'work_phone' => $digits($request->input('work_phone')),
+            'rg_number' => IdentityDocuments::normalizeRg(is_string($request->input('rg_number')) ? $request->input('rg_number') : null),
+            'rg_state' => is_string($request->input('rg_state')) && trim($request->input('rg_state')) !== '' ? strtoupper(trim($request->input('rg_state'))) : null,
             'is_legal_guardian' => $request->boolean('is_legal_guardian'),
             'is_primary_contact' => $request->boolean('is_primary_contact'),
         ]);
@@ -334,6 +338,8 @@ class GuardianController extends Controller
             'phone_secondary' => ['nullable', 'string', 'regex:/\A\d{10,11}\z/D'],
             'workplace' => ['nullable', 'string', 'max:120'],
             'work_phone' => ['nullable', 'string', 'regex:/\A\d{10,11}\z/D'],
+            'rg_number' => ['nullable', 'string', 'regex:/\A[0-9]{4,14}[0-9X]?\z/'],
+            'rg_state' => ['nullable', 'string', 'size:2', BrazilianStates::VALIDATION_RULE],
             'relationship' => ['required', Rule::in(array_keys(self::RELATIONSHIPS))],
             'is_legal_guardian' => ['boolean'],
             'is_primary_contact' => ['boolean'],
@@ -345,6 +351,9 @@ class GuardianController extends Controller
             'phone_secondary.regex' => 'O outro telefone precisa ter DDD e 10 ou 11 números.',
             'work_phone.regex' => 'O telefone do trabalho precisa ter DDD e 10 ou 11 números.',
             'workplace.max' => 'O local de trabalho aceita até 120 caracteres.',
+            'rg_number.regex' => 'O RG aceita só números (e o X final, quando houver). Exemplo: 12.345.678-9.',
+            'rg_state.in' => 'Selecione a UF do RG.',
+            'rg_state.size' => 'Selecione a UF do RG.',
             'relationship.required' => 'Selecione o parentesco com o aluno.',
             'relationship.in' => 'Selecione um parentesco válido.',
         ], [
@@ -357,7 +366,7 @@ class GuardianController extends Controller
 
     private function guardianFields(array $data): array
     {
-        $fields = array_intersect_key($data, array_flip(['full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone']));
+        $fields = array_intersect_key($data, array_flip(['full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'rg_number', 'rg_state']));
         // O mesmo número repetido como "outro telefone" não acrescenta contato.
         if (($fields['phone_secondary'] ?? null) !== null && $fields['phone_secondary'] === ($fields['phone'] ?? null)) {
             $fields['phone_secondary'] = null;
@@ -373,7 +382,7 @@ class GuardianController extends Controller
 
     private function guardianSnapshot(Guardian $guardian): array
     {
-        return $guardian->only(['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone']);
+        return $guardian->only(['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'rg_number', 'rg_state']);
     }
 
     private function linkSnapshot(StudentGuardian $link): array

@@ -79,6 +79,21 @@
                         <div><dt>Nacionalidade</dt><dd>{{ \App\Http\Controllers\StudentRecordController::NATIONALITY_LABELS[$student->nationality ?? ''] ?? 'Não informada' }}</dd></div>
                         <div><dt>Naturalidade</dt><dd>{{ trim(implode('/', array_filter([$student->birthplace_city, $student->birthplace_state]))) ?: 'Não informada' }}</dd></div>
                         <div><dt>CPF</dt><dd class="numero">{{ $student->cpf ?? 'Não informado' }}</dd></div>
+                        @php
+                            $rgFormatado = \App\Validation\IdentityDocuments::formatRg($student->rg_number);
+                            $rgOrgao = trim(($student->rg_issuer ?? '').'/'.($student->rg_state ?? ''), '/');
+                        @endphp
+                        <div><dt>RG</dt><dd class="numero">
+                            @if ($rgFormatado)
+                                {{ $rgFormatado }} {{ $rgOrgao }}
+                                @if ($student->rg_issued_at)
+                                    <small class="ficha-idade">expedido em {{ $student->rg_issued_at->format('d/m/Y') }}</small>
+                                @endif
+                            @else
+                                Não informado
+                            @endif
+                        </dd></div>
+                        <div><dt>Certidão de nascimento</dt><dd class="numero">{{ \App\Validation\IdentityDocuments::formatBirthCertificate($student->birth_certificate) ?? 'Não informada' }}</dd></div>
                         <div><dt>Escola</dt><dd>{{ $school->name }}</dd></div>
                     </dl>
                 </div>

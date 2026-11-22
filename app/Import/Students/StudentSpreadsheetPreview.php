@@ -6,6 +6,7 @@ use App\Address\BrazilianStates;
 use App\Import\Xlsx\XlsxReader;
 use App\Import\Xlsx\XlsxSheet;
 use App\Validation\Cpf;
+use App\Validation\IdentityDocuments;
 
 /**
  * Le a planilha de alunos de UMA escola e monta a previa da importacao.
@@ -39,6 +40,8 @@ final class StudentSpreadsheetPreview
         'nationality' => ['nacionalidade'],
         'birthplace' => ['naturalidade', 'municipio de nascimento', 'cidade de nascimento', 'local de nascimento', 'cidade natal'],
         'birthplace_state' => ['uf de nascimento', 'uf nascimento', 'uf natal', 'estado de nascimento'],
+        'student_rg' => ['rg', 'rg do aluno', 'rg aluno', 'numero do rg', 'rg da crianca', 'rg do estudante'],
+        'birth_certificate' => ['certidao', 'certidao de nascimento', 'certidao nascimento', 'matricula da certidao', 'matricula certidao', 'n da certidao'],
         'student_cpf' => ['cpf do aluno', 'cpf aluno', 'cpf da crianca', 'cpf do estudante', 'cpf do a aluno', 'cpf ficticio'],
     ];
 
@@ -322,6 +325,26 @@ final class StudentSpreadsheetPreview
                 $student->addIssue(ImportIssue::PENDING, 'cpf', $cpf === null
                     ? 'CPF do aluno com formato não reconhecido; não foi importado. Informe na ficha conferindo o documento.'
                     : 'CPF do aluno inválido (os dígitos verificadores não conferem); não foi importado. Confira o documento e informe na ficha.');
+            }
+        }
+
+        if (isset($columns['student_rg'])) {
+            $raw = ImportText::clean($cell('student_rg'));
+            $rg = IdentityDocuments::normalizeRg($raw);
+            if ($rg !== null && IdentityDocuments::rgIsValid($rg)) {
+                $census['rg_number'] = $rg;
+            } elseif ($raw !== null) {
+                $student->addIssue(ImportIssue::PENDING, 'censo', 'RG do aluno fora do padrão ("'.$raw.'"); não foi importado. Confira o documento e informe na ficha.');
+            }
+        }
+
+        if (isset($columns['birth_certificate'])) {
+            $raw = ImportText::clean($cell('birth_certificate'));
+            $certificate = IdentityDocuments::normalizeBirthCertificate($raw);
+            if ($certificate !== null && IdentityDocuments::birthCertificateIsValid($certificate)) {
+                $census['birth_certificate'] = $certificate;
+            } elseif ($raw !== null) {
+                $student->addIssue(ImportIssue::PENDING, 'censo', 'Certidão de nascimento fora do padrão; não foi importada. A certidão nova tem 32 números; confira e informe na ficha.');
             }
         }
 
