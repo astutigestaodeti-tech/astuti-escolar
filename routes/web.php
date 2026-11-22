@@ -6,6 +6,7 @@ use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentMovementController;
+use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\SchoolClassController;
@@ -58,6 +59,16 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas/{escola}/alunos', [SchoolStudentController::class, 'index'])->whereUuid('escola')->name('school.students.index');
     Route::get('/escolas/{escola}/alunos/cep/{cep}', [PostalCodeLookupController::class, 'show'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:20,1'])->name('school.students.postal.lookup');
     Route::get('/escolas/{escola}/alunos/{aluno}', [SchoolStudentController::class, 'show'])->whereUuid('escola')->whereUuid('aluno')->name('school.students.show');
+
+    // Responsáveis: cadastro municipal, vínculo por aluno e gravação protegida pelo segundo fator.
+    Route::get('/escolas/{escola}/alunos/{aluno}/responsaveis/novo', [GuardianController::class, 'create'])
+        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.guardians.create');
+    Route::post('/escolas/{escola}/alunos/{aluno}/responsaveis', [GuardianController::class, 'store'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.guardians.store');
+    Route::get('/escolas/{escola}/alunos/{aluno}/responsaveis/{vinculo}/editar', [GuardianController::class, 'edit'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->name('school.students.guardians.edit');
+    Route::put('/escolas/{escola}/alunos/{aluno}/responsaveis/{vinculo}', [GuardianController::class, 'update'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.guardians.update');
 
     // Gravação: permissão de gestão na escola (no controlador) e segundo fator confirmado.
     Route::get('/escolas/{escola}/alunos/novo', [StudentRecordController::class, 'create'])->whereUuid('escola')->name('school.students.create');
