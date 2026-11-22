@@ -21,7 +21,7 @@
         // Dados que esta etapa não grava (o transporte tem importação própria).
         $laterLabels = [
             'cep' => 'CEP',
-            'endereco' => 'endereço completo',
+            'endereco' => 'informações de endereço ausentes ou incompletas',
             'transporte' => 'uso de transporte escolar',
             'observacao' => 'observações da escola',
         ];
@@ -32,7 +32,7 @@
         foreach ($rows as $index => $row) {
             $fields = array_column($row['confirmation'], 'field');
             $pendingFields = array_column($row['pending'], 'field');
-            foreach ($pendingFields as $field) {
+            foreach (array_unique($pendingFields) as $field) {
                 if (isset($laterLabels[$field])) {
                     $later[$field] = ($later[$field] ?? 0) + 1;
                 }
@@ -49,7 +49,15 @@
             }
             $counts[$status]++;
 
-            $view[$index] = ['status' => $status, 'row' => $row];
+            $address = $row['address'] ?? [];
+            $addressParts = array_values(array_filter([
+                $address['address_street'] ?? null,
+                $address['address_number'] ?? null,
+                $address['address_district'] ?? null,
+                $address['postal_code'] ?? null,
+                ($address['residence_zone'] ?? null) === 'urban' ? 'Zona urbana' : (($address['residence_zone'] ?? null) === 'rural' ? 'Zona rural' : null),
+            ], fn ($value): bool => $value !== null && $value !== ''));
+            $view[$index] = ['status' => $status, 'row' => $row, 'address_label' => implode(' · ', $addressParts)];
         }
         $toSave = count($rows) - $counts['ignorado'];
         $statusText = [
@@ -80,7 +88,7 @@
     @if ($later !== [])
         <div class="nota conf-depois"><x-icon name="info" /><div>
             <strong>Fica para completar depois</strong>
-            <p>A importação grava nome, data de nascimento, RA e turma. Os dados abaixo não vêm no arquivo ou ainda não são gravados pelo sistema, e não impedem a importação:
+            <p>A importação aproveita também os campos de endereço informados na planilha. Os dados abaixo estão ausentes ou incompletos e não impedem a gravação:
                 @foreach ($later as $field => $total)
                     {{ $laterLabels[$field] }} ({{ $total }} {{ $total === 1 ? 'aluno' : 'alunos' }}){{ $loop->last ? '.' : ';' }}
                 @endforeach
@@ -103,6 +111,9 @@
                                 <td>
                                     <strong>{{ $row['name'] }}</strong>
                                     <span class="conf-origem">{{ implode('; ', $row['sources']) }}</span>
+                                    @if ($item['address_label'] !== '')
+                                        <span class="conf-origem">Endereço do arquivo: {{ $item['address_label'] }}</span>
+                                    @endif
                                 </td>
                                 <td class="conf-numero">
                                     @if ($row['birth_date'])
@@ -128,7 +139,13 @@
                                 <td class="conf-situacao">
                                     <span class="conf-selo {{ $item['status'] }}">{{ $statusText[$item['status']] }}</span>
                                     @if ($item['status'] === 'ignorado')
-                                        <p class="conf-explica">O cadastro e o RA que já existem ficam como estão.</p>
+                                        <p class="conf-explica">O aluno e o RA existentes não serão recriados.</p>
+                                        @if ($row['address_target_id'] ?? null)
+                                            <label class="conf-marca">
+                                                <input type="checkbox" name="completar_enderecos[]" value="{{ $index }}">
+                                                <span>Completar somente campos vazios do endereço deste aluno, sem substituir os já preenchidos.</span>
+                                            </label>
+                                        @endif
                                     @else
                                         @foreach ($row['confirmation'] as $issue)
                                             @if (isset($checkable[$issue['field']]))
@@ -168,5 +185,5 @@
         @endif
     </form>
 
-    <div class="nota conf-lgpd"><x-icon name="escudo" /><div><strong>Como a gravação funciona</strong><p>Os alunos já cadastrados são ignorados e contados no recibo. Os demais são gravados todos juntos, ou nenhum, se algo falhar. Nenhum RA é reaproveitado e nenhuma data é inventada. A conferência vale por uma hora e só pode ser confirmada por esta conta.</p></div></div>
+    <div class="nota conf-lgpd"><x-icon name="escudo" /><div><strong>Como a gravação funciona</strong><p>Alunos já cadastrados continuam ignorados para novas inclusões. Só com sua marcação os campos vazios de endereço podem ser completados. Tudo é gravado junto, ou nada, se houver falha. Nenhum RA é reaproveitado e nenhum dado é inventado. A conferência vale por uma hora e só pode ser confirmada por esta conta.</p></div></div>
 @endsection

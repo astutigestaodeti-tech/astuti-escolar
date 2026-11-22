@@ -155,6 +155,29 @@ final class ImportText
         return preg_match('/^\d{9,12}-?[\dX]\/[A-Z]{2}$/', $text) ? $text : null;
     }
 
+    /** CEP brasileiro, sem adivinhar zero à esquerda perdido em célula numérica. */
+    public static function postalCode(mixed $value): ?string
+    {
+        $text = self::clean($value);
+        if ($text === null || preg_match('/\A\d{5}-?\d{3}\z/', $text) !== 1) {
+            return null;
+        }
+
+        $digits = str_replace('-', '', $text);
+
+        return substr($digits, 0, 5).'-'.substr($digits, 5);
+    }
+
+    /** Zona de residência só é gravada quando a planilha informa claramente. */
+    public static function residenceZone(mixed $value): ?string
+    {
+        return match (self::key(self::clean($value))) {
+            'urbana', 'urbano', 'urban', 'zona urbana' => 'urban',
+            'rural', 'zona rural' => 'rural',
+            default => null,
+        };
+    }
+
     /**
      * Turma como a escola escreve ("1º A", "1A", "1° ano A", "1º ANO - A",
      * "MII-A") reduzida a uma chave comparavel ("1A", "MIIA").

@@ -82,7 +82,7 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         return '/m/municipio-a/escolas/'.$schoolId.'/importacoes/alunos';
     }
 
-    /** @return array{string, list<int>} */
+    /** @return array{string, list<int>, string} */
     private function preparar(string $file, string $schoolId = self::ESCOLA_A1, ?string $path = null): array
     {
         $response = $this->post($this->url($schoolId).'/previa', [
@@ -95,7 +95,7 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertSame(1, preg_match('/name="lote" value="([^"]+)"/', $html, $matches));
         preg_match_all('/name="confirmados\[\]" value="(\d+)"/', $html, $indices);
 
-        return [$matches[1], array_map('intval', $indices[1])];
+        return [$matches[1], array_map('intval', $indices[1]), $html];
     }
 
     /** @return array{int,int,int} */
@@ -354,11 +354,282 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertSame([18, 17, 1], $this->contagens());
     }
 
+    public function test_planilha_e02_grava_endereco_da_fonte_em_alunos_novos_sem_inventar_cep(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
+        $this->entrar();
+
+        [$token, $indices] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $rows = json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $first = $rows[0];
+        $this->assertNotEmpty($first['address']['address_street']);
+        $this->assertNotEmpty($first['address']['address_number']);
+        $this->assertNotEmpty($first['address']['address_district']);
+        $this->assertNull($first['address']['postal_code']);
+
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'confirmados' => $indices])
+            ->assertRedirect($this->url());
+
+        [$student, $audit] = app(TenantContext::class)->runFor($this->municipioA, function () use ($first): array {
+            $student = Student::query()->where('full_name', $first['name'])->firstOrFail();
+            $audit = AuditLog::query()->where('auditable_type', Student::class)
+                ->where('auditable_id', $student->id)->where('action', 'created')->firstOrFail();
+
+            return [$student, $audit];
+        });
+
+        $this->assertSame($first['address']['address_street'], $student->address_street);
+        $this->assertSame($first['address']['address_number'], $student->address_number);
+        $this->assertSame($first['address']['address_district'], $student->address_district);
+        $this->assertNull($student->postal_code);
+        $this->assertSame($student->address_street, $audit->after['address_street']);
+    }
+
+    public function test_reimportacao_so_completa_endereco_vazio_apos_marcacao_individual_e_audita(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
+        $this->entrar();
+
+        [$first, $indices] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $rows = json_decode(Crypt::decryptString($first), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->post($this->url().'/confirmar', ['lote' => $first, 'confirmados' => $indices])
+            ->assertRedirect($this->url());
+
+        $studentId = app(TenantContext::class)->runFor($this->municipioA, function () use ($rows): string {
+            $student = Student::query()->where('full_name', $rows[0]['name'])->firstOrFail();
+            $student->address_street = 'Rua Manual Conferida';
+            $student->address_number = null;
+            $student->address_district = null;
+            $student->save();
+
+            return $student->id;
+        });
+
+        [$withoutSelection] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $preview = json_decode(Crypt::decryptString($withoutSelection), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->assertSame($studentId, $preview[0]['address_target_id']);
+        $this->post($this->url().'/confirmar', ['lote' => $withoutSelection])
+            ->assertRedirect($this->url());
+
+        $before = app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->findOrFail($studentId));
+        $this->assertSame('Rua Manual Conferida', $before->address_street);
+        $this->assertNull($before->address_number);
+
+        [$withSelection, , $html] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $this->assertStringContainsString('name="completar_enderecos[]"', $html);
+        $this->post($this->url().'/confirmar', ['lote' => $withSelection, 'completar_enderecos' => [0]])
+            ->assertRedirect($this->url())->assertSessionHas('status', fn (string $message): bool => str_contains($message, '1 endereço'));
+
+        [$after, $audits] = app(TenantContext::class)->runFor($this->municipioA, fn (): array => [
+            Student::query()->findOrFail($studentId),
+            AuditLog::query()->where('auditable_type', Student::class)->where('auditable_id', $studentId)
+                ->where('action', 'updated')->get(),
+        ]);
+        $this->assertSame('Rua Manual Conferida', $after->address_street);
+        $this->assertSame($rows[0]['address']['address_number'], $after->address_number);
+        $this->assertSame($rows[0]['address']['address_district'], $after->address_district);
+        $this->assertTrue($audits->contains(fn ($audit): bool => ($audit->before['address_number'] ?? null) === null
+            && ($audit->after['address_number'] ?? null) === $after->address_number
+            && ($audit->after['address_street'] ?? null) === null));
+        $this->assertSame([58, 58, 3], $this->contagens());
+    }
+
+    public function test_aluno_de_outra_escola_nao_recebe_endereco_pela_lista_importada(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
+        $this->entrar();
+        [$probe] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $row = json_decode(Crypt::decryptString($probe), true, 512, JSON_THROW_ON_ERROR)['rows'][0];
+
+        $studentId = app(TenantContext::class)->runFor($this->municipioA, function () use ($row): string {
+            $student = Student::query()->create([
+                'id' => (string) Str::uuid(),
+                'full_name' => $row['name'],
+                'birth_date' => $row['birth_date'],
+                'ra' => $row['ra'],
+            ]);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $student->id,
+                'school_id' => self::ESCOLA_A2,
+                'school_year_id' => $this->yearId,
+                'school_class_id' => null,
+                'status' => 'active',
+            ]);
+
+            return $student->id;
+        });
+
+        [$token, $indices] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $rows = json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->assertContains('ja_cadastrado', array_column($rows[0]['confirmation'], 'field'));
+        $this->assertNull($rows[0]['address_target_id']);
+
+        $this->post($this->url().'/confirmar', [
+            'lote' => $token,
+            'confirmados' => $indices,
+            'completar_enderecos' => [0],
+        ])->assertSessionHasErrors('completar_enderecos');
+
+        $unchanged = app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->findOrFail($studentId));
+        $this->assertNull($unchanged->address_street);
+        $this->assertSame([1, 1, 0], $this->contagens());
+    }
+
+    public function test_edicao_manual_apos_previa_nao_e_sobrescrita_pela_confirmacao(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
+        $this->entrar();
+        [$first, $indices] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $rows = json_decode(Crypt::decryptString($first), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->post($this->url().'/confirmar', ['lote' => $first, 'confirmados' => $indices])
+            ->assertRedirect($this->url());
+
+        $studentId = app(TenantContext::class)->runFor($this->municipioA, function () use ($rows): string {
+            $student = Student::query()->where('full_name', $rows[0]['name'])->firstOrFail();
+            $student->address_number = null;
+            $student->address_district = null;
+            $student->save();
+
+            return $student->id;
+        });
+        [$token] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($studentId): void {
+            $student = Student::query()->findOrFail($studentId);
+            $student->address_number = '777';
+            $student->save();
+        });
+
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'completar_enderecos' => [0]])
+            ->assertRedirect($this->url());
+
+        $student = app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->findOrFail($studentId));
+        $this->assertSame('777', $student->address_number);
+        $this->assertSame($rows[0]['address']['address_district'], $student->address_district);
+    }
+
+    public function test_conflito_apos_previa_nao_completa_endereco_nem_grava_novos_alunos(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
+        $this->entrar();
+        [$first, $indices] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $rows = json_decode(Crypt::decryptString($first), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->post($this->url().'/confirmar', ['lote' => $first, 'confirmados' => $indices])
+            ->assertRedirect($this->url());
+
+        $studentId = app(TenantContext::class)->runFor($this->municipioA, function () use ($rows): string {
+            $student = Student::query()->where('full_name', $rows[0]['name'])->firstOrFail();
+            $student->address_number = null;
+            $student->save();
+
+            return $student->id;
+        });
+
+        $file = $this->planilhaComAlunoNovo($rows, true);
+        try {
+            [$token] = $this->preparar('E02_novo_endereco.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+        $preview = json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->assertSame($studentId, $preview[0]['address_target_id']);
+        $this->assertCount(59, $preview);
+
+        // Outra gravação ocorre após a prévia: o novo RA deixa de estar livre.
+        app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->create([
+            'id' => (string) Str::uuid(),
+            'full_name' => 'Nova Aluna Fictícia de Teste',
+            'birth_date' => '2021-01-01',
+            'ra' => '999999999999-1/SP',
+        ]));
+
+        $this->post($this->url().'/confirmar', [
+            'lote' => $token,
+            'completar_enderecos' => [0],
+        ])->assertSessionHasErrors('lote');
+
+        $unchanged = app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->findOrFail($studentId));
+        $this->assertNull($unchanged->address_number);
+        $this->assertSame([59, 58, 1], $this->contagens());
+    }
+
+    public function test_matricula_transferida_nao_autoriza_endereco_da_lista_antiga(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
+        $this->entrar();
+        [$first, $indices] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $rows = json_decode(Crypt::decryptString($first), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->post($this->url().'/confirmar', ['lote' => $first, 'confirmados' => $indices])
+            ->assertRedirect($this->url());
+
+        $studentId = app(TenantContext::class)->runFor($this->municipioA, function () use ($rows): string {
+            $student = Student::query()->where('full_name', $rows[0]['name'])->firstOrFail();
+            $student->address_number = null;
+            $student->save();
+            $enrollment = StudentEnrollment::query()->where('student_id', $student->id)->firstOrFail();
+            $enrollment->status = 'transferred';
+            $enrollment->ended_at = '2027-06-15';
+            $enrollment->save();
+
+            return $student->id;
+        });
+
+        [$token] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $preview = json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->assertNull($preview[0]['address_target_id']);
+
+        $this->post($this->url().'/confirmar', [
+            'lote' => $token,
+            'completar_enderecos' => [0],
+        ])->assertSessionHasErrors('completar_enderecos');
+
+        $student = app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->findOrFail($studentId));
+        $this->assertNull($student->address_number);
+    }
+
+    public function test_encerramento_apos_previa_recusa_completar_endereco(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
+        $this->entrar();
+        [$first, $indices] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $rows = json_decode(Crypt::decryptString($first), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->post($this->url().'/confirmar', ['lote' => $first, 'confirmados' => $indices])
+            ->assertRedirect($this->url());
+
+        $studentId = app(TenantContext::class)->runFor($this->municipioA, function () use ($rows): string {
+            $student = Student::query()->where('full_name', $rows[0]['name'])->firstOrFail();
+            $student->address_number = null;
+            $student->save();
+
+            return $student->id;
+        });
+        [$token] = $this->preparar('E02_EMEF_Sebastiao_alunos_2027.xlsx');
+        $preview = json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->assertSame($studentId, $preview[0]['address_target_id']);
+
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($studentId): void {
+            $enrollment = StudentEnrollment::query()->where('student_id', $studentId)->firstOrFail();
+            $enrollment->status = 'left_network';
+            $enrollment->ended_at = '2027-06-15';
+            $enrollment->save();
+        });
+
+        $this->post($this->url().'/confirmar', [
+            'lote' => $token,
+            'completar_enderecos' => [0],
+        ])->assertSessionHasErrors('lote');
+
+        $student = app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->findOrFail($studentId));
+        $this->assertNull($student->address_number);
+        $this->assertSame([58, 58, 1], $this->contagens());
+    }
+
     /**
      * Monta um XLSX verdadeiro a partir das linhas da E02 já conferidas,
      * acrescentando uma aluna fictícia para testar a prévia completa.
      */
-    private function planilhaComAlunoNovo(array $rows): string
+    private function planilhaComAlunoNovo(array $rows, bool $withAddresses = false): string
     {
         $path = tempnam(sys_get_temp_dir(), 'astuti_xlsx_');
         $this->assertNotFalse($path);
@@ -385,16 +656,17 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
             .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
             .'</Relationships>');
 
-        $data = [['Nome', 'Data de nascimento', 'RA', 'Turma']];
+        $data = [$withAddresses ? ['Nome', 'Data de nascimento', 'RA', 'Turma', 'Endereço completo'] : ['Nome', 'Data de nascimento', 'RA', 'Turma']];
         foreach ($rows as $row) {
             $data[] = [
                 $row['name'],
                 $row['birth_date'] === null ? '' : date('d/m/Y', strtotime($row['birth_date'])),
                 $row['ra'] ?? '',
                 $row['class_name'],
+                ...($withAddresses ? [trim(($row['address']['address_street'] ?? '').', '.($row['address']['address_number'] ?? '').' - '.($row['address']['address_district'] ?? ''))] : []),
             ];
         }
-        $data[] = ['Nova Aluna Fictícia de Teste', '01/01/2021', '999999999999-1/SP', '1A'];
+        $data[] = ['Nova Aluna Fictícia de Teste', '01/01/2021', '999999999999-1/SP', '1A', ...($withAddresses ? [''] : [])];
 
         $xml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
         foreach ($data as $i => $cells) {

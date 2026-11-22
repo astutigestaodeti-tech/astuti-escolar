@@ -6,6 +6,7 @@ use App\Audit\AuditTrail;
 use App\Import\Ocr\DocumentTableReader;
 use App\Import\Ocr\OcrReadException;
 use App\Import\Students\ClassOption;
+use App\Import\Students\ImportedStudent;
 use App\Import\Students\ImportIssue;
 use App\Import\Students\ImportTarget;
 use App\Import\Students\StudentSpreadsheetPreview;
@@ -40,6 +41,8 @@ use JsonException;
 class ConfirmedStudentImportController extends Controller
 {
     private const MAX_STUDENTS = 500;
+
+    private const ADDRESS_LIMITS = ['address_street' => 180, 'address_number' => 20, 'address_district' => 120, 'postal_code' => 9, 'residence_zone' => 5];
 
     public function index(Request $request, string $municipio, string $escola): View|RedirectResponse
     {
@@ -114,6 +117,14 @@ class ConfirmedStudentImportController extends Controller
             $birthDate = $student->birthDate?->format('Y-m-d');
             $ra = $this->canonicalRa($student->ra);
             $match = $this->existingStatus($student->name, $birthDate, $ra);
+            $address = $this->importedAddress($student, $pending);
+            $addressTargetId = null;
+            if ($match === 'existing' && array_filter($address, fn (?string $value): bool => $value !== null) !== []) {
+                $candidate = $this->eligibleAddressStudent($student->name, $birthDate, $ra, $school->id, $year->id);
+                if ($candidate !== null && $this->missingAddressFields($candidate, $address) !== []) {
+                    $addressTargetId = $candidate->id;
+                }
+            }
 
             if ($match === 'existing') {
                 $confirmation[] = ['field' => 'ja_cadastrado', 'message' => 'Já cadastrado: esta linha será ignorada.'];
@@ -130,6 +141,8 @@ class ConfirmedStudentImportController extends Controller
                 'confirmation' => $confirmation,
                 'pending' => $pending,
                 'sources' => $student->sources,
+                'address' => $address,
+                'address_target_id' => $addressTargetId,
             ];
         }
 
@@ -170,7 +183,16 @@ class ConfirmedStudentImportController extends Controller
             'leituras' => ['nullable', 'array', 'max:500'],
             'leituras.*' => ['integer', 'min:0', 'max:499'],
             'homonimos.*' => ['integer', 'min:0', 'max:499'],
+            'completar_enderecos' => ['nullable', 'array', 'max:500'],
+            'completar_enderecos.*' => ['integer', 'min:0', 'max:499'],
         ]);
+
+        // Aceita somente a representação Base64 canônica do lote cifrado.
+        // Um sufixo ignorado pelo decodificador não pode validar a mesma prévia.
+        $encoded = base64_decode($data['lote'], true);
+        if ($encoded === false || base64_encode($encoded) !== $data['lote']) {
+            throw ValidationException::withMessages(['lote' => 'Prévia inválida ou alterada. Envie a planilha novamente.']);
+        }
 
         try {
             $payload = json_decode(Crypt::decryptString($data['lote']), true, 512, JSON_THROW_ON_ERROR);
@@ -191,6 +213,7 @@ class ConfirmedStudentImportController extends Controller
         $confirmed = array_values(array_unique(array_map('intval', $data['confirmados'] ?? [])));
         $homonyms = array_values(array_unique(array_map('intval', $data['homonimos'] ?? [])));
         $readings = array_values(array_unique(array_map('intval', $data['leituras'] ?? [])));
+        $completeAddresses = array_values(array_unique(array_map('intval', $data['completar_enderecos'] ?? [])));
         $acceptedRows = [];
         $ignoredCount = 0;
 
@@ -199,10 +222,18 @@ class ConfirmedStudentImportController extends Controller
                 throw ValidationException::withMessages(['lote' => 'Os dados da conferência são inválidos.']);
             }
 
+            $this->validatedAddress($row);
+
             if ($this->hasConfirmation($row, 'ja_cadastrado')) {
                 $ignoredCount++;
+                if (in_array($index, $completeAddresses, true) && Str::isUuid($row['address_target_id'] ?? '') === false) {
+                    throw ValidationException::withMessages(['completar_enderecos' => 'Este aluno não pode receber uma atualização de endereço. Refaça a conferência.']);
+                }
 
                 continue;
+            }
+            if (in_array($index, $completeAddresses, true)) {
+                throw ValidationException::withMessages(['completar_enderecos' => 'Só é possível completar o endereço de um aluno já cadastrado na escola.']);
             }
 
             foreach ($row['confirmation'] as $issue) {
@@ -230,8 +261,13 @@ class ConfirmedStudentImportController extends Controller
             $acceptedRows[] = $row;
         }
 
+        if (array_diff($completeAddresses, array_keys($payload['rows'])) !== []) {
+            throw ValidationException::withMessages(['completar_enderecos' => 'A seleção de endereços contém linhas inválidas.']);
+        }
+
+        $completedAddresses = 0;
         try {
-            DB::connection('tenant')->transaction(function () use ($payload, $acceptedRows, $ignoredCount, $school, $request): void {
+            DB::connection('tenant')->transaction(function () use ($payload, $acceptedRows, $ignoredCount, $completeAddresses, &$completedAddresses, $school, $request): void {
                 $year = SchoolYear::query()->whereIn('status', ['active', 'planned'])->lockForUpdate()->find($payload['year_id'] ?? null);
                 if ($year === null || School::query()->where('status', 'active')->whereKey($school->id)->lockForUpdate()->first() === null) {
                     throw ValidationException::withMessages(['lote' => 'Escola ou ano letivo deixou de estar disponível. Refaça a conferência.']);
@@ -251,11 +287,23 @@ class ConfirmedStudentImportController extends Controller
 
                 // Rechecar sob lock impede que outra importação reuse o RA
                 // ou introduza um homônimo sem confirmação humana.
-                foreach ($payload['rows'] as $row) {
+                $addressUpdates = [];
+                foreach ($payload['rows'] as $index => $row) {
                     $match = $this->existingStatus($row['name'], $row['birth_date'], $row['ra']);
                     if ($this->hasConfirmation($row, 'ja_cadastrado')) {
                         if ($match !== 'existing') {
                             throw ValidationException::withMessages(['lote' => 'Um cadastro mudou depois da prévia. Refaça a conferência antes de confirmar.']);
+                        }
+
+                        if (in_array($index, $completeAddresses, true)) {
+                            $existing = $this->eligibleAddressStudent($row['name'], $row['birth_date'], $row['ra'], $school->id, $year->id, true);
+                            if ($existing === null || $existing->id !== $row['address_target_id']) {
+                                throw ValidationException::withMessages(['lote' => 'A identificação ou o vínculo escolar mudou depois da prévia. Refaça a conferência; nenhum endereço foi alterado.']);
+                            }
+                            $missing = $this->missingAddressFields($existing, $this->validatedAddress($row));
+                            if ($missing !== []) {
+                                $addressUpdates[] = [$existing, $missing];
+                            }
                         }
 
                         continue;
@@ -280,12 +328,19 @@ class ConfirmedStudentImportController extends Controller
                     'created_at' => now(),
                 ]);
 
+                foreach ($addressUpdates as [$existing, $missing]) {
+                    $existing->fill($missing);
+                    $existing->save();
+                    $completedAddresses++;
+                }
+
                 foreach ($acceptedRows as $row) {
                     $student = Student::query()->create([
                         'id' => (string) Str::uuid(),
                         'full_name' => $row['name'],
                         'birth_date' => $row['birth_date'],
                         'ra' => $row['ra'],
+                        ...$this->validatedAddress($row),
                     ]);
                     StudentEnrollment::query()->create([
                         'id' => (string) Str::uuid(),
@@ -305,6 +360,7 @@ class ConfirmedStudentImportController extends Controller
                     'school_year_id' => $year->id,
                     'student_count' => count($acceptedRows),
                     'ignored_count' => $ignoredCount,
+                    'address_completed_count' => $completedAddresses,
                 ]);
             });
         } catch (QueryException $exception) {
@@ -316,7 +372,7 @@ class ConfirmedStudentImportController extends Controller
         }
 
         return redirect()->route('school.imports.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id])
-            ->with('status', count($acceptedRows).' alunos e matrículas importados; '.$ignoredCount.' já cadastrados ignorados com auditoria.');
+            ->with('status', count($acceptedRows).' alunos e matrículas importados; '.$ignoredCount.' já cadastrados ignorados; '.$completedAddresses.' '.($completedAddresses === 1 ? 'endereço completado' : 'endereços completados').' com auditoria.');
     }
 
     /** @return array{0: mixed, 1: School} */
@@ -380,6 +436,113 @@ class ConfirmedStudentImportController extends Controller
         }
 
         return (clone $sameName)->whereNull('birth_date')->exists() ? 'homonym' : 'new';
+    }
+
+    /**
+     * Endereço disponível na fonte; campos longos ou incompletos não são
+     * truncados nem inferidos: continuam pendentes para conferência manual.
+     *
+     * @param  list<array{field: string, message: string}>  $pending
+     * @return array<string, ?string>
+     */
+    private function importedAddress(ImportedStudent $student, array &$pending): array
+    {
+        $address = [
+            'address_street' => $student->street,
+            'address_number' => $student->number,
+            'address_district' => $student->district,
+            'postal_code' => $student->postalCode,
+            'residence_zone' => $student->residenceZone,
+        ];
+
+        foreach (self::ADDRESS_LIMITS as $field => $limit) {
+            if ($address[$field] !== null && mb_strlen($address[$field]) > $limit) {
+                $address[$field] = null;
+                $pending[] = ['field' => 'endereco', 'message' => 'Um campo de endereço ultrapassa o limite; complete manualmente após a importação.'];
+            }
+        }
+
+        return $address;
+    }
+
+    /** @param array<string, mixed> $row
+     * @return array<string, ?string>
+     */
+    private function validatedAddress(array $row): array
+    {
+        $source = $row['address'] ?? [];
+        if (is_array($source) === false) {
+            throw ValidationException::withMessages(['lote' => 'Endereço inválido na conferência. Reenvie o arquivo.']);
+        }
+
+        $address = [];
+        foreach (self::ADDRESS_LIMITS as $field => $limit) {
+            $value = $source[$field] ?? null;
+            if ($value !== null && (is_string($value) === false || trim($value) === '' || mb_strlen($value) > $limit)) {
+                throw ValidationException::withMessages(['lote' => 'Endereço inválido na conferência. Reenvie o arquivo.']);
+            }
+            $address[$field] = $value;
+        }
+        if (($address['postal_code'] !== null && preg_match('/\A\d{5}-\d{3}\z/', $address['postal_code']) !== 1)
+            || ($address['residence_zone'] !== null && in_array($address['residence_zone'], ['urban', 'rural'], true) === false)) {
+            throw ValidationException::withMessages(['lote' => 'CEP ou zona de residência inválidos na conferência. Reenvie o arquivo.']);
+        }
+
+        return $address;
+    }
+
+    /** @param array<string, ?string> $address
+     * @return array<string, string>
+     */
+    private function missingAddressFields(Student $student, array $address): array
+    {
+        $missing = [];
+        foreach ($address as $field => $value) {
+            if ($value !== null && ($student->getAttribute($field) === null || trim((string) $student->getAttribute($field)) === '')) {
+                $missing[$field] = $value;
+            }
+        }
+
+        return $missing;
+    }
+
+    /**
+     * RA, ou nome sem acento mais nascimento, deve identificar uma única pessoa
+     * vinculada à escola e ao ano. Nunca usa só nome para completar endereço.
+     */
+    private function eligibleAddressStudent(string $name, ?string $birthDate, ?string $ra, string $schoolId, string $yearId, bool $lock = false): ?Student
+    {
+        if ($ra === null && $birthDate === null) {
+            return null;
+        }
+
+        $query = Student::query()->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$name]);
+        if ($birthDate !== null) {
+            $query->whereDate('birth_date', $birthDate);
+        }
+        if ($ra !== null) {
+            $query->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$ra]);
+        }
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $matches = $query->limit(2)->get();
+        if ($matches->count() !== 1) {
+            return null;
+        }
+
+        $student = $matches->first();
+        // A escola de origem não pode alterar endereço após transferência ou
+        // encerramento. A linha da matrícula também fica travada no POST.
+        $enrollment = StudentEnrollment::query()->where('student_id', $student->id)
+            ->where('school_id', $schoolId)->where('school_year_id', $yearId)
+            ->where('status', 'active')->whereNull('ended_at');
+        if ($lock) {
+            $enrollment->lockForUpdate();
+        }
+
+        return $enrollment->first(['id']) !== null ? $student : null;
     }
 
     private function canonicalRa(?string $ra): ?string

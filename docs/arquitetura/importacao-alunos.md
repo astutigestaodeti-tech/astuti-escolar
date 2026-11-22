@@ -18,8 +18,9 @@ Objetivo: importar os arquivos que as escolas mandam (pasta 02 do kit Monte Sere
 - **Nascimento:** data do Excel, número de série do Excel, dd/mm/aaaa, dd-mm-aaaa, d/m/aa e aaaa-mm-dd. "8 anos" **não vira data**: fica pendente, com a idade guardada como pista. Datas futuras ou impossíveis ficam pendentes com o motivo.
 - **Duplicidade:** mesmo nome sem acento e mesma data viram **um aluno em conferir**, com as duas origens. O dado que falta numa linha (como o RA) é aproveitado da outra; valores diferentes entre as linhas são apontados.
 - **Linhas de total e linhas em branco** não viram aluno; o total aparece na lista de linhas ignoradas.
-- **Pendências** (o arquivo não traz): RA, transporte, endereço, CEP, observação de inclusão. Pendência não impede a gravação; conferir impede.
+- **Pendências** (o arquivo não traz): RA, transporte, campos ausentes do endereço/CEP e observação de inclusão. Pendência não impede a gravação; conferir impede. Endereço e CEP só são gravados quando estão realmente presentes e válidos na fonte.
 - **Pistas** (responsável, telefone, CPF do responsável, observação, idade) ficam guardadas para as próximas etapas, sem virar cadastro sozinhas.
+- **Endereço:** logradouro completo ou separado, número, bairro, CEP e zona urbana/rural são aceitos quando a escola os informou. Um aluno novo recebe os valores válidos; aluno já cadastrado só completa campos vazios após marcação individual, confirmação de identidade e matrícula ativa, não encerrada, na escola/ano. Bairro divergente entre colunas ou linhas repetidas não é gravado automaticamente; as pendências de todas as linhas são preservadas. "Mora em" isolado não identifica bairro.
 
 ## Segurança do leitor .xlsx
 
@@ -35,7 +36,7 @@ Leitor próprio, só com as extensões `zip` e `xmlreader` do PHP: sem rede (`LI
 - O aluno passou a aceitar `ra` opcional com índice único sobre a forma normalizada (maiúsculas e sem hífen), inclusive para SQL direto. O formulário normaliza caixa e hífen, verifica duplicidade e mantém a autoria e a auditoria das mudanças.
 - A edição de turma identifica a matrícula por UUID e usa tokens PostgreSQL `xmin` próprios da matrícula e do aluno, evitando conflitos até quando duas gravações ocorrem no mesmo segundo. Em caso de divergência, nenhuma das duas alterações é gravada.
 - Registros antigos permanecem sem RA ou turma até preenchimento legítimo. A cópia fictícia MariaDB para PostgreSQL compara só colunas existentes na origem e deixa novos campos nulos, sem reescrever dados originais.
-- **A gravação assistida de planilhas está implementada neste bloco** após a conferência humana e segundo fator. O arquivo original nunca é armazenado; ficam pendentes apenas os dados que a fonte não informou e que não integram ainda o cadastro de alunos.
+- **A gravação assistida de planilhas está implementada neste bloco** após a conferência humana e segundo fator. O arquivo original nunca é armazenado; ficam pendentes apenas os dados que a fonte não informou e que não integram ainda o cadastro de alunos. Campos de endereço válidos e presentes podem ser cadastrados; jamais são preenchidos a partir do gabarito.
 
 ## Leitura de PDF e foto (OCR)
 

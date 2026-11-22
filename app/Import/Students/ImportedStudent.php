@@ -13,6 +13,9 @@ final class ImportedStudent
     /** @var list<ImportIssue> */
     public array $issues = [];
 
+    /** Indica que o bairro foi invalidado por fontes divergentes na planilha. */
+    public bool $districtConflict = false;
+
     /**
      * @param  list<string>  $sources  "Aba X, linha N"
      * @param  array<string, string>  $hints  pistas que nao viram cadastro sozinhas (mae, telefone, CPF, observacao)
@@ -30,6 +33,8 @@ final class ImportedStudent
         public ?string $district,
         public array $sources,
         public array $hints = [],
+        public ?string $postalCode = null,
+        public ?string $residenceZone = null,
     ) {}
 
     public function addIssue(string $kind, string $field, string $message): void

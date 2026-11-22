@@ -24,7 +24,10 @@ final class StudentSpreadsheetPreview
         'phone' => ['telefone', 'fone', 'tel', 'celular', 'contato', 'telefone do responsavel'],
         'cpf' => ['cpf resp', 'cpf do responsavel', 'cpf responsavel', 'cpf'],
         'address' => ['endereco', 'endereco completo', 'logradouro'],
-        'residence' => ['mora em', 'bairro', 'localidade'],
+        'number' => ['numero', 'numero da residencia', 'numero da casa'],
+        'residence' => ['bairro', 'bairro da residencia', 'bairro de residencia'],
+        'postal_code' => ['cep', 'codigo postal'],
+        'residence_zone' => ['zona de residencia', 'zona residencial', 'zona'],
         'transport' => ['transp', 'transporte', 'onibus', 'transporte escolar', 'usa transporte'],
         'notes' => ['obs', 'observacao', 'observacoes'],
     ];
@@ -158,9 +161,23 @@ final class StudentSpreadsheetPreview
         $address = ['street' => null, 'number' => null, 'district' => null];
         if (isset($columns['address'])) {
             $address = ImportText::address($cell('address'));
-        } elseif (isset($columns['residence'])) {
-            $address['district'] = ImportText::clean($cell('residence'));
         }
+        if (isset($columns['number'])) {
+            $address['number'] = ImportText::clean($cell('number')) ?? $address['number'];
+        }
+        $districtConflict = false;
+        if (isset($columns['residence'])) {
+            $separateDistrict = ImportText::clean($cell('residence'));
+            if ($separateDistrict !== null && $address['district'] === null) {
+                $address['district'] = $separateDistrict;
+            } elseif ($separateDistrict !== null && ImportText::key($separateDistrict) !== ImportText::key($address['district'])) {
+                // Duas fontes divergentes não autorizam escolher um bairro arbitrariamente.
+                $address['district'] = null;
+                $districtConflict = true;
+            }
+        }
+        $postalCode = isset($columns['postal_code']) ? ImportText::postalCode($cell('postal_code')) : null;
+        $residenceZone = isset($columns['residence_zone']) ? ImportText::residenceZone($cell('residence_zone')) : null;
 
         $student = new ImportedStudent(
             schoolId: $target->schoolId,
@@ -181,6 +198,8 @@ final class StudentSpreadsheetPreview
                 'observacao' => ImportText::clean($cell('notes')),
                 'idade_informada' => $birth['age'] !== null ? $birth['age'].' anos' : null,
             ], fn (?string $value): bool => $value !== null),
+            postalCode: $postalCode,
+            residenceZone: $residenceZone,
         );
 
         if ($classIssue !== null) {
@@ -196,10 +215,20 @@ final class StudentSpreadsheetPreview
         if ($student->usesTransport === null) {
             $student->addIssue(ImportIssue::PENDING, 'transporte', 'A planilha não informa o uso de transporte escolar.');
         }
-        if ($student->street === null || $student->number === null || $student->district === null) {
+        if ($districtConflict) {
+            $student->districtConflict = true;
+            $student->addIssue(ImportIssue::PENDING, 'endereco', 'Bairros divergentes nas colunas de endereço. O bairro não foi importado; confira na ficha.');
+        }
+        if (! $districtConflict && ($student->street === null || $student->number === null || $student->district === null)) {
             $student->addIssue(ImportIssue::PENDING, 'endereco', 'Endereço incompleto na planilha.');
         }
-        $student->addIssue(ImportIssue::PENDING, 'cep', 'CEP não informado.');
+        if ($postalCode === null) {
+            $rawCep = ImportText::clean($cell('postal_code'));
+            $student->addIssue(ImportIssue::PENDING, 'cep', $rawCep === null ? 'CEP não informado.' : 'CEP inválido na planilha; informe no cadastro após a importação.');
+        }
+        if (isset($columns['residence_zone']) && $residenceZone === null && ImportText::clean($cell('residence_zone')) !== null) {
+            $student->addIssue(ImportIssue::PENDING, 'zona_residencia', 'Zona de residência inválida na planilha; escolha Urbana ou Rural no cadastro.');
+        }
         if (isset($student->hints['observacao'])) {
             $student->addIssue(ImportIssue::PENDING, 'observacao', 'Observação da escola para a etapa de inclusão: "'.$student->hints['observacao'].'".');
         }
@@ -262,13 +291,33 @@ final class StudentSpreadsheetPreview
         foreach ($groups as $group) {
             $first = array_shift($group);
             foreach ($group as $other) {
-                foreach (['ra', 'classId', 'grade', 'usesTransport', 'street', 'number', 'district'] as $field) {
+                foreach (['ra', 'classId', 'grade', 'usesTransport', 'street', 'number', 'district', 'postalCode', 'residenceZone'] as $field) {
+                    if ($field === 'district' && ($first->districtConflict || $other->districtConflict)) {
+                        // Divergência em qualquer origem impede usar o bairro de outra linha.
+                        $first->districtConflict = true;
+                        $first->district = null;
+
+                        continue;
+                    }
+
                     if ($first->{$field} === null) {
                         $first->{$field} = $other->{$field};
                     } elseif ($other->{$field} !== null && $other->{$field} !== $first->{$field}) {
-                        $first->addIssue(ImportIssue::CONFIRM, $field, 'Valores diferentes entre as linhas repetidas: "'.$this->text($first->{$field}).'" e "'.$this->text($other->{$field}).'".');
+                        if ($field === 'district') {
+                            if (ImportText::key($first->district) === ImportText::key($other->district)) {
+                                continue;
+                            }
+
+                            $first->districtConflict = true;
+                            $first->district = null;
+                            $first->addIssue(ImportIssue::PENDING, 'endereco', 'Bairros divergentes entre linhas repetidas. O bairro não foi importado; confira na ficha.');
+                        } else {
+                            $first->addIssue(ImportIssue::CONFIRM, $field, 'Valores diferentes entre as linhas repetidas: "'.$this->text($first->{$field}).'" e "'.$this->text($other->{$field}).'".');
+                        }
                     }
                 }
+                // Pendências de outras ocorrências não podem sumir na consolidação.
+                $first->issues = [...$first->issues, ...$other->issues];
                 $first->sources = [...$first->sources, ...$other->sources];
                 $first->hints += $other->hints;
             }

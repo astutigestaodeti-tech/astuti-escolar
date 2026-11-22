@@ -1,5 +1,14 @@
 # HISTORICO DE DESENVOLVIMENTO
 
+## 2026-11-22 | Importação de alunos | Endereço assistido com conferência
+
+- O leitor de planilhas reconhece logradouro/endereço completo, número, bairro, CEP e zona residencial quando a escola os informa. Mantém o endereço em coluna única e sinaliza dados inválidos ou ausentes sem inventar informação do gabarito.
+- A prévia cifrada exibe o endereço da fonte. Novos alunos recebem campos disponíveis; alunos já cadastrados só completam lacunas com seleção individual, identificação inequívoca e matrícula na mesma escola e ano. O resumo de pendências conta cada aluno uma vez por campo, mesmo quando há linhas repetidas.
+- A revisão independente exigiu vínculo escolar ativo e não encerrado, com lock também na matrícula, para impedir que uma escola de origem complete endereços após transferência. "Mora em" deixou de ser tratado como bairro, e divergências explícitas entre bairros, inclusive em linhas repetidas, permanecem pendentes sem gravação automática.
+- A confirmação refaz as verificações dentro do advisory lock e de uma única transação, preserva valores alterados após a prévia, mantém RA e matrícula existentes e registra antes/depois na auditoria.
+- Testes cobrem importação E02, reimportação sem atualização automática, preenchimento de lacunas, isolamento entre escolas, edição concorrente e rollback. A integração anterior #31 (5b02d38) passou pelo CI completo com 377 testes PHP aprovados, Pint, interface e PostgreSQL.
+- Sem migrações, alterações em arquivos do segundo fator, bancos reais, notebook, merge ou deploy. O novo PR aguarda seu próprio CI para ser declarado pronto.
+
 ## 2026-11-22 | Homologação | União segura dos PRs #26 e #27 sobre o #30
 
 - Branch de integração em rascunho reúne o importador de transporte da SME (#26) e o layout compacto de ficha/endereço (#27) sobre o endereço inteligente e seus avisos (#28, #29 e #30). Os PRs originais permanecem abertos e sem rebase ou merge.
