@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Geo\Coordinates;
 use App\Geo\Geocoder;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
@@ -97,6 +98,15 @@ class GeoLocationController extends Controller
     {
         $query = trim((string) $request->query('procurar', ''));
         if ($query !== '') {
+            // Coordenadas ou link do Google Maps vão direto para o ponto, sem procurar endereço.
+            $coordinates = app(Coordinates::class);
+            $point = $coordinates->parse($query);
+            if ($point !== null) {
+                return [...$point, 'found' => true, 'query' => mb_substr($query, 0, 200), 'source' => 'mapa'];
+            }
+            if ($coordinates->looksLikeMapLink($query)) {
+                return ['lat' => 0.0, 'lon' => 0.0, 'found' => false, 'query' => mb_substr($query, 0, 200), 'link' => true];
+            }
             $query = mb_substr($query, 0, 200);
             $point = $geocoder->locate($query, null, null, null, null, null);
 

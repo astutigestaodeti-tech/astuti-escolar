@@ -36,7 +36,7 @@ class TwoFactorController extends Controller
         $user = $request->user();
 
         if (! Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages(['password' => 'Senha atual incorreta.']);
+            throw ValidationException::withMessages(['password' => 'Senha incorreta. Use a mesma senha com que você entra no sistema (não o código do aplicativo).']);
         }
 
         DB::connection('platform')->transaction(function () use ($user, $totp): void {
@@ -173,7 +173,7 @@ class TwoFactorController extends Controller
         $user = $request->user()->fresh();
 
         if (! Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages(['password' => 'Senha atual incorreta.']);
+            throw ValidationException::withMessages(['password' => 'Senha incorreta. Use a mesma senha com que você entra no sistema (não o código do aplicativo).']);
         }
 
         $twoFactor = app(TwoFactorSession::class);

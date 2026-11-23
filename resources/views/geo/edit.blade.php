@@ -18,20 +18,23 @@
     @php
         $temPonto = $subject->latitude !== null;
         $ponto = $suggestion && $suggestion['found'] ? $suggestion : ($temPonto ? ['lat' => (float) $subject->latitude, 'lon' => (float) $subject->longitude] : null);
-        $origem = $suggestion && $suggestion['found'] ? 'endereco' : ($subject->geo_source ?? 'mapa');
+        $origem = $suggestion && $suggestion['found'] ? ($suggestion['source'] ?? 'endereco') : ($subject->geo_source ?? 'mapa');
+        $porCoordenada = $suggestion && $suggestion['found'] && ($suggestion['source'] ?? null) === 'mapa';
     @endphp
     <div class="folha-titulo">
         <div>
             <span class="contexto">{{ $kind === 'aluno' ? 'Residência do aluno' : 'Endereço da escola' }}</span>
             <h1>Localização de {{ $subjectName }}</h1>
-            <p>Procure o endereço ou clique no mapa. Arraste o marcador até a porta da {{ $kind === 'aluno' ? 'casa' : 'escola' }} e salve.</p>
+            <p>Procure o endereço, cole as coordenadas do Google Maps ou clique no mapa. Arraste o marcador até a porta da {{ $kind === 'aluno' ? 'casa' : 'escola' }} e salve.</p>
         </div>
     </div>
 
     @if ($errors->any())
         <div class="status-erro" role="alert"><x-icon name="info" :size="18" /> {{ $errors->first() }}</div>
     @endif
-    @if ($suggestion && ! $suggestion['found'])
+    @if ($suggestion && ! $suggestion['found'] && ($suggestion['link'] ?? false))
+        <div class="status-erro" role="status"><x-icon name="info" :size="18" /> Não consegui ler o ponto deste link do Google Maps. No Google Maps, clique com o botão direito no local, clique nos números que aparecem no alto (eles são copiados) e cole aqui.</div>
+    @elseif ($suggestion && ! $suggestion['found'])
         <div class="status-erro" role="status"><x-icon name="info" :size="18" /> Não encontrei "{{ $suggestion['query'] }}" no mapa. Tente só a rua e a cidade, ou clique direto no mapa.</div>
     @endif
 
@@ -40,11 +43,12 @@
         <form class="busca geo-busca" method="GET" action="{{ url()->current() }}" role="search">
             <div class="campo">
                 <x-icon name="busca" :size="18" />
-                <label class="sr-only" for="procurar">Endereço para procurar no mapa</label>
-                <input id="procurar" type="search" name="procurar" maxlength="200" value="{{ $suggestion['query'] ?? $addressText }}" placeholder="Rua, número, bairro e cidade">
+                <label class="sr-only" for="procurar">Endereço, coordenadas ou link do Google Maps</label>
+                <input id="procurar" type="search" name="procurar" maxlength="2000" value="{{ $suggestion['query'] ?? $addressText }}" placeholder="Endereço, coordenadas ou link do Google Maps" aria-describedby="procurar-dica">
             </div>
             <button class="botao secundario" type="submit"><x-icon name="busca" :size="16" /> Procurar no mapa</button>
         </form>
+        <p class="texto-ajuda geo-dica" id="procurar-dica">Do Google Maps: clique com o botão direito no local e clique nos números do alto (por exemplo, -23.31234, -46.12345); eles são copiados. Cole aqui e clique em Procurar. Também vale colar o link de "Compartilhar".</p>
 
         <div id="mapa-localizacao" class="geo-mapa" role="application" aria-label="Mapa para marcar a localização"
              data-tiles="{{ config('geo.tiles_url') }}" data-atribuicao="{{ config('geo.tiles_attribution') }}"
@@ -56,7 +60,7 @@
             <input type="hidden" name="latitude" id="latitude" value="{{ $ponto['lat'] ?? '' }}">
             <input type="hidden" name="longitude" id="longitude" value="{{ $ponto['lon'] ?? '' }}">
             <input type="hidden" name="geo_source" id="geo_source" value="{{ $origem }}">
-            <p class="texto-ajuda" id="geo-situacao">{{ $ponto ? 'Ponto marcado. Ajuste se precisar e salve.' : 'Nenhum ponto marcado ainda.' }}</p>
+            <p class="texto-ajuda" id="geo-situacao">{{ $porCoordenada ? 'Coordenadas reconhecidas. Confira o ponto no mapa e salve.' : ($ponto ? 'Ponto marcado. Ajuste se precisar e salve.' : 'Nenhum ponto marcado ainda.') }}</p>
             <div class="formulario-acoes">
                 <button class="botao" type="submit">Salvar localização</button>
                 <a class="botao secundario" href="{{ $backUrl }}">Cancelar</a>

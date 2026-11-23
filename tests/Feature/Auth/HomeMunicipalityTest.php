@@ -31,13 +31,9 @@ class HomeMunicipalityTest extends TwoMunicipalityTestCase
         $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
         $this->vincular($user, $this->municipioB, 'school_secretary', [self::ESCOLA_B1], 'inactive');
 
+        // Uma rede só: entra direto nela, sem a tela de escolha.
         $this->actingAs($user)->get('/')
-            ->assertOk()
-            ->assertSee('Municipio A')
-            ->assertSee('Segurança da conta')
-            ->assertSee(route('two-factor.settings'))
-            ->assertSee(route('schools.index', ['municipio' => 'municipio-a']))
-            ->assertDontSee('Municipio B');
+            ->assertRedirect(route('schools.index', ['municipio' => 'municipio-a']));
     }
 
     public function test_membro_sem_escolas_nao_recebe_link_de_rede(): void
@@ -70,8 +66,20 @@ class HomeMunicipalityTest extends TwoMunicipalityTestCase
         $this->municipioA->update(['status' => 'inactive']);
 
         $this->actingAs($user)->get('/')
+            ->assertRedirect(route('schools.index', ['municipio' => 'municipio-b']));
+    }
+
+    public function test_quem_tem_duas_redes_ativas_escolhe_na_pagina_inicial(): void
+    {
+        $user = $this->criarUsuario('home-duas-redes@example.invalid');
+        $this->vincular($user, $this->municipioA, 'municipal_manager');
+        $this->vincular($user, $this->municipioB, 'municipal_manager');
+
+        $this->actingAs($user)->get('/')
             ->assertOk()
+            ->assertSee('Municipio A')
             ->assertSee('Municipio B')
-            ->assertDontSee('Municipio A');
+            ->assertSee('Segurança da conta')
+            ->assertSee(route('schools.index', ['municipio' => 'municipio-a']));
     }
 }

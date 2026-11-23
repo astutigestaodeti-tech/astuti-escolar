@@ -45,7 +45,7 @@
                     @csrf
                     <h2>Desativar segundo fator</h2>
                     <p>Para desativar, confirme seu código novamente e informe a senha da conta. As alterações escolares ficarão bloqueadas.</p>
-                    <label class="rotulo" for="password">Senha atual</label>
+                    <label class="rotulo" for="password">Sua senha de acesso ao sistema</label>
                     <input class="entrada" id="password" name="password" type="password" autocomplete="current-password" required>
                     <button class="botao secundario" type="submit">Desativar proteção</button>
                 </form>
@@ -73,16 +73,19 @@
                 </form>
             @else
                 <div class="seguranca-passo">Etapa 1 de 2: validar sua identidade</div>
-                <p>Você precisará de um aplicativo autenticador compatível com códigos TOTP. Depois de informar sua senha, exibiremos uma chave para cadastrar no aplicativo.</p>
+                <p>Você precisará de um aplicativo autenticador no celular (Google Authenticator, Microsoft Authenticator ou outro compatível com códigos TOTP). Depois de informar sua senha, exibiremos um QR Code para cadastrar no aplicativo.</p>
                 <form method="POST" action="{{ route('two-factor.begin') }}" class="seguranca-form">
                     @csrf
-                    <label class="rotulo" for="password">Senha atual</label>
-                    <input class="entrada" id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+                    <label class="rotulo" for="password">Sua senha de acesso ao sistema</label>
+                    <p class="texto-ajuda" id="password-ajuda">A mesma que você usa para entrar. O código do aplicativo vem na próxima etapa.</p>
+                    <input class="entrada" id="password" name="password" type="password" autocomplete="current-password" aria-describedby="password-ajuda" required autofocus>
                     <button class="botao" type="submit">Começar configuração</button>
                 </form>
             @endif
         </section>
-        <p class="seguranca-rodape">Ambiente de desenvolvimento: utilize apenas contas e dados fictícios.</p>
+        @if (app()->environment('local'))
+            <p class="seguranca-rodape">Ambiente de desenvolvimento: utilize apenas contas e dados fictícios.</p>
+        @endif
     </div>
 </main>
 </body>

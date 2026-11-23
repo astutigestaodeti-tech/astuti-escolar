@@ -18,7 +18,7 @@ class TwoFactorReadAccessTest extends TwoMunicipalityTestCase
         $user = $this->criarUsuario('consulta-sem-2fa@example.invalid');
         $this->vincular($user, $this->municipioA, 'municipal_manager');
 
-        $this->actingAs($user)->get('/')->assertOk()->assertSee('Municipio A');
+        $this->actingAs($user)->get('/')->assertRedirect(route('schools.index', ['municipio' => 'municipio-a']));
         $this->get('/m/municipio-a/escolas')->assertOk()->assertSee('Unidade A');
     }
 
@@ -56,7 +56,7 @@ class TwoFactorReadAccessTest extends TwoMunicipalityTestCase
         $this->post('/seguranca/segundo-fator/desafio', ['code' => $code])->assertRedirect($target);
 
         $this->get($target)->assertOk()->assertSee('Unidade A');
-        $this->get('/')->assertOk()->assertSee('Municipio A');
+        $this->get('/')->assertRedirect(route('schools.index', ['municipio' => 'municipio-a']));
     }
 
     public function test_resposta_json_nao_redireciona_para_referer_externo(): void

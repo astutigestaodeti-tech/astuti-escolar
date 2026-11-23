@@ -656,6 +656,7 @@ select.entrada{cursor:pointer}
 .geo-salvar{padding:14px 22px 0}
 .geo-remover{color:#8a2c22}
 .geo-lgpd{margin:12px 22px 0}
+.geo-dica{margin:0 var(--recuo-folha) 14px;max-width:760px}
 .geo-aviso{margin:10px 0 0;padding:10px 12px;border-radius:var(--raio-controle);background:#fff4dc;color:#7a4d00;font-size:14px}
 @media (max-width:640px){.geo-mapa{height:320px;margin:0 12px}}
 /* Chamada diária: toque confortável e leitura no celular, sem seletores genéricos. */
