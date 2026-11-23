@@ -19,6 +19,7 @@ use App\Models\Tenant\StudentFinalResult;
 use App\Models\Tenant\StudentPriorSchoolYear;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -241,7 +242,7 @@ class SchoolTranscriptTest extends TwoMunicipalityTestCase
                 DB::connection('tenant')->table('issued_documents')->where('id', $issued['id'])
                     ->update(['transcript_sha256' => str_repeat('a', 64)]);
                 $this->fail('Snapshot e hash precisam permanecer imutáveis no PostgreSQL.');
-            } catch (\Illuminate\Database\QueryException $exception) {
+            } catch (QueryException $exception) {
                 $this->assertStringContainsString('Snapshot do histórico escolar', $exception->getMessage());
             }
         });
