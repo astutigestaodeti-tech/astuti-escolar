@@ -4,10 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
 use App\Census\CensusReadiness;
+use App\Models\Tenant\CensusParameter;
 use App\Models\Tenant\School;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
@@ -44,7 +48,54 @@ class CensusReadinessController extends Controller
             'listTotal' => $list->count(),
             'limit' => self::LIMIT,
             'filters' => ['escola' => $validated['escola'] ?? null, 'aviso' => $validated['aviso'] ?? null],
-            'vaafBase' => config('censo.vaaf_base'),
+            'vaafBase' => CensusParameter::vaafFor((int) config('censo.year_reference')),
+            'parameter' => CensusParameter::query()->where('reference_year', (int) config('censo.year_reference'))->first(),
         ])->header('Cache-Control', 'private, no-store');
+    }
+
+    /** A gestão informa o VAAF do estado no ano, publicado pelo FNDE. */
+    public function updateParameters(Request $request, string $municipio): RedirectResponse
+    {
+        $municipality = $request->attributes->get('astuti.municipality');
+        Gate::authorize('viewNetworkPanel', [School::class, $municipality]);
+
+        $raw = $request->input('vaaf_base');
+        if (is_string($raw)) {
+            // Aceita "6.123,45", "6123,45" e "6123.45".
+            $raw = str_contains($raw, ',') ? str_replace(['.', ','], ['', '.'], trim($raw)) : trim($raw);
+            $request->merge(['vaaf_base' => $raw]);
+        }
+        $data = $request->validate([
+            'vaaf_base' => ['required', 'numeric', 'gt:0', 'lt:100000'],
+            'source_note' => ['required', 'string', 'min:5', 'max:200'],
+        ], [
+            'vaaf_base.required' => 'Informe o valor anual por aluno do Fundeb no estado.',
+            'vaaf_base.numeric' => 'Informe o valor em reais, por exemplo 6.123,45.',
+            'vaaf_base.gt' => 'O valor precisa ser maior que zero.',
+            'vaaf_base.lt' => 'Confira o valor: ele é por aluno, por ano.',
+            'source_note.required' => 'Diga de onde veio o valor (ex.: portaria do FNDE do ano).',
+            'source_note.min' => 'Diga de onde veio o valor (ex.: portaria do FNDE do ano).',
+            'source_note.max' => 'Use até 200 caracteres na origem do valor.',
+        ]);
+
+        $year = (int) config('censo.year_reference');
+        DB::connection('tenant')->transaction(function () use ($data, $year, $request): void {
+            $parameter = CensusParameter::query()->lockForUpdate()->where('reference_year', $year)->first()
+                ?? new CensusParameter(['id' => (string) Str::uuid(), 'reference_year' => $year]);
+            $before = $parameter->exists ? $parameter->only(['reference_year', 'vaaf_base', 'source_note']) : null;
+            $parameter->fill([
+                'vaaf_base' => round((float) $data['vaaf_base'], 2),
+                'source_note' => trim($data['source_note']),
+                'updated_by' => (string) $request->user()?->getAuthIdentifier(),
+            ]);
+            if (! $parameter->exists || $parameter->isDirty()) {
+                $parameter->save();
+                app(AuditTrail::class)->record('tenant', $before === null ? 'census.parameters.created' : 'census.parameters.updated',
+                    CensusParameter::class, $parameter->id, $before, $parameter->only(['reference_year', 'vaaf_base', 'source_note']));
+            }
+        });
+
+        return redirect()->to(route('census.readiness.index', ['municipio' => $municipality->slug]).'#titulo-censo-estimativa')
+            ->with('status', 'Valor do Fundeb atualizado. A estimativa já usa o novo valor.');
     }
 }
