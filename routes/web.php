@@ -18,6 +18,7 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
 use App\Http\Controllers\SchoolMonthlyAttendanceReportController;
+use App\Http\Controllers\SchoolPendenciesController;
 use App\Http\Controllers\SchoolStaffController;
 use App\Http\Controllers\SchoolStudentController;
 use App\Http\Controllers\StudentExitController;
@@ -54,6 +55,7 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
 Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
+    Route::get('/escolas/{escola}/pendencias', [SchoolPendenciesController::class, 'index'])->whereUuid('escola')->name('school.pendencies.index');
     Route::get('/escolas/{escola}/alertas-faltas', [SchoolAbsenceAlertsController::class, 'index'])->whereUuid('escola')->name('school.absences.index');
     // Servidores da unidade: leitura da escola, escrita somente para gestão com 2FA.
     Route::get('/escolas/{escola}/servidores', [SchoolStaffController::class, 'index'])->whereUuid('escola')->name('school.staff.index');

@@ -11,6 +11,7 @@ use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
+use App\Students\RegistrationPendencies;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -70,7 +71,7 @@ class SchoolController extends Controller
             ->count();
     }
 
-    public function show(Request $request, string $municipio, string $escola, SchoolAbsenceAlerts $alerts): View
+    public function show(Request $request, string $municipio, string $escola, SchoolAbsenceAlerts $alerts, RegistrationPendencies $pendencies): View
     {
         $municipality = $request->attributes->get('astuti.municipality');
         $school = School::query()->where('status', 'active')->findOrFail($escola);
@@ -82,10 +83,12 @@ class SchoolController extends Controller
 
         // O total da busca ativa só é calculado e exibido para quem pode gerir alunos.
         $absenceAlertCount = null;
+        $pendencySummary = null;
         if (Gate::allows('manageStudents', [$school, $municipality])) {
             $absenceAlertCount = $alerts->alertCount($school, $alerts->currentYear(), today());
+            $pendencySummary = $pendencies->summary($pendencies->forSchool($school));
         }
 
-        return view('schools.show', compact('municipality', 'school', 'transportUsers', 'absenceAlertCount'));
+        return view('schools.show', compact('municipality', 'school', 'transportUsers', 'absenceAlertCount', 'pendencySummary'));
     }
 }

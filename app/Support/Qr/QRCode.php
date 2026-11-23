@@ -7,7 +7,7 @@
 
 namespace App\Support\Qr;
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRCode for PHP5
 //
 // Copyright (c) 2009 Kazuhiko Arase
@@ -21,95 +21,106 @@ namespace App\Support\Qr;
 // DENSO WAVE INCORPORATED
 //   http://www.denso-wave.com/qrcode/faqpatent-e.html
 //
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRCode
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-define("QR_PAD0", 0xEC);
-define("QR_PAD1", 0x11);
+define('QR_PAD0', 0xEC);
+define('QR_PAD1', 0x11);
 
-class QRCode {
+class QRCode
+{
+    public $typeNumber;
 
-    var $typeNumber;
+    public $modules;
 
-    var $modules;
+    public $moduleCount;
 
-    var $moduleCount;
+    public $errorCorrectLevel;
 
-    var $errorCorrectLevel;
+    public $qrDataList;
 
-    var $qrDataList;
-
-    function __construct() {
+    public function __construct()
+    {
         $this->typeNumber = 1;
         $this->errorCorrectLevel = QR_ERROR_CORRECT_LEVEL_H;
-        $this->qrDataList = array();
+        $this->qrDataList = [];
     }
 
-    function getTypeNumber() {
+    public function getTypeNumber()
+    {
         return $this->typeNumber;
     }
 
-    function setTypeNumber($typeNumber) {
+    public function setTypeNumber($typeNumber)
+    {
         $this->typeNumber = $typeNumber;
     }
 
-    function getErrorCorrectLevel() {
+    public function getErrorCorrectLevel()
+    {
         return $this->errorCorrectLevel;
     }
 
-    function setErrorCorrectLevel($errorCorrectLevel) {
+    public function setErrorCorrectLevel($errorCorrectLevel)
+    {
         $this->errorCorrectLevel = $errorCorrectLevel;
     }
 
-    function addData($data, $mode = 0) {
+    public function addData($data, $mode = 0)
+    {
 
         if ($mode == 0) {
             $mode = QRUtil::getMode($data);
         }
 
-        switch($mode) {
+        switch ($mode) {
 
-        case QR_MODE_NUMBER :
-            $this->addDataImpl(new QRNumber($data) );
-            break;
+            case QR_MODE_NUMBER:
+                $this->addDataImpl(new QRNumber($data));
+                break;
 
-        case QR_MODE_ALPHA_NUM :
-            $this->addDataImpl(new QRAlphaNum($data) );
-            break;
+            case QR_MODE_ALPHA_NUM:
+                $this->addDataImpl(new QRAlphaNum($data));
+                break;
 
-        case QR_MODE_8BIT_BYTE :
-            $this->addDataImpl(new QR8BitByte($data) );
-            break;
+            case QR_MODE_8BIT_BYTE:
+                $this->addDataImpl(new QR8BitByte($data));
+                break;
 
-        case QR_MODE_KANJI :
-            $this->addDataImpl(new QRKanji($data) );
-            break;
+            case QR_MODE_KANJI:
+                $this->addDataImpl(new QRKanji($data));
+                break;
 
-        default :
-            trigger_error("mode:$mode", E_USER_ERROR);
+            default:
+                trigger_error("mode:$mode", E_USER_ERROR);
         }
     }
 
-    function clearData() {
-        $this->qrDataList = array();
+    public function clearData()
+    {
+        $this->qrDataList = [];
     }
 
-    function addDataImpl($qrData) {
+    public function addDataImpl($qrData)
+    {
         $this->qrDataList[] = $qrData;
     }
 
-    function getDataCount() {
+    public function getDataCount()
+    {
         return count($this->qrDataList);
     }
 
-    function getData($index) {
+    public function getData($index)
+    {
         return $this->qrDataList[$index];
     }
 
-    function isDark($row, $col) {
+    public function isDark($row, $col)
+    {
         if ($this->modules[$row][$col] !== null) {
             return $this->modules[$row][$col];
         } else {
@@ -117,25 +128,29 @@ class QRCode {
         }
     }
 
-    function getModuleCount() {
+    public function getModuleCount()
+    {
         return $this->moduleCount;
     }
 
     // used for converting fg/bg colors (e.g. #0000ff = 0x0000FF)
     // added 2015.07.27 ~ DoktorJ
-    function hex2rgb($hex = 0x0) {
-        return array(
+    public function hex2rgb($hex = 0x0)
+    {
+        return [
             'r' => floor($hex / 65536),
             'g' => floor($hex / 256) % 256,
-            'b' => $hex % 256
-        );
+            'b' => $hex % 256,
+        ];
     }
 
-    function make() {
-        $this->makeImpl(false, $this->getBestMaskPattern() );
+    public function make()
+    {
+        $this->makeImpl(false, $this->getBestMaskPattern());
     }
 
-    function getBestMaskPattern() {
+    public function getBestMaskPattern()
+    {
 
         $minLostPoint = 0;
         $pattern = 0;
@@ -155,19 +170,22 @@ class QRCode {
         return $pattern;
     }
 
-    function createNullArray($length) {
-        $nullArray = array();
+    public function createNullArray($length)
+    {
+        $nullArray = [];
         for ($i = 0; $i < $length; $i++) {
             $nullArray[] = null;
         }
+
         return $nullArray;
     }
 
-    function makeImpl($test, $maskPattern) {
+    public function makeImpl($test, $maskPattern)
+    {
 
         $this->moduleCount = $this->typeNumber * 4 + 17;
 
-        $this->modules = array();
+        $this->modules = [];
         for ($i = 0; $i < $this->moduleCount; $i++) {
             $this->modules[] = QRCode::createNullArray($this->moduleCount);
         }
@@ -192,7 +210,8 @@ class QRCode {
         $this->mapData($data, $maskPattern);
     }
 
-    function mapData(&$data, $maskPattern) {
+    public function mapData(&$data, $maskPattern)
+    {
 
         $inc = -1;
         $row = $this->moduleCount - 1;
@@ -201,7 +220,9 @@ class QRCode {
 
         for ($col = $this->moduleCount - 1; $col > 0; $col -= 2) {
 
-            if ($col == 6) $col--;
+            if ($col == 6) {
+                $col--;
+            }
 
             while (true) {
 
@@ -211,12 +232,12 @@ class QRCode {
 
                         $dark = false;
 
-                        if ($byteIndex < count($data) ) {
-                            $dark = ( ( ($data[$byteIndex] >> $bitIndex) & 1) == 1);
+                        if ($byteIndex < count($data)) {
+                            $dark = ((($data[$byteIndex] >> $bitIndex) & 1) == 1);
                         }
 
                         if (QRUtil::getMask($maskPattern, $row, $col - $c)) {
-                            $dark = !$dark;
+                            $dark = ! $dark;
                         }
 
                         $this->modules[$row][$col - $c] = $dark;
@@ -240,7 +261,8 @@ class QRCode {
         }
     }
 
-    function setupPositionAdjustPattern() {
+    public function setupPositionAdjustPattern()
+    {
 
         $pos = QRUtil::getPatternPosition($this->typeNumber);
 
@@ -266,7 +288,8 @@ class QRCode {
         }
     }
 
-    function setupPositionProbePattern($row, $col) {
+    public function setupPositionProbePattern($row, $col)
+    {
 
         for ($r = -1; $r <= 7; $r++) {
 
@@ -278,14 +301,15 @@ class QRCode {
                 }
 
                 $this->modules[$row + $r][$col + $c] =
-                       (0 <= $r && $r <= 6 && ($c == 0 || $c == 6) )
-                    || (0 <= $c && $c <= 6 && ($r == 0 || $r == 6) )
-                    || (2 <= $r && $r <= 4 &&  2 <= $c && $c <= 4);
+                       ($r >= 0 && $r <= 6 && ($c == 0 || $c == 6))
+                    || ($c >= 0 && $c <= 6 && ($r == 0 || $r == 6))
+                    || ($r >= 2 && $r <= 4 && $c >= 2 && $c <= 4);
             }
         }
     }
 
-    function setupTimingPattern() {
+    public function setupTimingPattern()
+    {
 
         for ($i = 8; $i < $this->moduleCount - 8; $i++) {
 
@@ -298,29 +322,31 @@ class QRCode {
         }
     }
 
-    function setupTypeNumber($test) {
+    public function setupTypeNumber($test)
+    {
 
         $bits = QRUtil::getBCHTypeNumber($this->typeNumber);
 
         for ($i = 0; $i < 18; $i++) {
-            $mod = (!$test && ( ($bits >> $i) & 1) == 1);
-            $this->modules[(int)floor($i / 3)][$i % 3 + $this->moduleCount - 8 - 3] = $mod;
+            $mod = (! $test && (($bits >> $i) & 1) == 1);
+            $this->modules[(int) floor($i / 3)][$i % 3 + $this->moduleCount - 8 - 3] = $mod;
             $this->modules[$i % 3 + $this->moduleCount - 8 - 3][floor($i / 3)] = $mod;
         }
     }
 
-    function setupTypeInfo($test, $maskPattern) {
+    public function setupTypeInfo($test, $maskPattern)
+    {
 
         $data = ($this->errorCorrectLevel << 3) | $maskPattern;
         $bits = QRUtil::getBCHTypeInfo($data);
 
         for ($i = 0; $i < 15; $i++) {
 
-            $mod = (!$test && ( ($bits >> $i) & 1) == 1);
+            $mod = (! $test && (($bits >> $i) & 1) == 1);
 
             if ($i < 6) {
                 $this->modules[$i][8] = $mod;
-            } else if ($i < 8) {
+            } elseif ($i < 8) {
                 $this->modules[$i + 1][8] = $mod;
             } else {
                 $this->modules[$this->moduleCount - 15 + $i][8] = $mod;
@@ -328,27 +354,28 @@ class QRCode {
 
             if ($i < 8) {
                 $this->modules[8][$this->moduleCount - $i - 1] = $mod;
-            } else if ($i < 9) {
+            } elseif ($i < 9) {
                 $this->modules[8][15 - $i - 1 + 1] = $mod;
             } else {
                 $this->modules[8][15 - $i - 1] = $mod;
             }
         }
 
-        $this->modules[$this->moduleCount - 8][8] = !$test;
+        $this->modules[$this->moduleCount - 8][8] = ! $test;
     }
 
-    function createData($typeNumber, $errorCorrectLevel, $dataArray) {
+    public function createData($typeNumber, $errorCorrectLevel, $dataArray)
+    {
 
         $rsBlocks = QRRSBlock::getRSBlocks($typeNumber, $errorCorrectLevel);
 
-        $buffer = new QRBitBuffer();
+        $buffer = new QRBitBuffer;
 
         for ($i = 0; $i < count($dataArray); $i++) {
             /** @var \QRData $data */
             $data = $dataArray[$i];
             $buffer->put($data->getMode(), 4);
-            $buffer->put($data->getLength(), $data->getLengthInBits($typeNumber) );
+            $buffer->put($data->getLength(), $data->getLengthInBits($typeNumber));
             $data->write($buffer);
         }
 
@@ -358,11 +385,11 @@ class QRCode {
         }
 
         if ($buffer->getLengthInBits() > $totalDataCount * 8) {
-            trigger_error("code length overflow. ("
-                . $buffer->getLengthInBits()
-                . ">"
-                .  $totalDataCount * 8
-                . ")", E_USER_ERROR);
+            trigger_error('code length overflow. ('
+                .$buffer->getLengthInBits()
+                .'>'
+                .$totalDataCount * 8
+                .')', E_USER_ERROR);
         }
 
         // end code.
@@ -393,20 +420,20 @@ class QRCode {
     }
 
     /**
-     * @param \QRBitBuffer $buffer
-     * @param \QRRSBlock[] $rsBlocks
-     *
+     * @param  \QRBitBuffer  $buffer
+     * @param  \QRRSBlock[]  $rsBlocks
      * @return array
      */
-    function createBytes(&$buffer, &$rsBlocks) {
+    public function createBytes(&$buffer, &$rsBlocks)
+    {
 
         $offset = 0;
 
         $maxDcCount = 0;
         $maxEcCount = 0;
 
-        $dcdata = QRCode::createNullArray(count($rsBlocks) );
-        $ecdata = QRCode::createNullArray(count($rsBlocks) );
+        $dcdata = QRCode::createNullArray(count($rsBlocks));
+        $ecdata = QRCode::createNullArray(count($rsBlocks));
 
         $rsBlockCount = count($rsBlocks);
         for ($r = 0; $r < $rsBlockCount; $r++) {
@@ -421,7 +448,7 @@ class QRCode {
             $dcDataCount = count($dcdata[$r]);
             for ($i = 0; $i < $dcDataCount; $i++) {
                 $bdata = $buffer->getBuffer();
-                $dcdata[$r][$i] = 0xff & $bdata[$i + $offset];
+                $dcdata[$r][$i] = 0xFF & $bdata[$i + $offset];
             }
             $offset += $dcCount;
 
@@ -434,7 +461,7 @@ class QRCode {
             $ecDataCount = count($ecdata[$r]);
             for ($i = 0; $i < $ecDataCount; $i++) {
                 $modIndex = $i + $modPoly->getLength() - count($ecdata[$r]);
-                $ecdata[$r][$i] = ($modIndex >= 0)? $modPoly->get($modIndex) : 0;
+                $ecdata[$r][$i] = ($modIndex >= 0) ? $modPoly->get($modIndex) : 0;
             }
         }
 
@@ -449,7 +476,7 @@ class QRCode {
 
         for ($i = 0; $i < $maxDcCount; $i++) {
             for ($r = 0; $r < $rsBlockCount; $r++) {
-                if ($i < count($dcdata[$r]) ) {
+                if ($i < count($dcdata[$r])) {
                     $data[$index++] = $dcdata[$r][$i];
                 }
             }
@@ -457,7 +484,7 @@ class QRCode {
 
         for ($i = 0; $i < $maxEcCount; $i++) {
             for ($r = 0; $r < $rsBlockCount; $r++) {
-                if ($i < count($ecdata[$r]) ) {
+                if ($i < count($ecdata[$r])) {
                     $data[$index++] = $ecdata[$r][$i];
                 }
             }
@@ -466,11 +493,12 @@ class QRCode {
         return $data;
     }
 
-    static function getMinimumQRCode($data, $errorCorrectLevel) {
+    public static function getMinimumQRCode($data, $errorCorrectLevel)
+    {
 
         $mode = QRUtil::getMode($data);
 
-        $qr = new QRCode();
+        $qr = new QRCode;
         $qr->setErrorCorrectLevel($errorCorrectLevel);
         $qr->addData($data, $mode);
 
@@ -478,7 +506,7 @@ class QRCode {
         $length = $qrData->getLength();
 
         for ($typeNumber = 1; $typeNumber <= 40; $typeNumber++) {
-            if ($length <= QRUtil::getMaxLength($typeNumber, $mode, $errorCorrectLevel) ) {
+            if ($length <= QRUtil::getMaxLength($typeNumber, $mode, $errorCorrectLevel)) {
                 $qr->setTypeNumber($typeNumber);
                 break;
             }
@@ -492,21 +520,34 @@ class QRCode {
     // added $fg (foreground), $bg (background), and $bgtrans (use transparent bg) parameters
     // also added some simple error checking on parameters
     // updated 2015.07.27 ~ DoktorJ
-    function createImage($size = 2, $margin = 2, $fg = 0x000000, $bg = 0xFFFFFF, $bgtrans = false) {
+    public function createImage($size = 2, $margin = 2, $fg = 0x000000, $bg = 0xFFFFFF, $bgtrans = false)
+    {
 
         // size/margin EC
-        if (!is_numeric($size)) $size = 2;
-        if (!is_numeric($margin)) $margin = 2;
-        if ($size < 1) $size = 1;
-        if ($margin < 0) $margin = 0;
+        if (! is_numeric($size)) {
+            $size = 2;
+        }
+        if (! is_numeric($margin)) {
+            $margin = 2;
+        }
+        if ($size < 1) {
+            $size = 1;
+        }
+        if ($margin < 0) {
+            $margin = 0;
+        }
 
         $image_size = $this->getModuleCount() * $size + $margin * 2;
 
         $image = imagecreatetruecolor($image_size, $image_size);
 
         // fg/bg EC
-        if ($fg < 0 || $fg > 0xFFFFFF) $fg = 0x0;
-        if ($bg < 0 || $bg > 0xFFFFFF) $bg = 0xFFFFFF;
+        if ($fg < 0 || $fg > 0xFFFFFF) {
+            $fg = 0x0;
+        }
+        if ($bg < 0 || $bg > 0xFFFFFF) {
+            $bg = 0xFFFFFF;
+        }
 
         // convert hexadecimal RGB to arrays for imagecolorallocate
         $fgrgb = $this->hex2rgb($fg);
@@ -515,14 +556,16 @@ class QRCode {
         // replace $black and $white with $fgc and $bgc
         $fgc = imagecolorallocate($image, $fgrgb['r'], $fgrgb['g'], $fgrgb['b']);
         $bgc = imagecolorallocate($image, $bgrgb['r'], $bgrgb['g'], $bgrgb['b']);
-        if ($bgtrans) imagecolortransparent($image, $bgc);
+        if ($bgtrans) {
+            imagecolortransparent($image, $bgc);
+        }
 
         // update $white to $bgc
         imagefilledrectangle($image, 0, 0, $image_size, $image_size, $bgc);
 
         for ($r = 0; $r < $this->getModuleCount(); $r++) {
             for ($c = 0; $c < $this->getModuleCount(); $c++) {
-                if ($this->isDark($r, $c) ) {
+                if ($this->isDark($r, $c)) {
 
                     // update $black to $fgc
                     imagefilledrectangle($image,
@@ -538,186 +581,198 @@ class QRCode {
         return $image;
     }
 
-    function printHTML($size = "2px") {
+    public function printHTML($size = '2px')
+    {
 
-        $style = "border-style:none;border-collapse:collapse;margin:0px;padding:0px;";
+        $style = 'border-style:none;border-collapse:collapse;margin:0px;padding:0px;';
 
-        print("<table style='$style'>");
+        echo "<table style='$style'>";
 
         for ($r = 0; $r < $this->getModuleCount(); $r++) {
 
-            print("<tr style='$style'>");
+            echo "<tr style='$style'>";
 
             for ($c = 0; $c < $this->getModuleCount(); $c++) {
-                $color = $this->isDark($r, $c)? "#000000" : "#ffffff";
-                print("<td style='$style;width:$size;height:$size;background-color:$color'></td>");
+                $color = $this->isDark($r, $c) ? '#000000' : '#ffffff';
+                echo "<td style='$style;width:$size;height:$size;background-color:$color'></td>";
             }
 
-            print("</tr>");
+            echo '</tr>';
         }
 
-        print("</table>");
+        echo '</table>';
     }
 
     public function printSVG($size = 2)
     {
         $width = $this->getModuleCount() * $size;
         $height = $width;
-        print('<svg width="' . $width . '" height="' . $height . '" viewBox="0 0 ' . $width . ' ' . $height . '" xmlns="http://www.w3.org/2000/svg">');
+        echo '<svg width="'.$width.'" height="'.$height.'" viewBox="0 0 '.$width.' '.$height.'" xmlns="http://www.w3.org/2000/svg">';
 
         for ($r = 0; $r < $this->getModuleCount(); $r++) {
             for ($c = 0; $c < $this->getModuleCount(); $c++) {
-                $color = $this->isDark($r, $c) ? "#000000" : "#ffffff";
-                print('<rect x="' . ($c * $size) . '" y="' . ($r * $size) . '" width="' . $size . '" height="' . $size . '" fill="' . $color . '" shape-rendering="crispEdges"/>');
+                $color = $this->isDark($r, $c) ? '#000000' : '#ffffff';
+                echo '<rect x="'.($c * $size).'" y="'.($r * $size).'" width="'.$size.'" height="'.$size.'" fill="'.$color.'" shape-rendering="crispEdges"/>';
             }
         }
 
-        print("</svg>");
+        echo '</svg>';
     }
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRUtil
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-define("QR_G15", (1 << 10) | (1 << 8) | (1 << 5)
-    | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0) );
+define('QR_G15', (1 << 10) | (1 << 8) | (1 << 5)
+    | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0));
 
-define("QR_G18", (1 << 12) | (1 << 11) | (1 << 10)
-    | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0) );
+define('QR_G18', (1 << 12) | (1 << 11) | (1 << 10)
+    | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0));
 
-define("QR_G15_MASK", (1 << 14) | (1 << 12) | (1 << 10)
-    | (1 << 4) | (1 << 1) );
+define('QR_G15_MASK', (1 << 14) | (1 << 12) | (1 << 10)
+    | (1 << 4) | (1 << 1));
 
-class QRUtil {
+class QRUtil
+{
+    public static $QR_MAX_LENGTH = [
+        [[41,  25,  17,  10],  [34,  20,  14,  8],   [27,  16,  11,  7],  [17,  10,  7,   4]],
+        [[77,  47,  32,  20],  [63,  38,  26,  16],  [48,  29,  20,  12], [34,  20,  14,  8]],
+        [[127, 77,  53,  32],  [101, 61,  42,  26],  [77,  47,  32,  20], [58,  35,  24,  15]],
+        [[187, 114, 78,  48],  [149, 90,  62,  38],  [111, 67,  46,  28], [82,  50,  34,  21]],
+        [[255, 154, 106, 65],  [202, 122, 84,  52],  [144, 87,  60,  37], [106, 64,  44,  27]],
+        [[322, 195, 134, 82],  [255, 154, 106, 65],  [178, 108, 74,  45], [139, 84,  58,  36]],
+        [[370, 224, 154, 95],  [293, 178, 122, 75],  [207, 125, 86,  53], [154, 93,  64,  39]],
+        [[461, 279, 192, 118], [365, 221, 152, 93],  [259, 157, 108, 66], [202, 122, 84,  52]],
+        [[552, 335, 230, 141], [432, 262, 180, 111], [312, 189, 130, 80], [235, 143, 98,  60]],
+        [[652, 395, 271, 167], [513, 311, 213, 131], [364, 221, 151, 93], [288, 174, 119, 74]],
+    ];
 
-    static $QR_MAX_LENGTH = array(
-        array( array(41,  25,  17,  10),  array(34,  20,  14,  8),   array(27,  16,  11,  7),  array(17,  10,  7,   4) ),
-        array( array(77,  47,  32,  20),  array(63,  38,  26,  16),  array(48,  29,  20,  12), array(34,  20,  14,  8) ),
-        array( array(127, 77,  53,  32),  array(101, 61,  42,  26),  array(77,  47,  32,  20), array(58,  35,  24,  15) ),
-        array( array(187, 114, 78,  48),  array(149, 90,  62,  38),  array(111, 67,  46,  28), array(82,  50,  34,  21) ),
-        array( array(255, 154, 106, 65),  array(202, 122, 84,  52),  array(144, 87,  60,  37), array(106, 64,  44,  27) ),
-        array( array(322, 195, 134, 82),  array(255, 154, 106, 65),  array(178, 108, 74,  45), array(139, 84,  58,  36) ),
-        array( array(370, 224, 154, 95),  array(293, 178, 122, 75),  array(207, 125, 86,  53), array(154, 93,  64,  39) ),
-        array( array(461, 279, 192, 118), array(365, 221, 152, 93),  array(259, 157, 108, 66), array(202, 122, 84,  52) ),
-        array( array(552, 335, 230, 141), array(432, 262, 180, 111), array(312, 189, 130, 80), array(235, 143, 98,  60) ),
-        array( array(652, 395, 271, 167), array(513, 311, 213, 131), array(364, 221, 151, 93), array(288, 174, 119, 74) )
-    );
+    public static $QR_PATTERN_POSITION_TABLE = [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170],
+    ];
 
-    static $QR_PATTERN_POSITION_TABLE = array(
-        array(),
-        array(6, 18),
-        array(6, 22),
-        array(6, 26),
-        array(6, 30),
-        array(6, 34),
-        array(6, 22, 38),
-        array(6, 24, 42),
-        array(6, 26, 46),
-        array(6, 28, 50),
-        array(6, 30, 54),
-        array(6, 32, 58),
-        array(6, 34, 62),
-        array(6, 26, 46, 66),
-        array(6, 26, 48, 70),
-        array(6, 26, 50, 74),
-        array(6, 30, 54, 78),
-        array(6, 30, 56, 82),
-        array(6, 30, 58, 86),
-        array(6, 34, 62, 90),
-        array(6, 28, 50, 72, 94),
-        array(6, 26, 50, 74, 98),
-        array(6, 30, 54, 78, 102),
-        array(6, 28, 54, 80, 106),
-        array(6, 32, 58, 84, 110),
-        array(6, 30, 58, 86, 114),
-        array(6, 34, 62, 90, 118),
-        array(6, 26, 50, 74, 98, 122),
-        array(6, 30, 54, 78, 102, 126),
-        array(6, 26, 52, 78, 104, 130),
-        array(6, 30, 56, 82, 108, 134),
-        array(6, 34, 60, 86, 112, 138),
-        array(6, 30, 58, 86, 114, 142),
-        array(6, 34, 62, 90, 118, 146),
-        array(6, 30, 54, 78, 102, 126, 150),
-        array(6, 24, 50, 76, 102, 128, 154),
-        array(6, 28, 54, 80, 106, 132, 158),
-        array(6, 32, 58, 84, 110, 136, 162),
-        array(6, 26, 54, 82, 110, 138, 166),
-        array(6, 30, 58, 86, 114, 142, 170)
-    );
-
-    static function getPatternPosition($typeNumber) {
+    public static function getPatternPosition($typeNumber)
+    {
         return self::$QR_PATTERN_POSITION_TABLE[$typeNumber - 1];
     }
 
-    static function getMaxLength($typeNumber, $mode, $errorCorrectLevel) {
+    public static function getMaxLength($typeNumber, $mode, $errorCorrectLevel)
+    {
 
         $t = $typeNumber - 1;
         $e = 0;
         $m = 0;
 
-        switch($errorCorrectLevel) {
-        case QR_ERROR_CORRECT_LEVEL_L : $e = 0; break;
-        case QR_ERROR_CORRECT_LEVEL_M : $e = 1; break;
-        case QR_ERROR_CORRECT_LEVEL_Q : $e = 2; break;
-        case QR_ERROR_CORRECT_LEVEL_H : $e = 3; break;
-        default :
-            trigger_error("e:$errorCorrectLevel", E_USER_ERROR);
+        switch ($errorCorrectLevel) {
+            case QR_ERROR_CORRECT_LEVEL_L: $e = 0;
+                break;
+            case QR_ERROR_CORRECT_LEVEL_M: $e = 1;
+                break;
+            case QR_ERROR_CORRECT_LEVEL_Q: $e = 2;
+                break;
+            case QR_ERROR_CORRECT_LEVEL_H: $e = 3;
+                break;
+            default:
+                trigger_error("e:$errorCorrectLevel", E_USER_ERROR);
         }
 
-        switch($mode) {
-        case QR_MODE_NUMBER    : $m = 0; break;
-        case QR_MODE_ALPHA_NUM : $m = 1; break;
-        case QR_MODE_8BIT_BYTE : $m = 2; break;
-        case QR_MODE_KANJI     : $m = 3; break;
-        default :
-            trigger_error("m:$mode", E_USER_ERROR);
+        switch ($mode) {
+            case QR_MODE_NUMBER: $m = 0;
+                break;
+            case QR_MODE_ALPHA_NUM: $m = 1;
+                break;
+            case QR_MODE_8BIT_BYTE: $m = 2;
+                break;
+            case QR_MODE_KANJI: $m = 3;
+                break;
+            default:
+                trigger_error("m:$mode", E_USER_ERROR);
         }
 
         return self::$QR_MAX_LENGTH[$t][$e][$m];
     }
 
-    static function getErrorCorrectPolynomial($errorCorrectLength) {
+    public static function getErrorCorrectPolynomial($errorCorrectLength)
+    {
 
-        $a = new QRPolynomial(array(1) );
+        $a = new QRPolynomial([1]);
 
         for ($i = 0; $i < $errorCorrectLength; $i++) {
-            $a = $a->multiply(new QRPolynomial(array(1, QRMath::gexp($i) ) ) );
+            $a = $a->multiply(new QRPolynomial([1, QRMath::gexp($i)]));
         }
 
         return $a;
     }
 
-    static function getMask($maskPattern, $i, $j) {
+    public static function getMask($maskPattern, $i, $j)
+    {
 
         switch ($maskPattern) {
 
-        case QR_MASK_PATTERN000 : return ($i + $j) % 2 == 0;
-        case QR_MASK_PATTERN001 : return $i % 2 == 0;
-        case QR_MASK_PATTERN010 : return $j % 3 == 0;
-        case QR_MASK_PATTERN011 : return ($i + $j) % 3 == 0;
-        case QR_MASK_PATTERN100 : return (floor($i / 2) + floor($j / 3) ) % 2 == 0;
-        case QR_MASK_PATTERN101 : return ($i * $j) % 2 + ($i * $j) % 3 == 0;
-        case QR_MASK_PATTERN110 : return ( ($i * $j) % 2 + ($i * $j) % 3) % 2 == 0;
-        case QR_MASK_PATTERN111 : return ( ($i * $j) % 3 + ($i + $j) % 2) % 2 == 0;
+            case QR_MASK_PATTERN000: return ($i + $j) % 2 == 0;
+            case QR_MASK_PATTERN001: return $i % 2 == 0;
+            case QR_MASK_PATTERN010: return $j % 3 == 0;
+            case QR_MASK_PATTERN011: return ($i + $j) % 3 == 0;
+            case QR_MASK_PATTERN100: return (floor($i / 2) + floor($j / 3)) % 2 == 0;
+            case QR_MASK_PATTERN101: return ($i * $j) % 2 + ($i * $j) % 3 == 0;
+            case QR_MASK_PATTERN110: return (($i * $j) % 2 + ($i * $j) % 3) % 2 == 0;
+            case QR_MASK_PATTERN111: return (($i * $j) % 3 + ($i + $j) % 2) % 2 == 0;
 
-        default :
-            trigger_error("mask:$maskPattern", E_USER_ERROR);
+            default:
+                trigger_error("mask:$maskPattern", E_USER_ERROR);
         }
     }
 
     /**
-     * @param \QRCode $qrCode
-     *
+     * @param  \QRCode  $qrCode
      * @return float|int
      */
-    static function getLostPoint($qrCode) {
+    public static function getLostPoint($qrCode)
+    {
 
         $moduleCount = $qrCode->getModuleCount();
 
         $lostPoint = 0;
-
 
         // LEVEL1
 
@@ -740,7 +795,7 @@ class QRUtil {
                             continue;
                         }
 
-                        if ($dark == $qrCode->isDark($row + $r, $col + $c) ) {
+                        if ($dark == $qrCode->isDark($row + $r, $col + $c)) {
                             $sameCount++;
                         }
                     }
@@ -757,10 +812,18 @@ class QRUtil {
         for ($row = 0; $row < $moduleCount - 1; $row++) {
             for ($col = 0; $col < $moduleCount - 1; $col++) {
                 $count = 0;
-                if ($qrCode->isDark($row,     $col    ) ) $count++;
-                if ($qrCode->isDark($row + 1, $col    ) ) $count++;
-                if ($qrCode->isDark($row,     $col + 1) ) $count++;
-                if ($qrCode->isDark($row + 1, $col + 1) ) $count++;
+                if ($qrCode->isDark($row, $col)) {
+                    $count++;
+                }
+                if ($qrCode->isDark($row + 1, $col)) {
+                    $count++;
+                }
+                if ($qrCode->isDark($row, $col + 1)) {
+                    $count++;
+                }
+                if ($qrCode->isDark($row + 1, $col + 1)) {
+                    $count++;
+                }
                 if ($count == 0 || $count == 4) {
                     $lostPoint += 3;
                 }
@@ -772,12 +835,12 @@ class QRUtil {
         for ($row = 0; $row < $moduleCount; $row++) {
             for ($col = 0; $col < $moduleCount - 6; $col++) {
                 if ($qrCode->isDark($row, $col)
-                        && !$qrCode->isDark($row, $col + 1)
-                        &&  $qrCode->isDark($row, $col + 2)
-                        &&  $qrCode->isDark($row, $col + 3)
-                        &&  $qrCode->isDark($row, $col + 4)
-                        && !$qrCode->isDark($row, $col + 5)
-                        &&  $qrCode->isDark($row, $col + 6) ) {
+                        && ! $qrCode->isDark($row, $col + 1)
+                        && $qrCode->isDark($row, $col + 2)
+                        && $qrCode->isDark($row, $col + 3)
+                        && $qrCode->isDark($row, $col + 4)
+                        && ! $qrCode->isDark($row, $col + 5)
+                        && $qrCode->isDark($row, $col + 6)) {
                     $lostPoint += 40;
                 }
             }
@@ -786,12 +849,12 @@ class QRUtil {
         for ($col = 0; $col < $moduleCount; $col++) {
             for ($row = 0; $row < $moduleCount - 6; $row++) {
                 if ($qrCode->isDark($row, $col)
-                        && !$qrCode->isDark($row + 1, $col)
-                        &&  $qrCode->isDark($row + 2, $col)
-                        &&  $qrCode->isDark($row + 3, $col)
-                        &&  $qrCode->isDark($row + 4, $col)
-                        && !$qrCode->isDark($row + 5, $col)
-                        &&  $qrCode->isDark($row + 6, $col) ) {
+                        && ! $qrCode->isDark($row + 1, $col)
+                        && $qrCode->isDark($row + 2, $col)
+                        && $qrCode->isDark($row + 3, $col)
+                        && $qrCode->isDark($row + 4, $col)
+                        && ! $qrCode->isDark($row + 5, $col)
+                        && $qrCode->isDark($row + 6, $col)) {
                     $lostPoint += 40;
                 }
             }
@@ -803,7 +866,7 @@ class QRUtil {
 
         for ($col = 0; $col < $moduleCount; $col++) {
             for ($row = 0; $row < $moduleCount; $row++) {
-                if ($qrCode->isDark($row, $col) ) {
+                if ($qrCode->isDark($row, $col)) {
                     $darkCount++;
                 }
             }
@@ -815,86 +878,99 @@ class QRUtil {
         return $lostPoint;
     }
 
-    static function getMode($s) {
-        if (QRUtil::isAlphaNum($s) ) {
-            if (QRUtil::isNumber($s) ) {
+    public static function getMode($s)
+    {
+        if (QRUtil::isAlphaNum($s)) {
+            if (QRUtil::isNumber($s)) {
                 return QR_MODE_NUMBER;
             }
+
             return QR_MODE_ALPHA_NUM;
-        } else if (QRUtil::isKanji($s) ) {
+        } elseif (QRUtil::isKanji($s)) {
             return QR_MODE_KANJI;
         } else {
             return QR_MODE_8BIT_BYTE;
         }
     }
 
-    static function isNumber($s) {
+    public static function isNumber($s)
+    {
         for ($i = 0; $i < strlen($s); $i++) {
             $c = ord($s[$i]);
-            if (!(QRUtil::toCharCode('0') <= $c && $c <= QRUtil::toCharCode('9') ) ) {
+            if (! (QRUtil::toCharCode('0') <= $c && $c <= QRUtil::toCharCode('9'))) {
                 return false;
             }
         }
+
         return true;
     }
 
-    static function isAlphaNum($s) {
+    public static function isAlphaNum($s)
+    {
         for ($i = 0; $i < strlen($s); $i++) {
             $c = ord($s[$i]);
-            if (!(QRUtil::toCharCode('0') <= $c && $c <= QRUtil::toCharCode('9') )
-                && !(QRUtil::toCharCode('A') <= $c && $c <= QRUtil::toCharCode('Z') )
-                    && strpos(" $%*+-./:", $s[$i]) === false) {
+            if (! (QRUtil::toCharCode('0') <= $c && $c <= QRUtil::toCharCode('9'))
+                && ! (QRUtil::toCharCode('A') <= $c && $c <= QRUtil::toCharCode('Z'))
+                    && strpos(' $%*+-./:', $s[$i]) === false) {
                 return false;
             }
         }
+
         return true;
     }
 
-    static function isKanji($s) {
+    public static function isKanji($s)
+    {
 
         $data = $s;
 
         $i = 0;
 
-        while ($i + 1 < strlen($data) ) {
+        while ($i + 1 < strlen($data)) {
 
-            $c = ( (0xff & ord($data[$i]) ) << 8) | (0xff & ord($data[$i + 1]) );
+            $c = ((0xFF & ord($data[$i])) << 8) | (0xFF & ord($data[$i + 1]));
 
-            if (!(0x8140 <= $c && $c <= 0x9FFC) && !(0xE040 <= $c && $c <= 0xEBBF) ) {
+            if (! ($c >= 0x8140 && $c <= 0x9FFC) && ! ($c >= 0xE040 && $c <= 0xEBBF)) {
                 return false;
             }
 
             $i += 2;
         }
 
-        if ($i < strlen($data) ) {
+        if ($i < strlen($data)) {
             return false;
         }
 
         return true;
     }
 
-    static function toCharCode($s) {
+    public static function toCharCode($s)
+    {
         return ord($s[0]);
     }
 
-    static function getBCHTypeInfo($data) {
+    public static function getBCHTypeInfo($data)
+    {
         $d = $data << 10;
         while (QRUtil::getBCHDigit($d) - QRUtil::getBCHDigit(QR_G15) >= 0) {
-            $d ^= (QR_G15 << (QRUtil::getBCHDigit($d) - QRUtil::getBCHDigit(QR_G15) ) );
+            $d ^= (QR_G15 << (QRUtil::getBCHDigit($d) - QRUtil::getBCHDigit(QR_G15)));
         }
-        return ( ($data << 10) | $d) ^ QR_G15_MASK;
+
+        return (($data << 10) | $d) ^ QR_G15_MASK;
     }
 
-    static function getBCHTypeNumber($data) {
+    public static function getBCHTypeNumber($data)
+    {
         $d = $data << 12;
         while (QRUtil::getBCHDigit($d) - QRUtil::getBCHDigit(QR_G18) >= 0) {
-            $d ^= (QR_G18 << (QRUtil::getBCHDigit($d) - QRUtil::getBCHDigit(QR_G18) ) );
+            $d ^= (QR_G18 << (QRUtil::getBCHDigit($d) - QRUtil::getBCHDigit(QR_G18)));
         }
+
         return ($data << 12) | $d;
     }
 
-    static function getBCHDigit($data) {
+    public static function getBCHDigit($data)
+    {
 
         $digit = 0;
 
@@ -907,16 +983,17 @@ class QRUtil {
     }
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRRSBlock
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-class QRRSBlock {
+class QRRSBlock
+{
+    public $totalCount;
 
-    var $totalCount;
-    var $dataCount;
+    public $dataCount;
 
-    static $QR_RS_BLOCK_TABLE = array(
+    public static $QR_RS_BLOCK_TABLE = [
 
         // L
         // M
@@ -924,272 +1001,276 @@ class QRRSBlock {
         // H
 
         // 1
-        array(1, 26, 19),
-        array(1, 26, 16),
-        array(1, 26, 13),
-        array(1, 26, 9),
+        [1, 26, 19],
+        [1, 26, 16],
+        [1, 26, 13],
+        [1, 26, 9],
 
         // 2
-        array(1, 44, 34),
-        array(1, 44, 28),
-        array(1, 44, 22),
-        array(1, 44, 16),
+        [1, 44, 34],
+        [1, 44, 28],
+        [1, 44, 22],
+        [1, 44, 16],
 
         // 3
-        array(1, 70, 55),
-        array(1, 70, 44),
-        array(2, 35, 17),
-        array(2, 35, 13),
+        [1, 70, 55],
+        [1, 70, 44],
+        [2, 35, 17],
+        [2, 35, 13],
 
         // 4
-        array(1, 100, 80),
-        array(2, 50, 32),
-        array(2, 50, 24),
-        array(4, 25, 9),
+        [1, 100, 80],
+        [2, 50, 32],
+        [2, 50, 24],
+        [4, 25, 9],
 
         // 5
-        array(1, 134, 108),
-        array(2, 67, 43),
-        array(2, 33, 15, 2, 34, 16),
-        array(2, 33, 11, 2, 34, 12),
+        [1, 134, 108],
+        [2, 67, 43],
+        [2, 33, 15, 2, 34, 16],
+        [2, 33, 11, 2, 34, 12],
 
         // 6
-        array(2, 86, 68),
-        array(4, 43, 27),
-        array(4, 43, 19),
-        array(4, 43, 15),
+        [2, 86, 68],
+        [4, 43, 27],
+        [4, 43, 19],
+        [4, 43, 15],
 
         // 7
-        array(2, 98, 78),
-        array(4, 49, 31),
-        array(2, 32, 14, 4, 33, 15),
-        array(4, 39, 13, 1, 40, 14),
+        [2, 98, 78],
+        [4, 49, 31],
+        [2, 32, 14, 4, 33, 15],
+        [4, 39, 13, 1, 40, 14],
 
         // 8
-        array(2, 121, 97),
-        array(2, 60, 38, 2, 61, 39),
-        array(4, 40, 18, 2, 41, 19),
-        array(4, 40, 14, 2, 41, 15),
+        [2, 121, 97],
+        [2, 60, 38, 2, 61, 39],
+        [4, 40, 18, 2, 41, 19],
+        [4, 40, 14, 2, 41, 15],
 
         // 9
-        array(2, 146, 116),
-        array(3, 58, 36, 2, 59, 37),
-        array(4, 36, 16, 4, 37, 17),
-        array(4, 36, 12, 4, 37, 13),
+        [2, 146, 116],
+        [3, 58, 36, 2, 59, 37],
+        [4, 36, 16, 4, 37, 17],
+        [4, 36, 12, 4, 37, 13],
 
         // 10
-        array(2, 86, 68, 2, 87, 69),
-        array(4, 69, 43, 1, 70, 44),
-        array(6, 43, 19, 2, 44, 20),
-        array(6, 43, 15, 2, 44, 16),
+        [2, 86, 68, 2, 87, 69],
+        [4, 69, 43, 1, 70, 44],
+        [6, 43, 19, 2, 44, 20],
+        [6, 43, 15, 2, 44, 16],
 
         // 11
-        array(4, 101, 81),
-        array(1, 80, 50, 4, 81, 51),
-        array(4, 50, 22, 4, 51, 23),
-        array(3, 36, 12, 8, 37, 13),
+        [4, 101, 81],
+        [1, 80, 50, 4, 81, 51],
+        [4, 50, 22, 4, 51, 23],
+        [3, 36, 12, 8, 37, 13],
 
         // 12
-        array(2, 116, 92, 2, 117, 93),
-        array(6, 58, 36, 2, 59, 37),
-        array(4, 46, 20, 6, 47, 21),
-        array(7, 42, 14, 4, 43, 15),
+        [2, 116, 92, 2, 117, 93],
+        [6, 58, 36, 2, 59, 37],
+        [4, 46, 20, 6, 47, 21],
+        [7, 42, 14, 4, 43, 15],
 
         // 13
-        array(4, 133, 107),
-        array(8, 59, 37, 1, 60, 38),
-        array(8, 44, 20, 4, 45, 21),
-        array(12, 33, 11, 4, 34, 12),
+        [4, 133, 107],
+        [8, 59, 37, 1, 60, 38],
+        [8, 44, 20, 4, 45, 21],
+        [12, 33, 11, 4, 34, 12],
 
         // 14
-        array(3, 145, 115, 1, 146, 116),
-        array(4, 64, 40, 5, 65, 41),
-        array(11, 36, 16, 5, 37, 17),
-        array(11, 36, 12, 5, 37, 13),
+        [3, 145, 115, 1, 146, 116],
+        [4, 64, 40, 5, 65, 41],
+        [11, 36, 16, 5, 37, 17],
+        [11, 36, 12, 5, 37, 13],
 
         // 15
-        array(5, 109, 87, 1, 110, 88),
-        array(5, 65, 41, 5, 66, 42),
-        array(5, 54, 24, 7, 55, 25),
-        array(11, 36, 12, 7, 37, 13),
+        [5, 109, 87, 1, 110, 88],
+        [5, 65, 41, 5, 66, 42],
+        [5, 54, 24, 7, 55, 25],
+        [11, 36, 12, 7, 37, 13],
 
         // 16
-        array(5, 122, 98, 1, 123, 99),
-        array(7, 73, 45, 3, 74, 46),
-        array(15, 43, 19, 2, 44, 20),
-        array(3, 45, 15, 13, 46, 16),
+        [5, 122, 98, 1, 123, 99],
+        [7, 73, 45, 3, 74, 46],
+        [15, 43, 19, 2, 44, 20],
+        [3, 45, 15, 13, 46, 16],
 
         // 17
-        array(1, 135, 107, 5, 136, 108),
-        array(10, 74, 46, 1, 75, 47),
-        array(1, 50, 22, 15, 51, 23),
-        array(2, 42, 14, 17, 43, 15),
+        [1, 135, 107, 5, 136, 108],
+        [10, 74, 46, 1, 75, 47],
+        [1, 50, 22, 15, 51, 23],
+        [2, 42, 14, 17, 43, 15],
 
         // 18
-        array(5, 150, 120, 1, 151, 121),
-        array(9, 69, 43, 4, 70, 44),
-        array(17, 50, 22, 1, 51, 23),
-        array(2, 42, 14, 19, 43, 15),
+        [5, 150, 120, 1, 151, 121],
+        [9, 69, 43, 4, 70, 44],
+        [17, 50, 22, 1, 51, 23],
+        [2, 42, 14, 19, 43, 15],
 
         // 19
-        array(3, 141, 113, 4, 142, 114),
-        array(3, 70, 44, 11, 71, 45),
-        array(17, 47, 21, 4, 48, 22),
-        array(9, 39, 13, 16, 40, 14),
+        [3, 141, 113, 4, 142, 114],
+        [3, 70, 44, 11, 71, 45],
+        [17, 47, 21, 4, 48, 22],
+        [9, 39, 13, 16, 40, 14],
 
         // 20
-        array(3, 135, 107, 5, 136, 108),
-        array(3, 67, 41, 13, 68, 42),
-        array(15, 54, 24, 5, 55, 25),
-        array(15, 43, 15, 10, 44, 16),
+        [3, 135, 107, 5, 136, 108],
+        [3, 67, 41, 13, 68, 42],
+        [15, 54, 24, 5, 55, 25],
+        [15, 43, 15, 10, 44, 16],
 
         // 21
-        array(4, 144, 116, 4, 145, 117),
-        array(17, 68, 42),
-        array(17, 50, 22, 6, 51, 23),
-        array(19, 46, 16, 6, 47, 17),
+        [4, 144, 116, 4, 145, 117],
+        [17, 68, 42],
+        [17, 50, 22, 6, 51, 23],
+        [19, 46, 16, 6, 47, 17],
 
         // 22
-        array(2, 139, 111, 7, 140, 112),
-        array(17, 74, 46),
-        array(7, 54, 24, 16, 55, 25),
-        array(34, 37, 13),
+        [2, 139, 111, 7, 140, 112],
+        [17, 74, 46],
+        [7, 54, 24, 16, 55, 25],
+        [34, 37, 13],
 
         // 23
-        array(4, 151, 121, 5, 152, 122),
-        array(4, 75, 47, 14, 76, 48),
-        array(11, 54, 24, 14, 55, 25),
-        array(16, 45, 15, 14, 46, 16),
+        [4, 151, 121, 5, 152, 122],
+        [4, 75, 47, 14, 76, 48],
+        [11, 54, 24, 14, 55, 25],
+        [16, 45, 15, 14, 46, 16],
 
         // 24
-        array(6, 147, 117, 4, 148, 118),
-        array(6, 73, 45, 14, 74, 46),
-        array(11, 54, 24, 16, 55, 25),
-        array(30, 46, 16, 2, 47, 17),
+        [6, 147, 117, 4, 148, 118],
+        [6, 73, 45, 14, 74, 46],
+        [11, 54, 24, 16, 55, 25],
+        [30, 46, 16, 2, 47, 17],
 
         // 25
-        array(8, 132, 106, 4, 133, 107),
-        array(8, 75, 47, 13, 76, 48),
-        array(7, 54, 24, 22, 55, 25),
-        array(22, 45, 15, 13, 46, 16),
+        [8, 132, 106, 4, 133, 107],
+        [8, 75, 47, 13, 76, 48],
+        [7, 54, 24, 22, 55, 25],
+        [22, 45, 15, 13, 46, 16],
 
         // 26
-        array(10, 142, 114, 2, 143, 115),
-        array(19, 74, 46, 4, 75, 47),
-        array(28, 50, 22, 6, 51, 23),
-        array(33, 46, 16, 4, 47, 17),
+        [10, 142, 114, 2, 143, 115],
+        [19, 74, 46, 4, 75, 47],
+        [28, 50, 22, 6, 51, 23],
+        [33, 46, 16, 4, 47, 17],
 
         // 27
-        array(8, 152, 122, 4, 153, 123),
-        array(22, 73, 45, 3, 74, 46),
-        array(8, 53, 23, 26, 54, 24),
-        array(12, 45, 15, 28, 46, 16),
+        [8, 152, 122, 4, 153, 123],
+        [22, 73, 45, 3, 74, 46],
+        [8, 53, 23, 26, 54, 24],
+        [12, 45, 15, 28, 46, 16],
 
         // 28
-        array(3, 147, 117, 10, 148, 118),
-        array(3, 73, 45, 23, 74, 46),
-        array(4, 54, 24, 31, 55, 25),
-        array(11, 45, 15, 31, 46, 16),
+        [3, 147, 117, 10, 148, 118],
+        [3, 73, 45, 23, 74, 46],
+        [4, 54, 24, 31, 55, 25],
+        [11, 45, 15, 31, 46, 16],
 
         // 29
-        array(7, 146, 116, 7, 147, 117),
-        array(21, 73, 45, 7, 74, 46),
-        array(1, 53, 23, 37, 54, 24),
-        array(19, 45, 15, 26, 46, 16),
+        [7, 146, 116, 7, 147, 117],
+        [21, 73, 45, 7, 74, 46],
+        [1, 53, 23, 37, 54, 24],
+        [19, 45, 15, 26, 46, 16],
 
         // 30
-        array(5, 145, 115, 10, 146, 116),
-        array(19, 75, 47, 10, 76, 48),
-        array(15, 54, 24, 25, 55, 25),
-        array(23, 45, 15, 25, 46, 16),
+        [5, 145, 115, 10, 146, 116],
+        [19, 75, 47, 10, 76, 48],
+        [15, 54, 24, 25, 55, 25],
+        [23, 45, 15, 25, 46, 16],
 
         // 31
-        array(13, 145, 115, 3, 146, 116),
-        array(2, 74, 46, 29, 75, 47),
-        array(42, 54, 24, 1, 55, 25),
-        array(23, 45, 15, 28, 46, 16),
+        [13, 145, 115, 3, 146, 116],
+        [2, 74, 46, 29, 75, 47],
+        [42, 54, 24, 1, 55, 25],
+        [23, 45, 15, 28, 46, 16],
 
         // 32
-        array(17, 145, 115),
-        array(10, 74, 46, 23, 75, 47),
-        array(10, 54, 24, 35, 55, 25),
-        array(19, 45, 15, 35, 46, 16),
+        [17, 145, 115],
+        [10, 74, 46, 23, 75, 47],
+        [10, 54, 24, 35, 55, 25],
+        [19, 45, 15, 35, 46, 16],
 
         // 33
-        array(17, 145, 115, 1, 146, 116),
-        array(14, 74, 46, 21, 75, 47),
-        array(29, 54, 24, 19, 55, 25),
-        array(11, 45, 15, 46, 46, 16),
+        [17, 145, 115, 1, 146, 116],
+        [14, 74, 46, 21, 75, 47],
+        [29, 54, 24, 19, 55, 25],
+        [11, 45, 15, 46, 46, 16],
 
         // 34
-        array(13, 145, 115, 6, 146, 116),
-        array(14, 74, 46, 23, 75, 47),
-        array(44, 54, 24, 7, 55, 25),
-        array(59, 46, 16, 1, 47, 17),
+        [13, 145, 115, 6, 146, 116],
+        [14, 74, 46, 23, 75, 47],
+        [44, 54, 24, 7, 55, 25],
+        [59, 46, 16, 1, 47, 17],
 
         // 35
-        array(12, 151, 121, 7, 152, 122),
-        array(12, 75, 47, 26, 76, 48),
-        array(39, 54, 24, 14, 55, 25),
-        array(22, 45, 15, 41, 46, 16),
+        [12, 151, 121, 7, 152, 122],
+        [12, 75, 47, 26, 76, 48],
+        [39, 54, 24, 14, 55, 25],
+        [22, 45, 15, 41, 46, 16],
 
         // 36
-        array(6, 151, 121, 14, 152, 122),
-        array(6, 75, 47, 34, 76, 48),
-        array(46, 54, 24, 10, 55, 25),
-        array(2, 45, 15, 64, 46, 16),
+        [6, 151, 121, 14, 152, 122],
+        [6, 75, 47, 34, 76, 48],
+        [46, 54, 24, 10, 55, 25],
+        [2, 45, 15, 64, 46, 16],
 
         // 37
-        array(17, 152, 122, 4, 153, 123),
-        array(29, 74, 46, 14, 75, 47),
-        array(49, 54, 24, 10, 55, 25),
-        array(24, 45, 15, 46, 46, 16),
+        [17, 152, 122, 4, 153, 123],
+        [29, 74, 46, 14, 75, 47],
+        [49, 54, 24, 10, 55, 25],
+        [24, 45, 15, 46, 46, 16],
 
         // 38
-        array(4, 152, 122, 18, 153, 123),
-        array(13, 74, 46, 32, 75, 47),
-        array(48, 54, 24, 14, 55, 25),
-        array(42, 45, 15, 32, 46, 16),
+        [4, 152, 122, 18, 153, 123],
+        [13, 74, 46, 32, 75, 47],
+        [48, 54, 24, 14, 55, 25],
+        [42, 45, 15, 32, 46, 16],
 
         // 39
-        array(20, 147, 117, 4, 148, 118),
-        array(40, 75, 47, 7, 76, 48),
-        array(43, 54, 24, 22, 55, 25),
-        array(10, 45, 15, 67, 46, 16),
+        [20, 147, 117, 4, 148, 118],
+        [40, 75, 47, 7, 76, 48],
+        [43, 54, 24, 22, 55, 25],
+        [10, 45, 15, 67, 46, 16],
 
         // 40
-        array(19, 148, 118, 6, 149, 119),
-        array(18, 75, 47, 31, 76, 48),
-        array(34, 54, 24, 34, 55, 25),
-        array(20, 45, 15, 61, 46, 16)
+        [19, 148, 118, 6, 149, 119],
+        [18, 75, 47, 31, 76, 48],
+        [34, 54, 24, 34, 55, 25],
+        [20, 45, 15, 61, 46, 16],
 
-    );
+    ];
 
-    function __construct($totalCount, $dataCount) {
+    public function __construct($totalCount, $dataCount)
+    {
         $this->totalCount = $totalCount;
-        $this->dataCount  = $dataCount;
+        $this->dataCount = $dataCount;
     }
 
-    function getDataCount() {
+    public function getDataCount()
+    {
         return $this->dataCount;
     }
 
-    function getTotalCount() {
+    public function getTotalCount()
+    {
         return $this->totalCount;
     }
 
-    static function getRSBlocks($typeNumber, $errorCorrectLevel) {
+    public static function getRSBlocks($typeNumber, $errorCorrectLevel)
+    {
 
         $rsBlock = QRRSBlock::getRsBlockTable($typeNumber, $errorCorrectLevel);
         $length = count($rsBlock) / 3;
 
-        $list = array();
+        $list = [];
 
         for ($i = 0; $i < $length; $i++) {
 
             $count = $rsBlock[$i * 3 + 0];
             $totalCount = $rsBlock[$i * 3 + 1];
-            $dataCount  = $rsBlock[$i * 3 + 2];
+            $dataCount = $rsBlock[$i * 3 + 2];
 
             for ($j = 0; $j < $count; $j++) {
                 $list[] = new QRRSBlock($totalCount, $dataCount);
@@ -1199,69 +1280,75 @@ class QRRSBlock {
         return $list;
     }
 
-    static function getRsBlockTable($typeNumber, $errorCorrectLevel) {
+    public static function getRsBlockTable($typeNumber, $errorCorrectLevel)
+    {
 
-        switch($errorCorrectLevel) {
-        case QR_ERROR_CORRECT_LEVEL_L :
-            return self::$QR_RS_BLOCK_TABLE[($typeNumber - 1) * 4 + 0];
-        case QR_ERROR_CORRECT_LEVEL_M :
-            return self::$QR_RS_BLOCK_TABLE[($typeNumber - 1) * 4 + 1];
-        case QR_ERROR_CORRECT_LEVEL_Q :
-            return self::$QR_RS_BLOCK_TABLE[($typeNumber - 1) * 4 + 2];
-        case QR_ERROR_CORRECT_LEVEL_H :
-            return self::$QR_RS_BLOCK_TABLE[($typeNumber - 1) * 4 + 3];
-        default :
-            trigger_error("tn:$typeNumber/ecl:$errorCorrectLevel", E_USER_ERROR);
+        switch ($errorCorrectLevel) {
+            case QR_ERROR_CORRECT_LEVEL_L:
+                return self::$QR_RS_BLOCK_TABLE[($typeNumber - 1) * 4 + 0];
+            case QR_ERROR_CORRECT_LEVEL_M:
+                return self::$QR_RS_BLOCK_TABLE[($typeNumber - 1) * 4 + 1];
+            case QR_ERROR_CORRECT_LEVEL_Q:
+                return self::$QR_RS_BLOCK_TABLE[($typeNumber - 1) * 4 + 2];
+            case QR_ERROR_CORRECT_LEVEL_H:
+                return self::$QR_RS_BLOCK_TABLE[($typeNumber - 1) * 4 + 3];
+            default:
+                trigger_error("tn:$typeNumber/ecl:$errorCorrectLevel", E_USER_ERROR);
         }
     }
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRNumber
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-class QRNumber extends QRData {
-
-    function __construct($data) {
+class QRNumber extends QRData
+{
+    public function __construct($data)
+    {
         parent::__construct(QR_MODE_NUMBER, $data);
     }
 
-    function write(&$buffer) {
+    public function write(&$buffer)
+    {
 
         $data = $this->getData();
 
         $i = 0;
 
-        while ($i + 2 < strlen($data) ) {
-            $num = QRNumber::parseInt(substr($data, $i, 3) );
+        while ($i + 2 < strlen($data)) {
+            $num = QRNumber::parseInt(substr($data, $i, 3));
             $buffer->put($num, 10);
             $i += 3;
         }
 
-        if ($i < strlen($data) ) {
+        if ($i < strlen($data)) {
 
             if (strlen($data) - $i == 1) {
-                $num = QRNumber::parseInt(substr($data, $i, $i + 1) );
+                $num = QRNumber::parseInt(substr($data, $i, $i + 1));
                 $buffer->put($num, 4);
-            } else if (strlen($data) - $i == 2) {
-                $num = QRNumber::parseInt(substr($data, $i, $i + 2) );
+            } elseif (strlen($data) - $i == 2) {
+                $num = QRNumber::parseInt(substr($data, $i, $i + 2));
                 $buffer->put($num, 7);
             }
         }
     }
 
-    static function parseInt($s) {
+    public static function parseInt($s)
+    {
 
         $num = 0;
         for ($i = 0; $i < strlen($s); $i++) {
-            $num = $num * 10 + QRNumber::parseIntAt(ord($s[$i]) );
+            $num = $num * 10 + QRNumber::parseIntAt(ord($s[$i]));
         }
+
         return $num;
     }
 
-    static function parseIntAt($c) {
+    public static function parseIntAt($c)
+    {
 
-        if (QRUtil::toCharCode('0') <= $c && $c <= QRUtil::toCharCode('9') ) {
+        if (QRUtil::toCharCode('0') <= $c && $c <= QRUtil::toCharCode('9')) {
             return $c - QRUtil::toCharCode('0');
         }
 
@@ -1269,217 +1356,230 @@ class QRNumber extends QRData {
     }
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRKanji
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-class QRKanji extends QRData {
-
-    function __construct($data) {
+class QRKanji extends QRData
+{
+    public function __construct($data)
+    {
         parent::__construct(QR_MODE_KANJI, $data);
     }
 
-    function write(&$buffer) {
+    public function write(&$buffer)
+    {
 
         $data = $this->getData();
 
         $i = 0;
 
-        while ($i + 1 < strlen($data) ) {
+        while ($i + 1 < strlen($data)) {
 
-            $c = ( (0xff & ord($data[$i]) ) << 8) | (0xff & ord($data[$i + 1]) );
+            $c = ((0xFF & ord($data[$i])) << 8) | (0xFF & ord($data[$i + 1]));
 
-            if (0x8140 <= $c && $c <= 0x9FFC) {
+            if ($c >= 0x8140 && $c <= 0x9FFC) {
                 $c -= 0x8140;
-            } else if (0xE040 <= $c && $c <= 0xEBBF) {
+            } elseif ($c >= 0xE040 && $c <= 0xEBBF) {
                 $c -= 0xC140;
             } else {
-                trigger_error("illegal char at " . ($i + 1) . "/$c", E_USER_ERROR);
+                trigger_error('illegal char at '.($i + 1)."/$c", E_USER_ERROR);
             }
 
-            $c = ( ($c >> 8) & 0xff) * 0xC0 + ($c & 0xff);
+            $c = (($c >> 8) & 0xFF) * 0xC0 + ($c & 0xFF);
 
             $buffer->put($c, 13);
 
             $i += 2;
         }
 
-        if ($i < strlen($data) ) {
-            trigger_error("illegal char at " . ($i + 1), E_USER_ERROR);
+        if ($i < strlen($data)) {
+            trigger_error('illegal char at '.($i + 1), E_USER_ERROR);
         }
     }
 
-    function getLength() {
-        return floor(strlen($this->getData() ) / 2);
+    public function getLength()
+    {
+        return floor(strlen($this->getData()) / 2);
     }
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRAlphaNum
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-class QRAlphaNum extends QRData {
-
-    function __construct($data) {
+class QRAlphaNum extends QRData
+{
+    public function __construct($data)
+    {
         parent::__construct(QR_MODE_ALPHA_NUM, $data);
     }
 
-    function write(&$buffer) {
+    public function write(&$buffer)
+    {
 
         $i = 0;
         $c = $this->getData();
 
-        while ($i + 1 < strlen($c) ) {
-            $buffer->put(QRAlphaNum::getCode(ord($c[$i]) ) * 45
-                + QRAlphaNum::getCode(ord($c[$i + 1]) ), 11);
+        while ($i + 1 < strlen($c)) {
+            $buffer->put(QRAlphaNum::getCode(ord($c[$i])) * 45
+                + QRAlphaNum::getCode(ord($c[$i + 1])), 11);
             $i += 2;
         }
 
-        if ($i < strlen($c) ) {
+        if ($i < strlen($c)) {
             $buffer->put(QRAlphaNum::getCode(ord($c[$i])), 6);
         }
     }
 
-    static function getCode($c) {
+    public static function getCode($c)
+    {
 
         if (QRUtil::toCharCode('0') <= $c
-                && $c <= QRUtil::toCharCode('9') ) {
+                && $c <= QRUtil::toCharCode('9')) {
             return $c - QRUtil::toCharCode('0');
-        } else if (QRUtil::toCharCode('A') <= $c
-                && $c <= QRUtil::toCharCode('Z') ) {
+        } elseif (QRUtil::toCharCode('A') <= $c
+                && $c <= QRUtil::toCharCode('Z')) {
             return $c - QRUtil::toCharCode('A') + 10;
         } else {
             switch ($c) {
-            case QRUtil::toCharCode(' ') : return 36;
-            case QRUtil::toCharCode('$') : return 37;
-            case QRUtil::toCharCode('%') : return 38;
-            case QRUtil::toCharCode('*') : return 39;
-            case QRUtil::toCharCode('+') : return 40;
-            case QRUtil::toCharCode('-') : return 41;
-            case QRUtil::toCharCode('.') : return 42;
-            case QRUtil::toCharCode('/') : return 43;
-            case QRUtil::toCharCode(':') : return 44;
-            default :
-                trigger_error("illegal char : $c", E_USER_ERROR);
+                case QRUtil::toCharCode(' '): return 36;
+                case QRUtil::toCharCode('$'): return 37;
+                case QRUtil::toCharCode('%'): return 38;
+                case QRUtil::toCharCode('*'): return 39;
+                case QRUtil::toCharCode('+'): return 40;
+                case QRUtil::toCharCode('-'): return 41;
+                case QRUtil::toCharCode('.'): return 42;
+                case QRUtil::toCharCode('/'): return 43;
+                case QRUtil::toCharCode(':'): return 44;
+                default:
+                    trigger_error("illegal char : $c", E_USER_ERROR);
             }
         }
 
     }
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QR8BitByte
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-class QR8BitByte extends QRData {
-
-    function __construct($data) {
+class QR8BitByte extends QRData
+{
+    public function __construct($data)
+    {
         parent::__construct(QR_MODE_8BIT_BYTE, $data);
     }
 
-    function write(&$buffer) {
+    public function write(&$buffer)
+    {
 
         $data = $this->getData();
         for ($i = 0; $i < strlen($data); $i++) {
             $buffer->put(ord($data[$i]), 8);
         }
     }
-
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRData
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-abstract class QRData {
+abstract class QRData
+{
+    public $mode;
 
-    var $mode;
+    public $data;
 
-    var $data;
-
-    function __construct($mode, $data) {
+    public function __construct($mode, $data)
+    {
         $this->mode = $mode;
         $this->data = $data;
     }
 
-    function getMode() {
+    public function getMode()
+    {
         return $this->mode;
     }
 
-    function getData() {
+    public function getData()
+    {
         return $this->data;
     }
 
     /**
      * @return int
      */
-    function getLength() {
-        return strlen($this->getData() );
+    public function getLength()
+    {
+        return strlen($this->getData());
     }
 
     /**
-     * @param \QRBitBuffer $buffer
+     * @param  \QRBitBuffer  $buffer
      */
-    abstract function write(&$buffer);
+    abstract public function write(&$buffer);
 
-    function getLengthInBits($type) {
+    public function getLengthInBits($type)
+    {
 
-        if (1 <= $type && $type < 10) {
+        if ($type >= 1 && $type < 10) {
 
             // 1 - 9
 
-            switch($this->mode) {
-            case QR_MODE_NUMBER     : return 10;
-            case QR_MODE_ALPHA_NUM     : return 9;
-            case QR_MODE_8BIT_BYTE    : return 8;
-            case QR_MODE_KANJI      : return 8;
-            default :
-                trigger_error("mode:$this->mode", E_USER_ERROR);
+            switch ($this->mode) {
+                case QR_MODE_NUMBER: return 10;
+                case QR_MODE_ALPHA_NUM: return 9;
+                case QR_MODE_8BIT_BYTE: return 8;
+                case QR_MODE_KANJI: return 8;
+                default:
+                    trigger_error("mode:$this->mode", E_USER_ERROR);
             }
 
-        } else if ($type < 27) {
+        } elseif ($type < 27) {
 
             // 10 - 26
 
-            switch($this->mode) {
-            case QR_MODE_NUMBER     : return 12;
-            case QR_MODE_ALPHA_NUM     : return 11;
-            case QR_MODE_8BIT_BYTE    : return 16;
-            case QR_MODE_KANJI      : return 10;
-            default :
-                trigger_error("mode:$this->mode", E_USER_ERROR);
+            switch ($this->mode) {
+                case QR_MODE_NUMBER: return 12;
+                case QR_MODE_ALPHA_NUM: return 11;
+                case QR_MODE_8BIT_BYTE: return 16;
+                case QR_MODE_KANJI: return 10;
+                default:
+                    trigger_error("mode:$this->mode", E_USER_ERROR);
             }
 
-        } else if ($type < 41) {
+        } elseif ($type < 41) {
 
             // 27 - 40
 
-            switch($this->mode) {
-            case QR_MODE_NUMBER     : return 14;
-            case QR_MODE_ALPHA_NUM    : return 13;
-            case QR_MODE_8BIT_BYTE    : return 16;
-            case QR_MODE_KANJI      : return 12;
-            default :
-                trigger_error("mode:$this->mode", E_USER_ERROR);
+            switch ($this->mode) {
+                case QR_MODE_NUMBER: return 14;
+                case QR_MODE_ALPHA_NUM: return 13;
+                case QR_MODE_8BIT_BYTE: return 16;
+                case QR_MODE_KANJI: return 12;
+                default:
+                    trigger_error("mode:$this->mode", E_USER_ERROR);
             }
 
         } else {
             trigger_error("mode:$this->mode", E_USER_ERROR);
         }
     }
-
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRMath
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-class QRMath {
+class QRMath
+{
+    public static $QR_MATH_EXP_TABLE = null;
 
-    static $QR_MATH_EXP_TABLE = null;
-    static $QR_MATH_LOG_TABLE = null;
+    public static $QR_MATH_LOG_TABLE = null;
 
-    static function init() {
+    public static function init()
+    {
 
         self::$QR_MATH_EXP_TABLE = QRMath::createNumArray(256);
 
@@ -1497,19 +1597,22 @@ class QRMath {
         self::$QR_MATH_LOG_TABLE = QRMath::createNumArray(256);
 
         for ($i = 0; $i < 255; $i++) {
-            self::$QR_MATH_LOG_TABLE[self::$QR_MATH_EXP_TABLE[$i] ] = $i;
+            self::$QR_MATH_LOG_TABLE[self::$QR_MATH_EXP_TABLE[$i]] = $i;
         }
     }
 
-    static function createNumArray($length) {
-        $num_array = array();
+    public static function createNumArray($length)
+    {
+        $num_array = [];
         for ($i = 0; $i < $length; $i++) {
             $num_array[] = 0;
         }
+
         return $num_array;
     }
 
-    static function glog($n) {
+    public static function glog($n)
+    {
 
         if ($n < 1) {
             trigger_error("log($n)", E_USER_ERROR);
@@ -1518,7 +1621,8 @@ class QRMath {
         return self::$QR_MATH_LOG_TABLE[$n];
     }
 
-    static function gexp($n) {
+    public static function gexp($n)
+    {
 
         while ($n < 0) {
             $n += 255;
@@ -1535,15 +1639,16 @@ class QRMath {
 // init static table
 QRMath::init();
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRPolynomial
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-class QRPolynomial {
+class QRPolynomial
+{
+    public $num;
 
-    var $num;
-
-    function __construct($num, $shift = 0) {
+    public function __construct($num, $shift = 0)
+    {
 
         $offset = 0;
 
@@ -1557,26 +1662,30 @@ class QRPolynomial {
         }
     }
 
-    function get($index) {
+    public function get($index)
+    {
         return $this->num[$index];
     }
 
-    function getLength() {
+    public function getLength()
+    {
         return count($this->num);
     }
 
     // PHP5
-    function __toString() {
+    public function __toString()
+    {
         return $this->toString();
     }
 
-    function toString() {
+    public function toString()
+    {
 
-        $buffer = "";
+        $buffer = '';
 
         for ($i = 0; $i < $this->getLength(); $i++) {
             if ($i > 0) {
-                $buffer .= ",";
+                $buffer .= ',';
             }
             $buffer .= $this->get($i);
         }
@@ -1584,34 +1693,35 @@ class QRPolynomial {
         return $buffer;
     }
 
-    function toLogString() {
+    public function toLogString()
+    {
 
-        $buffer = "";
+        $buffer = '';
 
         for ($i = 0; $i < $this->getLength(); $i++) {
             if ($i > 0) {
-                $buffer .= ",";
+                $buffer .= ',';
             }
-            $buffer .= QRMath::glog($this->get($i) );
+            $buffer .= QRMath::glog($this->get($i));
         }
 
         return $buffer;
     }
 
     /**
-     * @param \QRPolynomial $e
-     *
+     * @param  \QRPolynomial  $e
      * @return \QRPolynomial
      */
-    function multiply($e) {
+    public function multiply($e)
+    {
 
         $num = QRMath::createNumArray($this->getLength() + $e->getLength() - 1);
 
         for ($i = 0; $i < $this->getLength(); $i++) {
-            $vi = QRMath::glog($this->get($i) );
+            $vi = QRMath::glog($this->get($i));
 
             for ($j = 0; $j < $e->getLength(); $j++) {
-                $num[$i + $j] ^= QRMath::gexp($vi + QRMath::glog($e->get($j) ) );
+                $num[$i + $j] ^= QRMath::gexp($vi + QRMath::glog($e->get($j)));
             }
         }
 
@@ -1619,122 +1729,130 @@ class QRPolynomial {
     }
 
     /**
-     * @param \QRPolynomial $e
-     *
+     * @param  \QRPolynomial  $e
      * @return $this|\QRPolynomial
      */
-    function mod($e) {
+    public function mod($e)
+    {
 
         if ($this->getLength() - $e->getLength() < 0) {
             return $this;
         }
 
-        $ratio = QRMath::glog($this->get(0) ) - QRMath::glog($e->get(0) );
+        $ratio = QRMath::glog($this->get(0)) - QRMath::glog($e->get(0));
 
-        $num = QRMath::createNumArray($this->getLength() );
+        $num = QRMath::createNumArray($this->getLength());
         for ($i = 0; $i < $this->getLength(); $i++) {
             $num[$i] = $this->get($i);
         }
 
         for ($i = 0; $i < $e->getLength(); $i++) {
-            $num[$i] ^= QRMath::gexp(QRMath::glog($e->get($i) ) + $ratio);
+            $num[$i] ^= QRMath::gexp(QRMath::glog($e->get($i)) + $ratio);
         }
 
         $newPolynomial = new QRPolynomial($num);
+
         return $newPolynomial->mod($e);
     }
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // Mode
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-define("QR_MODE_NUMBER", 1 << 0);
-define("QR_MODE_ALPHA_NUM", 1 << 1);
-define("QR_MODE_8BIT_BYTE", 1 << 2);
-define("QR_MODE_KANJI", 1 << 3);
+define('QR_MODE_NUMBER', 1 << 0);
+define('QR_MODE_ALPHA_NUM', 1 << 1);
+define('QR_MODE_8BIT_BYTE', 1 << 2);
+define('QR_MODE_KANJI', 1 << 3);
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // MaskPattern
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-define("QR_MASK_PATTERN000", 0);
-define("QR_MASK_PATTERN001", 1);
-define("QR_MASK_PATTERN010", 2);
-define("QR_MASK_PATTERN011", 3);
-define("QR_MASK_PATTERN100", 4);
-define("QR_MASK_PATTERN101", 5);
-define("QR_MASK_PATTERN110", 6);
-define("QR_MASK_PATTERN111", 7);
+define('QR_MASK_PATTERN000', 0);
+define('QR_MASK_PATTERN001', 1);
+define('QR_MASK_PATTERN010', 2);
+define('QR_MASK_PATTERN011', 3);
+define('QR_MASK_PATTERN100', 4);
+define('QR_MASK_PATTERN101', 5);
+define('QR_MASK_PATTERN110', 6);
+define('QR_MASK_PATTERN111', 7);
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // ErrorCorrectLevel
 
 // 7%.
-define("QR_ERROR_CORRECT_LEVEL_L", 1);
+define('QR_ERROR_CORRECT_LEVEL_L', 1);
 // 15%.
-define("QR_ERROR_CORRECT_LEVEL_M", 0);
+define('QR_ERROR_CORRECT_LEVEL_M', 0);
 // 25%.
-define("QR_ERROR_CORRECT_LEVEL_Q", 3);
+define('QR_ERROR_CORRECT_LEVEL_Q', 3);
 // 30%.
-define("QR_ERROR_CORRECT_LEVEL_H", 2);
+define('QR_ERROR_CORRECT_LEVEL_H', 2);
 
-
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // QRBitBuffer
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 
-class QRBitBuffer {
+class QRBitBuffer
+{
+    public $buffer;
 
-    var $buffer;
-    var $length;
+    public $length;
 
-    function __construct() {
-        $this->buffer = array();
+    public function __construct()
+    {
+        $this->buffer = [];
         $this->length = 0;
     }
 
-    function getBuffer() {
+    public function getBuffer()
+    {
         return $this->buffer;
     }
 
-    function getLengthInBits() {
+    public function getLengthInBits()
+    {
         return $this->length;
     }
 
-    function __toString() {
-        $buffer = "";
+    public function __toString()
+    {
+        $buffer = '';
         for ($i = 0; $i < $this->getLengthInBits(); $i++) {
-            $buffer .= $this->get($i)? '1' : '0';
+            $buffer .= $this->get($i) ? '1' : '0';
         }
+
         return $buffer;
     }
 
-    function get($index) {
-        $bufIndex = (int)floor($index / 8);
-        return ( ($this->buffer[$bufIndex] >> (7 - $index % 8) ) & 1) == 1;
+    public function get($index)
+    {
+        $bufIndex = (int) floor($index / 8);
+
+        return (($this->buffer[$bufIndex] >> (7 - $index % 8)) & 1) == 1;
     }
 
-    function put($num, $length) {
+    public function put($num, $length)
+    {
 
         for ($i = 0; $i < $length; $i++) {
-            $this->putBit( ( ($num >> ($length - $i - 1) ) & 1) == 1);
+            $this->putBit((($num >> ($length - $i - 1)) & 1) == 1);
         }
     }
 
-    function putBit($bit) {
+    public function putBit($bit)
+    {
 
-        $bufIndex = (int)floor($this->length / 8);
+        $bufIndex = (int) floor($this->length / 8);
         if (count($this->buffer) <= $bufIndex) {
             $this->buffer[] = 0;
         }
 
         if ($bit) {
-            $this->buffer[$bufIndex] |= (0x80 >> ($this->length % 8) );
+            $this->buffer[$bufIndex] |= (0x80 >> ($this->length % 8));
         }
 
         $this->length++;
     }
 }
-
-?>
