@@ -28,6 +28,9 @@
     @if (session('status'))
         <div class="status-sucesso" role="status">{{ session('status') }}</div>
     @endif
+    @error('matricula')
+        <div class="status-erro" role="alert"><x-icon name="info" :size="18" /> {{ $message }}</div>
+    @enderror
     <section class="folha" aria-labelledby="titulo-inscricao">
         <div class="folha-cabecalho"><div><h2 id="titulo-inscricao">Dados da inscrição</h2><p>Consulta restrita à Secretaria Municipal de Educação e às unidades indicadas.</p></div></div>
         <div class="folha-corpo">
@@ -90,6 +93,19 @@
         </div>
     </section>
 
+    @if ($record->student_id)
+        <section class="folha lista-espera-secao" aria-labelledby="titulo-matricula-feita">
+            <div class="folha-cabecalho"><div><h2 id="titulo-matricula-feita">Matrícula feita pela lista</h2><p>A criança já é aluna da rede; o pedido está encerrado como atendido.</p></div></div>
+        </section>
+    @elseif ($canChange && in_array($record->status, ['aguardando', 'convocado'], true))
+        <section class="folha lista-espera-secao" aria-labelledby="titulo-matricular">
+            <div class="folha-cabecalho"><div><h2 id="titulo-matricular">Matricular a criança</h2><p>Abriu a vaga? A criança vira aluna da turma escolhida, o responsável fica vinculado e o pedido é encerrado como atendido, sem digitar os dados de novo.</p></div></div>
+            <div class="folha-corpo">
+                <a class="botao" href="{{ route('waitlist.enroll.form', ['municipio' => $municipality->slug, 'pedido' => $record->id]) }}">Matricular pela lista de espera</a>
+            </div>
+        </section>
+    @endif
+
     @if ($canChange)
         <section class="folha lista-espera-secao" aria-labelledby="titulo-mudar-situacao">
             <div class="folha-cabecalho"><div><h2 id="titulo-mudar-situacao">Alterar situação</h2><p>Exige segundo fator confirmado recentemente e motivo obrigatório.</p></div></div>
@@ -109,7 +125,7 @@
                     <label for="status_reason">Motivo da mudança (10 a 500 caracteres)
                         <textarea id="status_reason" name="reason" class="entrada" rows="3" maxlength="500" required>{{ old('reason') }}</textarea>
                     </label>
-                    @if ($errors->any())
+                    @if ($errors->any() && ! $errors->has('matricula'))
                         <div class="campo-erro" role="alert">{{ $errors->first() }}</div>
                     @endif
                     <button class="botao" type="submit">Registrar mudança</button>

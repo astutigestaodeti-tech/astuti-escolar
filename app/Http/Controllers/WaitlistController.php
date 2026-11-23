@@ -6,7 +6,12 @@ use App\Address\BrazilianStates;
 use App\Audit\AuditTrail;
 use App\Auth\WaitlistAccess;
 use App\Documents\VerificationCode;
+use App\Import\Students\ImportedGuardianLinker;
 use App\Models\Tenant\School;
+use App\Models\Tenant\SchoolClass;
+use App\Models\Tenant\SchoolYear;
+use App\Models\Tenant\Student;
+use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\WaitlistRequest;
 use App\Services\PostalCodeLookupService;
 use App\Validation\Cpf;
@@ -16,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -359,6 +365,182 @@ class WaitlistController extends Controller
 
         return redirect()->route('waitlist.index', ['municipio' => $municipality->slug])
             ->with('status', 'Pedido arquivado sem exclusão dos registros.');
+    }
+
+    /**
+     * Matrícula a partir da fila: a criança vira aluno da turma escolhida, o
+     * responsável é vinculado e o pedido fica "Atendido", tudo numa transação.
+     * Só para escolas de preferência que a pessoa pode gerir.
+     */
+    public function enrollForm(Request $request, string $municipio, string $pedido, WaitlistAccess $access): Response|RedirectResponse
+    {
+        [$municipality, $record, $canChange] = $this->authorizedRequest($request, $pedido, $access);
+        abort_unless($canChange, 403);
+        if (! in_array($record->status, self::OPEN_STATUSES, true)) {
+            return redirect()->route('waitlist.show', ['municipio' => $municipality->slug, 'pedido' => $record->id])
+                ->withErrors(['matricula' => 'Só pedidos aguardando ou convocados podem ser matriculados.']);
+        }
+
+        $options = $this->enrollmentOptions($request, $municipality, $record);
+        $duplicate = $this->existingStudent($record);
+
+        return response()->view('waitlist.enroll', [
+            'municipality' => $municipality,
+            'record' => $record,
+            'options' => $options,
+            'duplicate' => $duplicate,
+            'stages' => WaitlistRequest::STAGES,
+            'shifts' => self::SHIFTS,
+            // Início sugerido: hoje, ou o primeiro dia do ano letivo de ingresso se ele ainda não começou.
+            'today' => ($options !== [] && $options[0]['year']->start_date->isFuture() ? $options[0]['year']->start_date : today())->format('Y-m-d'),
+        ])->header('Cache-Control', 'private, no-store');
+    }
+
+    public function enroll(Request $request, string $municipio, string $pedido, WaitlistAccess $access): RedirectResponse
+    {
+        [$municipality, $record, $canChange] = $this->authorizedRequest($request, $pedido, $access);
+        abort_unless($canChange, 403);
+
+        $data = $request->validate([
+            'school_class_id' => ['required', 'uuid'],
+            'started_at' => ['required', 'date_format:Y-m-d'],
+            'relationship' => ['required', Rule::in(ImportedGuardianLinker::RELATIONSHIPS)],
+        ], [
+            'school_class_id.required' => 'Escolha a turma.',
+            'started_at.required' => 'Informe a data de início da matrícula.',
+        ]);
+
+        $choice = collect($this->enrollmentOptions($request, $municipality, $record))
+            ->flatMap(fn (array $option): array => array_map(fn (array $class): array => [...$class, 'school' => $option['school'], 'year' => $option['year']], $option['classes']))
+            ->firstWhere('id', $data['school_class_id']);
+        if ($choice === null) {
+            throw ValidationException::withMessages(['school_class_id' => 'Escolha uma turma de uma das escolas de preferência que você pode gerir.']);
+        }
+        $year = $choice['year'];
+        if ($data['started_at'] < $year->start_date->format('Y-m-d') || $data['started_at'] > $year->end_date->format('Y-m-d')) {
+            throw ValidationException::withMessages(['started_at' => 'A data de início precisa estar dentro do ano letivo '.$year->year.'.']);
+        }
+
+        $result = DB::connection('tenant')->transaction(function () use ($record, $data, $choice, $year, $request): array {
+            $locked = WaitlistRequest::query()->lockForUpdate()->findOrFail($record->id);
+            if (! in_array($locked->status, self::OPEN_STATUSES, true) || $locked->enrollment_id !== null) {
+                throw ValidationException::withMessages(['matricula' => 'Este pedido já foi encerrado ou matriculado. Nada foi gravado.']);
+            }
+            if ($this->existingStudent($locked) !== null) {
+                throw ValidationException::withMessages(['matricula' => 'Já existe na rede um aluno com o mesmo nome e data de nascimento, ou com o mesmo CPF. Matricule pela ficha desse aluno e depois registre aqui a situação "Atendido". Nada foi gravado.']);
+            }
+            $class = SchoolClass::query()->whereKey($choice['id'])->whereIn('status', ['active', 'planned'])->lockForUpdate()->first();
+            if ($class === null) {
+                throw ValidationException::withMessages(['school_class_id' => 'A turma deixou de estar disponível. Escolha outra.']);
+            }
+
+            $student = Student::query()->create([
+                'id' => (string) Str::uuid(),
+                'full_name' => $locked->child_name,
+                'birth_date' => $locked->birth_date->format('Y-m-d'),
+                'cpf' => $locked->cpf,
+                'address_street' => $locked->address_street,
+                'address_number' => $locked->address_number,
+                'address_complement' => $locked->address_complement,
+                'address_district' => $locked->address_district,
+                'address_city' => $locked->address_city,
+                'address_state' => $locked->address_state,
+                'postal_code' => $locked->postal_code,
+            ]);
+            $enrollment = StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $student->id,
+                'school_id' => $class->school_id,
+                'school_year_id' => $year->id,
+                'school_class_id' => $class->id,
+                'status' => 'active',
+                'started_at' => $data['started_at'],
+            ]);
+            (new ImportedGuardianLinker)->link($student, [
+                'name' => $locked->guardian_name,
+                'relationship' => $data['relationship'],
+                'phone' => $locked->guardian_phone,
+                'cpf' => null,
+            ]);
+
+            $before = $locked->status;
+            $locked->forceFill(['status' => 'atendido', 'student_id' => $student->id, 'enrollment_id' => $enrollment->id])->save();
+            DB::connection('tenant')->table('waitlist_status_changes')->insert([
+                'id' => (string) Str::uuid(),
+                'waitlist_request_id' => $locked->id,
+                'previous_status' => $before,
+                'new_status' => 'atendido',
+                'reason' => 'Matriculado pela lista de espera na turma '.$class->name.' de '.$choice['school']->name.'.',
+                'changed_by' => $request->user()->id,
+                'changed_at' => now(),
+            ]);
+            app(AuditTrail::class)->record('tenant', 'waitlist.enrolled', WaitlistRequest::class, $locked->id,
+                ['status' => $before],
+                ['status' => 'atendido', 'student_id' => $student->id, 'enrollment_id' => $enrollment->id, 'school_id' => $class->school_id, 'school_class_id' => $class->id]);
+
+            return [$student, $class];
+        });
+
+        [$student, $class] = $result;
+
+        return redirect()->route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $class->school_id, 'aluno' => $student->id])
+            ->with('status', 'Matrícula feita pela lista de espera (protocolo '.$record->protocol.'). Confira a ficha e complete os dados do Censo.');
+    }
+
+    /**
+     * Escolas de preferência que a pessoa pode gerir, com as turmas do ano de
+     * ingresso. A turma da mesma etapa vem marcada como sugestão.
+     *
+     * @return list<array{school: School, year: SchoolYear, classes: list<array{id: string, label: string, suggested: bool}>}>
+     */
+    private function enrollmentOptions(Request $request, mixed $municipality, WaitlistRequest $record): array
+    {
+        $year = SchoolYear::query()->where('year', $record->intake_year)->whereIn('status', ['active', 'planned'])->first();
+        if ($year === null) {
+            return [];
+        }
+
+        $stageWords = array_filter(preg_split('/\s+/u', mb_strtolower(WaitlistRequest::STAGES[$record->stage] ?? '')) ?: []);
+        $options = [];
+        foreach ($record->preferences()->with('school')->orderBy('preference_order')->get() as $preference) {
+            $school = $preference->school;
+            if ($school === null || $school->status !== 'active' || ! Gate::allows('manageStudents', [$school, $municipality])) {
+                continue;
+            }
+            $classes = SchoolClass::query()->where('school_id', $school->id)->where('school_year_id', $year->id)
+                ->whereIn('status', ['active', 'planned'])->orderBy('name')->get();
+            if ($classes->isEmpty()) {
+                continue;
+            }
+            $options[] = [
+                'school' => $school,
+                'year' => $year,
+                'classes' => $classes->map(function (SchoolClass $class) use ($stageWords): array {
+                    $text = mb_strtolower($class->stage.' '.$class->name);
+                    $suggested = $stageWords !== [] && collect($stageWords)->every(fn (string $word): bool => str_contains($text, $word));
+
+                    return [
+                        'id' => $class->id,
+                        'label' => $class->name.' - '.$class->stage.' - '.$class->shift,
+                        'suggested' => $suggested,
+                    ];
+                })->sortByDesc('suggested')->values()->all(),
+            ];
+        }
+
+        return $options;
+    }
+
+    private function existingStudent(WaitlistRequest $record): ?Student
+    {
+        return Student::query()
+            ->where(function ($query) use ($record): void {
+                $query->where(fn ($q) => $q->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$record->child_name])
+                    ->whereDate('birth_date', $record->birth_date->format('Y-m-d')));
+                if ($record->cpf !== null) {
+                    $query->orWhere('cpf', $record->cpf);
+                }
+            })->first();
     }
 
     public function postalLookup(

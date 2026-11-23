@@ -75,6 +75,10 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/lista-de-espera/{pedido}', [WaitlistController::class, 'show'])->whereUuid('pedido')->name('waitlist.show');
     Route::post('/lista-de-espera/{pedido}/situacao', [WaitlistController::class, 'changeStatus'])
         ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('waitlist.status');
+    Route::get('/lista-de-espera/{pedido}/matricular', [WaitlistController::class, 'enrollForm'])
+        ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class)->name('waitlist.enroll.form');
+    Route::post('/lista-de-espera/{pedido}/matricular', [WaitlistController::class, 'enroll'])
+        ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('waitlist.enroll');
     Route::post('/lista-de-espera/{pedido}/arquivar', [WaitlistController::class, 'archive'])
         ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('waitlist.archive');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
