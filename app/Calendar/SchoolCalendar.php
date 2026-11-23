@@ -27,7 +27,7 @@ class SchoolCalendar
      * explicitamente cadastrados como letivos. Uma interrupção prevalece sobre
      * uma marcação extra no mesmo dia; eventos são apenas informativos.
      *
-     * @param Collection<int, SchoolCalendarDay> $entries
+     * @param  Collection<int, SchoolCalendarDay>  $entries
      */
     public function plannedDays(SchoolYear $year, Collection $entries): int
     {
