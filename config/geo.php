@@ -12,6 +12,11 @@ return [
     'tiles_attribution' => env('ASTUTI_MAPA_ATRIBUICAO', '© colaboradores do OpenStreetMap'),
     // O Nominatim pede identificação da aplicação; o contato vem do .env de cada instalação.
     'user_agent' => env('ASTUTI_GEOCODER_USER_AGENT', 'AstutiGestaoEscolar/1.0'),
-    // Regra municipal: a partir de quantos km em linha reta o aluno tem direito ao transporte.
+    // Rotas a pé pelas ruas (OSRM). Vazio desliga e a ficha mostra só a linha reta.
+    // O servidor "routed-foot" calcula a pé; o OSRM ignora o perfil escrito no
+    // endereço, por isso fica "driving", igual ao site do OpenStreetMap.
+    'router_url' => env('ASTUTI_ROTAS_URL', 'https://routing.openstreetmap.de/routed-foot/route/v1/driving'),
+    // Regra municipal: a partir de quantos km o aluno tem direito ao transporte.
+    // Usa a distância pelas ruas quando o serviço de rotas responde; senão, a linha reta.
     'transport_min_km' => (float) env('ASTUTI_TRANSPORTE_DISTANCIA_MINIMA_KM', 2.0),
 ];

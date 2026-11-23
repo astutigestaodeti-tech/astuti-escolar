@@ -110,9 +110,9 @@
                             <div><dt>Estado</dt><dd>{{ $student->address_state ?? 'Não informado' }}</dd></div>
                             <div><dt>CEP</dt><dd class="numero">{{ $student->postal_code ?? 'Não informado' }}</dd></div>
                             <div><dt>Zona</dt><dd>{{ $zona ?? 'Não informada' }}</dd></div>
-                            <div><dt>Distância até a escola</dt><dd>
+                            <div><dt>Distância até a escola em linha reta</dt><dd>
                                 @if ($distanciaEscola !== null)
-                                    {{ \App\Geo\Distance::label($distanciaEscola) }} <small class="ficha-idade">em linha reta</small>
+                                    {{ \App\Geo\Distance::label($distanciaEscola) }}
                                 @elseif ($student->latitude === null)
                                     Casa não marcada no mapa
                                 @else
@@ -122,6 +122,15 @@
                                     <small class="ficha-idade"><a href="{{ route('school.students.geo.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">{{ $student->latitude === null ? 'Marcar no mapa' : 'Ajustar no mapa' }}</a></small>
                                 @endif
                             </dd></div>
+                            @if ($distanciaEscola !== null && config('geo.router_url'))
+                                <div><dt>Distância até a escola pelo mapa</dt><dd>
+                                    @if ($distanciaRuas !== null)
+                                        {{ \App\Geo\Distance::label($distanciaRuas) }} <small class="ficha-idade">a pé, pelas ruas</small>
+                                    @else
+                                        <small class="ficha-idade">Não foi possível calcular agora. Tente mais tarde.</small>
+                                    @endif
+                                </dd></div>
+                            @endif
                         </dl>
                         @if ($avisoTransporte)
                             <p class="geo-aviso" role="note">{{ $avisoTransporte }}</p>
