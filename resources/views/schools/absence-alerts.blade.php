@@ -36,6 +36,7 @@
             </div>
         </div>
 
+        <div class="folha-corpo">
         <form method="GET" action="{{ route('school.absences.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}" class="alerta-faltas-filtros">
             <div>
                 <label for="alerta-turma">Turma</label>
@@ -61,7 +62,9 @@
 
         @if ($students->isEmpty())
             <p class="alerta-faltas-vazio">Nenhum aluno em alerta para os filtros selecionados.</p>
-        @else
+        @endif
+        </div>
+        @if ($students->isNotEmpty())
             <div class="alerta-faltas-rolagem">
                 <table class="alerta-faltas-tabela">
                     <thead>

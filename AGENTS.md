@@ -16,6 +16,11 @@
 - Antes de diagnosticar problema relatado por Jefferson, confira no rodapé da tela a versão e o banco em uso.
 - Antes de programar, faça um inventário dos PRs abertos e de suas bases; não altere branches de outras frentes. Use um PR pequeno por objetivo, com CI, sem merge ou deploy automáticos.
 
+## Padrão visual dos cartões
+
+- Todo conteúdo dentro de um cartão (`.folha`), fora o título (`.folha-cabecalho`) e tabelas de borda a borda, fica dentro de `.folha-corpo` ou de um bloco que use `var(--recuo-folha)` (22 px; 16 px no celular). Nada de campo, botão, texto ou caixa encostado na borda.
+- Antes de abrir PR com tela nova ou alterada, inclua a tela em `tests/Feature/Layout/AllSchoolPagesOpenTest.php` e rode `ASTUTI_DUMP_TELAS=/tmp/telas php artisan test --filter=AllSchoolPagesOpenTest` seguido de `python3 scripts/qualidade/checar-margens.py /tmp/telas 1440 390`. O resultado precisa ser "Problemas de margem: 0".
+
 ## Modo de trabalho aprovado em 21/11/2026
 
 1. **Processo proporcional ao risco.** Correções pequenas de consulta, filtro, visual e texto dispensam novas especificações e planos em `docs/superpowers`. Entregue código e teste juntos em uma unidade lógica. Use o ciclo completo de análise, desenho, testes e revisão para importadores, integração SED, auditoria, permissões, segundo fator, exclusão, restauração e migrações de banco.
