@@ -7,6 +7,7 @@ use App\Auth\WaitlistAccess;
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class SchoolPolicy
 {
@@ -26,6 +27,25 @@ class SchoolPolicy
     public function viewAny(User $user, Municipality $municipality): bool
     {
         return $this->access->hasMunicipalAccess($user, $municipality);
+    }
+
+    /** Equidade escolar: apenas diretor vinculado a esta unidade ou gestão municipal. */
+    public function viewEquity(User $user, School $school, Municipality $municipality): bool
+    {
+        if ($this->access->managesMunicipality($user, $municipality)) {
+            return true;
+        }
+        if ($user->status !== 'active' || $municipality->status !== 'active') {
+            return false;
+        }
+
+        return DB::connection('platform')->table('memberships as membership')
+            ->join('school_scopes as scope', 'scope.membership_id', '=', 'membership.id')
+            ->where('membership.user_id', $user->id)
+            ->where('membership.municipality_id', $municipality->id)
+            ->where('membership.status', 'active')
+            ->where('membership.role', 'school_director')
+            ->where('scope.school_id', $school->id)->exists();
     }
 
     public function view(User $user, School $school, Municipality $municipality): bool
