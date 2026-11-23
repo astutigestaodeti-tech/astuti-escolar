@@ -12,6 +12,7 @@ use App\Http\Controllers\GeoLocationController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdentificationPhotoController;
+use App\Http\Controllers\NetworkPanelController;
 use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\PublicDocumentVerificationController;
 use App\Http\Controllers\SchoolAbsenceAlertsController;
@@ -63,6 +64,7 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
 });
 
 Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
+    Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/pendencias', [SchoolPendenciesController::class, 'index'])->whereUuid('escola')->name('school.pendencies.index');
