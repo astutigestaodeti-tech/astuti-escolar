@@ -11,6 +11,11 @@ class SchoolPolicy
 {
     public function __construct(private readonly SchoolAccess $access) {}
 
+    public function viewNetworkPanel(User $user, Municipality $municipality): bool
+    {
+        return $this->access->managesMunicipality($user, $municipality);
+    }
+
     public function viewAny(User $user, Municipality $municipality): bool
     {
         return $this->access->hasMunicipalAccess($user, $municipality);

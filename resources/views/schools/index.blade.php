@@ -23,6 +23,10 @@
         </div>
     </div>
 
+    @can('viewNetworkPanel', [\App\Models\Tenant\School::class, $municipality])
+        <div class="nota"><x-icon name="info" /><div><strong>Gestão da rede</strong><p>Consulte os indicadores consolidados de todas as escolas. <a href="{{ route('network.panel.index', ['municipio' => $municipality->slug]) }}">Abrir painel da rede</a>.</p></div></div>
+    @endcan
+
     @if ($schools->isEmpty())
         <div class="folha vazio">
             Nenhuma escola está liberada para a sua conta. Peça à Secretaria Municipal de Educação que inclua as unidades em que você trabalha.

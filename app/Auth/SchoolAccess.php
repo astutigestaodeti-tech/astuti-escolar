@@ -39,6 +39,14 @@ class SchoolAccess
             ->all();
     }
 
+    /** Acesso exclusivo a um vínculo ativo de gestão municipal, sem herdar perfis escolares. */
+    public function managesMunicipality(User $user, Municipality $municipality): bool
+    {
+        return $user->status === 'active' && $municipality->status === 'active'
+            && Membership::query()->where('user_id', $user->id)->where('municipality_id', $municipality->id)
+                ->where('status', 'active')->where('role', 'municipal_manager')->exists();
+    }
+
     public function hasMunicipalAccess(User $user, Municipality $municipality): bool
     {
         return $this->visibleSchoolIds($user, $municipality) !== [];
