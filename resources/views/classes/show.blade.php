@@ -67,6 +67,90 @@
         @endif
     </section>
 
+    @if (session('status'))
+        <div class="status-sucesso" role="status">{{ session('status') }}</div>
+    @endif
+
+    <section class="folha" aria-labelledby="titulo-professores-turma">
+        <div class="folha-cabecalho">
+            <div>
+                <h2 id="titulo-professores-turma">Professores da turma</h2>
+                <p>Atribuições docentes, disciplina e período de atuação nesta turma.</p>
+            </div>
+        </div>
+        @if ($assignments->isEmpty())
+            <div class="vazio">Nenhum professor atribuído a esta turma.</div>
+        @else
+            <div class="rolagem">
+                <table class="tabela">
+                    <thead><tr><th scope="col">Professor(a)</th><th scope="col">Disciplina</th><th scope="col">Período</th><th scope="col">Tipo</th>@if ($canManage)<th scope="col">Ação</th>@endif</tr></thead>
+                    <tbody>
+                        @foreach ($assignments as $assignment)
+                            <tr>
+                                <th scope="row">{{ $assignment->staffMember?->full_name ?? 'Cadastro arquivado' }}</th>
+                                <td>{{ $assignment->subject ?: 'Não informada' }}</td>
+                                <td>{{ $assignment->starts_on->format('d/m/Y') }} a {{ $assignment->ends_on?->format('d/m/Y') ?? 'em aberto' }}</td>
+                                <td>{{ $assignment->is_main ? 'Principal' : 'Demais docentes' }}</td>
+                                @if ($canManage)
+                                    <td>
+                                        @if ($assignment->ends_on === null)
+                                            <form method="POST" action="{{ route('school.classes.teachers.end', [...$parametrosTurma, 'atribuicao' => $assignment->id]) }}">
+                                                @csrf
+                                                <label for="ends-on-{{ $assignment->id }}">Encerrar em</label>
+                                                <input class="entrada" id="ends-on-{{ $assignment->id }}" type="date" name="ends_on" value="{{ old('ends_on', today()->toDateString()) }}" required>
+                                                <button class="botao secundario" type="submit">Encerrar</button>
+                                            </form>
+                                        @else
+                                            Encerrada
+                                        @endif
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
+        @if ($canManage)
+            <div class="folha-cabecalho"><div><h3>Adicionar professor à turma</h3><p>Apenas servidores ativos com função Professor(a) nesta escola.</p></div></div>
+            @if ($errors->any())
+                <div class="erro" role="alert"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+            @endif
+            @if ($availableTeachers->isEmpty())
+                <p>Não há professores ativos cadastrados. <a href="{{ route('school.staff.create', $parametrosEscola) }}">Cadastrar servidor</a>.</p>
+            @else
+                <form method="POST" action="{{ route('school.classes.teachers.store', $parametrosTurma) }}">
+                    @csrf
+                    <div class="formulario-grade">
+                        <div class="formulario-campo largo">
+                            <label class="rotulo" for="staff_member_id">Professor(a) *</label>
+                            <select class="entrada" name="staff_member_id" id="staff_member_id" required>
+                                <option value="">Selecione um professor</option>
+                                @foreach ($availableTeachers as $teacher)
+                                    <option value="{{ $teacher->id }}" @selected(old('staff_member_id') === $teacher->id)>{{ $teacher->full_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="subject">Disciplina (opcional)</label>
+                            <input class="entrada" name="subject" id="subject" maxlength="80" value="{{ old('subject') }}">
+                        </div>
+                        <div class="formulario-campo">
+                            <label class="rotulo" for="starts_on">Início *</label>
+                            <input class="entrada" type="date" name="starts_on" id="starts_on" value="{{ old('starts_on', today()->toDateString()) }}" required>
+                        </div>
+                    </div>
+                    <div class="formulario-campo">
+                        <label><input type="checkbox" name="is_main" value="1" @checked(old('is_main') === '1')> Professor(a) principal desta turma</label>
+                        <p class="texto-ajuda">Só pode haver uma atribuição principal em aberto por turma. Encerre a anterior antes de substituir.</p>
+                    </div>
+                    <button class="botao primario" type="submit">Atribuir professor</button>
+                </form>
+            @endif
+        @endif
+    </section>
+
     @if ($canManage)
         <section class="folha chamada-historico" aria-labelledby="titulo-chamadas-anteriores">
             <div class="folha-cabecalho">

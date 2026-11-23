@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Attendance\MonthlyAttendanceReport;
+use App\Models\Tenant\ClassTeacherAssignment;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use Illuminate\Contracts\View\View;
@@ -43,6 +44,19 @@ class SchoolMonthlyAttendanceReportController extends Controller
             throw ValidationException::withMessages(['mes' => 'Escolha um mês dentro do ano letivo.']);
         }
 
+        // Consulta independente da grade: as três consultas de frequência permanecem inalteradas.
+        $principalName = ClassTeacherAssignment::query()
+            ->join('staff_members', 'staff_members.id', '=', 'class_teacher_assignments.staff_member_id')
+            ->where('class_teacher_assignments.school_class_id', $class->id)
+            ->where('class_teacher_assignments.is_main', true)
+            ->whereDate('class_teacher_assignments.starts_on', '<=', $month->copy()->endOfMonth()->toDateString())
+            ->where(function ($query) use ($month): void {
+                $query->whereNull('class_teacher_assignments.ends_on')
+                    ->orWhereDate('class_teacher_assignments.ends_on', '>=', $month->copy()->startOfMonth()->toDateString());
+            })
+            ->orderByDesc('class_teacher_assignments.starts_on')
+            ->value('staff_members.full_name');
+
         $previous = $month->copy()->subMonthNoOverflow();
         $next = $month->copy()->addMonthNoOverflow();
 
@@ -51,6 +65,7 @@ class SchoolMonthlyAttendanceReportController extends Controller
             'school' => $school,
             'class' => $class,
             'month' => $month,
+            'principalName' => $principalName,
             'previousMonth' => $previous->lessThan($firstMonth) ? null : $previous->format('Y-m'),
             'nextMonth' => $next->greaterThan($lastMonth) ? null : $next->format('Y-m'),
             ...$report->forClass($class, $month),
