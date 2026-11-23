@@ -25,14 +25,14 @@ final class Distance
     }
 
     /** Situação do transporte comparando a distância com a regra municipal. */
-    public static function transportHint(float $km, ?string $transportStatus, float $minKm): ?string
+    public static function transportHint(float $km, ?string $transportStatus, float $minKm, string $measure = 'em linha reta'): ?string
     {
         $far = $km >= $minKm;
         $uses = $transportStatus === 'active';
 
         return match (true) {
-            $far && ! $uses => 'Mora a mais de '.self::label($minKm).' em linha reta e não está no transporte: confira se a família precisa.',
-            ! $far && $uses => 'Está no transporte e mora a menos de '.self::label($minKm).' em linha reta: confira se há motivo (deficiência, trajeto perigoso).',
+            $far && ! $uses => 'Mora a mais de '.self::label($minKm).' '.$measure.' e não está no transporte: confira se a família precisa.',
+            ! $far && $uses => 'Está no transporte e mora a menos de '.self::label($minKm).' '.$measure.': confira se há motivo (deficiência, trajeto perigoso).',
             default => null,
         };
     }

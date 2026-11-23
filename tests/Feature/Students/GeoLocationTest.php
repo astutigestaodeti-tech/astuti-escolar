@@ -195,4 +195,45 @@ class GeoLocationTest extends TwoMunicipalityTestCase
             ->assertOk()
             ->assertSee('Não encontrei "Rua Inexistente" no mapa', false);
     }
+
+    private function marcarCasaEEscola(): void
+    {
+        $this->inMunicipality(function (): void {
+            School::query()->findOrFail(self::ESCOLA_A1)->forceFill(['latitude' => -23.5, 'longitude' => -46.6, 'geo_source' => 'mapa'])->save();
+            // Cerca de 1,7 km em linha reta: abaixo da regra de 2 km.
+            Student::query()->findOrFail($this->student)->forceFill(['latitude' => -23.485, 'longitude' => -46.6, 'geo_source' => 'mapa'])->save();
+        });
+    }
+
+    public function test_ficha_mostra_a_distancia_pelas_ruas_e_usa_ela_no_aviso_do_transporte(): void
+    {
+        config(['geo.router_url' => 'https://rotas.example.test/route/v1/foot']);
+        Http::fake(['rotas.example.test/*' => Http::response(['code' => 'Ok', 'routes' => [['distance' => 2460.4, 'duration' => 1770]]])]);
+        $this->marcarCasaEEscola();
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        $this->get($this->base().'/alunos/'.$this->student)
+            ->assertOk()
+            ->assertSeeInOrder(['Distância até a escola em linha reta', '1,7 km', 'Distância até a escola pelo mapa', '2,5 km', 'a pé, pelas ruas'])
+            ->assertSee('Mora a mais de 2,0 km pelas ruas e não está no transporte');
+        // A segunda abertura usa o cache: uma consulta só por casa.
+        $this->get($this->base().'/alunos/'.$this->student)->assertOk()->assertSee('2,5 km');
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://rotas.example.test/route/v1/foot/-46.600000,-23.485000;-46.600000,-23.500000'));
+    }
+
+    public function test_servico_de_rotas_fora_do_ar_cai_para_a_linha_reta_sem_derrubar_a_ficha(): void
+    {
+        config(['geo.router_url' => 'https://rotas.example.test/route/v1/foot']);
+        Http::fake(['rotas.example.test/*' => Http::response('erro', 503)]);
+        $this->marcarCasaEEscola();
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        $this->get($this->base().'/alunos/'.$this->student)
+            ->assertOk()
+            ->assertSee('1,7 km')
+            ->assertSee('Não foi possível calcular agora')
+            ->assertDontSee('Mora a mais de');
+    }
 }

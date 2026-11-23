@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
 use App\Geo\Distance;
+use App\Geo\RouteDistance;
 use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
@@ -134,13 +135,21 @@ class SchoolStudentController extends Controller
         $declarations = $canManage ? IssuedDocument::query()->where('school_id', $school->id)
             ->where('student_id', $student->id)->orderByDesc('issued_at')->get() : collect();
 
-        // Distância em linha reta casa-escola e aviso do transporte pela regra municipal.
-        $distanciaEscola = $student->latitude !== null && $school->latitude !== null
-            ? Distance::km((float) $student->latitude, (float) $student->longitude, (float) $school->latitude, (float) $school->longitude)
-            : null;
-        $avisoTransporte = $distanciaEscola === null ? null
-            : Distance::transportHint($distanciaEscola, $enrollments->firstWhere('status', 'active')?->transport_status, (float) config('geo.transport_min_km'));
+        // Distância casa-escola em linha reta e pelas ruas, a pé, e aviso do
+        // transporte pela regra municipal (pelas ruas quando o serviço responde).
+        $distanciaEscola = $distanciaRuas = null;
+        if ($student->latitude !== null && $school->latitude !== null) {
+            $pontos = [(float) $student->latitude, (float) $student->longitude, (float) $school->latitude, (float) $school->longitude];
+            $distanciaEscola = Distance::km(...$pontos);
+            $distanciaRuas = app(RouteDistance::class)->km(...$pontos);
+        }
+        $avisoTransporte = $distanciaEscola === null ? null : Distance::transportHint(
+            $distanciaRuas ?? $distanciaEscola,
+            $enrollments->firstWhere('status', 'active')?->transport_status,
+            (float) config('geo.transport_min_km'),
+            $distanciaRuas !== null ? 'pelas ruas' : 'em linha reta',
+        );
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile', 'declarations'));
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile', 'declarations'));
     }
 }
