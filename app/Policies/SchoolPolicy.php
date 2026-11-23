@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Auth\SchoolAccess;
+use App\Auth\WaitlistAccess;
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
 use App\Models\User;
@@ -14,6 +15,12 @@ class SchoolPolicy
     public function viewNetworkPanel(User $user, Municipality $municipality): bool
     {
         return $this->access->managesMunicipality($user, $municipality);
+    }
+
+    /** Fila de educação infantil: município, direção ou secretaria da unidade de preferência. */
+    public function viewWaitlist(User $user, Municipality $municipality): bool
+    {
+        return app(WaitlistAccess::class)->canView($user, $municipality);
     }
 
     public function viewAny(User $user, Municipality $municipality): bool

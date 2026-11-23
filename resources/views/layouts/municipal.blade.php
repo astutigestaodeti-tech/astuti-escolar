@@ -29,11 +29,14 @@
         : null;
     $iniciaisUsuario = mb_strtoupper(collect(preg_split('/\s+/u', trim((string) ($usuario?->name ?? ''))) ?: [])->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
     $painelAtivo = request()->routeIs('network.panel.*');
+    $listaEsperaAtiva = request()->routeIs('waitlist.*');
     $escolasAtivo = request()->routeIs('schools.*') || request()->routeIs('school.classes.*') || request()->routeIs('school.students.*') || request()->routeIs('school.absences.*') || request()->routeIs('school.pendencies.*') || request()->routeIs('school.transport.*');
     $parametrosMunicipio = ['municipio' => $municipality->slug];
     $parametrosEscola = [...$parametrosMunicipio, 'escola' => request()->route('escola')];
     $voltarFallback = match (request()->route()?->getName()) {
         'schools.index' => route('home'),
+        'waitlist.index' => route('schools.index', $parametrosMunicipio),
+        'waitlist.create', 'waitlist.show' => route('waitlist.index', $parametrosMunicipio),
         'network.panel.index' => route('schools.index', $parametrosMunicipio),
         'schools.show' => route('schools.index', $parametrosMunicipio),
         'school.staff.index', 'school.staff.create', 'school.staff.store', 'school.staff.edit', 'school.staff.update', 'school.staff.remove.form', 'school.staff.destroy',
@@ -84,6 +87,11 @@
                 <x-icon name="escola" />
                 <span>Escolas</span>
             </a>
+            @can('viewWaitlist', [\App\Models\Tenant\School::class, $municipality])
+                <a class="menu-item {{ $listaEsperaAtiva ? 'ativo' : '' }}" href="{{ route('waitlist.index', $parametrosMunicipio) }}" @if ($listaEsperaAtiva) aria-current="page" @endif>
+                    <x-icon name="alunos" /><span>Lista de espera</span>
+                </a>
+            @endcan
         </nav>
 
         <div class="lateral-rodape">
