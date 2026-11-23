@@ -41,6 +41,8 @@
             $temEndereco = $logradouro !== '' || $student->address_complement || $student->address_district || $student->address_city || $student->address_state || $student->postal_code || $zona;
             $editarEndereco = route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]).'#endereco';
         @endphp
+        {{-- Duas colunas de verdade: cadastro à esquerda, histórico e documentos à direita. --}}
+        <div class="ficha-principal">
         <section class="folha" aria-labelledby="titulo-dados-aluno">
             <div class="folha-cabecalho ficha-cabecalho-foto">
                 <x-foto-identificacao tipo="aluno" :id="$student->id" :escola="$school->id" :municipio="$municipality->slug" :nome="$student->full_name"
@@ -139,7 +141,9 @@
 
         @include('health.panel')
         @include('pickups.panel')
+        </div>
 
+        <aside class="ficha-lateral" aria-label="Histórico e documentos do aluno">
         <section class="folha cartao ficha-historico" aria-labelledby="titulo-vinculos">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-vinculos">Histórico de vínculos nesta escola</h2>
@@ -207,6 +211,7 @@
                 </div>
             </section>
         @endif
+        </aside>
     </div>
 
     @if ($canManage)
