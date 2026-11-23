@@ -225,7 +225,9 @@ class SchoolStaffAndTeachersTest extends TwoMunicipalityTestCase
         $ana = $this->createStaff();
         $this->verifyTwoFactor($this->userWithRole('teacher', [self::ESCOLA_A1]));
 
-        $this->get($this->staffUrl())->assertOk()->assertSee('Ana Júlia de Oliveira')->assertDontSee('Novo servidor');
+        // Professor vê o colega e o e-mail institucional, mas não o telefone.
+        $this->get($this->staffUrl())->assertOk()->assertSee('Ana Júlia de Oliveira')->assertDontSee('Novo servidor')
+            ->assertDontSee('(11) 98765-4321')->assertDontSee('tel:+55', false);
         $this->get($this->classUrl())->assertOk()->assertSee('Professores da turma')->assertDontSee('Atribuir professor');
         $this->get($this->staffUrl('/novo'))->assertForbidden();
         $this->post($this->staffUrl(), $this->staffData())->assertForbidden();

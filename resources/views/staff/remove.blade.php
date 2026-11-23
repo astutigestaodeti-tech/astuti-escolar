@@ -16,8 +16,8 @@
     <div class="folha-titulo">
         <div><span class="contexto">Equipe escolar</span><h1>Arquivar servidor</h1><p>O cadastro será arquivado, preservando o histórico. Encerre primeiro as atribuições abertas.</p></div>
     </div>
-    <section class="folha formulario-aluno">
-        <h2>{{ $member->full_name }}</h2>
+    <section class="folha formulario-aluno" aria-labelledby="titulo-arquivar-servidor">
+        <div class="folha-cabecalho"><div><h2 id="titulo-arquivar-servidor">{{ $member->full_name }}</h2><p>Informe o motivo. O histórico das turmas fica preservado.</p></div></div>
         @if ($errors->any())
             <div class="erro" role="alert"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
         @endif

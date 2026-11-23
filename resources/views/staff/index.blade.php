@@ -32,7 +32,7 @@
 
     <section class="folha" aria-labelledby="titulo-lista-servidores">
         <div class="folha-cabecalho"><div><h2 id="titulo-lista-servidores">Equipe da unidade</h2><p>Busca de nome sem diferença entre letras acentuadas e não acentuadas.</p></div></div>
-        <form method="GET" action="{{ route('school.staff.index', $params) }}" class="formulario-grade">
+        <form method="GET" action="{{ route('school.staff.index', $params) }}" class="formulario-grade folha-corpo">
             <div class="formulario-campo largo">
                 <label class="rotulo" for="busca">Nome do servidor</label>
                 <input class="entrada" id="busca" type="search" name="busca" value="{{ $search }}" maxlength="120" placeholder="Ex.: Jose">
@@ -53,7 +53,7 @@
                                 <td>{{ $member->registration_number ?: 'Não informada' }}</td>
                                 <td>
                                     @if ($member->institutional_email)<a href="mailto:{{ $member->institutional_email }}">{{ $member->institutional_email }}</a>@endif
-                                    @if ($member->phone)<a href="tel:+55{{ $member->phone }}">{{ $member->formattedPhone() }}</a>@endif
+                                    @if ($canManage && $member->phone)<a href="tel:+55{{ $member->phone }}">{{ $member->formattedPhone() }}</a>@endif
                                 </td>
                                 <td>{{ $member->status === 'active' ? 'Ativo' : 'Inativo' }}</td>
                                 @if ($canManage)

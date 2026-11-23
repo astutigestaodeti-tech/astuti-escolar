@@ -87,19 +87,22 @@
                     <tbody>
                         @foreach ($assignments as $assignment)
                             <tr>
-                                <th scope="row">{{ $assignment->staffMember?->full_name ?? 'Cadastro arquivado' }}</th>
+                                <td><strong>{{ $assignment->staffMember?->full_name ?? 'Cadastro arquivado' }}</strong></td>
                                 <td>{{ $assignment->subject ?: 'Não informada' }}</td>
-                                <td>{{ $assignment->starts_on->format('d/m/Y') }} a {{ $assignment->ends_on?->format('d/m/Y') ?? 'em aberto' }}</td>
+                                <td>{{ $assignment->ends_on ? $assignment->starts_on->format('d/m/Y').' a '.$assignment->ends_on->format('d/m/Y') : 'Desde '.$assignment->starts_on->format('d/m/Y') }}</td>
                                 <td>{{ $assignment->is_main ? 'Principal' : 'Demais docentes' }}</td>
                                 @if ($canManage)
                                     <td>
                                         @if ($assignment->ends_on === null)
-                                            <form method="POST" action="{{ route('school.classes.teachers.end', [...$parametrosTurma, 'atribuicao' => $assignment->id]) }}">
-                                                @csrf
-                                                <label for="ends-on-{{ $assignment->id }}">Encerrar em</label>
-                                                <input class="entrada" id="ends-on-{{ $assignment->id }}" type="date" name="ends_on" value="{{ old('ends_on', today()->toDateString()) }}" required>
-                                                <button class="botao secundario" type="submit">Encerrar</button>
-                                            </form>
+                                            <details class="atribuicao-encerrar">
+                                                <summary>Encerrar atribuição</summary>
+                                                <form method="POST" action="{{ route('school.classes.teachers.end', [...$parametrosTurma, 'atribuicao' => $assignment->id]) }}">
+                                                    @csrf
+                                                    <label class="rotulo" for="ends-on-{{ $assignment->id }}">Último dia na turma</label>
+                                                    <input class="entrada" id="ends-on-{{ $assignment->id }}" type="date" name="ends_on" value="{{ old('ends_on', today()->toDateString()) }}" required>
+                                                    <button class="botao secundario" type="submit">Encerrar</button>
+                                                </form>
+                                            </details>
                                         @else
                                             Encerrada
                                         @endif
@@ -114,6 +117,7 @@
 
         @if ($canManage)
             <div class="folha-cabecalho"><div><h3>Adicionar professor à turma</h3><p>Apenas servidores ativos com função Professor(a) nesta escola.</p></div></div>
+            <div class="folha-corpo">
             @if ($errors->any())
                 <div class="erro" role="alert"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
             @endif
@@ -148,6 +152,7 @@
                     <button class="botao primario" type="submit">Atribuir professor</button>
                 </form>
             @endif
+            </div>
         @endif
     </section>
 
