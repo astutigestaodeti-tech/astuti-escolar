@@ -703,3 +703,11 @@ select.entrada{cursor:pointer}
 .alerta-faltas-turma,.alerta-faltas-contato{display:block;color:var(--tinta-2);margin-top:3px}
 .alerta-faltas-motivos{display:flex;flex-direction:column;align-items:start;gap:5px}
 .alerta-faltas-etiqueta{background:var(--ouro-claro);color:#714c0b;border:1px solid #e4c779;border-radius:6px;padding:3px 6px;font-size:12px;font-weight:700}
+
+/* Saída desfeita: continua visível, riscada, para conferência. */
+.saida-desfeita td:not(:last-child){text-decoration:line-through;color:var(--tinta-3)}
+.saida-desfazer summary{cursor:pointer;color:var(--caneta);font-weight:700}
+.saida-desfazer form{display:grid;gap:6px;margin-top:8px;min-width:220px}
+.saida-desfazer label{font-size:13px;font-weight:700}
+.saida-desfazer input{min-height:40px;padding:6px 10px;border:1px solid var(--pauta);border-radius:var(--raio-controle);font:inherit}
+.ficha-ultima-saida{margin:0 0 14px;padding:10px 12px;border-radius:var(--raio-controle);background:var(--pauta-suave);font-size:14px}

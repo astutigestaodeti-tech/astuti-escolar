@@ -101,6 +101,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     // Saída de alunos (portão): consulta da escola basta; registra a quem o aluno foi entregue.
     Route::get('/escolas/{escola}/saida', [StudentExitController::class, 'index'])->whereUuid('escola')->name('school.exits.index');
     Route::post('/escolas/{escola}/saida/{aluno}', [StudentExitController::class, 'store'])->whereUuid('escola')->whereUuid('aluno')->name('school.exits.store');
+    Route::post('/escolas/{escola}/saida/registro/{saida}/desfazer', [StudentExitController::class, 'cancel'])->whereUuid('escola')->whereUuid('saida')->name('school.exits.cancel');
 
     // Foto de identificação: consulta com a permissão da escola; envio e remoção com segundo fator.
     Route::get('/escolas/{escola}/fotos/{tipo}/{id}', [IdentificationPhotoController::class, 'show'])
