@@ -3,6 +3,7 @@
 use App\Http\Controllers\AcademicConfigController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\CensusReadinessController;
 use App\Http\Controllers\ClassGradesController;
 use App\Http\Controllers\ClassTeacherAssignmentController;
 use App\Http\Controllers\ClassYearEndController;
@@ -100,6 +101,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
         ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
+    Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/pendencias', [SchoolPendenciesController::class, 'index'])->whereUuid('escola')->name('school.pendencies.index');
