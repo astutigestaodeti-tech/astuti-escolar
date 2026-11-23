@@ -913,3 +913,6 @@ select.entrada{cursor:pointer}
 }
 .calendario-feriados .texto-ajuda{margin:4px 0 0}
 .calendario-formulario .calendario-abrangencia{flex-basis:210px;min-width:210px}
+.verificacao-form{margin-top:20px;padding-top:16px;border-top:1px solid var(--pauta)}
+.verificacao-form-linha{display:flex;gap:10px;flex-wrap:wrap}
+.verificacao-form-linha .entrada{flex:1;min-width:180px;text-transform:uppercase;letter-spacing:.08em}

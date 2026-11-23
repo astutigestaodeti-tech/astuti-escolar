@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
 use App\Geo\Distance;
-use App\Models\Tenant\School;
 use App\Models\Tenant\IssuedDocument;
+use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentExit;
 use App\Models\Tenant\StudentGuardian;

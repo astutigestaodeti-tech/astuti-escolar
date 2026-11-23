@@ -4,7 +4,9 @@
 @section('title', 'Declaração de matrícula')
 
 @section('content')
-    @php($params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id])
+    @php
+        $params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id];
+    @endphp
     <div class="folha-titulo declaracao-acoes">
         <div><span class="contexto">Documento escolar</span><h1>Declaração de matrícula</h1>
             <p>Documento emitido em {{ $document->issued_at->format('d/m/Y') }}. A consulta pública usa apenas dados mínimos.</p></div>

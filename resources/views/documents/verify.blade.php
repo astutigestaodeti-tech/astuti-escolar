@@ -16,10 +16,10 @@
             </div>
         </div>
         <div class="folha-corpo">
-            @if ($info === null)
+            @if ($info === null && ! ($askCode ?? false))
                 <p class="verificacao-situacao verificacao-invalida" role="status">Documento não encontrado</p>
                 <p>Confira o código informado no documento e tente novamente.</p>
-            @else
+            @elseif ($info !== null)
                 <p class="verificacao-situacao {{ $info['status'] === 'Documento válido' ? 'verificacao-valida' : 'verificacao-invalida' }}" role="status">{{ $info['status'] }}</p>
                 <dl class="verificacao-dados">
                     <div><dt>Tipo</dt><dd>Declaração de matrícula</dd></div>
@@ -33,6 +33,14 @@
                     <p>Este documento foi revogado pela unidade emissora e não deve ser aceito como válido.</p>
                 @endif
             @endif
+            <form class="verificacao-form" method="GET" action="{{ route('documents.verify.form') }}">
+                <label class="rotulo" for="codigo">{{ $info === null ? 'Código de verificação' : 'Conferir outro código' }}</label>
+                <div class="verificacao-form-linha">
+                    <input class="entrada" id="codigo" name="codigo" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ex.: ABCD 2345 EF" required>
+                    <button class="botao" type="submit">Verificar</button>
+                </div>
+                <p class="texto-ajuda">O código está no rodapé da declaração, ao lado do QR Code.</p>
+            </form>
         </div>
     </main>
 </body>

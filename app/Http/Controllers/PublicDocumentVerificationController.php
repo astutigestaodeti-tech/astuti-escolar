@@ -11,8 +11,26 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class PublicDocumentVerificationController extends Controller
 {
+    /** Tela para digitar o código, para quem tem o papel e não leu o QR Code. */
+    public function form(Request $request): Response
+    {
+        $typed = $request->query('codigo');
+        if (is_string($typed) && trim($typed) !== '') {
+            return redirect()->route('documents.verify', ['codigo' => self::normalize($typed)]);
+        }
+
+        return response()->view('documents.verify', ['info' => null, 'askCode' => true])->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    /** Aceita o código digitado em minúsculas, com espaços, pontos ou hífens. */
+    public static function normalize(string $code): string
+    {
+        return mb_substr((string) preg_replace('/[^A-Z0-9]/', '', mb_strtoupper($code)), 0, 20);
+    }
+
     public function __invoke(Request $request, string $codigo): Response
     {
+        $codigo = self::normalize($codigo);
         $key = config('tenancy.deployed_db_key');
         $connections = config('tenancy.connections', []);
         if (! is_string($key) || ! is_array($connections) || ! isset($connections[$key])

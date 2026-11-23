@@ -6,8 +6,8 @@ use App\Http\Controllers\ClassTeacherAssignmentController;
 use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
-use App\Http\Controllers\EnrollmentMovementController;
 use App\Http\Controllers\EnrollmentDeclarationController;
+use App\Http\Controllers\EnrollmentMovementController;
 use App\Http\Controllers\GeoLocationController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
@@ -40,6 +40,8 @@ Route::get('/saude', fn () => response()->json(['status' => 'ok']));
 Route::get('/demonstracao', [DemonstrationController::class, 'index'])->name('demo');
 
 // A consulta pública é restrita ao município configurado nesta VPS e não usa sessão.
+Route::get('/verificar', [PublicDocumentVerificationController::class, 'form'])
+    ->middleware('throttle:20,1')->name('documents.verify.form');
 Route::get('/verificar/{codigo}', PublicDocumentVerificationController::class)
     ->middleware('throttle:20,1')->name('documents.verify');
 
