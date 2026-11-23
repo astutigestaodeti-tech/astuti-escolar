@@ -144,7 +144,7 @@ class TransportRoutesTest extends TwoMunicipalityTestCase
             ->assertDontSee('Hugo Fictício');
 
         $response->assertSeeInOrder(['Álvaro Fictício', 'Bruno Fictício', 'Érica Fictícia']);
-        $response->assertHeader('Cache-Control', 'private, no-store');
+        $response->assertHeader('Cache-Control', 'no-store, private');
     }
 
     public function test_filtros_por_rota_e_turno_e_grupo_sem_rota(): void
