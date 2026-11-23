@@ -28,8 +28,8 @@ class SchoolPolicy
 
     /**
      * Ficha de saúde completa (tipo sanguíneo e alertas de atenção) e edição.
-     * Hoje: gestão da escola. Quando houver perfil de saúde ou coordenação,
-     * restringir aqui (docs/arquitetura/lgpd-by-design.md, seção 7).
+     * Secretaria e direção da escola, e a gestão municipal: decisão de Jefferson
+     * em 23/11/2026 (docs/arquitetura/lgpd-by-design.md, seção 7).
      * Quem só consulta a escola vê apenas os alertas graves.
      */
     public function manageHealth(User $user, School $school, Municipality $municipality): bool
