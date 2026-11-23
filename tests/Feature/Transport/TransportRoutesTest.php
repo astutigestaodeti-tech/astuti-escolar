@@ -8,6 +8,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentGuardian;
+use App\Models\Tenant\StudentHealthAlert;
 use App\Models\User;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
@@ -65,6 +66,11 @@ class TransportRoutesTest extends TwoMunicipalityTestCase
             StudentGuardian::query()->create([
                 'id' => (string) Str::uuid(), 'student_id' => $first, 'guardian_id' => $guardian->id,
                 'relationship' => 'mother', 'is_primary_contact' => true,
+            ]);
+            StudentHealthAlert::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $first,
+                'kind' => 'allergy', 'severity' => 'critical',
+                'alert_text' => 'Alerta Fictício', 'care_instructions' => 'Contato com direção',
             ]);
         });
     }
@@ -132,7 +138,8 @@ class TransportRoutesTest extends TwoMunicipalityTestCase
             ->assertSee('Uso restrito ao transporte escolar. Não compartilhe nem fotografe.')
             ->assertSee('transporte-rotas.js')->assertSee('transporte-rotas.css')
             ->assertDontSee('Rua Privada Fictícia')->assertDontSee('123.456.789-09')
-            ->assertDontSee('2018-05-16')->assertDontSee('Fábio Fictício')
+            ->assertDontSee('2018-05-16')->assertDontSee('Alerta Fictício')
+            ->assertDontSee('Contato com direção')->assertDontSee('Fábio Fictício')
             ->assertDontSee('Elisa Fictícia')->assertDontSee('Gisele Fictícia')
             ->assertDontSee('Hugo Fictício');
 
