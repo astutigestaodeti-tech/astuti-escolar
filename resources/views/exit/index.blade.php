@@ -30,6 +30,9 @@
     @if ($errors->has('pessoa'))
         <div class="status-erro" role="alert"><x-icon name="info" :size="18" /> {{ $errors->first('pessoa') }}</div>
     @endif
+    @if ($errors->has('motivo'))
+        <div class="status-erro" role="alert"><x-icon name="info" :size="18" /> {{ $errors->first('motivo') }}</div>
+    @endif
 
     <section class="folha" aria-labelledby="titulo-busca-saida">
         <h2 id="titulo-busca-saida" class="sr-only">Procurar aluno</h2>
@@ -129,19 +132,36 @@
     @endforeach
 
     <section class="folha" aria-labelledby="titulo-saidas-hoje">
-        <div class="folha-cabecalho"><div><h2 id="titulo-saidas-hoje">Saídas de hoje</h2><p>{{ $todayExits->count() }} {{ $todayExits->count() === 1 ? 'registro' : 'registros' }} nesta escola.</p></div></div>
+        <div class="folha-cabecalho"><div><h2 id="titulo-saidas-hoje">Saídas de hoje</h2><p>{{ $validExitCount }} {{ $validExitCount === 1 ? 'saída' : 'saídas' }} nesta escola. Registrou por engano? Quem registrou desfaz em até {{ \App\Models\Tenant\StudentExit::UNDO_MINUTES }} minutos; depois disso, a secretaria ou a direção.</p></div></div>
         @if ($todayExits->isEmpty())
             <div class="vazio">Nenhuma saída registrada hoje.</div>
         @else
             <div class="rolagem">
                 <table class="tabela">
-                    <thead><tr><th scope="col">Horário</th><th scope="col">Aluno</th><th scope="col">Entregue a</th></tr></thead>
+                    <thead><tr><th scope="col">Horário</th><th scope="col">Aluno</th><th scope="col">Entregue a</th><th scope="col">Situação</th></tr></thead>
                     <tbody>
                     @foreach ($todayExits as $saida)
-                        <tr>
+                        <tr @class(['saida-desfeita' => $saida->isCancelled()])>
                             <td class="numero">{{ $saida->exited_at->format('H:i') }}</td>
                             <td>{{ $saida->student?->full_name }}</td>
                             <td>{{ $saida->person_name }} <small class="texto-suave">({{ $saida->person_relationship }})</small></td>
+                            <td>
+                                @if ($saida->isCancelled())
+                                    <span class="etiqueta neutra">Desfeita às {{ $saida->cancelled_at->format('H:i') }}</span>
+                                @elseif ($undoable->has($saida->id))
+                                    <details class="saida-desfazer">
+                                        <summary>Desfazer</summary>
+                                        <form method="POST" action="{{ route('school.exits.cancel', ['municipio' => $municipality->slug, 'escola' => $school->id, 'saida' => $saida->id]) }}">
+                                            @csrf
+                                            <label for="motivo-{{ $saida->id }}">Por que desfazer?</label>
+                                            <input id="motivo-{{ $saida->id }}" name="motivo" type="text" minlength="10" maxlength="300" required placeholder="Ex.: cliquei no aluno errado">
+                                            <button class="botao secundario" type="submit">Desfazer saída</button>
+                                        </form>
+                                    </details>
+                                @else
+                                    <span class="etiqueta ok">Entregue</span>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                     </tbody>

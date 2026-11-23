@@ -15,6 +15,14 @@
         @endif
     </div>
 
+    @isset($lastExit)
+        <p class="ficha-ultima-saida">
+            <strong>Última saída:</strong>
+            {{ $lastExit->exited_at->isToday() ? 'hoje' : ($lastExit->exited_at->isYesterday() ? 'ontem' : $lastExit->exited_at->format('d/m/Y')) }}
+            às {{ $lastExit->exited_at->format('H:i') }}, entregue a {{ $lastExit->person_name }}@if ($lastExit->person_relationship) ({{ $lastExit->person_relationship }})@endif.
+        </p>
+    @endisset
+
     @if ($guardianLinks->isNotEmpty())
         <div class="retirada-grupo">
             <h3 class="retirada-subtitulo">Responsáveis (autorizados)</h3>

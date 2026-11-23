@@ -129,6 +129,81 @@ class StudentExitTest extends TwoMunicipalityTestCase
         $this->assertSame(0, $this->inMunicipality(fn (): int => StudentExit::query()->count()));
     }
 
+    private function recordExit(): string
+    {
+        $this->post($this->url().'/'.$this->ids['aluno'], ['pessoa' => 'guardian:'.$this->ids['mae']])->assertRedirect($this->url());
+
+        return $this->inMunicipality(fn (): string => StudentExit::query()->latest('exited_at')->firstOrFail()->id);
+    }
+
+    private function undoUrl(string $exit): string
+    {
+        return $this->url().'/registro/'.$exit.'/desfazer';
+    }
+
+    public function test_quem_registrou_desfaz_em_ate_10_minutos_com_motivo_e_auditoria(): void
+    {
+        $this->travelTo(today()->setTime(15, 0));
+        $user = $this->user('teacher', [self::ESCOLA_A1]);
+        $exit = $this->recordExit();
+
+        $this->get($this->url())->assertOk()->assertSee('Desfazer saída')->assertSee('1 saída nesta escola');
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->ids['aluno'])->assertOk()
+            ->assertSee('Última saída:')->assertSee('entregue a Marta Fictícia Mãe (Mãe)');
+
+        $this->post($this->undoUrl($exit), ['motivo' => 'curto'])->assertSessionHasErrors(['motivo' => 'Escreva o motivo com pelo menos 10 caracteres.']);
+
+        $this->post($this->undoUrl($exit), ['motivo' => 'Cliquei na aluna errada, ela ainda está na sala.'])
+            ->assertRedirect($this->url())
+            ->assertSessionHas('status', fn (string $message): bool => str_starts_with($message, 'Saída desfeita: Lívia Fictícia da Saída volta a constar como na escola.'));
+
+        $saved = $this->inMunicipality(fn (): array => StudentExit::query()->findOrFail($exit)->only(['cancelled_by', 'cancel_reason']));
+        $this->assertSame(['cancelled_by' => $user->id, 'cancel_reason' => 'Cliquei na aluna errada, ela ainda está na sala.'], $saved);
+
+        $after = $this->inMunicipality(fn (): array => AuditLog::query()->where('action', 'student_exit.cancelled')->sole()->after);
+        $this->assertSame('[REDACTED]', $after['cancel_reason']);
+        $this->assertSame($user->id, $after['cancelled_by']);
+
+        // Fica visível como desfeita, não conta como saída e não avisa "já saiu".
+        $this->get($this->url())->assertOk()->assertSee('Desfeita às')->assertSee('0 saídas nesta escola')->assertDontSee('Desfazer saída');
+        $this->get($this->url().'?busca=livia')->assertDontSee('Já saiu hoje às');
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->ids['aluno'])->assertDontSee('Última saída:');
+
+        $this->post($this->undoUrl($exit), ['motivo' => 'Tentando desfazer de novo.'])->assertSessionHasErrors(['motivo' => 'Esta saída já foi desfeita.']);
+        $this->assertSame(1, $this->inMunicipality(fn (): int => AuditLog::query()->where('action', 'student_exit.cancelled')->count()));
+    }
+
+    public function test_depois_de_10_minutos_so_a_gestao_desfaz_e_outro_professor_nao(): void
+    {
+        $this->travelTo(today()->setTime(15, 0));
+        $this->user('teacher', [self::ESCOLA_A1]);
+        $exit = $this->recordExit();
+        $this->inMunicipality(fn () => StudentExit::query()->whereKey($exit)->update(['exited_at' => now()->subMinutes(11)]));
+
+        $this->get($this->url())->assertDontSee('Desfazer saída');
+        $this->post($this->undoUrl($exit), ['motivo' => 'Registrei a saída errada.'])
+            ->assertSessionHasErrors(['motivo' => 'Passou o prazo de 10 minutos para desfazer. Peça à secretaria ou à direção.']);
+
+        $this->user('teacher', [self::ESCOLA_A1]);
+        $this->post($this->undoUrl($exit), ['motivo' => 'Registro de outra pessoa.'])->assertSessionHasErrors('motivo');
+
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $this->get($this->url())->assertSee('Desfazer saída');
+        $this->post($this->undoUrl($exit), ['motivo' => 'A família ligou: a aluna não foi retirada.'])->assertSessionHas('status');
+        $this->assertNotNull($this->inMunicipality(fn () => StudentExit::query()->findOrFail($exit)->cancelled_at));
+    }
+
+    public function test_saida_de_outra_escola_nao_pode_ser_desfeita(): void
+    {
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $exit = $this->recordExit();
+
+        $this->user('school_secretary', [self::ESCOLA_A2]);
+        $this->post($this->undoUrl($exit), ['motivo' => 'Tentativa de outra escola.'])->assertForbidden();
+        $this->post('/m/municipio-a/escolas/'.self::ESCOLA_A2.'/saida/registro/'.$exit.'/desfazer', ['motivo' => 'Tentativa de outra escola.'])->assertNotFound();
+        $this->assertNull($this->inMunicipality(fn () => StudentExit::query()->findOrFail($exit)->cancelled_at));
+    }
+
     public function test_outra_escola_nao_alcanca_o_aluno(): void
     {
         $this->user('teacher', [self::ESCOLA_A2]);

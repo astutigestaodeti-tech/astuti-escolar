@@ -12,6 +12,7 @@ use App\Students\StudentSearch;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -47,13 +48,19 @@ class StudentExitController extends Controller
         $authorizations = StudentPickupAuthorization::query()->whereIn('student_id', $ids)
             ->where(fn ($valid) => $valid->whereNull('expires_at')->orWhereDate('expires_at', '>=', today()))
             ->orderBy('full_name')->get()->groupBy('student_id');
-        $lastExits = StudentExit::query()->whereIn('student_id', $ids)->where('school_id', $school->id)
+        $lastExits = StudentExit::query()->valid()->whereIn('student_id', $ids)->where('school_id', $school->id)
             ->where('exited_at', '>=', today())->orderByDesc('exited_at')->get()->unique('student_id')->keyBy('student_id');
 
         $todayExits = StudentExit::query()->where('school_id', $school->id)->where('exited_at', '>=', today())
             ->with('student')->orderByDesc('exited_at')->limit(50)->get();
 
-        return view('exit.index', compact('municipality', 'school', 'search', 'students', 'tooMany', 'guardians', 'authorizations', 'lastExits', 'todayExits'));
+        $canManage = Gate::allows('manageStudents', [$school, $municipality]);
+        $userId = $request->user()?->getAuthIdentifier();
+        $undoable = $todayExits->filter(fn (StudentExit $exit): bool => $exit->canBeUndoneBy($userId, $canManage))->pluck('id')->flip();
+
+        $validExitCount = $todayExits->whereNull('cancelled_at')->count();
+
+        return view('exit.index', compact('municipality', 'school', 'search', 'students', 'tooMany', 'guardians', 'authorizations', 'lastExits', 'todayExits', 'undoable', 'validExitCount'));
     }
 
     public function store(Request $request, string $municipio, string $escola, string $aluno): RedirectResponse
@@ -94,7 +101,45 @@ class StudentExitController extends Controller
         app(AuditTrail::class)->record('tenant', 'student_exit.recorded', StudentExit::class, $exit->id, null, $exit->only(['id', 'student_id', 'school_id', 'person_type', 'person_id', 'person_name', 'person_relationship', 'exited_at']));
 
         return redirect()->route('school.exits.index', ['municipio' => $municipality->slug, 'escola' => $school->id])
-            ->with('status', 'Saída registrada: '.$student->full_name.' entregue a '.$name.' ('.$relationship.') às '.$exit->exited_at->format('H:i').'.');
+            ->with('status', 'Saída registrada: '.$student->full_name.' entregue a '.$name.' ('.$relationship.') às '.$exit->exited_at->format('H:i').'. Registrou por engano? Desfaça em até '.StudentExit::UNDO_MINUTES.' minutos em "Saídas de hoje".');
+    }
+
+    /**
+     * Desfaz uma saída registrada por engano. O registro fica guardado como
+     * desfeito, com motivo; o aluno volta a constar como presente na escola.
+     */
+    public function cancel(Request $request, string $municipio, string $escola, string $saida): RedirectResponse
+    {
+        [$municipality, $school] = $this->school($request, $escola);
+        $reason = trim((string) $request->validate(['motivo' => ['required', 'string', 'min:10', 'max:300']], [
+            'motivo.required' => 'Conte em poucas palavras por que a saída está sendo desfeita.',
+            'motivo.min' => 'Escreva o motivo com pelo menos 10 caracteres.',
+            'motivo.max' => 'O motivo pode ter até 300 caracteres.',
+        ])['motivo']);
+
+        $canManage = Gate::allows('manageStudents', [$school, $municipality]);
+        $userId = $request->user()?->getAuthIdentifier();
+
+        $exit = DB::connection('tenant')->transaction(function () use ($school, $saida, $userId, $canManage, $reason): StudentExit {
+            $exit = StudentExit::query()->where('school_id', $school->id)->lockForUpdate()->findOrFail($saida);
+            if ($exit->isCancelled()) {
+                throw ValidationException::withMessages(['motivo' => 'Esta saída já foi desfeita.']);
+            }
+            if (! $exit->canBeUndoneBy($userId, $canManage)) {
+                throw ValidationException::withMessages(['motivo' => 'Passou o prazo de '.StudentExit::UNDO_MINUTES.' minutos para desfazer. Peça à secretaria ou à direção.']);
+            }
+
+            $before = $exit->only(['id', 'cancelled_at', 'cancelled_by']);
+            $exit->forceFill(['cancelled_at' => now(), 'cancelled_by' => $userId, 'cancel_reason' => $reason])->save();
+            app(AuditTrail::class)->record('tenant', 'student_exit.cancelled', StudentExit::class, $exit->id, $before, $exit->only(['id', 'student_id', 'school_id', 'cancelled_at', 'cancelled_by', 'cancel_reason']));
+
+            return $exit;
+        });
+
+        $student = Student::query()->find($exit->student_id);
+
+        return redirect()->route('school.exits.index', ['municipio' => $municipality->slug, 'escola' => $school->id])
+            ->with('status', 'Saída desfeita: '.$student?->full_name.' volta a constar como na escola. O registro das '.$exit->exited_at->format('H:i').' fica guardado como desfeito.');
     }
 
     /** @return array{0: mixed, 1: School} */

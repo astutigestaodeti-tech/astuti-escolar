@@ -6,6 +6,7 @@ use App\Audit\AuditTrail;
 use App\Geo\Distance;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
+use App\Models\Tenant\StudentExit;
 use App\Models\Tenant\StudentGuardian;
 use App\Models\Tenant\StudentPickupAuthorization;
 use App\Students\StudentSearch;
@@ -112,6 +113,10 @@ class SchoolStudentController extends Controller
             ->sortBy(fn (StudentPickupAuthorization $person): array => [$person->isExpired() ? 1 : 0, $person->full_name])
             ->values();
 
+        // Última saída válida nesta escola, para quem atende a família por telefone.
+        $lastExit = StudentExit::query()->valid()->where('student_id', $student->id)->where('school_id', $school->id)
+            ->orderByDesc('exited_at')->first();
+
         app(AuditTrail::class)->record('tenant', 'student.viewed', Student::class, $student->id);
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
@@ -124,6 +129,6 @@ class SchoolStudentController extends Controller
         $avisoTransporte = $distanciaEscola === null ? null
             : Distance::transportHint($distanciaEscola, $enrollments->firstWhere('status', 'active')?->transport_status, (float) config('geo.transport_min_km'));
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'avisoTransporte'));
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'avisoTransporte', 'lastExit'));
     }
 }
