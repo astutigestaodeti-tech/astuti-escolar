@@ -2,6 +2,8 @@
 
 Sistema de gestão escolar para redes públicas municipais, desenvolvido como produto comercial da **Astuti**.
 
+> **Código proprietário. Todos os direitos reservados.** Este repositório pode ser consultado, mas não pode ser copiado, modificado, distribuído, instalado ou oferecido a terceiros sem autorização por escrito do titular. Veja o arquivo [LICENSE](LICENSE).
+
 ## Objetivo
 
 Reduzir o trabalho de digitação das secretarias escolares. O produto deverá receber planilhas e documentos digitais ou digitalizados (CSV, XLSX, Word, PDF e imagens), extrair dados, apresentar inconsistências e **exigir conferência e validação humana** antes de registrar informações escolares. Também estão previstos acervo histórico, emissão de documentos conferidos, registros de auditoria e apoio às obrigações oficiais.
