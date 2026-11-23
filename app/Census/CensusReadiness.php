@@ -2,6 +2,7 @@
 
 namespace App\Census;
 
+use App\Models\Tenant\CensusParameter;
 use App\Models\Tenant\School;
 use App\Models\Tenant\StudentEnrollment;
 use Carbon\CarbonImmutable;
@@ -161,7 +162,7 @@ class CensusReadiness
     private function estimate(Collection $rows): array
     {
         $config = config('censo.categories');
-        $base = config('censo.vaaf_base');
+        $base = CensusParameter::vaafFor((int) config('censo.year_reference'));
         $days = (int) config('censo.pnae_days', 200);
         $counts = $rows->whereNotNull('category')->countBy('category');
 

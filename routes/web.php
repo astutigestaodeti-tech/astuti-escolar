@@ -121,6 +121,8 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/turmas/{turma}/jornada', [FullTimeEducationController::class, 'updateHours'])
         ->whereUuid('escola')->whereUuid('turma')
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('integral.hours.update');
+    Route::post('/conferencia-do-censo/parametros', [CensusReadinessController::class, 'updateParameters'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.readiness.parameters');
     // Equidade: totais anonimizados para a rede e para a direcao de cada escola.
     Route::get('/equidade-vaar', [EquityVaarController::class, 'index'])->name('equity.vaar.index');
     Route::get('/escolas/{escola}/equidade-vaar', [EquityVaarController::class, 'school'])

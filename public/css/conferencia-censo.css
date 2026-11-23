@@ -29,3 +29,8 @@
     .pagina-censo .censo-filtros label,.pagina-censo .censo-filtros select{width:100%}
 }
 .pagina-censo .censo-risco strong{white-space:nowrap}
+.pagina-censo .censo-parametros{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:18px 0 14px}
+.pagina-censo .censo-parametros label{display:flex;flex-direction:column;gap:6px;font-weight:700;min-width:0;flex:1 1 240px}
+.pagina-censo .censo-parametros .entrada{font:inherit;font-weight:400}
+.pagina-censo .erro-campo{color:#a3261b;margin:0 0 8px}
+.pagina-censo .censo-adicional th,.pagina-censo .censo-adicional td{border-top:1px solid var(--pauta)}
