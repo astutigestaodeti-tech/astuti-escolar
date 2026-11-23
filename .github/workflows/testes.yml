@@ -104,12 +104,7 @@ jobs:
           php artisan key:generate --force
 
       - name: Conferir estilo PHP
-        run: |
-          if ! vendor/bin/pint --test; then
-            vendor/bin/pint
-            git diff -- app/Http/Controllers/ClassYearEndController.php database/migrations/tenant/2026_11_23_000036_create_class_year_results.php
-            exit 1
-          fi
+        run: vendor/bin/pint --test
 
       - name: Executar testes
         run: |
