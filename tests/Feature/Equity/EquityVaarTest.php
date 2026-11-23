@@ -13,6 +13,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentFinalResult;
+use App\Models\Tenant\StudentSpecialEducation;
 use App\Models\Tenant\VaarCondition;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
@@ -338,5 +339,30 @@ class EquityVaarTest extends TwoMunicipalityTestCase
                 $this->assertStringContainsString('vaar_conditions_number_check', $e->getMessage());
             }
         });
+    }
+
+    public function test_deficiencia_e_tea_estruturados_sao_apenas_agregados_com_cinco_ou_mais(): void
+    {
+        foreach (range(1, 5) as $number) {
+            $id = $this->student($number, 'segundo', 'parda');
+            $this->tenant(fn () => StudentSpecialEducation::query()->create([
+                'student_id' => $id,
+                'conditions' => [$number === 1 ? 'tea' : 'deficiencia_intelectual'],
+                'exam_resources' => [],
+                'updated_by' => $this->auditFixtureUser->id,
+            ]));
+        }
+        foreach (range(6, 10) as $number) {
+            $this->student($number, 'segundo', 'branca');
+        }
+
+        $this->login('municipal_manager');
+        $response = $this->get(self::URL.'?ano=2027&escola='.self::ESCOLA_A1.'&turma='.$this->classes['segundo'])
+            ->assertOk()->assertSee('Deficiência e TEA (informados)');
+        $rows = collect($response->viewData('data')['groups']['deficiencia']['rows'])->keyBy('label');
+        $this->assertSame(5, $rows['Deficiência ou TEA registrados']['metrics']['count']);
+        $this->assertSame(5, $rows['Sem deficiência ou TEA registrados (não conclusivo)']['metrics']['count']);
+        $this->assertStringNotContainsString('deficiencia_intelectual', $response->getContent());
+        $this->assertStringNotContainsString('"conditions"', $response->getContent());
     }
 }

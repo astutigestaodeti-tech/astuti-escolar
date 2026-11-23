@@ -24,6 +24,7 @@ class EquityReadiness
         'raca' => 'Cor/raça',
         'sexo' => 'Sexo',
         'zona' => 'Zona de residência',
+        'deficiencia' => 'Deficiência e TEA (informados)',
     ];
 
     private const RACE_LABELS = [
@@ -34,6 +35,11 @@ class EquityReadiness
         'amarela' => 'Amarela',
         'nao_declarada' => 'Não declarada',
         'sem_informacao' => 'Não informada',
+    ];
+
+    private const DISABILITY_LABELS = [
+        'com_registro' => 'Deficiência ou TEA registrados',
+        'sem_registro' => 'Sem deficiência ou TEA registrados (não conclusivo)',
     ];
 
     private const SEX_LABELS = [
@@ -82,6 +88,7 @@ class EquityReadiness
         $rows = StudentEnrollment::query()
             ->join('students as s', 's.id', '=', 'student_enrollments.student_id')
             ->join('school_classes as c', 'c.id', '=', 'student_enrollments.school_class_id')
+            ->leftJoin('student_special_education as edu', 'edu.student_id', '=', 's.id')
             ->where('student_enrollments.school_year_id', $year->id)
             ->whereIn('student_enrollments.status', ['active', 'completed'])
             ->whereIn('student_enrollments.school_id', $schools->pluck('id'))
@@ -90,6 +97,7 @@ class EquityReadiness
             ->select([
                 'student_enrollments.id as enrollment_id', 'student_enrollments.student_id', 'student_enrollments.school_id', 'student_enrollments.school_class_id', 'student_enrollments.status',
                 's.full_name', 's.race_color', 's.sex', 's.residence_zone',
+                'edu.conditions as special_conditions',
             ])->get();
 
         $ids = $rows->pluck('enrollment_id');
@@ -142,6 +150,7 @@ class EquityReadiness
                     ? $row->sex : 'sem_informacao',
                 'zone' => array_key_exists((string) $row->residence_zone, self::ZONE_LABELS) && $row->residence_zone !== null
                     ? $row->residence_zone : 'sem_informacao',
+                'disability' => self::disabilityKey($row->special_conditions),
                 'attendance' => $total > 0 ? round(100 * $present / $total, 1) : null,
                 'absences' => $total - $present,
                 'sessions' => $total,
@@ -201,6 +210,7 @@ class EquityReadiness
             'raca' => ['field' => 'race', 'labels' => self::RACE_LABELS],
             'sexo' => ['field' => 'sex', 'labels' => self::SEX_LABELS],
             'zona' => ['field' => 'zone', 'labels' => self::ZONE_LABELS],
+            'deficiencia' => ['field' => 'disability', 'labels' => self::DISABILITY_LABELS],
         ] as $code => $definition) {
             $buckets = [];
             foreach ($definition['labels'] as $key => $label) {
@@ -272,6 +282,26 @@ class EquityReadiness
             'retained' => $finals->count() >= self::MIN_GROUP && ($retained === 0 || $retained >= self::MIN_GROUP)
                 ? $retained : null,
         ];
+    }
+
+    /**
+     * Usa somente as condições estruturadas autorizadas do Censo.
+     * Altas habilidades isoladamente não configuram deficiência.
+     */
+    private static function disabilityKey(?string $encoded): string
+    {
+        $conditions = json_decode($encoded ?? '[]', true);
+        if (! is_array($conditions)) {
+            return 'sem_registro';
+        }
+
+        foreach ($conditions as $condition) {
+            if (is_string($condition) && $condition !== 'altas_habilidades') {
+                return 'com_registro';
+            }
+        }
+
+        return 'sem_registro';
     }
 
     private static function raceKey(?string $race): string

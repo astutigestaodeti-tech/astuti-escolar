@@ -8,7 +8,7 @@ Painel interno para comparar frequência, médias de notas e resultados finais c
 - A média escolar de cada aluno é a média das médias de notas efetivamente lançadas em seus componentes. Períodos vazios não são nota zero. A média do grupo é a média dos alunos com notas.
 - O resultado retido vem exclusivamente da confirmação humana em student_final_results, não da sugestão da issue #102.
 - A lista de acompanhamento Saeb considera faltas das turmas de 2º, 5º e 9º ano e contém apenas aluno, escola, turma e faltas/frequência. Ela não contém cor/raça, sexo, deficiência nem zona de residência.
-- Não existe campo institucional estruturado para deficiência na versão atual. O painel mostra o indicador como indisponível, sem classificar pessoas a partir de textos de saúde.
+- Após o PR #112 (Educação Especial e AEE), deficiência e TEA são agrupados exclusivamente a partir de student_special_education.conditions. Altas habilidades isoladamente não contam como deficiência. A categoria sem registro não comprova ausência; nenhum valor individual é transmitido à view ou à auditoria.
 
 **Atenção:** frequência escolar não equivale à participação no Saeb. O próprio Inep afere as condicionalidades II e III do VAAR. As médias e diferenças dos grupos no painel são sinais internos, não o cálculo oficial da elegibilidade.
 

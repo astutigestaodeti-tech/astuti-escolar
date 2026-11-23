@@ -37,6 +37,7 @@ use App\Http\Controllers\StudentHealthController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
 use App\Http\Controllers\StudentRecordController;
 use App\Http\Controllers\StudentReportCardController;
+use App\Http\Controllers\StudentSpecialEducationController;
 use App\Http\Controllers\WaitlistController;
 use App\Http\Middleware\RequireConfirmedTwoFactor;
 use App\Http\Middleware\RequireLoginTwoFactor;
@@ -249,6 +250,12 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     // Ficha de saúde: gestão vê e edita (2FA); quem consulta vê só alertas graves na ficha e na chamada.
     Route::get('/escolas/{escola}/alunos/{aluno}/boletim', [StudentReportCardController::class, 'show'])
         ->whereUuid('escola')->whereUuid('aluno')->name('school.students.report-card.show');
+    // Educação especial e AEE (Censo): mesmo acesso da ficha de saúde.
+    Route::get('/escolas/{escola}/alunos/{aluno}/educacao-especial', [StudentSpecialEducationController::class, 'edit'])
+        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.special-education.edit');
+    Route::post('/escolas/{escola}/alunos/{aluno}/educacao-especial', [StudentSpecialEducationController::class, 'update'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.students.special-education.update');
     Route::get('/escolas/{escola}/alunos/{aluno}/saude', [StudentHealthController::class, 'edit'])
         ->whereUuid('escola')->whereUuid('aluno')->name('school.students.health.edit');
     Route::post('/escolas/{escola}/alunos/{aluno}/saude', [StudentHealthController::class, 'updateProfile'])

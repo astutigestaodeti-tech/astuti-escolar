@@ -702,3 +702,5 @@ Os números vêm de uma consulta PostgreSQL agregada para todas as matrículas a
 **Condicionalidades:** cadastro dos incisos I-V, responsável, status e PDF institucional armazenado privadamente, edição exclusiva da gestão municipal com 2FA recente e auditoria sem conteúdo da evidência. Direção vê apenas a escola vinculada. O painel não substitui a comprovação pelo MEC e Inep.
 
 **Qualidade:** testes fictícios e telas de rede/escola/turma/direção incluídos na conferência de margens, pendentes do CI e revisão do Claude antes de merge. Sem deploy.
+
+**Integração posterior ao PR #112:** o cadastro estruturado de Educação Especial e AEE permitiu incorporar deficiência/TEA como indicador apenas agregado. Altas habilidades isoladas não são consideradas deficiência, e os dados sensíveis permanecem fora da interface nominal.
