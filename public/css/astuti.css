@@ -764,3 +764,31 @@ select.entrada{cursor:pointer}
     body.impressao-frequencia .relatorio-mensal-tabela tr{break-inside:avoid}
     body.impressao-frequencia .relatorio-mensal-assinaturas{break-inside:avoid;margin:15mm 10mm 0}
 }
+
+/* Ficha de saúde: alerta grave destacado, sem esconder o que fazer. */
+.saude-nota{margin:18px 0}
+.saude-alertas{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.saude-alerta{display:flex;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid var(--pauta);border-radius:var(--raio-controle);background:var(--folha)}
+.saude-alerta-grave{border-color:#e0b4ad;border-left:4px solid var(--margem);background:#fdf3f1}
+.saude-alerta-tipo{font-size:13px;color:var(--tinta-2);margin-left:6px}
+.saude-alerta-texto{margin:6px 0 0;font-weight:700;color:var(--tinta)}
+.saude-alerta-acao{margin:4px 0 0;font-size:14px;color:var(--tinta-2)}
+.saude-remover summary{cursor:pointer;color:var(--caneta);font-weight:700;white-space:nowrap}
+.saude-remover form{display:grid;gap:6px;margin-top:8px;min-width:240px}
+.saude-subtitulo{margin:22px 0 10px;font-size:17px}
+.saude-emergencia{margin:12px 0 0;font-size:14px}
+.chamada-saude{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#fdf3f1;border:1px solid #e0b4ad;color:#8a2c22;font-size:12px;font-weight:700}
+@media(max-width:780px){.saude-alerta{flex-direction:column}}
+.chamada-saude-detalhe summary{cursor:pointer;list-style:none}
+.chamada-saude-detalhe p{margin:6px 0 0;font-size:13px;color:var(--tinta-2);max-width:42ch}
+.chamada-identificacao{flex-wrap:wrap}
+.saude-secao{margin-top:18px}
+.saude-secao>.saude-alertas,.saude-secao>.vazio,.saude-secao>.saude-subtitulo{margin-left:22px;margin-right:22px}
+.saude-secao>.saude-subtitulo{margin-bottom:0}
+.saude-secao .saude-remover form{padding:0}
+.saude-secao textarea.entrada{font:inherit;resize:vertical}
+@media (max-width:640px){.saude-secao>.saude-alertas,.saude-secao>.vazio,.saude-secao>.saude-subtitulo{margin-left:16px;margin-right:16px}}
+.ficha-escola>.ficha-saude{grid-column:1}
+.ficha-saude>.saude-alertas,.ficha-saude>.texto-suave,.ficha-saude>.saude-emergencia{margin-left:22px;margin-right:22px}
+.ficha-saude>:last-child{margin-bottom:20px}
+@media (max-width:960px){.ficha-escola>.ficha-saude{grid-column:auto;grid-row:auto}}

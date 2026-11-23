@@ -8,6 +8,7 @@ use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\StudentEnrollment;
+use App\Models\Tenant\StudentHealthAlert;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -52,10 +53,14 @@ class SchoolAttendanceController extends Controller
         $justified = $marks->where('status', 'justified')->count();
         $absent = $marks->where('status', 'absent')->count() + $justified;
 
+        // Só alertas graves de saúde, em uma consulta, para o professor saber o que fazer.
+        $healthAlerts = StudentHealthAlert::query()->whereIn('student_id', $students->pluck('id'))
+            ->where('severity', 'critical')->orderBy('created_at')->get()->groupBy('student_id');
+
         return view('classes.attendance', compact(
             'municipality', 'school', 'class', 'date', 'students',
             'session', 'marks', 'historical', 'canManage', 'canSubmit',
-            'present', 'absent', 'justified',
+            'present', 'absent', 'justified', 'healthAlerts',
         ));
     }
 

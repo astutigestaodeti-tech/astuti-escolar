@@ -73,6 +73,12 @@
                                 <div class="chamada-identificacao">
                                     <x-foto-identificacao tipo="aluno" :id="$student->id" :escola="$school->id" :municipio="$municipality->slug" :nome="$student->full_name" :temFoto="$student->photo_path !== null" :podeAlterar="false" tamanho="pequena" />
                                     <strong>{{ $student->full_name }}</strong>
+                                    @foreach ($healthAlerts->get($student->id, collect()) as $alertaSaude)
+                                        <details class="chamada-saude-detalhe">
+                                            <summary class="chamada-saude">Alerta de saúde</summary>
+                                            <p><strong>{{ $alertaSaude->alert_text }}</strong>@if ($alertaSaude->care_instructions) O que fazer: {{ $alertaSaude->care_instructions }}@endif</p>
+                                        </details>
+                                    @endforeach
                                 </div>
                                 <fieldset class="chamada-opcoes" @disabled(! $canSubmit)>
                                     <legend class="sr-only">Presença de {{ $student->full_name }}</legend>

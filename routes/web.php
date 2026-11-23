@@ -19,6 +19,7 @@ use App\Http\Controllers\SchoolEnrollmentController;
 use App\Http\Controllers\SchoolMonthlyAttendanceReportController;
 use App\Http\Controllers\SchoolStudentController;
 use App\Http\Controllers\StudentExitController;
+use App\Http\Controllers\StudentHealthController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
 use App\Http\Controllers\StudentRecordController;
 use App\Http\Middleware\RequireConfirmedTwoFactor;
@@ -104,6 +105,15 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     // Saída de alunos (portão): consulta da escola basta; registra a quem o aluno foi entregue.
     Route::get('/escolas/{escola}/saida', [StudentExitController::class, 'index'])->whereUuid('escola')->name('school.exits.index');
     Route::post('/escolas/{escola}/saida/{aluno}', [StudentExitController::class, 'store'])->whereUuid('escola')->whereUuid('aluno')->name('school.exits.store');
+    // Ficha de saúde: gestão vê e edita (2FA); quem consulta vê só alertas graves na ficha e na chamada.
+    Route::get('/escolas/{escola}/alunos/{aluno}/saude', [StudentHealthController::class, 'edit'])
+        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.health.edit');
+    Route::post('/escolas/{escola}/alunos/{aluno}/saude', [StudentHealthController::class, 'updateProfile'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.health.update');
+    Route::post('/escolas/{escola}/alunos/{aluno}/saude/alertas', [StudentHealthController::class, 'storeAlert'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.health.alerts.store');
+    Route::post('/escolas/{escola}/alunos/{aluno}/saude/alertas/{alerta}/remover', [StudentHealthController::class, 'destroyAlert'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('alerta')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.health.alerts.destroy');
     Route::post('/escolas/{escola}/saida/registro/{saida}/desfazer', [StudentExitController::class, 'cancel'])->whereUuid('escola')->whereUuid('saida')->name('school.exits.cancel');
 
     // Foto de identificação: consulta com a permissão da escola; envio e remoção com segundo fator.

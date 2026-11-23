@@ -137,6 +137,7 @@
 
         @include('guardians.panel')
 
+        @include('health.panel')
         @include('pickups.panel')
 
         <section class="folha cartao ficha-historico" aria-labelledby="titulo-vinculos">
