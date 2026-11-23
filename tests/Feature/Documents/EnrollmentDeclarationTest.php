@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Documents;
 
+use App\Documents\VerificationCode;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\SchoolClass;
@@ -71,12 +72,12 @@ class EnrollmentDeclarationTest extends TwoMunicipalityTestCase
     {
         $codes = [];
         foreach (range(1, 100) as $attempt) {
-            $code = \App\Documents\VerificationCode::generate();
+            $code = VerificationCode::generate();
             $this->assertMatchesRegularExpression('/\A[A-HJ-NP-Z2-9]{10}\z/D', $code);
             $codes[] = $code;
         }
         $this->assertCount(100, array_unique($codes));
-        $this->assertSame('Ana C. S.', \App\Documents\VerificationCode::abbreviate('Ana Clara Souza'));
+        $this->assertSame('Ana C. S.', VerificationCode::abbreviate('Ana Clara Souza'));
     }
 
     public function test_gestao_emite_documento_com_snapshot_e_auditoria_mascarada(): void
