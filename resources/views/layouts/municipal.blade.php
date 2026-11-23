@@ -34,9 +34,11 @@
     $voltarFallback = match (request()->route()?->getName()) {
         'schools.index' => route('home'),
         'schools.show' => route('schools.index', $parametrosMunicipio),
+        'school.staff.index', 'school.staff.create', 'school.staff.store', 'school.staff.edit', 'school.staff.update', 'school.staff.remove.form', 'school.staff.destroy',
         'school.classes.index', 'school.students.index', 'school.enrollments.index', 'school.absences.index' => route('schools.show', $parametrosEscola),
         'school.classes.show', 'school.classes.create', 'school.classes.store', 'school.classes.edit', 'school.classes.update'
             => route('school.classes.index', $parametrosEscola),
+        'school.classes.teachers.store', 'school.classes.teachers.end',
         'school.classes.attendance.index', 'school.classes.attendance.store', 'school.classes.attendance.correct', 'school.classes.attendance.monthly'
             => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),

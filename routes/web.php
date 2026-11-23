@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\ClassTeacherAssignmentController;
 use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
 use App\Http\Controllers\SchoolMonthlyAttendanceReportController;
+use App\Http\Controllers\SchoolStaffController;
 use App\Http\Controllers\SchoolStudentController;
 use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentHealthController;
@@ -53,12 +55,24 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/alertas-faltas', [SchoolAbsenceAlertsController::class, 'index'])->whereUuid('escola')->name('school.absences.index');
+    // Servidores da unidade: leitura da escola, escrita somente para gestão com 2FA.
+    Route::get('/escolas/{escola}/servidores', [SchoolStaffController::class, 'index'])->whereUuid('escola')->name('school.staff.index');
+    Route::get('/escolas/{escola}/servidores/novo', [SchoolStaffController::class, 'create'])->whereUuid('escola')->name('school.staff.create');
+    Route::post('/escolas/{escola}/servidores', [SchoolStaffController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.store');
+    Route::get('/escolas/{escola}/servidores/{servidor}/editar', [SchoolStaffController::class, 'edit'])->whereUuid('escola')->whereUuid('servidor')->name('school.staff.edit');
+    Route::put('/escolas/{escola}/servidores/{servidor}', [SchoolStaffController::class, 'update'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.update');
+    Route::get('/escolas/{escola}/servidores/{servidor}/arquivar', [SchoolStaffController::class, 'removeForm'])->whereUuid('escola')->whereUuid('servidor')->name('school.staff.remove.form');
+    Route::delete('/escolas/{escola}/servidores/{servidor}', [SchoolStaffController::class, 'destroy'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.staff.destroy');
     Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
     Route::get('/escolas/{escola}/turmas/nova', [SchoolClassController::class, 'create'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.create');
     Route::get('/escolas/{escola}/turmas/{turma}', [SchoolClassController::class, 'show'])->whereUuid('escola')->whereUuid('turma')->name('school.classes.show');
     Route::post('/escolas/{escola}/turmas', [SchoolClassController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.store');
     Route::get('/escolas/{escola}/turmas/{turma}/editar', [SchoolClassController::class, 'edit'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.edit');
     Route::put('/escolas/{escola}/turmas/{turma}', [SchoolClassController::class, 'update'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.update');
+    Route::post('/escolas/{escola}/turmas/{turma}/professores', [ClassTeacherAssignmentController::class, 'store'])
+        ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.teachers.store');
+    Route::post('/escolas/{escola}/turmas/{turma}/professores/{atribuicao}/encerrar', [ClassTeacherAssignmentController::class, 'end'])
+        ->whereUuid('escola')->whereUuid('turma')->whereUuid('atribuicao')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.teachers.end');
     // Presença diária: consulta da escola registra hoje; correção histórica requer gestão e 2FA recente.
     Route::get('/escolas/{escola}/turmas/{turma}/chamada', [SchoolAttendanceController::class, 'index'])
         ->whereUuid('escola')->whereUuid('turma')->name('school.classes.attendance.index');

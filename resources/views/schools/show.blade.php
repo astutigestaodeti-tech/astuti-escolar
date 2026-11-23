@@ -45,6 +45,13 @@
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar turmas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
 
+        <section class="folha cartao" aria-labelledby="titulo-servidores">
+            <span class="acao-icone"><x-icon name="alunos" /></span>
+            <h2 id="titulo-servidores">Servidores</h2>
+            <p>Equipe da escola e atribuição de professores às turmas.</p>
+            <a class="botao secundario" style="margin-top:12px" href="{{ route('school.staff.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar servidores desta escola <x-icon name="seta" :size="16" /></a>
+        </section>
+
         <section class="folha cartao" aria-labelledby="titulo-alunos">
             <span class="acao-icone"><x-icon name="alunos" /></span>
             <h2 id="titulo-alunos">Alunos</h2>
