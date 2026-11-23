@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
+use App\Calendar\BrazilianHolidays;
 use App\Calendar\SchoolCalendar;
 use App\Models\Platform\Membership;
 use App\Models\Tenant\School;
@@ -119,6 +120,59 @@ class SchoolCalendarController extends Controller
             'municipio' => $municipality->slug, 'escola' => $school->id,
             'ano' => $year->id, 'mes' => $date->format('Y-m'),
         ])->with('status', 'Dia incluído no calendário escolar.');
+    }
+
+    /**
+     * Inclui de uma vez os feriados nacionais do ano letivo. Pula as datas que
+     * já têm lançamento visível para a escola. Gestão municipal grava para a
+     * rede; a gestão da escola, só para a própria escola.
+     */
+    public function addNationalHolidays(Request $request, string $municipio, string $escola, SchoolCalendar $calendar): RedirectResponse
+    {
+        [$municipality, $school] = $this->managedSchool($request, $escola);
+        $validated = $request->validate(['school_year_id' => ['required', 'uuid']], [
+            'school_year_id.required' => 'Escolha o ano letivo.',
+            'school_year_id.uuid' => 'Escolha um ano letivo válido.',
+        ]);
+        $year = SchoolYear::query()->findOrFail($validated['school_year_id']);
+        if ($year->start_date === null || $year->end_date === null) {
+            throw ValidationException::withMessages(['school_year_id' => 'Informe o início e o fim do ano letivo antes de incluir feriados.']);
+        }
+        $scopeId = $this->municipalManager($request) ? null : $school->id;
+
+        [$added, $skipped] = DB::connection('tenant')->transaction(function () use ($year, $school, $scopeId, $calendar): array {
+            $taken = $calendar->entries($year->id, $school->id)->map(fn (SchoolCalendarDay $day): string => $day->date->toDateString())->flip();
+            $added = 0;
+            $skipped = 0;
+            foreach (range($year->start_date->year, $year->end_date->year) as $calendarYear) {
+                foreach (BrazilianHolidays::forYear($calendarYear) as $date => $holiday) {
+                    if ($date < $year->start_date->toDateString() || $date > $year->end_date->toDateString()) {
+                        continue;
+                    }
+                    if ($taken->has($date)) {
+                        $skipped++;
+
+                        continue;
+                    }
+                    $entry = SchoolCalendarDay::query()->create([
+                        'id' => (string) Str::uuid(), 'school_year_id' => $year->id, 'school_id' => $scopeId,
+                        'date' => $date, 'kind' => $holiday['kind'], 'description' => $holiday['description'],
+                    ]);
+                    app(AuditTrail::class)->record('tenant', 'created', SchoolCalendarDay::class, $entry->id, null, $entry->getAttributes());
+                    $added++;
+                }
+            }
+
+            return [$added, $skipped];
+        });
+
+        $message = $added === 0
+            ? 'Os feriados nacionais deste ano letivo já estavam no calendário.'
+            : $added.' '.($added === 1 ? 'feriado nacional incluído' : 'feriados nacionais incluídos').($scopeId === null ? ' para toda a rede' : ' para esta escola')
+                .($skipped > 0 ? ' ('.$skipped.' já '.($skipped === 1 ? 'estava' : 'estavam').' no calendário)' : '').'. Confira os feriados estaduais e municipais.';
+
+        return redirect()->route('school.calendar.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'ano' => $year->id])
+            ->with('status', $message);
     }
 
     public function destroy(Request $request, string $municipio, string $escola, string $dia): RedirectResponse

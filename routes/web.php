@@ -61,6 +61,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     // Servidores da unidade: leitura da escola, escrita somente para gestão com 2FA.
     Route::get('/escolas/{escola}/calendario', [SchoolCalendarController::class, 'index'])->whereUuid('escola')->name('school.calendar.index');
     Route::post('/escolas/{escola}/calendario', [SchoolCalendarController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.calendar.store');
+    Route::post('/escolas/{escola}/calendario/feriados-nacionais', [SchoolCalendarController::class, 'addNationalHolidays'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.calendar.national-holidays');
     Route::delete('/escolas/{escola}/calendario/{dia}', [SchoolCalendarController::class, 'destroy'])->whereUuid('escola')->whereUuid('dia')->middleware(RequireConfirmedTwoFactor::class)->name('school.calendar.destroy');
     Route::get('/escolas/{escola}/servidores', [SchoolStaffController::class, 'index'])->whereUuid('escola')->name('school.staff.index');
     Route::get('/escolas/{escola}/servidores/novo', [SchoolStaffController::class, 'create'])->whereUuid('escola')->name('school.staff.create');
