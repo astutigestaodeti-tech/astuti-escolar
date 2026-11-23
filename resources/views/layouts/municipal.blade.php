@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="{{ asset('css/astuti.css') }}?v={{ filemtime(public_path('css/astuti.css')) }}">
     @stack('head')
 </head>
-<body>
+<body class="@yield('body-class')">
 @php
     // Brasão próprio do município, quando existir em public/images/brasao-{slug}.webp.
     $brasao = 'images/brasao-'.$municipality->slug.'.webp';
@@ -37,7 +37,7 @@
         'school.classes.index', 'school.students.index', 'school.enrollments.index', 'school.absences.index' => route('schools.show', $parametrosEscola),
         'school.classes.show', 'school.classes.create', 'school.classes.store', 'school.classes.edit', 'school.classes.update'
             => route('school.classes.index', $parametrosEscola),
-        'school.classes.attendance.index', 'school.classes.attendance.store', 'school.classes.attendance.correct'
+        'school.classes.attendance.index', 'school.classes.attendance.store', 'school.classes.attendance.correct', 'school.classes.attendance.monthly'
             => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
         'school.students.edit',
