@@ -19,7 +19,7 @@ final class PublicDocumentVerificationController extends Controller
             return redirect()->route('documents.verify', ['codigo' => self::normalize($typed)]);
         }
 
-        return response()->view('documents.verify', ['info' => null, 'askCode' => true])->header('X-Robots-Tag', 'noindex, nofollow');
+        return response()->view('documents.verify', ['info' => null, 'askCode' => true])->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'private, no-store');
     }
 
     /** Aceita o código digitado em minúsculas, com espaços, pontos ou hífens. */
@@ -54,7 +54,17 @@ final class PublicDocumentVerificationController extends Controller
                 return null;
             }
 
+            if ($document->kind === 'school_transcript') {
+                return [
+                    'kind' => 'school_transcript',
+                    'status' => $document->revoked_at === null ? 'Documento válido' : 'Documento revogado',
+                    'school' => $document->snapshot_school_name,
+                    'issued' => $document->issued_at->format('d/m/Y'),
+                ];
+            }
+
             return [
+                'kind' => 'enrollment_declaration',
                 'status' => $document->revoked_at === null ? 'Documento válido' : 'Documento revogado',
                 'student' => VerificationCode::abbreviate($document->snapshot_student_name),
                 'school' => $document->snapshot_school_name,
@@ -68,11 +78,11 @@ final class PublicDocumentVerificationController extends Controller
             return $this->notFound();
         }
 
-        return response()->view('documents.verify', ['info' => $info])->header('X-Robots-Tag', 'noindex, nofollow');
+        return response()->view('documents.verify', ['info' => $info])->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'private, no-store');
     }
 
     private function notFound(): Response
     {
-        return response()->view('documents.verify', ['info' => null], 404)->header('X-Robots-Tag', 'noindex, nofollow');
+        return response()->view('documents.verify', ['info' => null], 404)->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'private, no-store');
     }
 }

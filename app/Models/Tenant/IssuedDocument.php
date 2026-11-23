@@ -13,6 +13,7 @@ class IssuedDocument extends TenantModel
         'issued_by', 'issued_at', 'purpose', 'revoked_at', 'revoked_by', 'revoke_reason',
         'snapshot_student_name', 'snapshot_school_name', 'snapshot_municipality_name',
         'snapshot_school_year', 'snapshot_stage', 'snapshot_class_name', 'snapshot_shift',
+        'transcript_snapshot', 'transcript_sha256',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class IssuedDocument extends TenantModel
             'issued_at' => 'datetime',
             'revoked_at' => 'datetime',
             'snapshot_school_year' => 'integer',
+            'transcript_snapshot' => 'array',
         ];
     }
 }

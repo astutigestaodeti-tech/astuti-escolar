@@ -12,7 +12,7 @@
         <div class="folha-cabecalho">
             <div><span class="contexto">Consulta pública de autenticidade</span>
                 <h1 id="titulo-verificacao">Verificação de documento escolar</h1>
-                <p>A consulta apresenta somente os dados necessários para conferir a declaração.</p>
+                <p>A consulta apresenta somente os dados necessários para conferir a autenticidade.</p>
             </div>
         </div>
         <div class="folha-corpo">
@@ -22,11 +22,15 @@
             @elseif ($info !== null)
                 <p class="verificacao-situacao {{ $info['status'] === 'Documento válido' ? 'verificacao-valida' : 'verificacao-invalida' }}" role="status">{{ $info['status'] }}</p>
                 <dl class="verificacao-dados">
-                    <div><dt>Tipo</dt><dd>Declaração de matrícula</dd></div>
-                    <div><dt>Aluno</dt><dd>{{ $info['student'] }}</dd></div>
+                    <div><dt>Tipo</dt><dd>{{ $info['kind'] === 'school_transcript' ? 'Histórico escolar' : 'Declaração de matrícula' }}</dd></div>
+                    @if ($info['kind'] === 'enrollment_declaration')
+                        <div><dt>Aluno</dt><dd>{{ $info['student'] }}</dd></div>
+                    @endif
                     <div><dt>Escola</dt><dd>{{ $info['school'] }}</dd></div>
-                    <div><dt>Ano letivo</dt><dd>{{ $info['year'] }}</dd></div>
-                    @if ($info['stage'])<div><dt>Etapa</dt><dd>{{ $info['stage'] }}</dd></div>@endif
+                    @if ($info['kind'] === 'enrollment_declaration')
+                        <div><dt>Ano letivo</dt><dd>{{ $info['year'] }}</dd></div>
+                        @if ($info['stage'])<div><dt>Etapa</dt><dd>{{ $info['stage'] }}</dd></div>@endif
+                    @endif
                     <div><dt>Emissão</dt><dd>{{ $info['issued'] }}</dd></div>
                 </dl>
                 @if ($info['status'] === 'Documento revogado')
@@ -39,7 +43,7 @@
                     <input class="entrada" id="codigo" name="codigo" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ex.: ABCD 2345 EF" required>
                     <button class="botao" type="submit">Verificar</button>
                 </div>
-                <p class="texto-ajuda">O código está no rodapé da declaração, ao lado do QR Code.</p>
+                <p class="texto-ajuda">O código está no rodapé do documento, ao lado do QR Code.</p>
             </form>
         </div>
     </main>

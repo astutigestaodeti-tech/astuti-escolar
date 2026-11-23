@@ -28,6 +28,7 @@ use App\Http\Controllers\SchoolMonthlyAttendanceReportController;
 use App\Http\Controllers\SchoolPendenciesController;
 use App\Http\Controllers\SchoolStaffController;
 use App\Http\Controllers\SchoolStudentController;
+use App\Http\Controllers\SchoolTranscriptController;
 use App\Http\Controllers\SchoolTransportRoutesController;
 use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentHealthController;
@@ -184,6 +185,28 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/alunos/{aluno}/declaracoes/{documento}/revogar', [EnrollmentDeclarationController::class, 'revoke'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('documento')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
         ->name('school.students.declarations.revoke');
+
+    // Histórico escolar com anos anteriores digitados e snapshot verificável.
+    Route::get('/escolas/{escola}/alunos/{aluno}/historico-escolar', [SchoolTranscriptController::class, 'index'])
+        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.transcripts.index');
+    Route::post('/escolas/{escola}/alunos/{aluno}/historico-escolar/anteriores', [SchoolTranscriptController::class, 'savePrevious'])
+        ->whereUuid('escola')->whereUuid('aluno')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.students.transcripts.previous.save');
+    Route::post('/escolas/{escola}/alunos/{aluno}/historico-escolar/anteriores/{registro}/excluir', [SchoolTranscriptController::class, 'archivePrevious'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('registro')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.students.transcripts.previous.archive');
+    Route::post('/escolas/{escola}/alunos/{aluno}/historico-escolar/emitir', [SchoolTranscriptController::class, 'issue'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)
+        ->name('school.students.transcripts.issue');
+    Route::get('/escolas/{escola}/alunos/{aluno}/historico-escolar/documentos/{documento}', [SchoolTranscriptController::class, 'show'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('documento')
+        ->name('school.students.transcripts.show');
+    Route::post('/escolas/{escola}/alunos/{aluno}/historico-escolar/documentos/{documento}/revogar', [SchoolTranscriptController::class, 'revoke'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('documento')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.students.transcripts.revoke');
 
     // Responsáveis: cadastro municipal, vínculo por aluno e gravação protegida pelo segundo fator.
     Route::get('/escolas/{escola}/alunos/{aluno}/responsaveis/novo', [GuardianController::class, 'create'])
