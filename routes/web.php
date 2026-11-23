@@ -13,6 +13,7 @@ use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentDeclarationController;
 use App\Http\Controllers\EnrollmentMovementController;
 use App\Http\Controllers\EquityVaarController;
+use App\Http\Controllers\FullTimeEducationController;
 use App\Http\Controllers\GeoLocationController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
@@ -105,6 +106,21 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
     Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
+    // Tempo integral: rede pela gestao, escola propria pela direcao/secretaria.
+    Route::get('/tempo-integral', [FullTimeEducationController::class, 'index'])->name('integral.index');
+    Route::get('/escolas/{escola}/tempo-integral', [FullTimeEducationController::class, 'school'])
+        ->whereUuid('escola')->name('integral.school');
+    Route::post('/tempo-integral/metas', [FullTimeEducationController::class, 'saveTarget'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('integral.target');
+    Route::post('/tempo-integral/receita', [FullTimeEducationController::class, 'saveRevenue'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('integral.revenue');
+    Route::post('/tempo-integral/aplicacoes', [FullTimeEducationController::class, 'storeExpense'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('integral.expense.store');
+    Route::get('/tempo-integral/aplicacoes/{despesa}/documento', [FullTimeEducationController::class, 'evidence'])
+        ->whereUuid('despesa')->name('integral.expense.evidence');
+    Route::post('/escolas/{escola}/turmas/{turma}/jornada', [FullTimeEducationController::class, 'updateHours'])
+        ->whereUuid('escola')->whereUuid('turma')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('integral.hours.update');
     // Equidade: totais anonimizados para a rede e para a direcao de cada escola.
     Route::get('/equidade-vaar', [EquityVaarController::class, 'index'])->name('equity.vaar.index');
     Route::get('/escolas/{escola}/equidade-vaar', [EquityVaarController::class, 'school'])

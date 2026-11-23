@@ -59,7 +59,7 @@ class CensusReadiness
                 'student_enrollments.id as enrollment_id', 'student_enrollments.school_id', 'student_enrollments.school_class_id',
                 'student_enrollments.transport_status', 'students.id as student_id', 'students.full_name', 'students.birth_date',
                 'students.race_color', 'students.residence_zone', 'schools.name as school_name',
-                'school_classes.name as class_name', 'school_classes.stage', 'school_classes.shift',
+                'school_classes.name as class_name', 'school_classes.stage', 'school_classes.shift', 'school_classes.daily_hours',
                 'student_special_education.aee_status',
             ])
             ->selectRaw('COALESCE(jsonb_array_length(student_special_education.conditions), 0) AS special_conditions')
@@ -77,7 +77,9 @@ class CensusReadiness
                 $age = $row->birth_date === null ? null : CarbonImmutable::parse($row->birth_date)
                     ->diffInYears(CarbonImmutable::create($today->year, 3, 31));
                 $stage = self::stage($row->stage.' '.$row->class_name, $age === null ? null : (int) $age);
-                $shift = self::shift((string) $row->shift);
+                $shift = $row->daily_hours === null
+                    ? self::shift((string) $row->shift)
+                    : ((float) $row->daily_hours >= 7 ? 'integral' : 'parcial');
                 if ($stage === null) {
                     $warnings[] = 'etapa';
                 }
