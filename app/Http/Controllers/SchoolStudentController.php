@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
 use App\Geo\Distance;
+use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentExit;
@@ -130,6 +131,8 @@ class SchoolStudentController extends Controller
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $canDeleteEnrollment = Gate::allows('deleteEnrollment', [$school, $municipality]);
+        $declarations = $canManage ? IssuedDocument::query()->where('school_id', $school->id)
+            ->where('student_id', $student->id)->orderByDesc('issued_at')->get() : collect();
 
         // Distância em linha reta casa-escola e aviso do transporte pela regra municipal.
         $distanciaEscola = $student->latitude !== null && $school->latitude !== null
@@ -138,6 +141,6 @@ class SchoolStudentController extends Controller
         $avisoTransporte = $distanciaEscola === null ? null
             : Distance::transportHint($distanciaEscola, $enrollments->firstWhere('status', 'active')?->transport_status, (float) config('geo.transport_min_km'));
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile'));
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile', 'declarations'));
     }
 }
