@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\AcademicConfigController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\ClassGradesController;
 use App\Http\Controllers\ClassTeacherAssignmentController;
 use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentHealthController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
 use App\Http\Controllers\StudentRecordController;
+use App\Http\Controllers\StudentReportCardController;
 use App\Http\Controllers\WaitlistController;
 use App\Http\Middleware\RequireConfirmedTwoFactor;
 use App\Http\Middleware\RequireLoginTwoFactor;
@@ -81,6 +84,20 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('waitlist.enroll');
     Route::post('/lista-de-espera/{pedido}/arquivar', [WaitlistController::class, 'archive'])
         ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('waitlist.archive');
+    // Configuração municipal de notas e períodos, exclusiva da Secretaria.
+    Route::get('/avaliacoes/componentes', [AcademicConfigController::class, 'components'])->name('academic.components.index');
+    Route::post('/avaliacoes/componentes', [AcademicConfigController::class, 'storeComponent'])
+        ->middleware(RequireConfirmedTwoFactor::class)->name('academic.components.store');
+    Route::post('/avaliacoes/componentes/{componente}/situacao', [AcademicConfigController::class, 'toggleComponent'])
+        ->whereUuid('componente')->middleware(RequireConfirmedTwoFactor::class)->name('academic.components.toggle');
+    Route::get('/avaliacoes/anos/{ano}/periodos', [AcademicConfigController::class, 'periods'])
+        ->whereUuid('ano')->name('academic.periods.index');
+    Route::post('/avaliacoes/anos/{ano}/periodos', [AcademicConfigController::class, 'updatePeriods'])
+        ->whereUuid('ano')->middleware(RequireConfirmedTwoFactor::class)->name('academic.periods.update');
+    Route::post('/avaliacoes/anos/{ano}/periodos/{periodo}/fechar', [AcademicConfigController::class, 'closePeriod'])
+        ->whereUuid('ano')->whereUuid('periodo')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
@@ -104,6 +121,16 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/turmas', [SchoolClassController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.store');
     Route::get('/escolas/{escola}/turmas/{turma}/editar', [SchoolClassController::class, 'edit'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.edit');
     Route::put('/escolas/{escola}/turmas/{turma}', [SchoolClassController::class, 'update'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.update');
+    // Notas do Ensino Fundamental, com ajuste excepcional de período fechado.
+    Route::get('/escolas/{escola}/turmas/{turma}/notas', [ClassGradesController::class, 'index'])
+        ->whereUuid('escola')->whereUuid('turma')->name('school.classes.grades.index');
+    Route::post('/escolas/{escola}/turmas/{turma}/notas', [ClassGradesController::class, 'store'])
+        ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)
+        ->name('school.classes.grades.store');
+    Route::post('/escolas/{escola}/turmas/{turma}/notas/corrigir', [ClassGradesController::class, 'correct'])
+        ->whereUuid('escola')->whereUuid('turma')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.classes.grades.correct');
     Route::post('/escolas/{escola}/turmas/{turma}/professores', [ClassTeacherAssignmentController::class, 'store'])
         ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.teachers.store');
     Route::post('/escolas/{escola}/turmas/{turma}/professores/{atribuicao}/encerrar', [ClassTeacherAssignmentController::class, 'end'])
@@ -167,6 +194,8 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas/{escola}/saida', [StudentExitController::class, 'index'])->whereUuid('escola')->name('school.exits.index');
     Route::post('/escolas/{escola}/saida/{aluno}', [StudentExitController::class, 'store'])->whereUuid('escola')->whereUuid('aluno')->name('school.exits.store');
     // Ficha de saúde: gestão vê e edita (2FA); quem consulta vê só alertas graves na ficha e na chamada.
+    Route::get('/escolas/{escola}/alunos/{aluno}/boletim', [StudentReportCardController::class, 'show'])
+        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.report-card.show');
     Route::get('/escolas/{escola}/alunos/{aluno}/saude', [StudentHealthController::class, 'edit'])
         ->whereUuid('escola')->whereUuid('aluno')->name('school.students.health.edit');
     Route::post('/escolas/{escola}/alunos/{aluno}/saude', [StudentHealthController::class, 'updateProfile'])

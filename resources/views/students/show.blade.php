@@ -144,6 +144,14 @@
         </div>
 
         <aside class="ficha-lateral" aria-label="Histórico e documentos do aluno">
+        @if ($enrollments->contains(fn ($e) => $e->status === 'active' && $e->schoolClass && str_contains(mb_strtolower($e->schoolClass->stage), 'fundamental')))
+            <section class="folha cartao" aria-labelledby="titulo-boletim-aluno">
+                <span class="acao-icone"><x-icon name="turmas" /></span>
+                <h2 id="titulo-boletim-aluno">Boletim escolar</h2>
+                <p>Notas por período e frequência anual. Boletim parcial para consulta e impressão.</p>
+                <a class="botao secundario" href="{{ route('school.students.report-card.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">Abrir boletim</a>
+            </section>
+        @endif
         <section class="folha cartao ficha-historico" aria-labelledby="titulo-vinculos">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-vinculos">Histórico de vínculos nesta escola</h2>
