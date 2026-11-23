@@ -30,6 +30,7 @@ use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentHealthController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
 use App\Http\Controllers\StudentRecordController;
+use App\Http\Controllers\WaitlistController;
 use App\Http\Middleware\RequireConfirmedTwoFactor;
 use App\Http\Middleware\RequireLoginTwoFactor;
 use App\Http\Middleware\ResolveMunicipality;
@@ -64,6 +65,18 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
 });
 
 Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
+    // Lista de espera: somente gestão municipal e unidades autorizadas. Sem acesso público.
+    Route::get('/lista-de-espera', [WaitlistController::class, 'index'])->name('waitlist.index');
+    Route::get('/lista-de-espera/novo', [WaitlistController::class, 'create'])->name('waitlist.create');
+    Route::post('/lista-de-espera', [WaitlistController::class, 'store'])
+        ->middleware(RequireConfirmedTwoFactor::class)->name('waitlist.store');
+    Route::get('/lista-de-espera/cep/{cep}', [WaitlistController::class, 'postalLookup'])
+        ->middleware('throttle:20,1')->where('cep', '[0-9-]+')->name('waitlist.postal.lookup');
+    Route::get('/lista-de-espera/{pedido}', [WaitlistController::class, 'show'])->whereUuid('pedido')->name('waitlist.show');
+    Route::post('/lista-de-espera/{pedido}/situacao', [WaitlistController::class, 'changeStatus'])
+        ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('waitlist.status');
+    Route::post('/lista-de-espera/{pedido}/arquivar', [WaitlistController::class, 'archive'])
+        ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('waitlist.archive');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
