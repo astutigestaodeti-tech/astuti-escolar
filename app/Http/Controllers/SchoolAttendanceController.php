@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
+use App\Calendar\SchoolCalendar;
 use App\Models\Tenant\AttendanceMark;
 use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\School;
@@ -49,6 +50,7 @@ class SchoolAttendanceController extends Controller
         $historical = $date->lt(today());
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $canSubmit = ! $historical || ($canManage && $session !== null);
+        $calendarNotice = app(SchoolCalendar::class)->nonSchoolNotice($class->school_year_id, $school->id, $date);
         $present = $marks->where('status', 'present')->count();
         $justified = $marks->where('status', 'justified')->count();
         $absent = $marks->where('status', 'absent')->count() + $justified;
@@ -60,7 +62,7 @@ class SchoolAttendanceController extends Controller
         return view('classes.attendance', compact(
             'municipality', 'school', 'class', 'date', 'students',
             'session', 'marks', 'historical', 'canManage', 'canSubmit',
-            'present', 'absent', 'justified', 'healthAlerts',
+            'present', 'absent', 'justified', 'healthAlerts', 'calendarNotice',
         ));
     }
 
