@@ -95,4 +95,55 @@ class ScriptsOperacaoTest extends TestCase
             $this->assertStringNotContainsString($proibido, $fonte, $proibido);
         }
     }
+
+    public static function scriptsQueAlteram(): array
+    {
+        return [
+            'preparar-base' => ['preparar-base.sh', 'PREPARAR-BASE'],
+            'ajustar-acesso' => ['ajustar-acesso.sh', 'AJUSTAR-ACESSO'],
+        ];
+    }
+
+    #[DataProvider('scriptsQueAlteram')]
+    public function test_script_que_altera_o_servidor_so_simula_sem_a_confirmacao(string $arquivo, string $confirmacao): void
+    {
+        $script = dirname(__DIR__, 3).'/scripts/operacao/vps/'.$arquivo;
+        $fonte = file_get_contents($script);
+
+        exec('bash '.escapeshellarg($script).' 2>&1', $linhas, $codigo);
+        $saida = implode("\n", $linhas);
+        $this->assertSame(0, $codigo, $saida);
+        $this->assertStringStartsWith('SIMULACAO: nada sera alterado.', $saida);
+        $this->assertStringContainsString('Fim da simulacao. Nada foi alterado.', $saida);
+        $this->assertStringNotContainsString('  + ', $saida, 'nenhum comando real na simulacao');
+
+        exec('bash '.escapeshellarg($script).' --confirmar=SIM 2>&1', $ignorado, $codigoErrado);
+        $this->assertSame(2, $codigoErrado, 'confirmacao diferente da exata e recusada');
+
+        $this->assertStringContainsString('--confirmar='.$confirmacao.') real=1', $fonte);
+        foreach (['migrate', 'DROP ', 'createdb', 'psql', 'rm -rf', '.env', 'allow 5432', 'allow 80', 'allow 443', 'curl -fsSL', '| bash', '| sh'] as $proibido) {
+            $this->assertStringNotContainsString($proibido, $fonte, $proibido);
+        }
+    }
+
+    public function test_preparar_base_nao_mexe_em_ssh_nem_firewall(): void
+    {
+        $fonte = file_get_contents(dirname(__DIR__, 3).'/scripts/operacao/vps/preparar-base.sh');
+        foreach (['ufw ', 'sshd_config', 'systemctl reload ssh', 'authorized_keys'] as $proibido) {
+            $this->assertStringNotContainsString($proibido, $fonte, $proibido);
+        }
+    }
+
+    public function test_ajustar_acesso_valida_antes_de_recarregar_e_libera_o_ssh_antes_do_firewall(): void
+    {
+        $fonte = file_get_contents(dirname(__DIR__, 3).'/scripts/operacao/vps/ajustar-acesso.sh');
+
+        $this->assertLessThan(strpos($fonte, 'executar systemctl reload ssh'), strpos($fonte, 'if ! sshd -t; then'));
+        $this->assertStringContainsString('rm -f "$arquivo"', $fonte, 'apaga o arquivo novo se o sshd recusar');
+        $this->assertLessThan(strpos($fonte, 'executar ufw --force enable'), strpos($fonte, 'executar ufw allow "${porta}/tcp"'));
+        $this->assertLessThan(strpos($fonte, 'executar ufw --force enable'), strpos($fonte, 'ufw show added'));
+        $this->assertStringContainsString('authorized_keys', $fonte);
+        $this->assertStringContainsString('SEGUNDA sessao SSH', $fonte);
+        $this->assertStringNotContainsString('sshd_config"', $fonte, 'nao edita o sshd_config original');
+    }
 }
