@@ -155,17 +155,6 @@
             </section>
         @endforeach
 
-        <section class="folha equidade-secao" aria-labelledby="equidade-deficiencia">
-            <div class="folha-cabecalho">
-                <div><h2 id="equidade-deficiencia">Deficiência</h2>
-                    <p>Indicador indisponível até existir campo institucional estruturado e autorizado.</p>
-                </div>
-            </div>
-            <div class="folha-corpo">
-                <p>Não é correto deduzir deficiência de textos livres de saúde, diagnósticos ou alertas. O sistema não expõe essa classificação neste painel.</p>
-            </div>
-        </section>
-
         @if ($manager && ! $schoolId)
             <section class="folha equidade-secao" aria-labelledby="equidade-escolas">
                 <div class="folha-cabecalho">
@@ -315,7 +304,7 @@
         <div class="folha-cabecalho"><div><h2 id="equidade-metodologia">Como interpretar os dados</h2></div></div>
         <div class="folha-corpo">
             <p>Os números usam lançamentos escolares existentes e não reproduzem os indicadores oficiais de equidade do Saeb/VAAR. Ocultei grupos com menos de cinco alunos e apliquei supressão complementar para evitar reconstruir sua quantidade pelo total. Se menos de cinco alunos tiverem notas ou chamadas, a respectiva média também não aparece.</p>
-            <p>Não há campo de deficiência estruturado nesta versão. Não é permitido inferir deficiência de registros de saúde. Somente a gestão municipal acessa as condicionalidades; a direção escolar vê dados da própria unidade.</p>
+            <p>Educação especial vem só do cadastro estruturado de educação especial da ficha (categorias do Censo), nunca de registros de saúde. Somente a gestão municipal acessa as condicionalidades; a direção escolar vê dados da própria unidade.</p>
             <p class="texto-ajuda">Referência normativa: Lei 14.113/2020, art. 14, e orientações oficiais do FNDE e do Inep. A avaliação de cumprimento é externa ao sistema.</p>
         </div>
     </section>

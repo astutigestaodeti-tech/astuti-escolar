@@ -13,6 +13,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentFinalResult;
+use App\Models\Tenant\StudentSpecialEducation;
 use App\Models\Tenant\VaarCondition;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
@@ -338,5 +339,34 @@ class EquityVaarTest extends TwoMunicipalityTestCase
                 $this->assertStringContainsString('vaar_conditions_number_check', $e->getMessage());
             }
         });
+    }
+
+    public function test_educacao_especial_vem_do_cadastro_estruturado_e_respeita_grupo_pequeno(): void
+    {
+        $ids = [];
+        foreach (range(1, 11) as $number) {
+            $ids[] = $this->student($number, 'quinto', 'parda', result: 'aprovado');
+        }
+        $this->tenant(function () use ($ids): void {
+            foreach (array_slice($ids, 0, 5) as $id) {
+                StudentSpecialEducation::query()->create(['student_id' => $id, 'conditions' => ['tea']]);
+            }
+            // Cadastro sem nenhuma categoria não conta como educação especial.
+            StudentSpecialEducation::query()->create(['student_id' => $ids[5], 'conditions' => []]);
+        });
+
+        $this->login('municipal_manager');
+        $response = $this->get(self::URL.'?ano=2027&escola='.self::ESCOLA_A1.'&turma='.$this->classes['quinto'])
+            ->assertOk()->assertSee('Deficiência, TEA ou altas habilidades');
+        $rows = collect($response->viewData('data')['groups']['deficiencia']['rows'])->keyBy('label');
+        $this->assertSame(5, $rows['Deficiência, TEA ou altas habilidades']['metrics']['count']);
+        $this->assertSame(6, $rows['Sem registro de educação especial']['metrics']['count']);
+
+        // Com um aluno só, o grupo vira "grupo pequeno" e o complemento também some.
+        $this->tenant(fn () => StudentSpecialEducation::query()->whereIn('student_id', array_slice($ids, 1, 4))->delete());
+        $response = $this->get(self::URL.'?ano=2027&escola='.self::ESCOLA_A1.'&turma='.$this->classes['quinto'])->assertOk();
+        $rows = collect($response->viewData('data')['groups']['deficiencia']['rows'])->keyBy('label');
+        $this->assertTrue($rows['Deficiência, TEA ou altas habilidades']['suppressed']);
+        $this->assertTrue($rows['Sem registro de educação especial']['suppressed']);
     }
 }
