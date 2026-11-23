@@ -40,6 +40,7 @@ final class ConfiguredTenantConnections
                 'prefix' => '',
                 'prefix_indexes' => true,
                 'search_path' => 'public',
+                'timezone' => (string) env('APP_TIMEZONE', 'America/Sao_Paulo'),
                 'sslmode' => 'prefer',
             ],
         ];

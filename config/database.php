@@ -46,6 +46,8 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
+            // Mesmo fuso da aplicação: a sessão do PostgreSQL grava e lê no horário local.
+            'timezone' => env('APP_TIMEZONE', 'America/Sao_Paulo'),
             'sslmode' => env('PLATFORM_DB_SSLMODE', 'prefer'),
         ],
 
@@ -118,6 +120,8 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
+            // Mesmo fuso da aplicação: a sessão do PostgreSQL grava e lê no horário local.
+            'timezone' => env('APP_TIMEZONE', 'America/Sao_Paulo'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
