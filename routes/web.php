@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ClassGradesController;
 use App\Http\Controllers\ClassTeacherAssignmentController;
+use App\Http\Controllers\ClassYearEndController;
 use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
@@ -131,6 +132,22 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('turma')
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
         ->name('school.classes.grades.correct');
+    // Fechamento final, sempre com confirmação humana da escola.
+    Route::get('/escolas/{escola}/turmas/{turma}/resultado-final', [ClassYearEndController::class, 'index'])
+        ->whereUuid('escola')->whereUuid('turma')->name('school.classes.year-end.index');
+    Route::post('/escolas/{escola}/turmas/{turma}/resultado-final/confirmar', [ClassYearEndController::class, 'confirm'])
+        ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)
+        ->name('school.classes.year-end.confirm');
+    Route::post('/escolas/{escola}/turmas/{turma}/resultado-final/fechar', [ClassYearEndController::class, 'close'])
+        ->whereUuid('escola')->whereUuid('turma')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.classes.year-end.close');
+    Route::post('/escolas/{escola}/turmas/{turma}/resultado-final/reabrir', [ClassYearEndController::class, 'reopen'])
+        ->whereUuid('escola')->whereUuid('turma')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.classes.year-end.reopen');
+    Route::get('/escolas/{escola}/turmas/{turma}/ata-final', [ClassYearEndController::class, 'minutes'])
+        ->whereUuid('escola')->whereUuid('turma')->name('school.classes.year-end.minutes');
     Route::post('/escolas/{escola}/turmas/{turma}/professores', [ClassTeacherAssignmentController::class, 'store'])
         ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.teachers.store');
     Route::post('/escolas/{escola}/turmas/{turma}/professores/{atribuicao}/encerrar', [ClassTeacherAssignmentController::class, 'end'])

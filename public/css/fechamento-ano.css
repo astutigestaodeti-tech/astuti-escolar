@@ -1,0 +1,47 @@
+.pagina-fechamento-ano .fechamento-rolagem,.pagina-ata-final .ata-rolagem{max-width:100%;overflow-x:auto}
+.pagina-fechamento-ano .fechamento-tabela,.pagina-ata-final .ata-tabela{width:100%;table-layout:auto;min-width:1040px}
+.pagina-fechamento-ano .fechamento-tabela th,.pagina-fechamento-ano .fechamento-tabela td,
+.pagina-ata-final .ata-tabela th,.pagina-ata-final .ata-tabela td{
+    white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;vertical-align:top
+}
+.pagina-fechamento-ano .fechamento-tabela th:first-child{min-width:150px}
+.pagina-fechamento-ano .fechamento-tabela .numero,
+.pagina-fechamento-ano .fechamento-tabela .fechamento-situacao,
+.pagina-ata-final .ata-tabela .numero,
+.pagina-ata-final .ata-tabela .ata-resultado{white-space:nowrap!important}
+.pagina-fechamento-ano .fechamento-medias{margin:0;padding:0;list-style:none;min-width:150px}
+.pagina-fechamento-ano .fechamento-medias li{display:flex;gap:10px;justify-content:space-between;border-bottom:1px solid var(--linha);padding:4px 0}
+.pagina-fechamento-ano .fechamento-medias li:last-child{border-bottom:0}
+.pagina-fechamento-ano .fechamento-tabela small{display:block;color:var(--tinta-2);font-size:12px;margin-top:5px}
+.pagina-fechamento-ano .fechamento-tabela .fechamento-confirmar{display:flex;flex-direction:column;gap:10px;min-width:200px}
+.pagina-fechamento-ano .fechamento-confirmar label{display:flex;flex-direction:column;gap:4px;font-weight:600}
+.pagina-fechamento-ano .fechamento-confirmar select,.pagina-fechamento-ano .fechamento-confirmar textarea{max-width:100%;border:1px solid var(--linha);border-radius:8px;padding:8px;font:inherit;font-weight:400;resize:vertical}
+.pagina-fechamento-ano .fechamento-acoes{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.pagina-fechamento-ano .fechamento-acoes label{display:flex;flex-direction:column;gap:7px;width:min(100%,620px);font-weight:700}
+.pagina-fechamento-ano .fechamento-acoes textarea{width:100%}
+.pagina-fechamento-ano .fechamento-secao{margin-top:20px}
+.pagina-ata-final .ata-tabela{min-width:940px;font-size:13px}
+.pagina-ata-final .ata-tabela th:nth-child(2){min-width:170px}
+.pagina-ata-final .ata-alerta{padding:12px 14px;border-left:4px solid #9a321f}
+.pagina-ata-final .ata-totais{margin:10px 0 24px;line-height:1.8}
+.pagina-ata-final .ata-assinaturas{display:flex;justify-content:space-around;gap:28px;text-align:center;margin:42px 0 12px}
+.pagina-ata-final .ata-assinaturas>div{flex:1;max-width:270px}
+.pagina-ata-final .ata-linha{border-bottom:1px solid #111;margin-bottom:9px;height:20px}
+@page{size:A4 landscape;margin:10mm}
+@media print{
+    .pagina-ata-final{background:#fff!important;color:#000!important}
+    .pagina-ata-final .lateral,.pagina-ata-final .topo,.pagina-ata-final .folha-titulo,
+    .pagina-ata-final .voltar,.pagina-ata-final .rodape,.pagina-ata-final .rodape-versao,
+    .pagina-ata-final .aviso-demo,.pagina-ata-final .pular{display:none!important}
+    .pagina-ata-final .app,.pagina-ata-final .area,.pagina-ata-final .conteudo{
+        display:block!important;width:100%!important;max-width:none!important;padding:0!important;margin:0!important;min-height:0!important
+    }
+    .pagina-ata-final .ata-folha{border:0!important;box-shadow:none!important;margin:0!important}
+    .pagina-ata-final .ata-rolagem{overflow:visible!important}
+    .pagina-ata-final .ata-tabela{width:100%!important;min-width:0!important;table-layout:auto;font-size:8pt}
+    .pagina-ata-final .ata-tabela th,.pagina-ata-final .ata-tabela td{padding:4px 3px!important;border:1px solid #aaa}
+    .pagina-ata-final .ata-tabela th:nth-child(2){min-width:0!important;width:21%}
+    .pagina-ata-final .ata-tabela thead{display:table-header-group}
+    .pagina-ata-final .ata-tabela tr{break-inside:avoid;page-break-inside:avoid}
+    .pagina-ata-final .ata-assinaturas{break-inside:avoid}
+}

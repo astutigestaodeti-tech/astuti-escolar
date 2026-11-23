@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Academics\GradeAccess;
 use App\Audit\AuditTrail;
 use App\Models\Tenant\AcademicPeriod;
+use App\Models\Tenant\ClassYearClosure;
 use App\Models\Tenant\CurricularComponent;
 use App\Models\Tenant\GradeEntry;
 use App\Models\Tenant\School;
@@ -67,19 +68,23 @@ class ClassGradesController extends Controller
                 ->get()
                 ->keyBy('student_enrollment_id');
 
+        $yearIsClosed = ClassYearClosure::query()->whereKey($class->id)->whereNotNull('closed_at')->exists();
         $isManagement = $access->isManagement($request->user(), $municipality, $school);
         $assigned = $access->isAssignedTeacher($request->user(), $municipality, $school, $class);
-        $canWrite = $access->canWrite($request->user(), $municipality, $school, $class)
+        $canWrite = ! $yearIsClosed
+            && $access->canWrite($request->user(), $municipality, $school, $class)
             && $period !== null && $component !== null
             && ($period->closed_at === null || $isManagement);
 
         $readOnlyReason = null;
         if (! $canWrite) {
-            $readOnlyReason = $period?->closed_at !== null
-                ? 'Período fechado: professores só consultam. A direção, a secretaria e a gestão podem corrigir mediante motivo e segundo fator recente.'
-                : ($isManagement || $assigned
-                    ? 'Cadastre os períodos e componentes para iniciar os lançamentos.'
-                    : 'Sua conta está em consulta. Para lançar, é necessário vínculo teacher nesta escola e o mesmo e-mail institucional do servidor com atribuição vigente à turma.');
+            $readOnlyReason = $yearIsClosed
+                ? 'Ano letivo encerrado. Somente a gestão municipal pode reabrir a turma para correção de notas.'
+                : ($period?->closed_at !== null
+                    ? 'Período fechado: professores só consultam. A direção, a secretaria e a gestão podem corrigir mediante motivo e segundo fator recente.'
+                    : ($isManagement || $assigned
+                        ? 'Cadastre os períodos e componentes para iniciar os lançamentos.'
+                        : 'Sua conta está em consulta. Para lançar, é necessário vínculo teacher nesta escola e o mesmo e-mail institucional do servidor com atribuição vigente à turma.'));
         }
 
         return response()->view('academics.grades', [
@@ -148,6 +153,9 @@ class ClassGradesController extends Controller
             $period = AcademicPeriod::query()
                 ->where('school_year_id', $class->school_year_id)
                 ->lockForUpdate()->findOrFail($data['periodo']);
+            if (ClassYearClosure::query()->whereKey($class->id)->whereNotNull('closed_at')->exists()) {
+                throw ValidationException::withMessages(['periodo' => 'Ano letivo encerrado. Solicite reabertura à gestão municipal.']);
+            }
             $component = CurricularComponent::query()->where('active', true)->findOrFail($data['componente']);
 
             if ($override !== ($period->closed_at !== null)) {
