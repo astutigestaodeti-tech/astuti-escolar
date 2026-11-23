@@ -127,7 +127,7 @@ class CensusReadinessTest extends TwoMunicipalityTestCase
         // Sem turma: fora do Censo, valor da merenda em risco calculado como Fundamental parcial.
         $resposta->assertSee('R$ 114,00');
         // Sem o VAAF do estado, o Fundeb aparece só em matrículas ponderadas.
-        $resposta->assertDontSee('Fundeb estimado')->assertSee('ASTUTI_FUNDEB_VAAF_BASE');
+        $resposta->assertDontSee('Fundeb estimado')->assertSee('publicado pelo FNDE para o ano');
         // A escola sem INEP aparece como pendência.
         $resposta->assertSee('Não informado');
 
@@ -160,5 +160,28 @@ class CensusReadinessTest extends TwoMunicipalityTestCase
         $this->get(self::URL.'?escola='.self::ESCOLA_A1)->assertOk()
             ->assertSee('Caio Sem Turma Fictício')->assertDontSee('Duda Sem Cor Fictícia');
         $this->get(self::URL.'?aviso=inexistente')->assertSessionHasErrors('aviso');
+    }
+
+    public function test_gestao_informa_o_vaaf_do_ano_e_a_estimativa_passa_a_reais_com_auditoria(): void
+    {
+        $this->aluno('Ana Completa Fictícia', self::ESCOLA_A1, $this->classes['fund_manha']);
+
+        $this->entrar('school_director', [self::ESCOLA_A1]);
+        $this->post(self::URL.'/parametros', ['vaaf_base' => '6.000,00', 'source_note' => 'Portaria fictícia'])->assertForbidden();
+
+        $this->entrar('municipal_manager');
+        $this->post(self::URL.'/parametros', ['vaaf_base' => 'abc', 'source_note' => 'Portaria fictícia'])->assertSessionHasErrors('vaaf_base');
+        $this->post(self::URL.'/parametros', ['vaaf_base' => '6.000,00', 'source_note' => 'Portaria fictícia do FNDE'])
+            ->assertRedirect(self::URL.'#titulo-censo-estimativa');
+
+        $this->get(self::URL)->assertOk()
+            ->assertSee('Fundeb estimado')
+            ->assertSee('R$ 6.000,00')
+            ->assertSee('value="6.000,00"', false);
+
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $log = AuditLog::query()->where('action', 'census.parameters.created')->firstOrFail();
+            $this->assertSame('Portaria fictícia do FNDE', $log->after['source_note']);
+        });
     }
 }

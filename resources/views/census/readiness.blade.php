@@ -116,11 +116,28 @@
             </table>
         </div>
         <div class="folha-corpo">
+            @if (session('status'))
+                <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
+            @endif
+            <form method="POST" action="{{ route('census.readiness.parameters', ['municipio' => $municipality->slug]) }}" class="censo-parametros">
+                @csrf
+                <label for="vaaf_base">Valor anual por aluno do Fundeb no estado ({{ config('censo.year_reference') }})
+                    <input class="entrada" id="vaaf_base" name="vaaf_base" inputmode="decimal" required placeholder="Ex.: 6.123,45"
+                        value="{{ old('vaaf_base', $parameter ? number_format((float) $parameter->vaaf_base, 2, ',', '.') : '') }}">
+                </label>
+                <label for="source_note">De onde veio o valor
+                    <input class="entrada" id="source_note" name="source_note" maxlength="200" required placeholder="Ex.: portaria do FNDE"
+                        value="{{ old('source_note', $parameter?->source_note) }}">
+                </label>
+                <button class="botao secundario" type="submit">Salvar valor</button>
+            </form>
+            @error('vaaf_base')<p class="erro-campo">{{ $message }}</p>@enderror
+            @error('source_note')<p class="erro-campo">{{ $message }}</p>@enderror
             <p class="texto-ajuda">
                 A creche e a pré-escola em tempo integral têm os maiores pesos no Fundeb, e o aluno integral recebe quase três vezes mais na merenda.
                 Confira se o turno de cada turma está certo. A matrícula de AEE no contraturno também tem peso adicional no Fundeb; o valor depende da resolução do ano e não entra nesta estimativa.
                 @if ($vaafBase === null)
-                    Para ver o Fundeb em reais, informe o valor anual por aluno do estado (portaria do FNDE do ano) em ASTUTI_FUNDEB_VAAF_BASE.
+                    Para ver o Fundeb em reais, informe acima o valor anual por aluno do estado, publicado pelo FNDE para o ano (fator 1,00).
                 @endif
             </p>
         </div>
