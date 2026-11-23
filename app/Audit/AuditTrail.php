@@ -10,6 +10,7 @@ use App\Models\Tenant\AttendanceMark;
 use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\ClassTeacherAssignment;
+use App\Models\Tenant\ClassYearClosure;
 use App\Models\Tenant\CurricularComponent;
 use App\Models\Tenant\GradeEntry;
 use App\Models\Tenant\Guardian;
@@ -22,6 +23,7 @@ use App\Models\Tenant\StaffMember;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentExit;
+use App\Models\Tenant\StudentFinalResult;
 use App\Models\Tenant\StudentGuardian;
 use App\Models\Tenant\StudentHealthAlert;
 use App\Models\Tenant\StudentHealthProfile;
@@ -37,6 +39,8 @@ class AuditTrail
 {
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
+        ClassYearClosure::class => ['school_class_id', 'closed_at', 'closed_by', 'close_reason', 'reopened_at', 'reopened_by', 'reopen_reason'],
+        StudentFinalResult::class => ['id', 'school_class_id', 'student_enrollment_id', 'suggested_result', 'result', 'override_reason', 'confirmed_by', 'confirmed_at'],
         AcademicPeriod::class => ['id', 'school_year_id', 'kind', 'number', 'starts_on', 'ends_on', 'closed_at', 'closed_by', 'close_reason'],
         CurricularComponent::class => ['id', 'code', 'name', 'is_optional', 'active', 'display_order'],
         GradeEntry::class => ['id', 'student_enrollment_id', 'school_class_id', 'academic_period_id', 'curricular_component_id', 'grade', 'absences', 'recorded_by', 'updated_by', 'change_reason'],
