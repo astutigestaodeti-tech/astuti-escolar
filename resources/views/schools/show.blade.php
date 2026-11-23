@@ -80,6 +80,16 @@
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar matrículas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
         @can('manageStudents', [$school, $municipality])
+            <section class="folha cartao pendencias-resumo" aria-labelledby="titulo-pendencias">
+                <span class="acao-icone"><x-icon name="alunos" /></span>
+                <h2 id="titulo-pendencias">Pendências do cadastro</h2>
+                @if ($pendencySummary['withPendencies'] === 0)
+                    <p><strong>Cadastro completo.</strong> Nenhum aluno com dado a completar.</p>
+                @else
+                    <p><strong>{{ $pendencySummary['withPendencies'] }} {{ $pendencySummary['withPendencies'] === 1 ? 'aluno' : 'alunos' }}</strong> com dados a completar, de {{ $pendencySummary['total'] }} com matrícula ativa.</p>
+                @endif
+                <a class="botao secundario" style="margin-top:12px" href="{{ route('school.pendencies.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Ver o que falta completar <x-icon name="seta" :size="16" /></a>
+            </section>
             <section class="folha cartao alerta-faltas-resumo" aria-labelledby="titulo-alerta-faltas">
                 <span class="acao-icone"><x-icon name="info" /></span>
                 <h2 id="titulo-alerta-faltas">Alerta de faltas</h2>

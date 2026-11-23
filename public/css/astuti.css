@@ -811,6 +811,17 @@ select.entrada{cursor:pointer}
 .atribuicao-encerrar form{display:grid;gap:6px;margin-top:8px;max-width:220px}
 .atribuicao-encerrar input.entrada{width:100%}
 
+/* Pendências do cadastro: filtros por tipo e atalho para resolver cada item. */
+.pendencias-filtros{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.pendencia-filtro{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--pauta);border-radius:999px;color:var(--tinta);text-decoration:none;font-size:14px;font-weight:600;background:var(--folha)}
+.pendencia-filtro .numero{background:var(--pauta-suave);border-radius:999px;padding:0 8px;font-size:13px}
+.pendencia-filtro.ativo{border-color:var(--caneta);background:var(--caneta-clara);color:var(--caneta-escura)}
+.pendencia-filtro:focus-visible{outline:3px solid var(--caneta);outline-offset:2px}
+.pendencias-tabela td{white-space:normal;vertical-align:top}
+.pendencias-aluno{font-weight:700}
+.pendencias-itens{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pendencias-itens a{font-size:14px;margin-left:4px}
+.pendencias-vazio{margin:0;padding:16px;border-radius:var(--raio-controle);background:var(--verde-claro);color:var(--verde);font-weight:600}
 /* Calendário escolar: os controles e a grade respeitam o recuo dos cartões. */
 .calendario-filtros,.calendario-formulario{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-top:14px}
 .calendario-filtros .formulario-campo,.calendario-formulario .formulario-campo{min-width:160px;flex:1}
