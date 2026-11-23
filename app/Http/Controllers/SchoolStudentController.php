@@ -13,6 +13,7 @@ use App\Models\Tenant\StudentGuardian;
 use App\Models\Tenant\StudentHealthAlert;
 use App\Models\Tenant\StudentHealthProfile;
 use App\Models\Tenant\StudentPickupAuthorization;
+use App\Models\Tenant\StudentSpecialEducation;
 use App\Students\StudentSearch;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -123,6 +124,7 @@ class SchoolStudentController extends Controller
             ->when(! $canManageHealth, fn ($query) => $query->where('severity', 'critical'))
             ->orderByRaw("CASE WHEN severity = 'critical' THEN 0 ELSE 1 END")->orderBy('created_at')->get();
         $healthProfile = $canManageHealth ? StudentHealthProfile::query()->find($student->id) : null;
+        $specialEducation = $canManageHealth ? StudentSpecialEducation::query()->find($student->id) : null;
 
         // Última saída válida nesta escola, para quem atende a família por telefone.
         $lastExit = StudentExit::query()->valid()->where('student_id', $student->id)->where('school_id', $school->id)
@@ -150,6 +152,6 @@ class SchoolStudentController extends Controller
             $distanciaRuas !== null ? 'pelas ruas' : 'em linha reta',
         );
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile', 'declarations'));
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile', 'specialEducation', 'declarations'));
     }
 }

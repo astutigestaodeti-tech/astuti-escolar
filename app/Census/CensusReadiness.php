@@ -27,6 +27,7 @@ class CensusReadiness
         'cor_raca' => 'Cor/raça não informada (usada no VAAR)',
         'zona' => 'Zona de residência não informada',
         'transporte_rural' => 'Mora na zona rural e o transporte não foi informado (PNATE)',
+        'aee' => 'Educação especial sem a situação do AEE informada',
     ];
 
     /** Avisos que impedem contar a matrícula na categoria certa. */
@@ -50,6 +51,7 @@ class CensusReadiness
             ->join('students', 'students.id', '=', 'student_enrollments.student_id')
             ->join('schools', 'schools.id', '=', 'student_enrollments.school_id')
             ->leftJoin('school_classes', 'school_classes.id', '=', 'student_enrollments.school_class_id')
+            ->leftJoin('student_special_education', 'student_special_education.student_id', '=', 'students.id')
             ->where('student_enrollments.status', 'active')
             ->whereNull('students.deleted_at')
             ->where('schools.status', 'active')
@@ -58,7 +60,9 @@ class CensusReadiness
                 'student_enrollments.transport_status', 'students.id as student_id', 'students.full_name', 'students.birth_date',
                 'students.race_color', 'students.residence_zone', 'schools.name as school_name',
                 'school_classes.name as class_name', 'school_classes.stage', 'school_classes.shift',
+                'student_special_education.aee_status',
             ])
+            ->selectRaw('COALESCE(jsonb_array_length(student_special_education.conditions), 0) AS special_conditions')
             ->get();
 
         $schoolsPerStudent = $rows->groupBy('student_id')->map(fn (Collection $items): int => $items->pluck('school_id')->unique()->count());
@@ -98,6 +102,10 @@ class CensusReadiness
             } elseif ($row->residence_zone === 'rural' && $row->transport_status === null) {
                 $warnings[] = 'transporte_rural';
             }
+            $special = (int) $row->special_conditions > 0;
+            if ($special && $row->aee_status === null) {
+                $warnings[] = 'aee';
+            }
 
             $order = array_flip(array_keys(self::WARNINGS));
             usort($warnings, fn (string $a, string $b): int => $order[$a] <=> $order[$b]);
@@ -109,6 +117,8 @@ class CensusReadiness
                 'school' => $row->school_name,
                 'class' => $row->class_name,
                 'category' => $category,
+                'special' => $special,
+                'aee' => $row->aee_status === 'participa',
                 'warnings' => $warnings,
             ];
         })->sortBy(fn (array $item): string => Str::lower(Str::ascii($item['school'].'|'.$item['name'])))->values();
@@ -181,6 +191,9 @@ class CensusReadiness
             'at_risk_enrollments' => $atRisk,
             'at_risk_fundeb' => $base === null ? null : round($atRisk * (float) $reference['weight'] * (float) $base, 2),
             'at_risk_pnae' => round($atRisk * $days * (float) $reference['pnae'], 2),
+            'special' => $rows->where('special', true)->unique('student_id')->count(),
+            'aee' => $rows->where('aee', true)->unique('student_id')->count(),
+            'aee_pnae' => round($rows->where('aee', true)->unique('student_id')->count() * $days * (float) config('censo.pnae_aee', 0.78), 2),
         ]];
     }
 

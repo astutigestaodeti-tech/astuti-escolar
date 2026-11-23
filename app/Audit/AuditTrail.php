@@ -29,6 +29,7 @@ use App\Models\Tenant\StudentHealthAlert;
 use App\Models\Tenant\StudentHealthProfile;
 use App\Models\Tenant\StudentPickupAuthorization;
 use App\Models\Tenant\StudentPriorSchoolYear;
+use App\Models\Tenant\StudentSpecialEducation;
 use App\Models\Tenant\WaitlistRequest;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Auth;
@@ -50,6 +51,8 @@ class AuditTrail
         StaffMember::class => ['id', 'school_id', 'full_name', 'registration_number', 'role', 'institutional_email', 'phone', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
         AttendanceMark::class => ['id', 'attendance_session_id', 'student_id', 'status'],
         Guardian::class => ['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'photo_updated_at', 'rg_number', 'rg_state'],
+        // Educação especial: só quais campos mudaram, nunca os valores.
+        StudentSpecialEducation::class => ['student_id', 'changed_fields'],
         StudentPriorSchoolYear::class => ['id', 'student_id', 'school_year', 'school_stage', 'result', 'attendance_percent', 'grades_changed', 'deleted_at', 'deleted_by'],
         IssuedDocument::class => ['id', 'student_id', 'school_id', 'enrollment_id', 'issued_by', 'issued_at', 'verification_code', 'revoked_at', 'revoked_by', 'revoke_reason'],
         StudentGuardian::class => ['id', 'student_id', 'guardian_id', 'relationship', 'is_legal_guardian', 'is_primary_contact', 'motivo'],

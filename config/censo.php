@@ -30,4 +30,7 @@ return [
     ],
 
     'pnae_days' => 200,
+
+    // Merenda do AEE no contraturno, somada à da matrícula comum.
+    'pnae_aee' => 0.78,
 ];

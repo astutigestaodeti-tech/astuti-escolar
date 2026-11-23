@@ -149,6 +149,7 @@
         @include('guardians.panel')
 
         @include('health.panel')
+        @include('special-education.panel')
         @include('pickups.panel')
         </div>
 
