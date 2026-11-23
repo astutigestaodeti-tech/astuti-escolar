@@ -17,7 +17,7 @@ class SchoolPolicy
         return $this->access->managesMunicipality($user, $municipality);
     }
 
-    /** Fila de educação infantil: município, direção ou secretaria da unidade de preferência. */
+    /** Acesso à fila interna da educação infantil, conforme escopo e perfil. */
     public function viewWaitlist(User $user, Municipality $municipality): bool
     {
         return app(WaitlistAccess::class)->canView($user, $municipality);

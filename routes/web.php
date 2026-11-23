@@ -65,7 +65,7 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
 });
 
 Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
-    // Lista de espera: somente gestão municipal e unidades autorizadas. Sem acesso público.
+    // Fila da educação infantil, restrita à gestão municipal e às unidades de preferência.
     Route::get('/lista-de-espera', [WaitlistController::class, 'index'])->name('waitlist.index');
     Route::get('/lista-de-espera/novo', [WaitlistController::class, 'create'])->name('waitlist.create');
     Route::post('/lista-de-espera', [WaitlistController::class, 'store'])
