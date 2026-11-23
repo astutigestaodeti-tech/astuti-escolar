@@ -24,6 +24,13 @@ class EquityReadiness
         'raca' => 'Cor/raça',
         'sexo' => 'Sexo',
         'zona' => 'Zona de residência',
+        'deficiencia' => 'Educação especial',
+    ];
+
+    /** Pelo cadastro estruturado de educação especial (#112), nunca por texto de saúde. */
+    private const SPECIAL_LABELS = [
+        'sim' => 'Deficiência, TEA ou altas habilidades',
+        'nao' => 'Sem registro de educação especial',
     ];
 
     private const RACE_LABELS = [
@@ -82,6 +89,7 @@ class EquityReadiness
         $rows = StudentEnrollment::query()->withoutGlobalScopes()->from('student_enrollments as e')
             ->join('students as s', 's.id', '=', 'e.student_id')
             ->join('school_classes as c', 'c.id', '=', 'e.school_class_id')
+            ->leftJoin('student_special_education as se', 'se.student_id', '=', 'e.student_id')
             ->where('e.school_year_id', $year->id)
             ->whereIn('e.status', ['active', 'completed'])
             ->whereIn('e.school_id', $schools->pluck('id'))
@@ -90,7 +98,9 @@ class EquityReadiness
             ->select([
                 'e.id as enrollment_id', 'e.student_id', 'e.school_id', 'e.school_class_id', 'e.status',
                 's.full_name', 's.race_color', 's.sex', 's.residence_zone',
-            ])->get();
+            ])
+            ->selectRaw('COALESCE(jsonb_array_length(se.conditions), 0) > 0 AS special')
+            ->get();
 
         $ids = $rows->pluck('enrollment_id');
         $studentIds = $rows->pluck('student_id')->unique();
@@ -140,6 +150,7 @@ class EquityReadiness
                     ? $row->sex : 'sem_informacao',
                 'zone' => array_key_exists((string) $row->residence_zone, self::ZONE_LABELS) && $row->residence_zone !== null
                     ? $row->residence_zone : 'sem_informacao',
+                'special' => $row->special ? 'sim' : 'nao',
                 'attendance' => $total > 0 ? round(100 * $present / $total, 1) : null,
                 'absences' => $total - $present,
                 'sessions' => $total,
@@ -199,6 +210,7 @@ class EquityReadiness
             'raca' => ['field' => 'race', 'labels' => self::RACE_LABELS],
             'sexo' => ['field' => 'sex', 'labels' => self::SEX_LABELS],
             'zona' => ['field' => 'zone', 'labels' => self::ZONE_LABELS],
+            'deficiencia' => ['field' => 'special', 'labels' => self::SPECIAL_LABELS],
         ] as $code => $definition) {
             $buckets = [];
             foreach ($definition['labels'] as $key => $label) {
