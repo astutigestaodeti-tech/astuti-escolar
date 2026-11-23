@@ -59,7 +59,7 @@
             <div class="vazio">Ainda não há alunos com matrícula ativa nesta turma.</div>
         @else
             @if ($canSubmit)
-                <form method="POST" action="{{ $historical ? route('school.classes.attendance.correct', $params) : route('school.classes.attendance.store', $params) }}">
+                <form class="folha-corpo" method="POST" action="{{ $historical ? route('school.classes.attendance.correct', $params) : route('school.classes.attendance.store', $params) }}">
                     @csrf
                     <input type="hidden" name="data" value="{{ $date->toDateString() }}">
             @endif

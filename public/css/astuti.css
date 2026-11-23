@@ -39,6 +39,7 @@
     --texto:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
 
     --raio-folha:12px;
+    --recuo-folha:22px;
     --raio-controle:8px;
     --sombra-folha:0 1px 0 #17294308,0 8px 24px -16px #1729432e;
 
@@ -126,7 +127,9 @@ button,input,select{font:inherit;color:inherit}
 
 /* ---------- Folhas (painéis) ---------- */
 .folha{background:var(--folha);border:1px solid var(--linha);border-radius:var(--raio-folha);box-shadow:var(--sombra-folha)}
-.folha-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 22px 14px}
+.folha-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px var(--recuo-folha) 14px}
+/* Padrão: todo conteúdo dentro de um cartão (fora tabelas de borda a borda) fica no recuo do título. */
+.folha-corpo{padding:0 var(--recuo-folha) var(--recuo-folha)}
 .folha-cabecalho h2{font-family:var(--serifa);font-size:20px;font-weight:600;line-height:1.25}
 .folha-cabecalho p{font-size:14px;color:var(--tinta-3);margin-top:3px}
 .folha-nota{padding:12px 22px;border-top:1px solid var(--pauta-suave);font-size:13px;color:var(--tinta-3)}
@@ -404,7 +407,7 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
     .acoes li:nth-child(odd){border-right:0}
     .acoes li:nth-last-child(2){border-bottom:1px solid var(--pauta)}
     .acao{padding:14px 16px}
-    .folha-cabecalho{padding:16px 16px 12px}
+    .folha-cabecalho{padding:16px var(--recuo-folha) 12px}
     .busca{padding:0 16px 16px;flex-direction:column}
     .busca-matriculas .campo,.busca-matriculas .filtro-ano{flex:0 0 auto;width:100%}
     .paginacao{padding:14px 16px}
@@ -428,8 +431,8 @@ a.cartao:hover .cartao-acao{text-decoration:underline}
 }
 
 /* ---------- Formulário de aluno ---------- */
-.formulario-aluno form{padding:4px 22px 22px}
-.formulario-aluno .erro{margin:0 22px 8px}
+.formulario-aluno form{padding:4px var(--recuo-folha) var(--recuo-folha)}
+.formulario-aluno .erro{margin:0 var(--recuo-folha) 8px}
 .formulario-aluno .erro ul{margin:4px 0 0;padding-left:18px}
 .formulario-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
 .formulario-campo.largo{grid-column:1/-1}
@@ -449,7 +452,7 @@ select.entrada{cursor:pointer}
 .formulario-acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
 .status-sucesso{display:flex;gap:10px;align-items:center;padding:12px 14px;margin-bottom:18px;border-radius:var(--raio-controle);background:#eef7f0;border:1px solid #bfdcc6;color:#1f5a2e;font-size:14.5px}
 .folha-titulo .acoes-titulo{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-@media (max-width:640px){.formulario-grade{grid-template-columns:1fr}.formulario-aluno form{padding:4px 16px 18px}.formulario-aluno .erro{margin:0 16px 8px}}
+@media (max-width:640px){.formulario-grade{grid-template-columns:1fr}}
 
 /* Lista de escolas: ano letivo, INEP e números do ano */
 .marcadores{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;flex-shrink:0}
@@ -577,13 +580,13 @@ select.entrada{cursor:pointer}
 .turma-barra{height:12px;border-radius:999px;background:var(--pauta-suave);overflow:hidden}
 .turma-barra-preenchimento{height:100%;background:var(--caneta);border-radius:inherit}
 .turma-barra-excedida{background:var(--ouro)}
-.turma-alerta{margin:0 22px 18px;background:var(--ouro-claro);color:var(--tinta)}
+.turma-alerta{margin:0 var(--recuo-folha) 18px;background:var(--ouro-claro);color:var(--tinta)}
 .turma-telefone{display:block;white-space:nowrap}
 @media (max-width:640px){.turma-dados{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Retirada: apenas a seção específica da ficha, sem seletor global de cartões. */
 .ficha-escola>.ficha-retiradas{grid-column:1}
-.retirada-grupo{padding:0 22px 20px}
+.retirada-grupo{padding:0 var(--recuo-folha) 20px}
 .retirada-grupo+.retirada-grupo{border-top:1px solid var(--pauta);padding-top:14px}
 .retirada-subtitulo{font-size:15px;margin:0 0 6px;color:var(--tinta)}
 .retirada-ajuda{font-size:13px;color:var(--tinta-3);margin:0 0 12px}
@@ -783,12 +786,22 @@ select.entrada{cursor:pointer}
 .chamada-saude-detalhe p{margin:6px 0 0;font-size:13px;color:var(--tinta-2);max-width:42ch}
 .chamada-identificacao{flex-wrap:wrap}
 .saude-secao{margin-top:18px}
-.saude-secao>.saude-alertas,.saude-secao>.vazio,.saude-secao>.saude-subtitulo{margin-left:22px;margin-right:22px}
+.saude-secao>.saude-alertas,.saude-secao>.vazio,.saude-secao>.saude-subtitulo{margin-left:var(--recuo-folha);margin-right:var(--recuo-folha)}
 .saude-secao>.saude-subtitulo{margin-bottom:0}
 .saude-secao .saude-remover form{padding:0}
 .saude-secao textarea.entrada{font:inherit;resize:vertical}
-@media (max-width:640px){.saude-secao>.saude-alertas,.saude-secao>.vazio,.saude-secao>.saude-subtitulo{margin-left:16px;margin-right:16px}}
 .ficha-escola>.ficha-saude{grid-column:1}
-.ficha-saude>.saude-alertas,.ficha-saude>.texto-suave,.ficha-saude>.saude-emergencia{margin-left:22px;margin-right:22px}
+.ficha-saude>.saude-alertas,.ficha-saude>.texto-suave,.ficha-saude>.saude-emergencia{margin-left:var(--recuo-folha);margin-right:var(--recuo-folha)}
 .ficha-saude>:last-child{margin-bottom:20px}
 @media (max-width:960px){.ficha-escola>.ficha-saude{grid-column:auto;grid-row:auto}}
+
+/* Recuo padrão aplicado a blocos que ficavam encostados na borda do cartão. */
+.formulario-aluno>.nota{margin:0 var(--recuo-folha) 16px}
+.ficha-retiradas>.ficha-ultima-saida{margin:0 var(--recuo-folha) 14px}
+.alerta-faltas-filtros{margin:4px 0 18px}
+.alerta-faltas-painel .folha-corpo>.alerta-faltas-vazio{margin:0}
+.chamada-lista{margin-top:4px}
+.chamada-consulta-data{margin-top:4px}
+@media (max-width:640px){:root{--recuo-folha:16px}}
+.alerta-faltas-tabela th:first-child,.alerta-faltas-tabela td:first-child{padding-left:var(--recuo-folha)}
+.alerta-faltas-tabela th:last-child,.alerta-faltas-tabela td:last-child{padding-right:var(--recuo-folha)}

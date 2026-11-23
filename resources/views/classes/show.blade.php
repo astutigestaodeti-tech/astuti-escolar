@@ -75,6 +75,7 @@
                     <p>Para corrigir uma chamada anterior, informe o motivo e confirme novamente o segundo fator.</p>
                 </div>
             </div>
+            <div class="folha-corpo">
             <form class="chamada-consulta-data" method="GET" action="{{ route('school.classes.attendance.index', $parametrosTurma) }}">
                 <label for="chamada-data">Consultar data</label>
                 <input id="chamada-data" type="date" name="data" max="{{ today()->toDateString() }}" required>
@@ -87,6 +88,7 @@
                     @endforeach
                 </div>
             @endif
+            </div>
         </section>
     @endif
 
