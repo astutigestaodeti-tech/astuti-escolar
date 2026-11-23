@@ -143,6 +143,17 @@ class EnrollmentDeclarationTest extends TwoMunicipalityTestCase
         $this->get('/verificar?codigo='.rawurlencode($typed))->assertRedirect('/verificar/'.$document->verification_code);
     }
 
+    public function test_sem_chave_configurada_usa_a_unica_prefeitura_do_ambiente(): void
+    {
+        $this->user('school_director', [self::ESCOLA_A1]);
+        $document = $this->createDocument();
+        auth()->logout();
+        config()->set('tenancy.deployed_db_key', null);
+        config()->set('tenancy.connections', array_intersect_key(config('tenancy.connections'), ['municipio_a' => true]));
+
+        $this->get('/verificar/'.$document->verification_code)->assertOk()->assertSee('Documento válido');
+    }
+
     public function test_pagina_publica_nega_configuracao_ausente_e_limita_tentativas_por_ip(): void
     {
         config()->set('tenancy.deployed_db_key', null);

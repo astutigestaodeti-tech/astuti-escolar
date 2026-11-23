@@ -31,8 +31,13 @@ final class PublicDocumentVerificationController extends Controller
     public function __invoke(Request $request, string $codigo): Response
     {
         $codigo = self::normalize($codigo);
-        $key = config('tenancy.deployed_db_key');
         $connections = config('tenancy.connections', []);
+        $key = config('tenancy.deployed_db_key');
+        // Sem a chave do município (notebook de teste), vale a única conexão configurada.
+        // Com mais de uma Prefeitura configurada e sem chave, a consulta não adivinha.
+        if ((! is_string($key) || $key === '') && is_array($connections) && count($connections) === 1) {
+            $key = (string) array_key_first($connections);
+        }
         if (! is_string($key) || ! is_array($connections) || ! isset($connections[$key])
             || preg_match('/\A[A-HJ-NP-Z2-9]{10}\z/D', $codigo) !== 1) {
             return $this->notFound();
