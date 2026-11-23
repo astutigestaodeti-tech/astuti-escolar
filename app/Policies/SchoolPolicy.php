@@ -26,6 +26,17 @@ class SchoolPolicy
         return $this->access->mayManageSchool($user, $municipality, $school->id);
     }
 
+    /**
+     * Ficha de saúde completa (tipo sanguíneo e alertas de atenção) e edição.
+     * Hoje: gestão da escola. Quando houver perfil de saúde ou coordenação,
+     * restringir aqui (docs/arquitetura/lgpd-by-design.md, seção 7).
+     * Quem só consulta a escola vê apenas os alertas graves.
+     */
+    public function manageHealth(User $user, School $school, Municipality $municipality): bool
+    {
+        return $this->access->mayManageSchool($user, $municipality, $school->id);
+    }
+
     public function deleteEnrollment(User $user, School $school, Municipality $municipality): bool
     {
         return $this->access->mayDeleteEnrollment($user, $municipality, $school->id);

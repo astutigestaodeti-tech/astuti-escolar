@@ -8,6 +8,8 @@ use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentExit;
 use App\Models\Tenant\StudentGuardian;
+use App\Models\Tenant\StudentHealthAlert;
+use App\Models\Tenant\StudentHealthProfile;
 use App\Models\Tenant\StudentPickupAuthorization;
 use App\Students\StudentSearch;
 use Illuminate\Contracts\View\View;
@@ -113,6 +115,13 @@ class SchoolStudentController extends Controller
             ->sortBy(fn (StudentPickupAuthorization $person): array => [$person->isExpired() ? 1 : 0, $person->full_name])
             ->values();
 
+        // Saúde: a gestão vê tudo; quem só consulta vê apenas os alertas graves.
+        $canManageHealth = Gate::allows('manageHealth', [$school, $municipality]);
+        $healthAlerts = StudentHealthAlert::query()->where('student_id', $student->id)
+            ->when(! $canManageHealth, fn ($query) => $query->where('severity', 'critical'))
+            ->orderByRaw("CASE WHEN severity = 'critical' THEN 0 ELSE 1 END")->orderBy('created_at')->get();
+        $healthProfile = $canManageHealth ? StudentHealthProfile::query()->find($student->id) : null;
+
         // Última saída válida nesta escola, para quem atende a família por telefone.
         $lastExit = StudentExit::query()->valid()->where('student_id', $student->id)->where('school_id', $school->id)
             ->orderByDesc('exited_at')->first();
@@ -129,6 +138,6 @@ class SchoolStudentController extends Controller
         $avisoTransporte = $distanciaEscola === null ? null
             : Distance::transportHint($distanciaEscola, $enrollments->firstWhere('status', 'active')?->transport_status, (float) config('geo.transport_min_km'));
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'avisoTransporte', 'lastExit'));
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile'));
     }
 }

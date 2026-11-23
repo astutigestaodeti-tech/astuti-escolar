@@ -16,6 +16,8 @@ use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentExit;
 use App\Models\Tenant\StudentGuardian;
+use App\Models\Tenant\StudentHealthAlert;
+use App\Models\Tenant\StudentHealthProfile;
 use App\Models\Tenant\StudentPickupAuthorization;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +33,8 @@ class AuditTrail
         AttendanceMark::class => ['id', 'attendance_session_id', 'student_id', 'status'],
         Guardian::class => ['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'photo_updated_at', 'rg_number', 'rg_state'],
         StudentGuardian::class => ['id', 'student_id', 'guardian_id', 'relationship', 'is_legal_guardian', 'is_primary_contact', 'motivo'],
+        StudentHealthProfile::class => ['student_id', 'blood_type', 'informed_by', 'informed_on'],
+        StudentHealthAlert::class => ['id', 'student_id', 'kind', 'severity', 'alert_text', 'care_instructions', 'motivo'],
         StudentExit::class => ['id', 'student_id', 'school_id', 'person_type', 'person_id', 'person_name', 'person_relationship', 'exited_at', 'cancelled_at', 'cancelled_by', 'cancel_reason'],
         StudentPickupAuthorization::class => ['id', 'student_id', 'full_name', 'relationship', 'phone', 'document', 'expires_at', 'notes', 'motivo', 'photo_updated_at'],
         School::class => ['id', 'name', 'inep_code', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at', 'latitude', 'longitude', 'geo_source', 'geo_updated_at'],
@@ -123,7 +127,7 @@ class AuditTrail
                 continue;
             }
             // Dados sensíveis: a auditoria registra que mudou, sem guardar o valor.
-            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|correction_reason|cancel_reason|rg_number|birth_certificate)\z/iu', (string) $key)) {
+            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|correction_reason|cancel_reason|blood_type|alert_text|care_instructions|rg_number|birth_certificate)\z/iu', (string) $key)) {
                 $values[$key] = '[REDACTED]';
             } elseif (is_array($value)) {
                 $values[$key] = '[REDACTED]';

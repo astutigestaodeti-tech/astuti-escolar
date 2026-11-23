@@ -49,5 +49,6 @@ Decisão de Jefferson em 22/11/2026. Estas regras valem para toda tabela, tela, 
 
 - Secretaria: cadastro básico, responsáveis, transporte, quem pode buscar.
 - Coordenação ou saúde: dados de saúde completos (perfil próprio, quando a ficha de saúde existir).
+- Ficha de saúde (implantada em 22/11/2026): só alertas (alergia, condição, cuidado) com "o que fazer" e tipo sanguíneo opcional ("Não informado" / "Família não sabe"). Não há campo de diagnóstico, CID ou laudo. Permissão própria `manageHealth` (hoje igual à gestão da escola; restringir quando existir perfil de saúde ou coordenação). Alerta grave aparece ao professor na ficha e na chamada; alerta de atenção e tipo sanguíneo só para a gestão; nunca em listas gerais, relatórios impressos ou exportações. Edição com segundo fator; auditoria sem o texto do alerta, sem o tipo sanguíneo e sem o motivo de remoção.
 - Professor e portaria: consultam o necessário para a rotina (lista da turma, quem pode buscar, alertas críticos), sem editar.
 - Cada nova tela diz no PR quais perfis veem e quais alteram, com teste de isolamento entre escolas e perfis.
