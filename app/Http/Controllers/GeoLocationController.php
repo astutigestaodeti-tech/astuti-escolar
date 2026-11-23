@@ -108,7 +108,7 @@ class GeoLocationController extends Controller
                 return ['lat' => 0.0, 'lon' => 0.0, 'found' => false, 'query' => mb_substr($query, 0, 200), 'link' => true];
             }
             $query = mb_substr($query, 0, 200);
-            $point = $geocoder->locate($query, null, null, null, null, null);
+            $point = $geocoder->search($query);
 
             return $point === null ? ['lat' => 0.0, 'lon' => 0.0, 'found' => false, 'query' => $query] : [...$point, 'found' => true, 'query' => $query];
         }

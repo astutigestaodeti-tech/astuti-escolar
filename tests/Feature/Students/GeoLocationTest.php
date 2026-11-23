@@ -69,7 +69,7 @@ class GeoLocationTest extends TwoMunicipalityTestCase
             ->assertSee('value="endereco"', false)
             ->assertSee('vendor/leaflet/leaflet.js', false);
 
-        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'countrycodes=br') && str_contains(urldecode($request->url()), 'Rua Fictícia 100'));
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'countrycodes=br') && str_contains(urldecode($request->url()), 'street=100 Rua Fictícia'));
         $this->assertNull($this->inMunicipality(fn () => Student::query()->findOrFail($this->student)->latitude));
     }
 
@@ -162,6 +162,28 @@ class GeoLocationTest extends TwoMunicipalityTestCase
             ->assertOk()->assertSee('560 m')->assertDontSee('-23.495')->assertDontSee('Marcar no mapa');
         $this->get($this->base().'/alunos/'.$this->student.'/localizacao')->assertForbidden();
         $this->post($this->base().'/alunos/'.$this->student.'/localizacao', ['latitude' => '-23.47', 'longitude' => '-46.6', 'geo_source' => 'mapa'])->assertForbidden();
+    }
+
+    public function test_endereco_copiado_do_google_e_escrito_por_extenso_e_cai_para_a_rua_sem_o_numero(): void
+    {
+        // O mapa não conhece o número 856: responde vazio com número e acha a rua sem ele.
+        Http::fake(function ($request) {
+            $url = urldecode($request->url());
+
+            return str_contains($url, 'street=856 ')
+                ? Http::response([])
+                : Http::response([['lat' => '-23.310000', 'lon' => '-46.220000']]);
+        });
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        $this->get($this->base().'/localizacao?procurar='.rawurlencode('R. Pref. José Basílio Alvarenga, 856 - Jardim Monte Serrat, Santa Isabel - SP, 07500-000'))
+            ->assertOk()
+            ->assertSee('data-lat="-23.31"', false)
+            ->assertSee('Encontrei a rua, mas o mapa não tem o número exato');
+
+        Http::assertSent(fn ($request): bool => str_contains(urldecode($request->url()), 'street=Rua Prefeito José Basílio Alvarenga')
+            && str_contains(urldecode($request->url()), 'city=Santa Isabel')
+            && ! str_contains($request->url(), '07500'));
     }
 
     public function test_servico_de_mapa_fora_do_ar_nao_derruba_a_tela(): void
