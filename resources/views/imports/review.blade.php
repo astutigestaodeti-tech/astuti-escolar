@@ -18,7 +18,7 @@
             'homonimo' => ['name' => 'homonimos[]', 'label' => 'É outra pessoa. Autorizo cadastrar um novo aluno.'],
             'leitura' => ['name' => 'leituras[]', 'label' => 'Conferi nome, data e RA com o documento.'],
         ];
-        // Dados que esta etapa não grava (o transporte tem importação própria).
+        // Dados ausentes no arquivo, para completar depois.
         $laterLabels = [
             'cep' => 'CEP',
             'endereco' => 'informações de endereço ausentes ou incompletas',
@@ -176,11 +176,11 @@
                                 <td class="conf-situacao">
                                     <span class="conf-selo {{ $item['status'] }}">{{ $statusText[$item['status']] }}</span>
                                     @if ($item['status'] === 'ignorado')
-                                        <p class="conf-explica">O aluno e o RA existentes não serão recriados.</p>
+                                        <p class="conf-explica">O aluno já está no cadastro e não será criado de novo.</p>
                                         @if ($row['address_target_id'] ?? null)
                                             <label class="conf-marca">
                                                 <input type="checkbox" name="completar_enderecos[]" value="{{ $index }}">
-                                                <span>Completar somente o que está vazio neste aluno (endereço, dados do Censo e responsável, se ainda não houver nenhum), sem substituir o que já está preenchido.</span>
+                                                <span>Completar somente o que está vazio neste aluno (data de nascimento, endereço, dados do Censo, transporte e responsável, se ainda não houver nenhum), sem substituir o que já está preenchido.</span>
                                             </label>
                                         @endif
                                     @else

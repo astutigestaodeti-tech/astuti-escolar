@@ -768,7 +768,7 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertSame('529.982.247-25', $ana['census']['cpf']);
         $this->assertArrayNotHasKey('cpf', $eva['census']);
         $this->assertContains('Este CPF já está no cadastro de outro aluno da rede; não foi importado. Confira o documento.', array_column($eva['pending'], 'message'));
-        $this->assertStringContainsString('endereço, dados do Censo e responsável', $html);
+        $this->assertStringContainsString('data de nascimento, endereço, dados do Censo, transporte e responsável', $html);
 
         $indice = array_search('Ana Clara Fictícia', array_column($rows, 'name'), true);
         $this->post($this->url().'/confirmar', ['lote' => $token, 'completar_enderecos' => [$indice]])
@@ -917,6 +917,101 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->post($this->url().'/confirmar', ['lote' => $adulterado])
             ->assertSessionHasErrors(['lote' => 'Dados do Censo inválidos na conferência. Reenvie o arquivo.']);
         $this->assertSame([0, 0, 0], $this->contagens());
+    }
+
+    public function test_coluna_onibus_da_planilha_marca_o_transporte_na_matricula(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, fn () => School::query()->create([
+            'id' => self::ESCOLA_A3, 'name' => 'Escola Rural Fictícia', 'status' => 'active',
+        ]));
+        $this->criarTurmas(self::ESCOLA_A3, ['MULTI-1', 'MULTI-2']);
+        $this->entrar('municipal_manager', []);
+
+        [$lote, $confirmations] = $this->preparar('E03_Rural_Palmeiras.xlsx', self::ESCOLA_A3);
+        $this->post($this->url(self::ESCOLA_A3).'/confirmar', ['lote' => $lote, 'confirmados' => $confirmations])
+            ->assertRedirect($this->url(self::ESCOLA_A3));
+
+        // A escola rural marca "X" na coluna "Ônibus" de todos os 17 alunos.
+        $status = app(TenantContext::class)->runFor($this->municipioA, fn (): array => StudentEnrollment::query()
+            ->where('school_id', self::ESCOLA_A3)->pluck('transport_status')->countBy()->all());
+        $this->assertSame(['active' => 17], $status);
+
+        // Coluna presente e desmarcada: não solicitado; sem a coluna: sem informação.
+        $path = $this->planilha([
+            ['Nome', 'Data de nascimento', 'Turma', 'Ônibus'],
+            ['Bruna Ônibus Fictícia', '02/02/2020', 'MULTI-1', 'X'],
+            ['Caio Sem Ônibus Fictício', '03/03/2020', 'MULTI-1', ''],
+        ]);
+        [$lote] = $this->preparar('transporte.xlsx', self::ESCOLA_A3, $path);
+        $this->post($this->url(self::ESCOLA_A3).'/confirmar', ['lote' => $lote])->assertRedirect($this->url(self::ESCOLA_A3));
+
+        $novos = app(TenantContext::class)->runFor($this->municipioA, fn (): array => StudentEnrollment::query()
+            ->join('students', 'students.id', '=', 'student_enrollments.student_id')
+            ->whereIn('students.full_name', ['Bruna Ônibus Fictícia', 'Caio Sem Ônibus Fictício'])
+            ->pluck('student_enrollments.transport_status', 'students.full_name')->all());
+        $this->assertSame(['Bruna Ônibus Fictícia' => 'active', 'Caio Sem Ônibus Fictício' => 'not_requested'], $novos);
+    }
+
+    public function test_mesma_crianca_na_mesma_escola_sem_data_nao_e_cadastrada_de_novo_e_recebe_a_data(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, fn () => School::query()->create([
+            'id' => self::ESCOLA_A3, 'name' => 'Escola Rural Fictícia', 'status' => 'active',
+        ]));
+        $this->criarTurmas(self::ESCOLA_A3, ['MULTI-1', 'MULTI-2']);
+        $this->entrar('municipal_manager', []);
+
+        [$lote, $confirmations] = $this->preparar('E03_Rural_Palmeiras.xlsx', self::ESCOLA_A3);
+        $this->post($this->url(self::ESCOLA_A3).'/confirmar', ['lote' => $lote, 'confirmados' => $confirmations])
+            ->assertRedirect($this->url(self::ESCOLA_A3));
+        $this->assertSame([17, 17, 1], $this->contagens());
+
+        // Na planilha, Emanuelly e Ryan vieram só com a idade ("6 anos"); a lista
+        // impressa traz a data. Ryan volta de novo sem data.
+        $semData = app(TenantContext::class)->runFor($this->municipioA, fn (): array => Student::query()
+            ->whereIn('full_name', ['Emanuelly Rodrigues Lopes', 'Ryan Leme Machado'])->whereNull('birth_date')->pluck('id', 'full_name')->all());
+        $this->assertCount(2, $semData);
+
+        $path = $this->planilha([
+            ['Nome', 'Data de nascimento', 'Turma'],
+            ['EMANUELLY RODRIGUES LOPES', '14/06/2020', 'MULTI-1'],
+            ['Ryan Leme Machado', '', 'MULTI-1'],
+        ]);
+        [$lote, , $html] = $this->preparar('lista-impressa.xlsx', self::ESCOLA_A3, $path);
+        $rows = json_decode(Crypt::decryptString($lote), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        foreach ($rows as $row) {
+            $this->assertContains('ja_cadastrado', array_column($row['confirmation'], 'field'), $row['name']);
+            $this->assertNotContains('homonimo', array_column($row['confirmation'], 'field'), $row['name']);
+        }
+        $this->assertSame($semData['Emanuelly Rodrigues Lopes'], $rows[0]['address_target_id']);
+        $this->assertStringContainsString('Já cadastrados (serão ignorados)</dt><dd>2</dd>', $html);
+
+        $this->post($this->url(self::ESCOLA_A3).'/confirmar', ['lote' => $lote, 'completar_enderecos' => [0]])
+            ->assertRedirect($this->url(self::ESCOLA_A3));
+
+        $this->assertSame([17, 17, 2], $this->contagens());
+        $data = app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->find($semData['Emanuelly Rodrigues Lopes'])->birth_date?->format('Y-m-d'));
+        $this->assertSame('2020-06-14', $data);
+    }
+
+    public function test_mesmo_nome_em_outra_escola_continua_sendo_possivel_homonimo(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, fn () => School::query()->create([
+            'id' => self::ESCOLA_A3, 'name' => 'Escola Rural Fictícia', 'status' => 'active',
+        ]));
+        $this->criarTurmas(self::ESCOLA_A3, ['MULTI-1', 'MULTI-2']);
+        $this->entrar('municipal_manager', []);
+
+        [$lote, $confirmations] = $this->preparar('E03_Rural_Palmeiras.xlsx', self::ESCOLA_A3);
+        $this->post($this->url(self::ESCOLA_A3).'/confirmar', ['lote' => $lote, 'confirmados' => $confirmations]);
+
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $path = $this->planilha([
+            ['Nome', 'Data de nascimento', 'Turma'],
+            ['Ryan Leme Machado', '', '1A'],
+        ]);
+        [$lote] = $this->preparar('outra-escola.xlsx', self::ESCOLA_A1, $path);
+        $rows = json_decode(Crypt::decryptString($lote), true, 512, JSON_THROW_ON_ERROR)['rows'];
+        $this->assertContains('homonimo', array_column($rows[0]['confirmation'], 'field'));
     }
 
     private function planilhaComAlunoNovo(array $rows, bool $withAddresses = false): string

@@ -431,6 +431,25 @@ final class StudentSpreadsheetPreview
             $groups[$key][] = $student;
         }
 
+        // Uma linha sem data e outra com data do mesmo nome (por exemplo, "6 anos"
+        // na planilha e a data completa na lista impressa) são a mesma criança
+        // quando só existe uma data possível para aquele nome no arquivo.
+        $datedByName = [];
+        foreach (array_keys($groups) as $key) {
+            [$name, $date] = explode('|', $key, 2);
+            if ($date !== '?') {
+                $datedByName[$name][] = $key;
+            }
+        }
+        foreach (array_keys($groups) as $key) {
+            [$name, $date] = explode('|', $key, 2);
+            if ($date === '?' && count($datedByName[$name] ?? []) === 1) {
+                $target = $datedByName[$name][0];
+                $groups[$target] = [...$groups[$target], ...$groups[$key]];
+                unset($groups[$key]);
+            }
+        }
+
         $result = [];
         foreach ($groups as $group) {
             $first = array_shift($group);
@@ -487,6 +506,7 @@ final class StudentSpreadsheetPreview
                     ($issue->field === 'ra' && $first->ra !== null)
                     || ($issue->field === 'transporte' && $first->usesTransport !== null)
                     || ($issue->field === 'turma' && $first->classId !== null)
+                    || ($issue->field === 'data_nascimento' && $first->birthDate !== null)
                 )));
                 $first->addIssue(ImportIssue::CONFIRM, 'duplicidade', 'O mesmo aluno aparece '.count($first->sources).' vezes ('.implode('; ', $first->sources).'). Confirme que é a mesma pessoa.');
             }

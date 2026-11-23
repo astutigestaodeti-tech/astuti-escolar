@@ -127,7 +127,7 @@ class ConfirmedStudentImportController extends Controller
 
             $birthDate = $student->birthDate?->format('Y-m-d');
             $ra = $this->canonicalRa($student->ra);
-            $match = $this->existingStatus($student->name, $birthDate, $ra);
+            $match = $this->existingStatus($student->name, $birthDate, $ra, $school->id, $year->id);
             $address = $this->importedAddress($student, $pending);
             $census = $student->census;
             $candidate = $match === 'existing'
@@ -150,10 +150,13 @@ class ConfirmedStudentImportController extends Controller
 
             // Aluno já cadastrado: endereço, Censo e responsável só completam o que está vazio, com marcação.
             $addressTargetId = null;
-            $completable = [...$address, ...$census];
+            // A data de nascimento também completa um cadastro que ainda não a tem.
+            $completable = [...$address, ...$census, 'birth_date' => $birthDate];
             $guardianMissing = $candidate !== null && $guardian !== null
                 && ! StudentGuardian::query()->where('student_id', $candidate->id)->exists();
-            if ($candidate !== null && (($guardianMissing)
+            $transportMissing = $candidate !== null && $student->usesTransport !== null
+                && $this->activeEnrollment($candidate->id, $school->id, $year->id)?->transport_status === null;
+            if ($candidate !== null && ($guardianMissing || $transportMissing
                 || (array_filter($completable, fn (?string $value): bool => $value !== null) !== []
                     && $this->missingAddressFields($candidate, $completable) !== []))) {
                 $addressTargetId = $candidate->id;
@@ -177,6 +180,7 @@ class ConfirmedStudentImportController extends Controller
                 'address' => $address,
                 'census' => $census,
                 'guardian' => $guardian,
+                'transport' => $student->usesTransport,
                 'address_target_id' => $addressTargetId,
             ];
         }
@@ -260,6 +264,8 @@ class ConfirmedStudentImportController extends Controller
             $this->validatedAddress($row);
             $this->validatedCensus($row);
             $this->validatedGuardian($row);
+            $this->validatedTransport($row);
+            $this->validatedBirthDate($row);
 
             if ($this->hasConfirmation($row, 'ja_cadastrado')) {
                 $ignoredCount++;
@@ -327,7 +333,7 @@ class ConfirmedStudentImportController extends Controller
                 // ou introduza um homônimo sem confirmação humana.
                 $addressUpdates = [];
                 foreach ($payload['rows'] as $index => $row) {
-                    $match = $this->existingStatus($row['name'], $row['birth_date'], $row['ra']);
+                    $match = $this->existingStatus($row['name'], $row['birth_date'], $row['ra'], $school->id, $year->id);
                     if ($this->hasConfirmation($row, 'ja_cadastrado')) {
                         if ($match !== 'existing') {
                             throw ValidationException::withMessages(['lote' => 'Um cadastro mudou depois da prévia. Refaça a conferência antes de confirmar.']);
@@ -338,14 +344,21 @@ class ConfirmedStudentImportController extends Controller
                             if ($existing === null || $existing->id !== $row['address_target_id']) {
                                 throw ValidationException::withMessages(['lote' => 'A identificação ou o vínculo escolar mudou depois da prévia. Refaça a conferência; nenhum endereço foi alterado.']);
                             }
-                            $missing = $this->missingAddressFields($existing, [...$this->validatedAddress($row), ...$this->validatedCensus($row)]);
+                            $missing = $this->missingAddressFields($existing, [...$this->validatedAddress($row), ...$this->validatedCensus($row), 'birth_date' => $this->validatedBirthDate($row)]);
                             $this->assertCpfStillFree($missing['cpf'] ?? null, $existing->id);
                             $guardian = $this->validatedGuardian($row);
                             if ($guardian !== null && StudentGuardian::query()->where('student_id', $existing->id)->exists()) {
                                 $guardian = null;
                             }
-                            if ($missing !== [] || $guardian !== null) {
-                                $addressUpdates[] = [$existing, $missing, $guardian];
+                            // Transporte só preenche matrícula sem informação; a lista da
+                            // Secretaria (importação de transporte) continua sendo a que altera.
+                            $transport = $this->validatedTransport($row);
+                            $enrollment = $transport === null ? null : $this->activeEnrollment($existing->id, $school->id, $year->id, true);
+                            if ($enrollment !== null && $enrollment->transport_status !== null) {
+                                $enrollment = null;
+                            }
+                            if ($missing !== [] || $guardian !== null || $enrollment !== null) {
+                                $addressUpdates[] = [$existing, $missing, $guardian, $enrollment, $transport];
                             }
                         }
 
@@ -373,13 +386,17 @@ class ConfirmedStudentImportController extends Controller
                 ]);
 
                 $guardians = new ImportedGuardianLinker;
-                foreach ($addressUpdates as [$existing, $missing, $guardian]) {
+                foreach ($addressUpdates as [$existing, $missing, $guardian, $enrollment, $transport]) {
                     if ($missing !== []) {
                         $existing->fill($missing);
                         $existing->save();
                     }
                     if ($guardian !== null) {
                         $guardians->link($existing, $guardian);
+                    }
+                    if ($enrollment !== null) {
+                        $enrollment->transport_status = self::transportStatus($transport);
+                        $enrollment->save();
                     }
                     $completedAddresses++;
                 }
@@ -405,6 +422,8 @@ class ConfirmedStudentImportController extends Controller
                         'status' => 'active',
                         // A planilha não informa a data de matrícula.
                         'started_at' => null,
+                        // Coluna "Ônibus"/"Transp." marcada: usa; desmarcada: não solicitado.
+                        'transport_status' => self::transportStatus($this->validatedTransport($row)),
                     ]);
                 }
 
@@ -471,9 +490,11 @@ class ConfirmedStudentImportController extends Controller
 
     /**
      * RA igual ou nome e nascimento iguais indicam cadastro existente.
-     * Data ausente impede identificar com segurança duas pessoas homônimas.
+     * Na mesma escola e ano, o mesmo nome com a data faltando de um dos lados
+     * (e sem RA divergente) é o mesmo aluno: a linha completa o cadastro em vez
+     * de criar outro. Fora disso, data ausente continua sendo possível homônimo.
      */
-    private function existingStatus(string $name, ?string $birthDate, ?string $ra): string
+    private function existingStatus(string $name, ?string $birthDate, ?string $ra, ?string $schoolId = null, ?string $yearId = null): string
     {
         if ($ra !== null && Student::query()
             ->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$ra])
@@ -484,15 +505,91 @@ class ConfirmedStudentImportController extends Controller
         $sameName = Student::query()
             ->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$name]);
 
+        if ($birthDate !== null && (clone $sameName)->whereDate('birth_date', $birthDate)->exists()) {
+            return 'existing';
+        }
+
+        if ($schoolId !== null && $yearId !== null && $this->sameSchoolStudent($name, $birthDate, $ra, $schoolId, $yearId) !== null) {
+            return 'existing';
+        }
+
         if ($birthDate === null) {
             return $sameName->exists() ? 'homonym' : 'new';
         }
 
-        if ((clone $sameName)->whereDate('birth_date', $birthDate)->exists()) {
-            return 'existing';
+        return (clone $sameName)->whereNull('birth_date')->exists() ? 'homonym' : 'new';
+    }
+
+    /**
+     * Um único aluno com o mesmo nome, matrícula ativa nesta escola e ano, sem
+     * data ou RA que o contradigam. Dois candidatos não identificam ninguém.
+     */
+    private function sameSchoolStudent(string $name, ?string $birthDate, ?string $ra, string $schoolId, string $yearId, bool $lock = false): ?Student
+    {
+        $query = Student::query()
+            ->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$name])
+            ->whereIn('id', StudentEnrollment::query()->select('student_id')
+                ->where('school_id', $schoolId)->where('school_year_id', $yearId)
+                ->where('status', 'active')->whereNull('ended_at'));
+        if ($birthDate !== null) {
+            $query->where(fn ($q) => $q->whereNull('birth_date')->orWhereDate('birth_date', $birthDate));
+        }
+        if ($ra !== null) {
+            $query->where(fn ($q) => $q->whereNull('ra')->orWhereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$ra]));
+        }
+        if ($lock) {
+            $query->lockForUpdate();
         }
 
-        return (clone $sameName)->whereNull('birth_date')->exists() ? 'homonym' : 'new';
+        $matches = $query->limit(2)->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
+
+    private function activeEnrollment(string $studentId, string $schoolId, string $yearId, bool $lock = false): ?StudentEnrollment
+    {
+        $query = StudentEnrollment::query()->where('student_id', $studentId)
+            ->where('school_id', $schoolId)->where('school_year_id', $yearId)
+            ->where('status', 'active')->whereNull('ended_at');
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    private static function transportStatus(?bool $transport): ?string
+    {
+        return match ($transport) {
+            true => 'active',
+            false => 'not_requested',
+            null => null,
+        };
+    }
+
+    /** @param array<string, mixed> $row */
+    private function validatedTransport(array $row): ?bool
+    {
+        $value = $row['transport'] ?? null;
+        if ($value !== null && ! is_bool($value)) {
+            throw ValidationException::withMessages(['lote' => 'Dados de transporte inválidos na conferência. Reenvie o arquivo.']);
+        }
+
+        return $value;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function validatedBirthDate(array $row): ?string
+    {
+        $value = $row['birth_date'] ?? null;
+        if ($value === null) {
+            return null;
+        }
+        if (! is_string($value) || preg_match('/\A(\d{4})-(\d{2})-(\d{2})\z/', $value, $m) !== 1 || ! checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+            throw ValidationException::withMessages(['lote' => 'Data de nascimento inválida na conferência. Reenvie o arquivo.']);
+        }
+
+        return $value;
     }
 
     /**
@@ -672,41 +769,38 @@ class ConfirmedStudentImportController extends Controller
 
     /**
      * RA, ou nome sem acento mais nascimento, deve identificar uma única pessoa
-     * vinculada à escola e ao ano. Nunca usa só nome para completar endereço.
+     * vinculada à escola e ao ano. Só o nome basta apenas dentro da mesma escola
+     * e ano, com um único candidato e sem data ou RA divergentes.
      */
     private function eligibleAddressStudent(string $name, ?string $birthDate, ?string $ra, string $schoolId, string $yearId, bool $lock = false): ?Student
     {
-        if ($ra === null && $birthDate === null) {
-            return null;
+        if ($ra !== null || $birthDate !== null) {
+            $query = Student::query()->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$name]);
+            if ($birthDate !== null) {
+                $query->whereDate('birth_date', $birthDate);
+            }
+            if ($ra !== null) {
+                $query->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$ra]);
+            }
+            if ($lock) {
+                $query->lockForUpdate();
+            }
+
+            $matches = $query->limit(2)->get();
+            if ($matches->count() === 1) {
+                $student = $matches->first();
+
+                // A escola de origem não pode alterar endereço após transferência ou
+                // encerramento. A linha da matrícula também fica travada no POST.
+                return $this->activeEnrollment($student->id, $schoolId, $yearId, $lock) !== null ? $student : null;
+            }
+            if ($matches->count() > 1) {
+                return null;
+            }
         }
 
-        $query = Student::query()->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$name]);
-        if ($birthDate !== null) {
-            $query->whereDate('birth_date', $birthDate);
-        }
-        if ($ra !== null) {
-            $query->whereRaw("replace(upper(ra), '-', '') = replace(upper(?), '-', '')", [$ra]);
-        }
-        if ($lock) {
-            $query->lockForUpdate();
-        }
-
-        $matches = $query->limit(2)->get();
-        if ($matches->count() !== 1) {
-            return null;
-        }
-
-        $student = $matches->first();
-        // A escola de origem não pode alterar endereço após transferência ou
-        // encerramento. A linha da matrícula também fica travada no POST.
-        $enrollment = StudentEnrollment::query()->where('student_id', $student->id)
-            ->where('school_id', $schoolId)->where('school_year_id', $yearId)
-            ->where('status', 'active')->whereNull('ended_at');
-        if ($lock) {
-            $enrollment->lockForUpdate();
-        }
-
-        return $enrollment->first(['id']) !== null ? $student : null;
+        // Mesmo nome na mesma escola, com a data faltando de um dos lados.
+        return $this->sameSchoolStudent($name, $birthDate, $ra, $schoolId, $yearId, $lock);
     }
 
     private function canonicalRa(?string $ra): ?string
