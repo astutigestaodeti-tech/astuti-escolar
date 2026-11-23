@@ -47,7 +47,7 @@
                 <div><dt>Etapa</dt><dd>{{ $class->stage }}</dd></div>
                 <div><dt>Ano letivo</dt><dd>{{ $class->schoolYear->year }}</dd></div>
                 <div><dt>Mês</dt><dd>{{ $monthLabel }}</dd></div>
-                <div><dt>Professor(a)</dt><dd>________________________________</dd></div>
+                <div><dt>Professor(a)</dt><dd>{{ $principalName ?: '________________________________' }}</dd></div>
             </dl>
         </header>
 

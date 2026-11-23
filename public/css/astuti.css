@@ -805,3 +805,8 @@ select.entrada{cursor:pointer}
 @media (max-width:640px){:root{--recuo-folha:16px}}
 .alerta-faltas-tabela th:first-child,.alerta-faltas-tabela td:first-child{padding-left:var(--recuo-folha)}
 .alerta-faltas-tabela th:last-child,.alerta-faltas-tabela td:last-child{padding-right:var(--recuo-folha)}
+
+/* Professores da turma: encerrar sem estourar a tabela. */
+.atribuicao-encerrar summary{cursor:pointer;color:var(--caneta);font-weight:700}
+.atribuicao-encerrar form{display:grid;gap:6px;margin-top:8px;max-width:220px}
+.atribuicao-encerrar input.entrada{width:100%}

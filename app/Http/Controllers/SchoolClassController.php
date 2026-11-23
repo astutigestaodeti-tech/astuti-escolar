@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Attendance\AttendanceSummary;
 use App\Models\Tenant\AttendanceSession;
+use App\Models\Tenant\ClassTeacherAssignment;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
+use App\Models\Tenant\StaffMember;
 use App\Models\Tenant\StudentEnrollment;
 use App\Support\ClassAgeRule;
 use Illuminate\Contracts\View\View;
@@ -94,6 +96,16 @@ class SchoolClassController extends Controller
 
         $frequency = app(AttendanceSummary::class)->forStudents($class, $enrollments->pluck('student_id'), today());
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
+        $assignments = ClassTeacherAssignment::query()
+            ->where('school_class_id', $class->id)
+            ->with('staffMember')
+            ->orderByDesc('starts_on')
+            ->get();
+        $availableTeachers = $canManage
+            ? StaffMember::query()->where('school_id', $school->id)
+                ->where('status', 'active')->where('role', 'teacher')
+                ->orderBy('full_name')->get()
+            : collect();
         $recentDates = AttendanceSession::query()
             ->where('school_class_id', $class->id)
             ->whereDate('attendance_date', '<=', today())
@@ -114,7 +126,7 @@ class SchoolClassController extends Controller
             return [
                 'student' => $student,
                 'age' => $age,
-                'needsAgeReview' => $age !== null && $allowedAges !== null && ! in_array($age, $allowedAges, true),
+                'needsAgeReview' => $age !== null && $allowedAges !== null && in_array($age, $allowedAges, true) === false,
                 'primaryContact' => $student?->primaryGuardianLink?->guardian,
                 'frequency' => $frequency[$student->id] ?? ['percentage' => null, 'sessions' => 0, 'present' => 0, 'alert' => null],
             ];
@@ -131,7 +143,7 @@ class SchoolClassController extends Controller
         return view('classes.show', compact(
             'municipality', 'school', 'class', 'roster', 'cutoff',
             'occupied', 'capacity', 'occupancyPercentage', 'visualPercentage', 'aboveCapacity',
-            'canManage', 'todaySessionExists', 'previousDates',
+            'canManage', 'todaySessionExists', 'previousDates', 'assignments', 'availableTeachers',
         ));
     }
 
@@ -225,7 +237,7 @@ class SchoolClassController extends Controller
                     'capacity' => $data['capacity'] ?? null,
                 ]);
 
-                if (! $class->isDirty()) {
+                if ($class->isDirty() === false) {
                     return false;
                 }
 
@@ -300,7 +312,7 @@ class SchoolClassController extends Controller
     {
         $year = SchoolYear::query()->lockForUpdate()->find($yearId);
 
-        if ($year === null || (! in_array($year->status, ['active', 'planned'], true) && $yearId !== $currentYearId)) {
+        if ($year === null || (in_array($year->status, ['active', 'planned'], true) === false && $yearId !== $currentYearId)) {
             throw ValidationException::withMessages([
                 'school_year_id' => 'Escolha um ano letivo em andamento ou planejado.',
             ]);

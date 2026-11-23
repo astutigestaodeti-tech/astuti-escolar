@@ -8,10 +8,12 @@ use App\Models\Platform\PlatformAuditLog;
 use App\Models\Tenant\AttendanceMark;
 use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
+use App\Models\Tenant\ClassTeacherAssignment;
 use App\Models\Tenant\Guardian;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
+use App\Models\Tenant\StaffMember;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentExit;
@@ -30,6 +32,8 @@ class AuditTrail
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
         AttendanceSession::class => ['id', 'school_class_id', 'attendance_date', 'recorded_by', 'recorded_at', 'last_corrected_by', 'last_corrected_at', 'correction_reason', 'present_count', 'absent_count', 'justified_count'],
+        ClassTeacherAssignment::class => ['id', 'school_class_id', 'staff_member_id', 'subject', 'is_main', 'starts_on', 'ends_on'],
+        StaffMember::class => ['id', 'school_id', 'full_name', 'registration_number', 'role', 'institutional_email', 'phone', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
         AttendanceMark::class => ['id', 'attendance_session_id', 'student_id', 'status'],
         Guardian::class => ['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'photo_updated_at', 'rg_number', 'rg_state'],
         StudentGuardian::class => ['id', 'student_id', 'guardian_id', 'relationship', 'is_legal_guardian', 'is_primary_contact', 'motivo'],
@@ -61,11 +65,11 @@ class AuditTrail
         ?string $userId = null,
         ?string $role = null,
     ): void {
-        if (! in_array($connection, ['tenant', 'platform'], true)) {
+        if (in_array($connection, ['tenant', 'platform'], true) === false) {
             throw new InvalidArgumentException('Destino de auditoria não permitido.');
         }
 
-        if ($connection === 'tenant' && ! app(TenantContext::class)->hasActive()) {
+        if ($connection === 'tenant' && app(TenantContext::class)->hasActive() === false) {
             throw new InvalidArgumentException('Auditoria municipal exige contexto ativo.');
         }
 
@@ -127,7 +131,7 @@ class AuditTrail
                 continue;
             }
             // Dados sensíveis: a auditoria registra que mudou, sem guardar o valor.
-            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|correction_reason|cancel_reason|blood_type|alert_text|care_instructions|rg_number|birth_certificate)\z/iu', (string) $key)) {
+            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|institutional_email|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|correction_reason|cancel_reason|blood_type|alert_text|care_instructions|rg_number|birth_certificate)\z/iu', (string) $key)) {
                 $values[$key] = '[REDACTED]';
             } elseif (is_array($value)) {
                 $values[$key] = '[REDACTED]';
