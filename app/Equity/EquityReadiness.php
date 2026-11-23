@@ -79,95 +79,16 @@ class EquityReadiness
             ->select('id', 'school_id', 'name', 'stage')
             ->orderBy('name')->get();
 
-p\Equity;
-
-use App\Models\Tenant\School;
-use App\Models\Tenant\SchoolClass;
-use App\Models\Tenant\SchoolYear;
-use App\Models\Tenant\StudentEnrollment;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-
-/**
- * Consulta em lote, uma só passagem pelas matrículas da rede. Nenhuma
- * informação individual de raça, sexo ou zona sai desta classe.
- *
- * Os indicadores são sinais escolares, não o cálculo oficial do VAAR/Inep.
- */
-class EquityReadiness
-{
-    public const MIN_GROUP = 5;
-
-    public const DIMENSIONS = [
-        'raca' => 'Cor/raça',
-        'sexo' => 'Sexo',
-        'zona' => 'Zona de residência',
-    ];
-
-    private const RACE_LABELS = [
-        'preta' => 'Preta',
-        'parda' => 'Parda',
-        'indigena' => 'Indígena',
-        'branca' => 'Branca',
-        'amarela' => 'Amarela',
-        'nao_declarada' => 'Não declarada',
-        'sem_informacao' => 'Não informada',
-    ];
-
-    private const SEX_LABELS = [
-        'female' => 'Feminino',
-        'male' => 'Masculino',
-        'sem_informacao' => 'Não informado',
-    ];
-
-    private const ZONE_LABELS = [
-        'urban' => 'Urbana',
-        'rural' => 'Rural',
-        'sem_informacao' => 'Não informada',
-    ];
-
-    public const CONDITIONS = [
-        1 => 'Seleção de gestores por critérios técnicos de mérito e desempenho',
-        2 => 'Participação de pelo menos 80% dos estudantes avaliados no Saeb',
-        3 => 'Redução das desigualdades socioeconômicas e raciais aferidas no Saeb',
-        4 => 'Regime de colaboração e ICMS Educacional conforme legislação estadual',
-        5 => 'Referenciais curriculares alinhados à BNCC, aprovados pelo sistema de ensino',
-    ];
-
-    public const STATUSES = [
-        'pendente' => 'Pendente',
-        'a_comprovar' => 'A comprovar',
-        'cumprida' => 'Cumprida (registro interno)',
-    ];
-
-    /**
-     * @return array{summary: array, groups: array, schools: Collection, classes: Collection, schoolSummaries: Collection, classSummaries: Collection, saeb: Collection, year: SchoolYear}
-     */
-    public function forYear(SchoolYear $year, ?string $schoolId = null, ?string $classId = null): array
-    {
-        $schools = School::query()
-            ->where('status', 'active')->whereNull('deleted_at')
-            ->when($schoolId, fn ($q, string $id) => $q->where('id', $id))
-            ->select('id', 'name')->orderBy('name')->get();
-
-        $classes = SchoolClass::query()
-            ->where('school_year_id', $year->id)->whereNull('deleted_at')
-            ->whereIn('school_id', $schools->pluck('id'))
-            ->when($classId, fn ($q, string $id) => $q->where('id', $id))
-            ->select('id', 'school_id', 'name', 'stage')
-            ->orderBy('name')->get();
-
         $rows = StudentEnrollment::query()
-            ->join('students as s', 's.id', '=', 'e.student_id')
-            ->join('school_classes as c', 'c.id', '=', 'e.school_class_id')
-            ->where('e.school_year_id', $year->id)
-            ->whereIn('e.status', ['active', 'completed'])
-            ->whereIn('e.school_id', $schools->pluck('id'))
-            ->whereIn('e.school_class_id', $classes->pluck('id'))
+            ->join('students as s', 's.id', '=', 'student_enrollments.student_id')
+            ->join('school_classes as c', 'c.id', '=', 'student_enrollments.school_class_id')
+            ->where('student_enrollments.school_year_id', $year->id)
+            ->whereIn('student_enrollments.status', ['active', 'completed'])
+            ->whereIn('student_enrollments.school_id', $schools->pluck('id'))
+            ->whereIn('student_enrollments.school_class_id', $classes->pluck('id'))
             ->whereNull('s.deleted_at')->whereNull('c.deleted_at')
             ->select([
-                'e.id as enrollment_id', 'e.student_id', 'e.school_id', 'e.school_class_id', 'e.status',
+                'student_enrollments.id as enrollment_id', 'student_enrollments.student_id', 'student_enrollments.school_id', 'student_enrollments.school_class_id', 'student_enrollments.status',
                 's.full_name', 's.race_color', 's.sex', 's.residence_zone',
             ])->get();
 
