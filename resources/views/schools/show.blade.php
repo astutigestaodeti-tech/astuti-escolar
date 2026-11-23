@@ -56,6 +56,15 @@
             </section>
         @endcan
 
+        @can('manageStudents', [$school, $municipality])
+            <section class="folha cartao" aria-labelledby="titulo-integral-escola">
+                <span class="acao-icone"><x-icon name="turmas" /></span>
+                <h2 id="titulo-integral-escola">Tempo integral</h2>
+                <p>Veja as matrículas integrais, a jornada das turmas e a evolução desta unidade.</p>
+                <a class="botao secundario" href="{{ route('integral.school', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar tempo integral</a>
+            </section>
+        @endcan
+
         <section class="folha cartao" aria-labelledby="titulo-calendario">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-calendario">Calendário escolar</h2>

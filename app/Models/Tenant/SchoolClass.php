@@ -14,8 +14,13 @@ class SchoolClass extends TenantModel
     public $incrementing = false;
 
     protected $fillable = [
-        'id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'capacity', 'status',
+        'id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'daily_hours', 'capacity', 'status',
     ];
+
+    protected function casts(): array
+    {
+        return ['daily_hours' => 'decimal:1'];
+    }
 
     public function school(): BelongsTo
     {

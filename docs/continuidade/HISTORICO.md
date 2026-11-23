@@ -702,3 +702,14 @@ Os números vêm de uma consulta PostgreSQL agregada para todas as matrículas a
 **Condicionalidades:** cadastro dos incisos I-V, responsável, status e PDF institucional armazenado privadamente, edição exclusiva da gestão municipal com 2FA recente e auditoria sem conteúdo da evidência. Direção vê apenas a escola vinculada. O painel não substitui a comprovação pelo MEC e Inep.
 
 **Qualidade:** testes fictícios e telas de rede/escola/turma/direção incluídos na conferência de margens, pendentes do CI e revisão do Claude antes de merge. Sem deploy.
+
+
+## 23/11/2026 - Tempo integral, metas e Fundeb (issue #115, proposta)
+
+**Base e migration:** feature/tempo-integral-115 a partir do main d9487a9; tenant 2026_11_23_000040_create_full_time_education.php. Jornada decimal em school_classes; metas por etapa/ano, receita anual e aplicações em centavos com PDF privado.
+
+**Regra:** integral quando jornada informada >= 7,0 horas; sem jornada mantém inferência pelo turno. A lista alerta divergências entre turno e jornada. Conferência do Censo passa a usar as horas informadas. O painel conta matrículas integrais atuais e compara com o cadastro do ano anterior, com aviso explícito de que não constitui comprovação de novas vagas do programa.
+
+**Financeiro:** gestão municipal registra receita do ano, mínimo de 4%, aplicações e documentos PDF privados; auditoria por whitelist e 2FA recente. Direção e secretaria só consultam escola própria; professor sem acesso ao painel. Nova migração não modifica as anteriores.
+
+**Qualidade:** testes fictícios para limites de jornada, metas, 4%, Censo, auditoria, permissões e comprovantes. Novas telas integradas ao AllSchoolPagesOpenTest. Pint/CI e margens aguardam revisão antes de merge, sem deploy.

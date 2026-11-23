@@ -15,6 +15,9 @@ use App\Models\Tenant\ClassYearClosure;
 use App\Models\Tenant\CurricularComponent;
 use App\Models\Tenant\GradeEntry;
 use App\Models\Tenant\Guardian;
+use App\Models\Tenant\IntegralFundebExpense;
+use App\Models\Tenant\IntegralFundebFinance;
+use App\Models\Tenant\IntegralPactTarget;
 use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCalendarDay;
@@ -43,6 +46,9 @@ class AuditTrail
 {
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
+        IntegralFundebExpense::class => ['id', 'school_year_id', 'description', 'amount_cents', 'created_by', 'has_evidence'],
+        IntegralFundebFinance::class => ['id', 'school_year_id', 'revenue_cents', 'updated_by'],
+        IntegralPactTarget::class => ['id', 'school_year_id', 'stage', 'target_enrollments', 'updated_by'],
         VaarCondition::class => ['id', 'reference_year', 'condition_number', 'status', 'responsible', 'updated_by', 'has_evidence'],
         CensusParameter::class => ['id', 'reference_year', 'vaaf_base', 'source_note', 'updated_by'],
         ClassYearClosure::class => ['school_class_id', 'closed_at', 'closed_by', 'close_reason', 'reopened_at', 'reopened_by', 'reopen_reason'],
@@ -67,7 +73,7 @@ class AuditTrail
         SchoolCalendarDay::class => ['id', 'school_year_id', 'school_id', 'date', 'kind', 'created_at', 'updated_at'],
         School::class => ['id', 'name', 'inep_code', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at', 'latitude', 'longitude', 'geo_source', 'geo_updated_at'],
         SchoolYear::class => ['id', 'year', 'start_date', 'end_date', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
-        SchoolClass::class => ['id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'capacity', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
+        SchoolClass::class => ['id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'daily_hours', 'capacity', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
         Student::class => ['id', 'full_name', 'birth_date', 'ra', 'address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state', 'postal_code', 'residence_zone', 'social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at', 'photo_updated_at', 'rg_number', 'rg_issuer', 'rg_state', 'rg_issued_at', 'birth_certificate', 'latitude', 'longitude', 'geo_source', 'geo_updated_at'],
         StudentEnrollment::class => ['id', 'student_id', 'school_id', 'school_year_id', 'school_class_id', 'status', 'started_at', 'ended_at', 'destination_note', 'transport_status', 'transport_route', 'transport_stop', 'transport_adapted_vehicle', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
         WaitlistRequest::class => ['id', 'status', 'stage', 'intake_year', 'requested_at', 'cpf', 'guardian_phone', 'priority_criteria', 'status_reason', 'deleted_at', 'student_id', 'enrollment_id', 'school_id', 'school_class_id'],

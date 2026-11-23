@@ -30,6 +30,7 @@
     $iniciaisUsuario = mb_strtoupper(collect(preg_split('/\s+/u', trim((string) ($usuario?->name ?? ''))) ?: [])->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
     $painelAtivo = request()->routeIs('network.panel.*');
     $censoAtivo = request()->routeIs('census.readiness.*');
+    $integralAtivo = request()->routeIs('integral.*');
     $equidadeAtiva = request()->routeIs('equity.vaar.*');
     $listaEsperaAtiva = request()->routeIs('waitlist.*');
     $escolasAtivo = request()->routeIs('schools.*') || request()->routeIs('school.classes.*') || request()->routeIs('school.students.*') || request()->routeIs('school.absences.*') || request()->routeIs('school.pendencies.*') || request()->routeIs('school.transport.*');
@@ -41,7 +42,9 @@
         'waitlist.create', 'waitlist.show' => route('waitlist.index', $parametrosMunicipio),
         'waitlist.enroll.form' => route('waitlist.show', [...$parametrosMunicipio, 'pedido' => request()->route('pedido')]),
         'network.panel.index' => route('schools.index', $parametrosMunicipio),
-        'census.readiness.index', 'equity.vaar.index' => route('network.panel.index', $parametrosMunicipio),
+        'census.readiness.index', 'equity.vaar.index', 'integral.index' => route('network.panel.index', $parametrosMunicipio),
+        'integral.school', 'integral.hours.update' => route('schools.show', $parametrosEscola),
+        'integral.target', 'integral.revenue', 'integral.expense.store', 'integral.expense.evidence' => route('integral.index', $parametrosMunicipio),
         'equity.vaar.school' => route('schools.show', $parametrosEscola),
         'equity.vaar.condition', 'equity.vaar.evidence' => route('equity.vaar.index', $parametrosMunicipio),
         'academic.components.index', 'academic.periods.index' => route('schools.index', $parametrosMunicipio),
@@ -97,6 +100,9 @@
                 </a>
                 <a class="menu-item {{ $equidadeAtiva ? 'ativo' : '' }}" href="{{ route('equity.vaar.index', $parametrosMunicipio) }}" @if ($equidadeAtiva) aria-current="page" @endif>
                     <x-icon name="indicadores" /><span>Equidade e VAAR</span>
+                </a>
+                <a class="menu-item {{ $integralAtivo ? 'ativo' : '' }}" href="{{ route('integral.index', $parametrosMunicipio) }}" @if ($integralAtivo) aria-current="page" @endif>
+                    <x-icon name="turmas" /><span>Tempo integral</span>
                 </a>
             @endcan
             <a class="menu-item {{ $escolasAtivo ? 'ativo' : '' }}" href="{{ route('schools.index', ['municipio' => $municipality->slug]) }}" @if ($escolasAtivo) aria-current="page" @endif>
