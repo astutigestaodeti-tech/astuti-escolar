@@ -30,7 +30,7 @@ class EnrollmentDeclarationTest extends TwoMunicipalityTestCase
         [$this->studentId, $this->enrollmentId] = $this->inMunicipality(function (): array {
             $year = SchoolYear::query()->create(['id' => (string) Str::uuid(), 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-18', 'status' => 'active']);
             $class = SchoolClass::query()->create(['id' => (string) Str::uuid(), 'school_id' => self::ESCOLA_A1, 'school_year_id' => $year->id, 'name' => '3º Ano B', 'stage' => 'Ensino Fundamental', 'modality' => 'Regular', 'shift' => 'Manhã', 'status' => 'active']);
-            $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'Ana Clara Souza', 'ra' => '123456789-1/SP', 'cpf' => '12345678909', 'birth_date' => '2018-05-16']);
+            $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'Ana Clara Souza', 'ra' => '123456789-1/SP', 'cpf' => '52998224725', 'birth_date' => '2018-05-16']);
             $enrollment = StudentEnrollment::query()->create(['id' => (string) Str::uuid(), 'school_id' => self::ESCOLA_A1, 'student_id' => $student->id, 'school_year_id' => $year->id, 'school_class_id' => $class->id, 'status' => 'active']);
 
             return [$student->id, $enrollment->id];
@@ -104,7 +104,7 @@ class EnrollmentDeclarationTest extends TwoMunicipalityTestCase
             ->assertSee($document->verification_code)
             ->assertSee('<svg', false)
             ->assertSee('declaracao-imprimir.js')
-            ->assertDontSee('123456789-1/SP')->assertDontSee('12345678909')->assertDontSee('2018-05-16');
+            ->assertDontSee('123456789-1/SP')->assertDontSee('52998224725')->assertDontSee('2018-05-16');
     }
 
     public function test_impressao_e_verificacao_mantem_dados_da_data_de_emissao(): void
@@ -132,7 +132,7 @@ class EnrollmentDeclarationTest extends TwoMunicipalityTestCase
             ->assertSee('Ana C. S.')->assertSee('Unidade A')->assertSee('2027')
             ->assertSee('noindex')->assertHeader('X-Robots-Tag', 'noindex, nofollow')
             ->assertDontSee('Ana Clara Souza')->assertDontSee('123456789-1/SP')
-            ->assertDontSee('12345678909')->assertDontSee('16/05/2018');
+            ->assertDontSee('52998224725')->assertDontSee('16/05/2018');
 
         $this->get('/verificar/ABCDEFGHJK')->assertNotFound()->assertSee('Documento não encontrado');
     }
