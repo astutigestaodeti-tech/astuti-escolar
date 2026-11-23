@@ -73,6 +73,46 @@ class GeoLocationTest extends TwoMunicipalityTestCase
         $this->assertNull($this->inMunicipality(fn () => Student::query()->findOrFail($this->student)->latitude));
     }
 
+    public function test_coordenadas_coladas_do_google_maps_vao_direto_para_o_ponto_sem_procurar_endereco(): void
+    {
+        Http::fake();
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        $this->get($this->base().'/localizacao?procurar='.rawurlencode('-23.312345, -46.123456'))
+            ->assertOk()
+            ->assertSee('data-lat="-23.312345"', false)
+            ->assertSee('data-lon="-46.123456"', false)
+            ->assertSee('value="mapa"', false)
+            ->assertSee('Coordenadas reconhecidas');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_link_curto_do_google_maps_e_seguido_so_ate_o_google(): void
+    {
+        Http::fake([
+            'maps.app.goo.gl/*' => Http::response('', 302, ['Location' => 'https://www.google.com/maps/place/Escola/@-23.40,-46.20,17z/data=!3d-23.312345!4d-46.123456']),
+        ]);
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        $this->get($this->base().'/localizacao?procurar='.rawurlencode('https://maps.app.goo.gl/AbCdEf123'))
+            ->assertOk()
+            ->assertSee('data-lat="-23.312345"', false)
+            ->assertSee('data-lon="-46.123456"', false);
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_link_que_nao_traz_o_ponto_explica_como_copiar_as_coordenadas(): void
+    {
+        Http::fake(['maps.app.goo.gl/*' => Http::response('', 404)]);
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        $this->get($this->base().'/localizacao?procurar='.rawurlencode('https://maps.app.goo.gl/Quebrado'))
+            ->assertOk()
+            ->assertSee('Não consegui ler o ponto deste link do Google Maps');
+    }
+
     public function test_salvar_mostra_distancia_e_aviso_do_transporte_com_auditoria_mascarada(): void
     {
         $this->user('school_secretary', [self::ESCOLA_A1]);
