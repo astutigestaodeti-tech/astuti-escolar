@@ -226,6 +226,7 @@ class ClassYearEndController extends Controller
         if ($request->user()?->status !== 'active') {
             return false;
         }
+
         // Gestão municipal não confirma resultados de crianças. Somente os
         // vínculos escolares locais podem tomar a decisão pedagógica.
         return DB::connection('platform')->table('memberships as m')

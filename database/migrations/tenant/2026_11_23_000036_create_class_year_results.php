@@ -35,7 +35,7 @@ return new class extends Migration
 
         $db = DB::connection('tenant');
         $db->statement("ALTER TABLE student_final_results ADD CONSTRAINT student_final_results_choice_check CHECK (result IN ('aprovado', 'retido', 'cursando') AND suggested_result IN ('aprovado', 'retido', 'cursando'))");
-        $db->statement("ALTER TABLE student_final_results ADD CONSTRAINT student_final_results_reason_check CHECK ((result = suggested_result AND override_reason IS NULL) OR (result <> suggested_result AND length(btrim(override_reason)) >= 10))");
+        $db->statement('ALTER TABLE student_final_results ADD CONSTRAINT student_final_results_reason_check CHECK ((result = suggested_result AND override_reason IS NULL) OR (result <> suggested_result AND length(btrim(override_reason)) >= 10))');
         $db->statement('ALTER TABLE class_year_closures ADD CONSTRAINT class_year_closures_close_check CHECK ((closed_at IS NULL AND closed_by IS NULL AND close_reason IS NULL) OR (closed_at IS NOT NULL AND closed_by IS NOT NULL AND close_reason IS NOT NULL))');
         $db->statement('ALTER TABLE class_year_closures ADD CONSTRAINT class_year_closures_reopen_check CHECK ((reopened_at IS NULL AND reopened_by IS NULL AND reopen_reason IS NULL) OR (reopened_at IS NOT NULL AND reopened_by IS NOT NULL AND reopen_reason IS NOT NULL))');
 

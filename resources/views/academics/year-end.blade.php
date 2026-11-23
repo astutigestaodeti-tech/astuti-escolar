@@ -74,7 +74,7 @@
             <table class="tabela fechamento-tabela">
                 <thead><tr>
                     <th scope="col">Aluno</th>
-                    <th scope="col">Matrícula</th>
+                    <th scope="col">Situação da matrícula</th>
                     <th scope="col">Médias por componente</th>
                     <th scope="col">Frequência</th>
                     <th scope="col">Sugestão e justificativa</th>
@@ -89,7 +89,7 @@
                         @endphp
                         <tr>
                             <th scope="row">{{ $enrollment->student->full_name }}</th>
-                            <td class="numero">{{ $class->schoolYear->year }}</td>
+                            <td class="fechamento-situacao">{{ $row['exitLabel'] ?? 'Ativa' }}</td>
                             <td>
                                 <ul class="fechamento-medias">
                                     @foreach ($data['components'] as $component)

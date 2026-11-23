@@ -15,7 +15,7 @@
 .pagina-fechamento-ano .fechamento-tabela small{display:block;color:var(--tinta-2);font-size:12px;margin-top:5px}
 .pagina-fechamento-ano .fechamento-tabela .fechamento-confirmar{display:flex;flex-direction:column;gap:10px;min-width:200px}
 .pagina-fechamento-ano .fechamento-confirmar label{display:flex;flex-direction:column;gap:4px;font-weight:600}
-.pagina-fechamento-ano .fechamento-confirmar select,.pagina-fechamento-ano .fechamento-confirmar textarea{max-width:100%;border:1px solid var(--linha);border-radius:8px;padding:8px}
+.pagina-fechamento-ano .fechamento-confirmar select,.pagina-fechamento-ano .fechamento-confirmar textarea{max-width:100%;border:1px solid var(--linha);border-radius:8px;padding:8px;font:inherit;font-weight:400;resize:vertical}
 .pagina-fechamento-ano .fechamento-acoes{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
 .pagina-fechamento-ano .fechamento-acoes label{display:flex;flex-direction:column;gap:7px;width:min(100%,620px);font-weight:700}
 .pagina-fechamento-ano .fechamento-acoes textarea{width:100%}
