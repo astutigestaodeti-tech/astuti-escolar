@@ -1,0 +1,37 @@
+Astuti Gestão Escolar
+Copyright (c) 2026 Jefferson Astuti Magalhães de Barros (Astuti Gestão de TI).
+Todos os direitos reservados.
+
+LICENÇA PROPRIETÁRIA
+
+Este software, incluindo o código-fonte, a documentação, o histórico de
+versões, as telas, os textos e os demais materiais deste repositório, é
+protegido pela Lei nº 9.609/1998 (Lei do Software) e pela Lei nº 9.610/1998
+(Lei de Direitos Autorais).
+
+A disponibilização deste repositório para consulta pública NÃO concede
+nenhuma licença. Sem autorização prévia e por escrito do titular, é proibido:
+
+  1. copiar, reproduzir ou baixar o código para uso;
+  2. modificar, adaptar, traduzir ou criar obras derivadas;
+  3. distribuir, publicar, sublicenciar, vender, alugar ou ceder;
+  4. instalar, executar, hospedar ou oferecer o software, no todo ou em
+     parte, a terceiros, inclusive a órgãos públicos ou em licitações;
+  5. remover ou alterar este aviso.
+
+O uso por Prefeituras e demais clientes depende de contrato firmado com o
+titular, nos termos e limites nele previstos.
+
+Componentes de terceiros incluídos neste repositório continuam regidos pelas
+próprias licenças, indicadas nos respectivos arquivos:
+
+  - app/Support/Qr/              (MIT, Kazuhiko Arase)
+  - public/vendor/leaflet/       (BSD 2-Clause, Leaflet)
+  - public/fonts/                (SIL Open Font License 1.1)
+  - dependências instaladas pelo Composer e pelo npm, conforme a licença de
+    cada pacote.
+
+Dados utilizados em testes e demonstrações são fictícios.
+
+Contato para licenciamento: pelo e-mail informado no perfil do titular no
+GitHub.
