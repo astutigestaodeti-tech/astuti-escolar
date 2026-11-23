@@ -47,7 +47,7 @@ test('CSS de impressao usa A4 paisagem e oculta apenas elementos da tela de rela
     assert.match(styles, /\.relatorio-mensal-tabela thead\s*\{display:table-header-group\}/);
     assert.match(styles, /\.relatorio-mensal-acoes\s*\{display:none\}/);
     assert.match(view, /@section\('body-class', 'impressao-frequencia'\)/);
-    assert.match(view, /Assinatura do professor/);
+    assert.match(view, /Assinatura do\(a\) professor\(a\)/);
     assert.match(view, /Assinatura da direção/);
 });
 

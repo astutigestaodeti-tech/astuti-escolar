@@ -154,7 +154,7 @@ class SchoolMonthlyAttendanceReportTest extends TwoMunicipalityTestCase
             ->assertSee('Total de alunos por dia')
             ->assertSee('Imprimir')
             ->assertSee('monthly-attendance-print.js')
-            ->assertSee('Assinatura do professor')
+            ->assertSee('Assinatura do(a) professor(a)')
             ->assertSee('Assinatura da direção');
     }
 
@@ -180,7 +180,7 @@ class SchoolMonthlyAttendanceReportTest extends TwoMunicipalityTestCase
 
         $this->get($this->url().'?mes=2027-04')->assertOk()
             ->assertSee('Transferência Fictícia')
-            ->assertSee('Transferido em 10/04/2027')
+            ->assertSee('Transferência em 10/04/2027')
             ->assertSee('0%')
             ->assertSee('relatorio-fora-vinculo')
             ->assertSee('Total de alunos por dia');
@@ -194,6 +194,20 @@ class SchoolMonthlyAttendanceReportTest extends TwoMunicipalityTestCase
             $result['sessions']->all(),
         ));
         $this->assertSame(['present' => 0, 'absent' => 1, 'justified' => 0], $row['totals']);
+    }
+
+    public function test_abandono_e_saida_da_rede_no_mes_ficam_no_diario_e_matricula_cancelada_nao(): void
+    {
+        $abandono = $this->addStudent('Abandono Fictício', 'abandoned', '2027-02-01', '2027-04-08');
+        $rede = $this->addStudent('Saída da Rede Fictícia', 'left_network', '2027-02-01', '2027-04-08');
+        $this->addStudent('Cancelamento Fictício', 'cancelled', '2027-02-01', '2027-04-08');
+        $this->recordAttendance('2027-04-07', [$abandono => 'absent', $rede => 'present']);
+        $this->login('school_secretary');
+
+        $this->get($this->url().'?mes=2027-04')->assertOk()
+            ->assertSee('Abandono Fictício')->assertSee('Abandono em 08/04/2027')
+            ->assertSee('Saída da Rede Fictícia')->assertSee('Transferência para fora da rede em 08/04/2027')
+            ->assertDontSee('Cancelamento Fictício');
     }
 
     private function reportClass(): SchoolClass

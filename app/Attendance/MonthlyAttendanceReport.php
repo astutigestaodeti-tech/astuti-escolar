@@ -13,6 +13,15 @@ use Illuminate\Support\Str;
 
 class MonthlyAttendanceReport
 {
+    /** Matrícula encerrada no mês: aparece no diário até a data, com o motivo. */
+    private const ENDINGS = [
+        'transferred' => 'Transferência',
+        'left_network' => 'Transferência para fora da rede',
+        'abandoned' => 'Abandono',
+        'completed' => 'Conclusão',
+        'deceased' => 'Falecimento',
+    ];
+
     private const SYMBOLS = [
         'present' => '•',
         'absent' => 'F',
@@ -37,14 +46,14 @@ class MonthlyAttendanceReport
             ->orderBy('attendance_date')
             ->get(['id', 'attendance_date']);
 
-        // Incluir quem estava matriculado no mês, inclusive quem foi transferido.
+        // Incluir quem esteve na turma no mês, inclusive matrícula encerrada; só a cancelada fica fora.
         // A junção traz o nome sem provocar uma consulta por aluno.
         $enrollments = StudentEnrollment::query()
             ->join('students as aluno', 'aluno.id', '=', 'student_enrollments.student_id')
             ->where('student_enrollments.school_id', $class->school_id)
             ->where('student_enrollments.school_year_id', $class->school_year_id)
             ->where('student_enrollments.school_class_id', $class->id)
-            ->whereIn('student_enrollments.status', ['active', 'transferred', 'ended'])
+            ->whereIn('student_enrollments.status', ['active', ...array_keys(self::ENDINGS)])
             ->whereNull('aluno.deleted_at')
             ->where(function (Builder $query) use ($until): void {
                 $query->whereNull('student_enrollments.started_at')
@@ -98,8 +107,9 @@ class MonthlyAttendanceReport
                 }
 
                 $recorded = array_sum($totals);
-                $transfer = $links->first(fn (StudentEnrollment $link): bool => $link->status === 'transferred'
-                    && $link->ended_at !== null && $link->ended_at->format('Y-m') === $month->format('Y-m'));
+                $ending = $links->contains(fn (StudentEnrollment $link): bool => $link->status === 'active') ? null
+                    : $links->first(fn (StudentEnrollment $link): bool => isset(self::ENDINGS[$link->status])
+                        && $link->ended_at !== null && $link->ended_at->format('Y-m') === $month->format('Y-m'));
 
                 return [
                     'id' => $studentId,
@@ -108,7 +118,8 @@ class MonthlyAttendanceReport
                     'outside' => $outside,
                     'totals' => $totals,
                     'percentage' => $recorded > 0 ? (int) round($totals['present'] * 100 / $recorded) : null,
-                    'transferredAt' => $transfer?->ended_at,
+                    'endedAt' => $ending?->ended_at,
+                    'endedLabel' => $ending === null ? null : self::ENDINGS[$ending->status],
                 ];
             })
             ->sortBy(fn (array $student): string => Str::lower(Str::ascii($student['name'])).'|'.$student['id'])

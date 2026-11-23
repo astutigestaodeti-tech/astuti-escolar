@@ -78,8 +78,8 @@
                             <tr>
                                 <th scope="row" class="relatorio-mensal-nome">
                                     {{ $student['name'] }}
-                                    @if ($student['transferredAt'])
-                                        <small>Transferido em {{ $student['transferredAt']->format('d/m/Y') }}</small>
+                                    @if ($student['endedAt'])
+                                        <small>{{ $student['endedLabel'] }} em {{ $student['endedAt']->format('d/m/Y') }}</small>
                                     @endif
                                 </th>
                                 @foreach ($sessions as $session)
@@ -107,7 +107,7 @@
         @endif
 
         <div class="relatorio-mensal-assinaturas">
-            <div><span>Assinatura do professor</span></div>
+            <div><span>Assinatura do(a) professor(a)</span></div>
             <div><span>Assinatura da direção</span></div>
         </div>
     </div>
