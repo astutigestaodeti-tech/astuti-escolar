@@ -42,7 +42,7 @@ class WaitlistRequest extends TenantModel
         'address_complement', 'address_district', 'address_city', 'address_state',
         'intake_year', 'cutoff_date', 'stage', 'desired_shift',
         'priority_criteria', 'priority_count', 'status', 'requested_at', 'created_by',
-        'deleted_by', 'deletion_reason',
+        'deleted_by', 'deletion_reason', 'student_id', 'enrollment_id',
     ];
 
     protected function casts(): array

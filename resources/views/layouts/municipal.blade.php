@@ -37,6 +37,7 @@
         'schools.index' => route('home'),
         'waitlist.index' => route('schools.index', $parametrosMunicipio),
         'waitlist.create', 'waitlist.show' => route('waitlist.index', $parametrosMunicipio),
+        'waitlist.enroll.form' => route('waitlist.show', [...$parametrosMunicipio, 'pedido' => request()->route('pedido')]),
         'network.panel.index' => route('schools.index', $parametrosMunicipio),
         'schools.show' => route('schools.index', $parametrosMunicipio),
         'school.staff.index', 'school.staff.create', 'school.staff.store', 'school.staff.edit', 'school.staff.update', 'school.staff.remove.form', 'school.staff.destroy',
