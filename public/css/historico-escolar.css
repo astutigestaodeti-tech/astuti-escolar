@@ -55,3 +55,6 @@
     .pagina-historico-emitido .historico-tabela tr{break-inside:avoid;page-break-inside:avoid}
     .pagina-historico-emitido .historico-identificacao{gap:8px}
 }
+/* Documento emitido: o cabeçalho não encosta na borda do cartão. */
+.historico-papel > .folha-corpo{padding-top:var(--recuo-folha)}
+.historico-papel .historico-rolagem + *{margin-top:12px}

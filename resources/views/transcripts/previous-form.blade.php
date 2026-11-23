@@ -15,7 +15,7 @@
             <input class="entrada" type="number" min="1900" max="2200" name="year" id="historico-ano-{{ $suffix }}" value="{{ $editing ? $record->school_year : old('year') }}" required>
         </label>
         <label for="historico-etapa-{{ $suffix }}">Etapa ou ano escolar *
-            <input class="entrada" type="text" name="stage" id="historico-etapa-{{ $suffix }}" maxlength="120" value="{{ $editing ? $record->school_stage : old('stage') }}" required placeholder="Ex.: 2º ano do Ensino Fundamental">
+            <input class="entrada" type="text" name="stage" id="historico-etapa-{{ $suffix }}" maxlength="120" value="{{ $editing ? $record->school_stage : old('stage') }}" required placeholder="Ex.: 2º ano">
         </label>
         <label for="historico-escola-{{ $suffix }}">Escola *
             <input class="entrada" type="text" name="school" id="historico-escola-{{ $suffix }}" maxlength="180" value="{{ $editing ? $record->school_name : old('school') }}" required>
