@@ -30,6 +30,18 @@ O script:
 
 Ele não mexe em `.env`, senhas, firewall, SSH, Nginx nem no túnel.
 
+## Conferir o servidor
+
+Somente leitura, sem alterar nada, e com resultado que pode ser colado na issue:
+
+```bash
+cd /srv/astuti-escolar
+sudo bash scripts/operacao/vps/verificar-ambiente.sh   # OK / ATENCAO / FALHA por item
+sudo bash scripts/operacao/vps/diagnostico.sh          # o mesmo, com os detalhes
+```
+
+A lista completa, com os itens que dependem de conferência humana (backup externo, ensaio de restauração, chaves por equipamento), está em `vps-checklist-seguranca.md`. Soluções de instalação já testadas estão em `vps-problemas-e-solucoes.md`.
+
 ## Problemas já vistos
 
 - **HTTP 500 com `Permission denied` em `vendor/autoload.php`:** os arquivos foram criados com `umask 077`. Para segredos, use `(umask 077; comando)` só naquele comando e nunca deixe a umask restrita na sessão. O script de atualização reaplica as permissões.
