@@ -916,3 +916,8 @@ select.entrada{cursor:pointer}
 .verificacao-form{margin-top:20px;padding-top:16px;border-top:1px solid var(--pauta)}
 .verificacao-form-linha{display:flex;gap:10px;flex-wrap:wrap}
 .verificacao-form-linha .entrada{flex:1;min-width:180px;text-transform:uppercase;letter-spacing:.08em}
+
+/* Ficha do aluno: duas colunas independentes, sem buracos quando a lateral cresce. */
+.ficha-principal,.ficha-lateral{display:flex;flex-direction:column;gap:20px;min-width:0}
+.ficha-lateral .declaracoes-lista{margin-top:0}
+@media (max-width:960px){.ficha-lateral{order:2}}
