@@ -161,6 +161,16 @@
                 <a class="botao secundario" href="{{ route('school.students.report-card.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">Abrir boletim</a>
             </section>
         @endif
+        @if ($canManage && $enrollments->contains(fn ($e) => $e->schoolClass && str_contains(\Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii($e->schoolClass->stage)), 'fundamental')))
+            <section class="folha cartao" aria-labelledby="titulo-historico-escolar">
+                <div class="folha-corpo">
+                    <span class="acao-icone"><x-icon name="turmas" /></span>
+                    <h2 id="titulo-historico-escolar">Histórico escolar</h2>
+                    <p>Anos fechados da rede e anos anteriores. Emissão A4 com código verificável.</p>
+                    <a class="botao secundario" href="{{ route('school.students.transcripts.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">Consultar histórico escolar</a>
+                </div>
+            </section>
+        @endif
         <section class="folha cartao ficha-historico" aria-labelledby="titulo-vinculos">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-vinculos">Histórico de vínculos nesta escola</h2>

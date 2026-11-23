@@ -123,9 +123,19 @@ abstract class TwoMunicipalityTestCase extends TestCase
                     '--force' => true,
                 ]);
 
+                // Exclusivamente nos bancos descartaveis *_test: turmas fechadas
+                // protegem notas e resultados contra DELETE pelo trigger.
+                // Reabrir as linhas antes da limpeza, sem tocar na protecao da
+                // aplicacao nem em bancos reais.
+                if (Schema::connection('tenant')->hasTable('class_year_closures')) {
+                    DB::connection('tenant')->table('class_year_closures')
+                        ->whereNotNull('closed_at')
+                        ->update(['closed_at' => null, 'closed_by' => null, 'close_reason' => null]);
+                }
+
                 // Apagar primeiro os vinculos de teste, antes das FKs de
                 // escolas e anos, sem desativar a integridade referencial.
-                foreach (['student_final_results', 'grade_entries', 'class_year_closures', 'academic_periods', 'waitlist_status_changes', 'waitlist_preferences', 'waitlist_requests', 'attendance_marks', 'attendance_sessions', 'postal_code_cache', 'transport_import_receipts', 'student_import_receipts', 'issued_documents', 'student_enrollment_destinations', 'student_enrollments', 'student_exits', 'student_health_alerts', 'student_health_profiles', 'student_pickup_authorizations', 'student_guardians', 'guardians', 'students', 'class_teacher_assignments', 'staff_members', 'school_classes', 'school_calendar_days', 'school_years', 'schools', 'audit_logs'] as $table) {
+                foreach (['student_prior_school_years', 'student_final_results', 'grade_entries', 'class_year_closures', 'academic_periods', 'waitlist_status_changes', 'waitlist_preferences', 'waitlist_requests', 'attendance_marks', 'attendance_sessions', 'postal_code_cache', 'transport_import_receipts', 'student_import_receipts', 'issued_documents', 'student_enrollment_destinations', 'student_enrollments', 'student_exits', 'student_health_alerts', 'student_health_profiles', 'student_pickup_authorizations', 'student_guardians', 'guardians', 'students', 'class_teacher_assignments', 'staff_members', 'school_classes', 'school_calendar_days', 'school_years', 'schools', 'audit_logs'] as $table) {
                     if (Schema::connection('tenant')->hasTable($table)) {
                         if ($table === 'audit_logs') {
                             $this->limparAuditoriaDescartavel('tenant', 'audit_logs', 'audit_logs_block_truncate');

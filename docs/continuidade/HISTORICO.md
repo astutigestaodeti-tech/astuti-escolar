@@ -680,3 +680,14 @@ Os números vêm de uma consulta PostgreSQL agregada para todas as matrículas a
 **Em andamento.** Issue #83 (painel da rede para a Secretaria Municipal), PR #85 do ChatGPT, ainda sem revisão.
 
 **Próximo passo de infraestrutura.** Jefferson contratou uma VPS Locaweb (Debian 13, 4 GB, 2 vCPU) para desenvolvimento e homologação, substituindo o notebook. Dados do servidor ficam fora do repositório. Na VPS, instalar do zero (PHP 8.4, PostgreSQL 17, Nginx, Composer, Node, OCR) e recriar a base fictícia pelas migrações e pelo kit de Monte Sereno; não copiar bancos do notebook. Definir `APP_TIMEZONE`, `ASTUTI_MUNICIPALITY_DB_KEY` e os limites de envio (`upload_max_filesize` 12M, `post_max_size` 16M, `client_max_body_size` 16m), e não expor o sistema pelo IP sem HTTPS.
+
+
+## 23/11/2026 - Histórico escolar do Ensino Fundamental (issue #106, proposta para revisão)
+
+**Base técnica:** branch `feature/historico-escolar-106` partindo do main `f2869d7`; migration municipal `2026_11_23_000037_create_student_transcripts.php`. Escopo exclusivamente histórico escolar, sem alterações no banco platform ou na migration 000036.
+
+**Comportamento:** a prévia combina anos fechados da rede (dados de notas, frequência e resultado confirmado, nunca sugestão) com anos anteriores digitados uma vez por aluno e ano. Ano em curso não recebe resultado final. Sobreposição com a rede é avisada e prevalece o ano oficial. Edição e arquivamento de anos anteriores exigem segundo fator recente e auditoria.
+
+**Documento e LGPD:** emissão registra kind `school_transcript` em `issued_documents`, código aleatório e QR locais, snapshot JSONB protegido contra alteração por trigger e SHA-256 canônico. A página pública apresenta apenas tipo, escola, data e validade, sem nome ou dados acadêmicos. Impressão da via emitida lê exclusivamente o snapshot; revogação preserva a via. Professor não acessa, gestão municipal apenas consulta, direção e secretaria da unidade podem editar e emitir.
+
+**Conferências:** testes fictícios e três telas adicionadas ao `AllSchoolPagesOpenTest`. Não há Laravel/PostgreSQL descartável no ambiente de autoria; o CI e a checagem de margens de 1440 e 390 px ficam pendentes do Claude. Não houve merge, deploy nem alteração de bases reais.

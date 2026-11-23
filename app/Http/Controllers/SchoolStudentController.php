@@ -132,7 +132,7 @@ class SchoolStudentController extends Controller
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $canDeleteEnrollment = Gate::allows('deleteEnrollment', [$school, $municipality]);
-        $declarations = $canManage ? IssuedDocument::query()->where('school_id', $school->id)
+        $declarations = $canManage ? IssuedDocument::query()->where('kind', 'enrollment_declaration')->where('school_id', $school->id)
             ->where('student_id', $student->id)->orderByDesc('issued_at')->get() : collect();
 
         // Distância casa-escola em linha reta e pelas ruas, a pé, e aviso do
