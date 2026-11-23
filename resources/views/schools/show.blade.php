@@ -45,6 +45,17 @@
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar turmas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
 
+        @can('viewEquity', [$school, $municipality])
+            <section class="folha cartao" aria-labelledby="titulo-equidade-escola">
+                <div class="folha-corpo">
+                    <span class="acao-icone"><x-icon name="indicadores" /></span>
+                    <h2 id="titulo-equidade-escola">Equidade e VAAR</h2>
+                    <p>Indicadores agregados da escola e das turmas, com proteção de grupos pequenos.</p>
+                    <a class="botao secundario" href="{{ route('equity.vaar.school', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar indicadores</a>
+                </div>
+            </section>
+        @endcan
+
         <section class="folha cartao" aria-labelledby="titulo-calendario">
             <span class="acao-icone"><x-icon name="turmas" /></span>
             <h2 id="titulo-calendario">Calendário escolar</h2>

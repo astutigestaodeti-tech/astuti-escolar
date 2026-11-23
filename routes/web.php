@@ -12,6 +12,7 @@ use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentDeclarationController;
 use App\Http\Controllers\EnrollmentMovementController;
+use App\Http\Controllers\EquityVaarController;
 use App\Http\Controllers\GeoLocationController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
@@ -104,6 +105,16 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
     Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
+    // Equidade: totais anonimizados para a rede e para a direcao de cada escola.
+    Route::get('/equidade-vaar', [EquityVaarController::class, 'index'])->name('equity.vaar.index');
+    Route::get('/escolas/{escola}/equidade-vaar', [EquityVaarController::class, 'school'])
+        ->whereUuid('escola')->name('equity.vaar.school');
+    Route::post('/equidade-vaar/condicionalidades/{condicao}', [EquityVaarController::class, 'updateCondition'])
+        ->where('condicao', '[1-5]')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('equity.vaar.condition');
+    Route::get('/equidade-vaar/condicionalidades/{condicao}/documento', [EquityVaarController::class, 'evidence'])
+        ->where('condicao', '[1-5]')->name('equity.vaar.evidence');
     Route::get('/escolas', [SchoolController::class, 'index'])->name('schools.index');
     Route::get('/escolas/{escola}', [SchoolController::class, 'show'])->whereUuid('escola')->name('schools.show');
     Route::get('/escolas/{escola}/pendencias', [SchoolPendenciesController::class, 'index'])->whereUuid('escola')->name('school.pendencies.index');

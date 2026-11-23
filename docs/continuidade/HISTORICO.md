@@ -691,3 +691,14 @@ Os números vêm de uma consulta PostgreSQL agregada para todas as matrículas a
 **Documento e LGPD:** emissão registra kind `school_transcript` em `issued_documents`, código aleatório e QR locais, snapshot JSONB protegido contra alteração por trigger e SHA-256 canônico. A página pública apresenta apenas tipo, escola, data e validade, sem nome ou dados acadêmicos. Impressão da via emitida lê exclusivamente o snapshot; revogação preserva a via. Professor não acessa, gestão municipal apenas consulta, direção e secretaria da unidade podem editar e emitir.
 
 **Conferências:** testes fictícios e três telas adicionadas ao `AllSchoolPagesOpenTest`. Não há Laravel/PostgreSQL descartável no ambiente de autoria; o CI e a checagem de margens de 1440 e 390 px ficam pendentes do Claude. Não houve merge, deploy nem alteração de bases reais.
+
+
+## 23/11/2026 - Painel de equidade e VAAR (issue #108, proposta)
+
+**Base:** feature/equidade-vaar-108, main e2ad8787 com Censo e histórico escolar; migration municipal 2026_11_23_000038_create_vaar_conditions.php. Não modifica migrations anteriores.
+
+**Indicadores:** leitura em lote de matrículas do ano, notas e frequência, retidos só após confirmação; seleção por escola e turma. Cor/raça, sexo e zona são apenas agregados, com supressão de grupos menores que cinco e supressão complementar. Deficiência indisponível sem cadastro específico; não inferir pelos alertas de saúde. A lista nominal da condicionalidade II é exclusivamente de acompanhamento de faltas, sem dados sensíveis.
+
+**Condicionalidades:** cadastro dos incisos I-V, responsável, status e PDF institucional armazenado privadamente, edição exclusiva da gestão municipal com 2FA recente e auditoria sem conteúdo da evidência. Direção vê apenas a escola vinculada. O painel não substitui a comprovação pelo MEC e Inep.
+
+**Qualidade:** testes fictícios e telas de rede/escola/turma/direção incluídos na conferência de margens, pendentes do CI e revisão do Claude antes de merge. Sem deploy.
