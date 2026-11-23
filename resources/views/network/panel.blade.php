@@ -75,7 +75,7 @@
                             <th scope="col">Alunos ativos</th>
                             <th scope="col">Turmas</th>
                             <th scope="col">Alertas de faltas</th>
-                            <th scope="col">Pendências de cadastro</th>
+                            <th scope="col">Pendências</th>
                             <th scope="col">Transporte</th>
                             <th scope="col">Sem rota</th>
                             <th scope="col">Dias letivos previstos</th>

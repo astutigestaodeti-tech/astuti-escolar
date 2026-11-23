@@ -17,6 +17,10 @@
     white-space:normal!important;overflow-wrap:break-word;word-break:normal;vertical-align:top;min-width:0
 }
 .pagina-painel-rede .painel-rede-tabela th:first-child{width:18%}
+/* Títulos de coluna quebram entre palavras, nunca no meio ("Pendência-s"). */
+.pagina-painel-rede .painel-rede-tabela thead th{overflow-wrap:normal;word-break:keep-all;hyphens:manual}
+.pagina-painel-rede .painel-rede-tabela tbody th{background:transparent;font-weight:600;font-size:14.5px;padding:12px 22px;border-top:0;border-bottom:1px solid var(--pauta)}
+.pagina-painel-rede .painel-rede-tabela tbody tr:last-child th{border-bottom:0}
 .pagina-painel-rede .painel-rede-tabela a{overflow-wrap:break-word;white-space:normal}
 .pagina-painel-rede .painel-rede-atencao{color:#943f23;font-weight:700}
 @media(max-width:720px){

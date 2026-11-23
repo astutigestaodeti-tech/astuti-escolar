@@ -77,7 +77,7 @@
             <span class="menu-titulo">Gestão escolar</span>
             @can('viewNetworkPanel', [\App\Models\Tenant\School::class, $municipality])
                 <a class="menu-item {{ $painelAtivo ? 'ativo' : '' }}" href="{{ route('network.panel.index', $parametrosMunicipio) }}" @if ($painelAtivo) aria-current="page" @endif>
-                    <x-icon name="escola" /><span>Painel da rede</span>
+                    <x-icon name="indicadores" /><span>Painel da rede</span>
                 </a>
             @endcan
             <a class="menu-item {{ $escolasAtivo ? 'ativo' : '' }}" href="{{ route('schools.index', ['municipio' => $municipality->slug]) }}" @if ($escolasAtivo) aria-current="page" @endif>
