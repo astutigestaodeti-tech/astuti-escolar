@@ -2,7 +2,10 @@
 
 namespace App\Equity;
 
+use App\Models\Tenant\School;
+use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
+use App\Models\Tenant\StudentEnrollment;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -64,19 +67,98 @@ class EquityReadiness
      */
     public function forYear(SchoolYear $year, ?string $schoolId = null, ?string $classId = null): array
     {
-        $schools = DB::connection('tenant')->table('schools')
+        $schools = School::query()
             ->where('status', 'active')->whereNull('deleted_at')
             ->when($schoolId, fn ($q, string $id) => $q->where('id', $id))
             ->select('id', 'name')->orderBy('name')->get();
 
-        $classes = DB::connection('tenant')->table('school_classes')
+        $classes = SchoolClass::query()
             ->where('school_year_id', $year->id)->whereNull('deleted_at')
             ->whereIn('school_id', $schools->pluck('id'))
             ->when($classId, fn ($q, string $id) => $q->where('id', $id))
             ->select('id', 'school_id', 'name', 'stage')
             ->orderBy('name')->get();
 
-        $rows = DB::connection('tenant')->table('student_enrollments as e')
+p\Equity;
+
+use App\Models\Tenant\School;
+use App\Models\Tenant\SchoolClass;
+use App\Models\Tenant\SchoolYear;
+use App\Models\Tenant\StudentEnrollment;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+/**
+ * Consulta em lote, uma só passagem pelas matrículas da rede. Nenhuma
+ * informação individual de raça, sexo ou zona sai desta classe.
+ *
+ * Os indicadores são sinais escolares, não o cálculo oficial do VAAR/Inep.
+ */
+class EquityReadiness
+{
+    public const MIN_GROUP = 5;
+
+    public const DIMENSIONS = [
+        'raca' => 'Cor/raça',
+        'sexo' => 'Sexo',
+        'zona' => 'Zona de residência',
+    ];
+
+    private const RACE_LABELS = [
+        'preta' => 'Preta',
+        'parda' => 'Parda',
+        'indigena' => 'Indígena',
+        'branca' => 'Branca',
+        'amarela' => 'Amarela',
+        'nao_declarada' => 'Não declarada',
+        'sem_informacao' => 'Não informada',
+    ];
+
+    private const SEX_LABELS = [
+        'female' => 'Feminino',
+        'male' => 'Masculino',
+        'sem_informacao' => 'Não informado',
+    ];
+
+    private const ZONE_LABELS = [
+        'urban' => 'Urbana',
+        'rural' => 'Rural',
+        'sem_informacao' => 'Não informada',
+    ];
+
+    public const CONDITIONS = [
+        1 => 'Seleção de gestores por critérios técnicos de mérito e desempenho',
+        2 => 'Participação de pelo menos 80% dos estudantes avaliados no Saeb',
+        3 => 'Redução das desigualdades socioeconômicas e raciais aferidas no Saeb',
+        4 => 'Regime de colaboração e ICMS Educacional conforme legislação estadual',
+        5 => 'Referenciais curriculares alinhados à BNCC, aprovados pelo sistema de ensino',
+    ];
+
+    public const STATUSES = [
+        'pendente' => 'Pendente',
+        'a_comprovar' => 'A comprovar',
+        'cumprida' => 'Cumprida (registro interno)',
+    ];
+
+    /**
+     * @return array{summary: array, groups: array, schools: Collection, classes: Collection, schoolSummaries: Collection, classSummaries: Collection, saeb: Collection, year: SchoolYear}
+     */
+    public function forYear(SchoolYear $year, ?string $schoolId = null, ?string $classId = null): array
+    {
+        $schools = School::query()
+            ->where('status', 'active')->whereNull('deleted_at')
+            ->when($schoolId, fn ($q, string $id) => $q->where('id', $id))
+            ->select('id', 'name')->orderBy('name')->get();
+
+        $classes = SchoolClass::query()
+            ->where('school_year_id', $year->id)->whereNull('deleted_at')
+            ->whereIn('school_id', $schools->pluck('id'))
+            ->when($classId, fn ($q, string $id) => $q->where('id', $id))
+            ->select('id', 'school_id', 'name', 'stage')
+            ->orderBy('name')->get();
+
+        $rows = StudentEnrollment::query()
             ->join('students as s', 's.id', '=', 'e.student_id')
             ->join('school_classes as c', 'c.id', '=', 'e.school_class_id')
             ->where('e.school_year_id', $year->id)

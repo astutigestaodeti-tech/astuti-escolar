@@ -194,7 +194,7 @@ class EquityVaarController extends Controller
             abort(403);
         }
 
-        $years = SchoolYear::query()->orderByDesc('year')->get(['id', 'year']);
+        $years = SchoolYear::query()->orderByDesc('year')->get(['id', 'year', 'start_date', 'end_date']);
         $year = $years->firstWhere('year', (int) ($filters['ano'] ?? today()->year)) ?? $years->first();
         if (isset($filters['ano']) && ($year === null || $year->year !== (int) $filters['ano'])) {
             throw ValidationException::withMessages(['ano' => 'Ano letivo não cadastrado.']);
