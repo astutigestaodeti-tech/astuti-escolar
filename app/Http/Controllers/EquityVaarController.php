@@ -232,5 +232,4 @@ class EquityVaarController extends Controller
             'conditions' => $conditions,
         ])->header('Cache-Control', 'private, no-store');
     }
-
 }

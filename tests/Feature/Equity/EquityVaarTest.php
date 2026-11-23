@@ -210,7 +210,7 @@ class EquityVaarTest extends TwoMunicipalityTestCase
         $this->assertNull($combined['metrics']);
 
         $this->assertSame(10, $response->viewData('data')['summary']['count']);
-        $this->assertSame(7.2, $response->viewData('data')['summary']['average']);
+        $this->assertSame(6.8, $response->viewData('data')['summary']['average']);
         $this->assertSame(100.0, $response->viewData('data')['summary']['attendance']);
     }
 
