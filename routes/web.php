@@ -14,6 +14,7 @@ use App\Http\Controllers\IdentificationPhotoController;
 use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\SchoolAbsenceAlertsController;
 use App\Http\Controllers\SchoolAttendanceController;
+use App\Http\Controllers\SchoolCalendarController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
@@ -58,6 +59,9 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas/{escola}/pendencias', [SchoolPendenciesController::class, 'index'])->whereUuid('escola')->name('school.pendencies.index');
     Route::get('/escolas/{escola}/alertas-faltas', [SchoolAbsenceAlertsController::class, 'index'])->whereUuid('escola')->name('school.absences.index');
     // Servidores da unidade: leitura da escola, escrita somente para gestão com 2FA.
+    Route::get('/escolas/{escola}/calendario', [SchoolCalendarController::class, 'index'])->whereUuid('escola')->name('school.calendar.index');
+    Route::post('/escolas/{escola}/calendario', [SchoolCalendarController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.calendar.store');
+    Route::delete('/escolas/{escola}/calendario/{dia}', [SchoolCalendarController::class, 'destroy'])->whereUuid('escola')->whereUuid('dia')->middleware(RequireConfirmedTwoFactor::class)->name('school.calendar.destroy');
     Route::get('/escolas/{escola}/servidores', [SchoolStaffController::class, 'index'])->whereUuid('escola')->name('school.staff.index');
     Route::get('/escolas/{escola}/servidores/novo', [SchoolStaffController::class, 'create'])->whereUuid('escola')->name('school.staff.create');
     Route::post('/escolas/{escola}/servidores', [SchoolStaffController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.store');

@@ -42,6 +42,10 @@
             @endif
         </div>
 
+        @if ($calendarNotice !== null)
+            <div class="folha-corpo"><div class="nota chamada-aviso" role="status">{{ $date->isSameDay(today()) ? 'Hoje não é dia letivo' : 'Esta data não é dia letivo' }} pelo calendário ({{ $calendarNotice }}). A chamada continua disponível para registro.</div></div>
+        @endif
+
         @if ($historical && $session === null)
             <div class="nota chamada-aviso" role="status">Não existe chamada registrada em {{ $date->format('d/m/Y') }}. Correções de dias anteriores só são permitidas sobre chamadas já feitas.</div>
         @elseif ($historical && ! $canManage)
