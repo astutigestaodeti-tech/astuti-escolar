@@ -24,7 +24,7 @@ use Throwable;
 
 class FullTimeEducationController extends Controller
 {
-    private const MONEY = ['required', 'regex:/\\A\\d{1,12}(?:\\.\\d{1,2})?\\z/D/'];
+    private const MONEY = ['required', 'regex:/^[0-9]{1,12}(?:\\.[0-9]{1,2})?$/'];
 
     public function index(Request $request, string $municipio, FullTimeReadiness $readiness): Response
     {
