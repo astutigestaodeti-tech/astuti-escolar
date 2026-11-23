@@ -38,6 +38,7 @@
                 <div><dt>Matrículas ativas</dt><dd>{{ $totais['enrollments'] }}</dd></div>
                 <div><dt>Com algo a corrigir</dt><dd @if ($totais['with_warnings'] > 0) class="censo-atencao" @endif>{{ $totais['with_warnings'] }}</dd></div>
                 <div><dt>Fora do Censo ou sem etapa</dt><dd @if ($totais['at_risk_enrollments'] > 0) class="censo-atencao" @endif>{{ $totais['at_risk_enrollments'] }}</dd></div>
+                <div><dt>Educação especial / em AEE</dt><dd>{{ $totais['special'] }} / {{ $totais['aee'] }}</dd></div>
                 <div><dt>Escolas sem código INEP</dt><dd @if ($data['schoolsWithoutInep']->isNotEmpty()) class="censo-atencao" @endif>{{ $data['schoolsWithoutInep']->count() }}</dd></div>
             </dl>
             @if ($totais['at_risk_enrollments'] > 0)
@@ -92,6 +93,16 @@
                         </tr>
                     @endforeach
                 </tbody>
+                <tbody class="censo-adicional">
+                    <tr>
+                        <th scope="row">AEE no contraturno (adicional)</th>
+                        <td class="numero">{{ $totais['aee'] }}</td>
+                        <td class="numero">adicional</td>
+                        <td class="numero"></td>
+                        @if ($vaafBase !== null)<td class="numero"></td>@endif
+                        <td class="numero">{{ $reais($totais['aee_pnae']) }}</td>
+                    </tr>
+                </tbody>
                 <tfoot>
                     <tr>
                         <th scope="row">Total contado no Censo</th>
@@ -99,7 +110,7 @@
                         <td></td>
                         <td class="numero">{{ $numero($totais['weighted']) }}</td>
                         @if ($vaafBase !== null)<td class="numero">{{ $reais($totais['fundeb']) }}</td>@endif
-                        <td class="numero">{{ $reais($totais['pnae']) }}</td>
+                        <td class="numero">{{ $reais($totais['pnae'] + $totais['aee_pnae']) }}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -107,7 +118,7 @@
         <div class="folha-corpo">
             <p class="texto-ajuda">
                 A creche e a pré-escola em tempo integral têm os maiores pesos no Fundeb, e o aluno integral recebe quase três vezes mais na merenda.
-                Confira se o turno de cada turma está certo.
+                Confira se o turno de cada turma está certo. A matrícula de AEE no contraturno também tem peso adicional no Fundeb; o valor depende da resolução do ano e não entra nesta estimativa.
                 @if ($vaafBase === null)
                     Para ver o Fundeb em reais, informe o valor anual por aluno do estado (portaria do FNDE do ano) em ASTUTI_FUNDEB_VAAF_BASE.
                 @endif
