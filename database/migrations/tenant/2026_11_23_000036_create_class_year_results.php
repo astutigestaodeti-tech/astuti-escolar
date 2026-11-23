@@ -68,7 +68,10 @@ BEGIN
     IF is_closed IS NOT NULL THEN
         RAISE EXCEPTION 'Ano letivo da turma fechado. Reabertura da gestão municipal necessária.' USING ERRCODE = '23514';
     END IF;
-    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
 END;
 $$;
 CREATE TRIGGER grade_entries_closed_class_guard

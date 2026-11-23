@@ -79,7 +79,7 @@ class ClassYearEndController extends Controller
             // enviado pelo navegador como se fosse decisão já aprovada.
             $calculated = $results->forClass($class);
             $entries = $calculated['records']->filter(fn (array $row): bool => $row['enrollment']->status === 'active');
-            if (! $all) {
+            if ($all === false) {
                 $entries = $entries->filter(fn (array $row): bool => $row['enrollment']->id === $data['enrollment']);
                 if ($entries->isEmpty()) {
                     throw ValidationException::withMessages(['enrollment' => 'Matrícula não ativa ou não pertencente a esta turma.']);
@@ -156,7 +156,7 @@ class ClassYearEndController extends Controller
                 throw ValidationException::withMessages(['reason' => 'Esta turma já está fechada.']);
             }
             $data = $results->forClass($class);
-            if (! $data['allPeriodsClosed']) {
+            if ($data['allPeriodsClosed'] === false) {
                 throw ValidationException::withMessages(['reason' => 'Feche todos os quatro bimestres ou três trimestres antes de encerrar a turma.']);
             }
             $activeIds = $data['records']->filter(fn (array $row): bool => $row['enrollment']->status === 'active')
