@@ -164,6 +164,7 @@ class SchoolTranscriptTest extends TwoMunicipalityTestCase
     private function issue(): array
     {
         $this->post($this->url().'/emitir', ['observations' => 'Dados confirmados pela direção fictícia.'])->assertRedirect();
+
         return $this->tenant(fn (): array => IssuedDocument::query()
             ->where('kind', 'school_transcript')->sole()->toArray());
     }

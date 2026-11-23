@@ -8,19 +8,23 @@ use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentFinalResult;
 use App\Models\Tenant\StudentPriorSchoolYear;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class SchoolTranscriptBuilder
 {
-    public function __construct(private readonly ReportCard $reportCard)
+    private readonly ReportCard $reportCard;
+
+    public function __construct(ReportCard $reportCard)
     {
+        $this->reportCard = $reportCard;
     }
 
     /**
      * Anos fechados e confirmados vêm do banco escolar. Os digitados são usados
      * somente onde não houver ano oficial da rede. Não grava nem emite documentos.
      *
-     * @return array{years: list<array>, previous: \Illuminate\Support\Collection, warnings: list<string>, inProgress: list<int>}
+     * @return array{years: list<array>, previous: Collection, warnings: list<string>, inProgress: list<int>}
      */
     public function forStudent(Student $student, Municipality $municipality): array
     {
