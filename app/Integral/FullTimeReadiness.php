@@ -146,12 +146,12 @@ class FullTimeReadiness
             ];
         });
 
-        $integralClasses = $allClasses->filter(fn (SchoolClass $class): bool =>
-            $class->school_year_id === $year->id
-            && $schoolNames->has($class->school_id)
-            && $class->status === 'active'
-            && self::integral($class)
-        )->map(fn (SchoolClass $class): array => [
+        $integralClasses = $allClasses->filter(function (SchoolClass $class) use ($year, $schoolNames): bool {
+            return $class->school_year_id === $year->id
+                && $schoolNames->has($class->school_id)
+                && $class->status === 'active'
+                && self::integral($class);
+        })->map(fn (SchoolClass $class): array => [
             'id' => $class->id,
             'name' => $class->name,
             'school' => $schoolNames->get($class->school_id),
