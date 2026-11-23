@@ -703,3 +703,57 @@ select.entrada{cursor:pointer}
 .alerta-faltas-turma,.alerta-faltas-contato{display:block;color:var(--tinta-2);margin-top:3px}
 .alerta-faltas-motivos{display:flex;flex-direction:column;align-items:start;gap:5px}
 .alerta-faltas-etiqueta{background:var(--ouro-claro);color:#714c0b;border:1px solid #e4c779;border-radius:6px;padding:3px 6px;font-size:12px;font-weight:700}
+
+/* Diário de classe: relatório mensal de frequência, consulta e impressão. */
+.relatorio-mensal-acoes{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.relatorio-mensal-meses{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.relatorio-mensal-meses strong{font-size:17px;color:var(--tinta)}
+.relatorio-frequencia{background:var(--folha);padding:20px;border:1px solid var(--linha);border-radius:var(--raio-folha)}
+.relatorio-mensal-cabecalho{text-align:center;margin-bottom:14px}
+.relatorio-mensal-rede{margin:0;font-size:13px;color:var(--tinta-2)}
+.relatorio-mensal-cabecalho h1{font-family:var(--serifa);font-size:27px;margin:4px 0 16px}
+.relatorio-mensal-cabecalho dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));text-align:left;gap:10px 18px;margin:0}
+.relatorio-mensal-cabecalho dl>div{display:flex;gap:8px;align-items:baseline;border-bottom:1px solid var(--pauta);padding-bottom:5px}
+.relatorio-mensal-cabecalho dt{font-weight:700;font-size:13px}
+.relatorio-mensal-cabecalho dd{margin:0;overflow-wrap:anywhere}
+.relatorio-mensal-legenda{font-size:13px;color:var(--tinta-2);margin:14px 0}
+.relatorio-mensal-vazio{padding:20px 16px;background:var(--pauta-suave);border-radius:8px;font-weight:700;color:var(--tinta)}
+.relatorio-mensal-rolagem{overflow-x:auto;width:100%}
+.relatorio-mensal-tabela{border-collapse:collapse;min-width:850px;width:100%;font-size:13px}
+.relatorio-mensal-tabela th,.relatorio-mensal-tabela td{border:1px solid var(--pauta);padding:6px;text-align:center}
+.relatorio-mensal-tabela thead th{background:var(--pauta-suave);font-weight:700}
+.relatorio-mensal-tabela .relatorio-mensal-nome{text-align:left;min-width:175px}
+.relatorio-mensal-tabela .relatorio-mensal-dia{min-width:24px}
+.relatorio-mensal-tabela .relatorio-mensal-percentual{min-width:56px}
+.relatorio-mensal-tabela tbody th{font-weight:600}
+.relatorio-mensal-tabela tbody th small{display:block;font-weight:400;color:var(--tinta-2)}
+.relatorio-mensal-tabela .relatorio-mensal-marcacao{font-size:16px;font-weight:700}
+.relatorio-mensal-tabela .relatorio-fora-vinculo{background:#edf0f3}
+.relatorio-mensal-tabela tfoot{font-weight:700;background:var(--pauta-suave)}
+.relatorio-mensal-assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:44px;margin:65px 30px 12px;text-align:center}
+.relatorio-mensal-assinaturas>div{border-top:1px solid var(--tinta);padding-top:5px}
+@media(max-width:760px){.relatorio-frequencia{padding:12px}.relatorio-mensal-cabecalho dl{grid-template-columns:1fr}.relatorio-mensal-assinaturas{gap:16px;margin:48px 0 8px}}
+
+@page frequencia-mensal{size:A4 landscape;margin:10mm}
+@media print{
+    body.impressao-frequencia .relatorio-frequencia{page:frequencia-mensal;border:0;padding:0;border-radius:0}
+    body.impressao-frequencia .lateral,body.impressao-frequencia .topo,body.impressao-frequencia .conteudo>:not(.relatorio-frequencia){display:none!important}
+    body.impressao-frequencia .app{display:block;min-height:0}
+    body.impressao-frequencia .area,body.impressao-frequencia .conteudo{display:block;width:100%;max-width:none;margin:0;padding:0}
+    body.impressao-frequencia .relatorio-mensal-acoes{display:none}
+    body.impressao-frequencia .relatorio-mensal-cabecalho h1{font-size:17pt;margin:2mm 0 4mm}
+    body.impressao-frequencia .relatorio-mensal-cabecalho dl{grid-template-columns:repeat(3,minmax(0,1fr));gap:1mm 3mm;font-size:9pt}
+    body.impressao-frequencia .relatorio-mensal-cabecalho dl>div{border-bottom:0;padding:0}
+    body.impressao-frequencia .relatorio-mensal-legenda{font-size:8pt;margin:3mm 0}
+    body.impressao-frequencia .relatorio-mensal-rolagem{overflow:visible}
+    body.impressao-frequencia .relatorio-mensal-tabela{width:100%;min-width:0;table-layout:fixed;font-size:7pt}
+    body.impressao-frequencia .relatorio-mensal-tabela th,body.impressao-frequencia .relatorio-mensal-tabela td{padding:1mm .5mm;border:1px solid #555;overflow-wrap:anywhere}
+    body.impressao-frequencia .relatorio-mensal-tabela .relatorio-mensal-nome{width:43mm;min-width:0;text-align:left}
+    body.impressao-frequencia .relatorio-mensal-tabela .relatorio-mensal-dia{min-width:0}
+    body.impressao-frequencia .relatorio-mensal-tabela .relatorio-mensal-percentual{width:13mm;min-width:0}
+    body.impressao-frequencia .relatorio-mensal-tabela .relatorio-mensal-marcacao{font-size:9pt}
+    body.impressao-frequencia .relatorio-mensal-tabela thead{display:table-header-group}
+    body.impressao-frequencia .relatorio-mensal-tabela tfoot{display:table-row-group}
+    body.impressao-frequencia .relatorio-mensal-tabela tr{break-inside:avoid}
+    body.impressao-frequencia .relatorio-mensal-assinaturas{break-inside:avoid;margin:15mm 10mm 0}
+}

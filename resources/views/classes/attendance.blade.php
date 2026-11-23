@@ -26,6 +26,7 @@
             <p>Turma {{ $class->name }} - {{ $date->format('d/m/Y') }}. Os alunos começam como presentes: marque apenas as faltas.</p>
         </div>
         <div class="acoes-titulo">
+            <a class="botao secundario" href="{{ route('school.classes.attendance.monthly', $params) }}">Relatório do mês</a>
             <a class="botao secundario" href="{{ route('school.classes.show', $params) }}">Voltar à turma</a>
         </div>
     </div>

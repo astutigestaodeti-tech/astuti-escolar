@@ -27,6 +27,7 @@
         <div class="acoes-titulo">
             <span class="marcador"><x-icon name="turmas" :size="16" /> {{ $occupied }} {{ $occupied === 1 ? 'aluno' : 'alunos' }}</span>
             <a class="botao" href="{{ route('school.classes.attendance.index', $parametrosTurma) }}">{{ $todaySessionExists ? 'Corrigir chamada de hoje' : 'Fazer chamada de hoje' }}</a>
+            <a class="botao secundario" href="{{ route('school.classes.attendance.monthly', $parametrosTurma) }}">Relatório do mês</a>
             <a class="botao secundario" href="{{ route('school.classes.index', $parametrosEscola) }}">Todas as turmas</a>
         </div>
     </div>

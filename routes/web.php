@@ -16,6 +16,7 @@ use App\Http\Controllers\SchoolAttendanceController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
+use App\Http\Controllers\SchoolMonthlyAttendanceReportController;
 use App\Http\Controllers\SchoolStudentController;
 use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
@@ -60,6 +61,8 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     // Presença diária: consulta da escola registra hoje; correção histórica requer gestão e 2FA recente.
     Route::get('/escolas/{escola}/turmas/{turma}/chamada', [SchoolAttendanceController::class, 'index'])
         ->whereUuid('escola')->whereUuid('turma')->name('school.classes.attendance.index');
+    Route::get('/escolas/{escola}/turmas/{turma}/frequencia-mensal', [SchoolMonthlyAttendanceReportController::class, 'index'])
+        ->whereUuid('escola')->whereUuid('turma')->name('school.classes.attendance.monthly');
     Route::post('/escolas/{escola}/turmas/{turma}/chamada', [SchoolAttendanceController::class, 'store'])
         ->whereUuid('escola')->whereUuid('turma')->name('school.classes.attendance.store');
     Route::post('/escolas/{escola}/turmas/{turma}/chamada/corrigir', [SchoolAttendanceController::class, 'correct'])
