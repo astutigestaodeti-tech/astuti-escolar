@@ -41,7 +41,7 @@ Route::get('/demonstracao', [DemonstrationController::class, 'index'])->name('de
 
 // A consulta pública é restrita ao município configurado nesta VPS e não usa sessão.
 Route::get('/verificar/{codigo}', PublicDocumentVerificationController::class)
-    ->middleware('throttle:20,1')->name('documents.verify');
+    ->middleware('throttle:astuti-document-verification')->name('documents.verify');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [LoginController::class, 'show'])->name('login');

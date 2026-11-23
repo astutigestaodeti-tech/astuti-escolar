@@ -126,6 +126,15 @@ jobs:
       - name: Verificar identidade visual
         run: npm run test:ui
 
+      - name: Conferir margens das telas em 1440 e 390 px
+        run: |
+          python3 -m venv /tmp/astuti-layout-venv
+          /tmp/astuti-layout-venv/bin/pip install -q playwright==1.56.0
+          /tmp/astuti-layout-venv/bin/python -m playwright install --with-deps chromium
+          mkdir -p /tmp/telas
+          ASTUTI_DUMP_TELAS=/tmp/telas php artisan test --filter=AllSchoolPagesOpenTest
+          /tmp/astuti-layout-venv/bin/python scripts/qualidade/checar-margens.py /tmp/telas 1440 390
+
   permissoes-producao:
     name: PostgreSQL 17 como usuario web restrito
     runs-on: ubuntu-24.04

@@ -32,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
             hash('sha256', strtolower(trim((string) $request->input('email'))).'|'.(string) $request->ip()),
         ));
 
+        // A verificação de documento é pública: limitar sempre pelo IP, mesmo com sessão autenticada.
+        RateLimiter::for('astuti-document-verification', fn (Request $request) => Limit::perMinute(20)->by(
+            hash('sha256', 'document-verification|'.(string) $request->ip()),
+        ));
+
         // Dois limites somados: por conta e IP, e por conta em qualquer IP.
         // O segundo impede contornar o primeiro trocando de endereço.
         RateLimiter::for('astuti-second-factor', fn (Request $request) => [

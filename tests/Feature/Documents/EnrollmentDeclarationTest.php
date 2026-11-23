@@ -143,6 +143,7 @@ class EnrollmentDeclarationTest extends TwoMunicipalityTestCase
         $this->get('/verificar/ABCDEFGHJK')->assertNotFound();
 
         config()->set('tenancy.deployed_db_key', 'municipio_a');
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.74']);
         foreach (range(1, 20) as $attempt) {
             $this->get('/verificar/ABCDEFGHJK')->assertNotFound();
         }
