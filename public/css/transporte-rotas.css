@@ -1,0 +1,54 @@
+/* Lista operacional do transporte: tela responsiva e folha A4 por rota. */
+.pagina-transporte-rotas .transporte-filtro-form{display:flex;flex-wrap:wrap;align-items:end;gap:14px}
+.pagina-transporte-rotas .transporte-filtro-form label{display:flex;flex:1 1 190px;min-width:0;flex-direction:column;gap:6px;font-weight:700}
+.pagina-transporte-rotas .transporte-filtro-form select{width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--linha);border-radius:var(--raio-controle);background:white}
+.pagina-transporte-rotas .transporte-filtro-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.pagina-transporte-rotas .transporte-resumo{margin-top:16px;padding-top:14px;border-top:1px solid var(--linha);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pagina-transporte-rotas .transporte-resumo button{margin-left:auto}
+.pagina-transporte-rotas .transporte-rota{margin-top:20px}
+.pagina-transporte-rotas .transporte-rota-cabecalho{align-items:center}
+.pagina-transporte-rotas .transporte-escola{font-weight:700;color:var(--tinta-2)}
+.pagina-transporte-rotas .transporte-pendencia{margin-top:7px;color:#87481f}
+.pagina-transporte-rotas .transporte-tabela{width:100%;font-size:13px}
+.pagina-transporte-rotas .transporte-tabela th,.pagina-transporte-rotas .transporte-tabela td{overflow-wrap:break-word;vertical-align:top;white-space:normal;padding:11px 10px}
+.pagina-transporte-rotas .transporte-tabela th:first-child,.pagina-transporte-rotas .transporte-tabela td:first-child{padding-left:var(--recuo-folha)}
+.pagina-transporte-rotas .transporte-tabela td:nth-child(7){white-space:nowrap}
+.pagina-transporte-rotas .transporte-tabela th:last-child,.pagina-transporte-rotas .transporte-tabela td:last-child{min-width:110px}
+.pagina-transporte-rotas .transporte-observacao{min-height:36px}
+.pagina-transporte-rotas .transporte-assinatura{display:flex;align-items:end;gap:8px;margin-top:26px;font-size:13px}
+.pagina-transporte-rotas .transporte-assinatura span{display:inline-block;min-width:180px;max-width:350px;flex:1;border-bottom:1px solid currentColor}
+.pagina-transporte-rotas .transporte-restricao{margin-top:14px;font-size:12px;font-weight:700}
+@media(max-width:640px){
+    .pagina-transporte-rotas .transporte-filtro-acoes,.pagina-transporte-rotas .transporte-filtro-acoes .botao{width:100%}
+    .pagina-transporte-rotas .transporte-resumo button{margin:8px 0 0;width:100%}
+    .pagina-transporte-rotas .transporte-tabela{min-width:830px}
+    .pagina-transporte-rotas .transporte-assinatura{flex-wrap:wrap}
+    .pagina-transporte-rotas .transporte-rota-cabecalho > div{min-width:0;overflow-wrap:anywhere}
+}
+@page{size:A4 portrait;margin:12mm}
+@media print{
+    html,body.pagina-transporte-rotas{background:#fff!important;color:#000!important;margin:0!important}
+    .pagina-transporte-rotas .lateral,.pagina-transporte-rotas .topo,.pagina-transporte-rotas .rodape,.pagina-transporte-rotas .rodape-versao,.pagina-transporte-rotas .voltar,.pagina-transporte-rotas .folha-titulo,.pagina-transporte-rotas .transporte-filtros,.pagina-transporte-rotas .aviso-demo,.pagina-transporte-rotas .pular{display:none!important}
+    .pagina-transporte-rotas .app,.pagina-transporte-rotas .area{display:block!important;min-height:0!important}
+    .pagina-transporte-rotas .conteudo{display:block!important;padding:0!important;width:100%!important;max-width:none!important}
+    .pagina-transporte-rotas .transporte-rota{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;border-radius:0!important;break-after:page;page-break-after:always}
+    .pagina-transporte-rotas .transporte-rota:last-of-type{break-after:auto;page-break-after:auto}
+    .pagina-transporte-rotas .transporte-rota-cabecalho{display:flex!important;padding:0 0 7mm!important;border-bottom:1px solid #555}
+    .pagina-transporte-rotas .transporte-rota-corpo{padding:0!important}
+    .pagina-transporte-rotas .transporte-rota .rolagem{overflow:visible!important}
+    .pagina-transporte-rotas .transporte-tabela{font-size:7.4pt!important;width:100%!important;min-width:0!important;border-collapse:collapse;table-layout:fixed}
+    .pagina-transporte-rotas .transporte-tabela th,.pagina-transporte-rotas .transporte-tabela td{padding:4px 3px!important;border:1px solid #888!important;min-width:0!important;overflow-wrap:anywhere}
+    .pagina-transporte-rotas .transporte-tabela th:nth-child(1){width:17%}
+    .pagina-transporte-rotas .transporte-tabela th:nth-child(2){width:10%}
+    .pagina-transporte-rotas .transporte-tabela th:nth-child(3){width:9%}
+    .pagina-transporte-rotas .transporte-tabela th:nth-child(4){width:15%}
+    .pagina-transporte-rotas .transporte-tabela th:nth-child(5){width:8%}
+    .pagina-transporte-rotas .transporte-tabela th:nth-child(6){width:15%}
+    .pagina-transporte-rotas .transporte-tabela th:nth-child(7){width:12%}
+    .pagina-transporte-rotas .transporte-tabela th:nth-child(8){width:14%}
+    .pagina-transporte-rotas .transporte-tabela thead{display:table-header-group}
+    .pagina-transporte-rotas .transporte-tabela tr{break-inside:avoid;page-break-inside:avoid}
+    .pagina-transporte-rotas .transporte-observacao{height:12mm!important}
+    .pagina-transporte-rotas .transporte-restricao{font-size:9pt}
+    .pagina-transporte-rotas .transporte-assinatura{margin-top:9mm}
+}

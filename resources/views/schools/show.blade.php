@@ -109,6 +109,7 @@
                 @if ($transportUsers > 0)
                     <a class="botao secundario" style="margin-top:12px" href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'transporte' => 'usa']) }}">Ver alunos que usam transporte <x-icon name="seta" :size="16" /></a>
                 @endif
+                <a class="botao secundario" style="margin-top:12px" href="{{ route('school.transport.routes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Transporte por rota <x-icon name="seta" :size="16" /></a>
                 <a class="botao secundario" style="margin-top:12px" href="{{ route('school.imports.transport.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Importar lista de transporte <x-icon name="seta" :size="16" /></a>
             </section>
         @endcan
