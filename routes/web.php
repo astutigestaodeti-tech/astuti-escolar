@@ -7,11 +7,13 @@ use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentMovementController;
+use App\Http\Controllers\EnrollmentDeclarationController;
 use App\Http\Controllers\GeoLocationController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdentificationPhotoController;
 use App\Http\Controllers\PostalCodeLookupController;
+use App\Http\Controllers\PublicDocumentVerificationController;
 use App\Http\Controllers\SchoolAbsenceAlertsController;
 use App\Http\Controllers\SchoolAttendanceController;
 use App\Http\Controllers\SchoolCalendarController;
@@ -36,6 +38,10 @@ Route::get('/', [HomeController::class, 'index'])->middleware(RequireLoginTwoFac
 Route::get('/saude', fn () => response()->json(['status' => 'ok']));
 
 Route::get('/demonstracao', [DemonstrationController::class, 'index'])->name('demo');
+
+// A consulta pública é restrita ao município configurado nesta VPS e não usa sessão.
+Route::get('/verificar/{codigo}', PublicDocumentVerificationController::class)
+    ->middleware('throttle:20,1')->name('documents.verify');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
@@ -100,6 +106,17 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas/{escola}/alunos', [SchoolStudentController::class, 'index'])->whereUuid('escola')->name('school.students.index');
     Route::get('/escolas/{escola}/alunos/cep/{cep}', [PostalCodeLookupController::class, 'show'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:20,1'])->name('school.students.postal.lookup');
     Route::get('/escolas/{escola}/alunos/{aluno}', [SchoolStudentController::class, 'show'])->whereUuid('escola')->whereUuid('aluno')->name('school.students.show');
+
+    // Emissão, impressão e revogação ficam restritas à gestão da escola.
+    Route::get('/escolas/{escola}/alunos/{aluno}/declaracoes/nova', [EnrollmentDeclarationController::class, 'create'])
+        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.declarations.create');
+    Route::post('/escolas/{escola}/alunos/{aluno}/declaracoes', [EnrollmentDeclarationController::class, 'store'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.declarations.store');
+    Route::get('/escolas/{escola}/alunos/{aluno}/declaracoes/{documento}', [EnrollmentDeclarationController::class, 'show'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('documento')->name('school.students.declarations.show');
+    Route::post('/escolas/{escola}/alunos/{aluno}/declaracoes/{documento}/revogar', [EnrollmentDeclarationController::class, 'revoke'])
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('documento')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.students.declarations.revoke');
 
     // Responsáveis: cadastro municipal, vínculo por aluno e gravação protegida pelo segundo fator.
     Route::get('/escolas/{escola}/alunos/{aluno}/responsaveis/novo', [GuardianController::class, 'create'])

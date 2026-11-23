@@ -848,5 +848,68 @@ select.entrada{cursor:pointer}
 .calendario-dia.hoje{box-shadow:inset 0 0 0 2px var(--caneta)}
 .calendario-feriados{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 16px;margin-bottom:6px;border:1px solid var(--pauta);border-radius:var(--raio-controle);background:var(--pauta-suave)}
 .calendario-feriados>div{flex:1;min-width:240px}
+
+/* Declaração de matrícula e consulta de autenticidade. */
+.declaracoes-lista{margin-top:18px}
+.declaracoes-lista .botao{max-width:100%}
+.declaracoes-vazio{margin-top:14px}
+.declaracoes-itens{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:12px}
+.declaracoes-itens li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:12px 0;border-top:1px solid var(--linha)}
+.declaracoes-itens small{display:block;color:var(--tinta-3);margin:3px 0}
+.declaracao-finalidade{margin-top:18px}
+.declaracao-finalidade input{width:100%}
+.declaracao-papel{margin-top:18px;max-width:900px}
+.declaracao-papel>.folha-corpo{padding-top:20px;min-height:600px}
+.declaracao-cabecalho{display:flex;align-items:center;gap:18px;padding-bottom:18px;border-bottom:2px solid var(--tinta)}
+.declaracao-cabecalho img{object-fit:contain;flex-shrink:0}
+.declaracao-cabecalho strong{font-family:var(--serifa);font-size:21px}
+.declaracao-cabecalho p{color:var(--tinta-2)}
+.declaracao-titulo{text-align:center;margin:46px 0;font:600 25px var(--serifa);text-transform:uppercase;letter-spacing:.02em}
+.declaracao-texto{font-size:17px;line-height:1.9;text-align:justify;margin:20px 0;overflow-wrap:anywhere}
+.declaracao-data{text-align:right;margin:38px 0;font-size:16px}
+.declaracao-assinatura{border-top:1px solid var(--tinta);text-align:center;width:min(340px,80%);margin:90px auto 50px;padding-top:6px;font-size:14px}
+.declaracao-rodape{border-top:1px solid var(--linha);display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding-top:18px;font-size:12.5px}
+.declaracao-verificacao{min-width:0;flex:1}
+.declaracao-verificacao p{margin-top:3px;overflow-wrap:anywhere}
+.declaracao-url{word-break:break-all}
+.declaracao-qr{width:130px;height:130px;flex-shrink:0}
+.declaracao-qr svg{width:100%;height:100%}
+.declaracao-revogada{padding:10px 16px;background:#fce9e5;color:#962c20;font-weight:800;text-align:center;letter-spacing:.06em}
+.declaracao-revogacao{margin-top:20px;max-width:900px}
+.declaracao-revogacao textarea{display:block;width:100%;margin-top:6px}
+.verificacao-publica{background:var(--papel);padding:38px 16px;min-height:100vh}
+.verificacao-cartao{max-width:640px;margin:0 auto}
+.verificacao-cartao h1{font-family:var(--serifa);font-size:26px;line-height:1.25;margin:6px 0 8px}
+.verificacao-situacao{padding:10px 14px;border-radius:8px;font-weight:700;margin-bottom:20px}
+.verificacao-valida{background:var(--verde-claro);color:var(--verde)}
+.verificacao-invalida{background:#fce9e5;color:#962c20}
+.verificacao-dados{display:grid;gap:12px;margin:0 0 20px}
+.verificacao-dados>div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px;padding-bottom:9px;border-bottom:1px solid var(--linha)}
+.verificacao-dados dt{color:var(--tinta-3)}
+.verificacao-dados dd{font-weight:700;margin:0;overflow-wrap:anywhere}
+@media(max-width:640px){
+    .declaracao-cabecalho{gap:10px}
+    .declaracao-cabecalho strong{font-size:18px}
+    .declaracao-titulo{margin:30px 0}
+    .declaracao-texto{font-size:15px}
+    .declaracao-rodape{align-items:center}
+    .declaracao-qr{width:92px;height:92px}
+    .verificacao-publica{padding:20px 12px}
+    .verificacao-dados>div{grid-template-columns:95px minmax(0,1fr)}
+}
+@page declaracao-matricula{size:A4 portrait;margin:15mm}
+@media print{
+    body.impressao-declaracao{page:declaracao-matricula;background:#fff;color:#111;font-family:Arial,sans-serif}
+    body.impressao-declaracao .lateral,body.impressao-declaracao .topo,body.impressao-declaracao .declaracao-acoes,
+    body.impressao-declaracao .declaracao-revogacao,body.impressao-declaracao .declaracao-cabecalho-tela,
+    body.impressao-declaracao .rodape,body.impressao-declaracao .rodape-versao,
+    body.impressao-declaracao .voltar,body.impressao-declaracao .aviso-demo{display:none!important}
+    body.impressao-declaracao .app,body.impressao-declaracao .area{display:block}
+    body.impressao-declaracao .conteudo{padding:0;margin:0;max-width:none}
+    body.impressao-declaracao .declaracao-papel{margin:0;max-width:none;border:0;border-radius:0;box-shadow:none}
+    body.impressao-declaracao .declaracao-papel>.folha-corpo{padding:0;min-height:auto}
+    body.impressao-declaracao .declaracao-rodape{break-inside:avoid;margin-top:20mm}
+    body.impressao-declaracao .declaracao-qr{width:34mm;height:34mm}
+}
 .calendario-feriados .texto-ajuda{margin:4px 0 0}
 .calendario-formulario .calendario-abrangencia{flex-basis:210px;min-width:210px}

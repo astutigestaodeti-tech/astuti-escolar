@@ -43,6 +43,7 @@
             => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
         'school.students.edit',
+        'school.students.declarations.create', 'school.students.declarations.store', 'school.students.declarations.show', 'school.students.declarations.revoke',
         'school.students.guardians.unlink.form', 'school.students.guardians.unlink',
         'school.students.pickups.create', 'school.students.pickups.store', 'school.students.pickups.edit', 'school.students.pickups.update',
         'school.students.pickups.remove.form', 'school.students.pickups.remove',

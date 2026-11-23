@@ -10,6 +10,7 @@ use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\ClassTeacherAssignment;
 use App\Models\Tenant\Guardian;
+use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCalendarDay;
 use App\Models\Tenant\SchoolClass;
@@ -37,6 +38,7 @@ class AuditTrail
         StaffMember::class => ['id', 'school_id', 'full_name', 'registration_number', 'role', 'institutional_email', 'phone', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
         AttendanceMark::class => ['id', 'attendance_session_id', 'student_id', 'status'],
         Guardian::class => ['id', 'full_name', 'cpf', 'phone', 'email', 'phone_secondary', 'workplace', 'work_phone', 'photo_updated_at', 'rg_number', 'rg_state'],
+        IssuedDocument::class => ['id', 'student_id', 'school_id', 'enrollment_id', 'issued_by', 'issued_at', 'verification_code', 'revoked_at', 'revoked_by', 'revoke_reason'],
         StudentGuardian::class => ['id', 'student_id', 'guardian_id', 'relationship', 'is_legal_guardian', 'is_primary_contact', 'motivo'],
         StudentHealthProfile::class => ['student_id', 'blood_type', 'informed_by', 'informed_on'],
         StudentHealthAlert::class => ['id', 'student_id', 'kind', 'severity', 'alert_text', 'care_instructions', 'motivo'],
@@ -133,7 +135,7 @@ class AuditTrail
                 continue;
             }
             // Dados sensíveis: a auditoria registra que mudou, sem guardar o valor.
-            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|institutional_email|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|correction_reason|cancel_reason|blood_type|alert_text|care_instructions|rg_number|birth_certificate)\z/iu', (string) $key)) {
+            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|institutional_email|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|correction_reason|cancel_reason|revoke_reason|verification_code|blood_type|alert_text|care_instructions|rg_number|birth_certificate)\z/iu', (string) $key)) {
                 $values[$key] = '[REDACTED]';
             } elseif (is_array($value)) {
                 $values[$key] = '[REDACTED]';
