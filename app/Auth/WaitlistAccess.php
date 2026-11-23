@@ -4,7 +4,6 @@ namespace App\Auth;
 
 use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
-use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;

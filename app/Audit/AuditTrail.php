@@ -51,7 +51,7 @@ class AuditTrail
         SchoolClass::class => ['id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'capacity', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
         Student::class => ['id', 'full_name', 'birth_date', 'ra', 'address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state', 'postal_code', 'residence_zone', 'social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at', 'photo_updated_at', 'rg_number', 'rg_issuer', 'rg_state', 'rg_issued_at', 'birth_certificate', 'latitude', 'longitude', 'geo_source', 'geo_updated_at'],
         StudentEnrollment::class => ['id', 'student_id', 'school_id', 'school_year_id', 'school_class_id', 'status', 'started_at', 'ended_at', 'destination_note', 'transport_status', 'transport_route', 'transport_stop', 'transport_adapted_vehicle', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
-        WaitlistRequest::class => ['id', 'status', 'stage', 'intake_year', 'requested_at', 'cpf', 'guardian_phone', 'priority_criteria', 'status_reason', 'deleted_at', 'deletion_reason'],
+        WaitlistRequest::class => ['id', 'status', 'stage', 'intake_year', 'requested_at', 'cpf', 'guardian_phone', 'priority_criteria', 'status_reason', 'deleted_at'],
         'student_import_receipt' => ['id', 'school_id', 'school_year_id', 'student_count', 'ignored_count', 'address_completed_count'],
         'transport_import_receipt' => ['id', 'school_id', 'school_year_id', 'row_count', 'changed_count'],
         Municipality::class => ['status'],
@@ -137,7 +137,7 @@ class AuditTrail
                 continue;
             }
             // Dados sensíveis: a auditoria registra que mudou, sem guardar o valor.
-            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|institutional_email|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|guardian_phone|priority_criteria|status_reason|deletion_reason|correction_reason|cancel_reason|revoke_reason|verification_code|blood_type|alert_text|care_instructions|rg_number|birth_certificate)\z/iu', (string) $key)) {
+            if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|institutional_email|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|guardian_phone|priority_criteria|status_reason|correction_reason|cancel_reason|revoke_reason|verification_code|blood_type|alert_text|care_instructions|rg_number|birth_certificate)\z/iu', (string) $key)) {
                 $values[$key] = '[REDACTED]';
             } elseif (is_array($value)) {
                 $values[$key] = '[REDACTED]';

@@ -70,9 +70,9 @@ return new class extends Migration
         $db->statement("ALTER TABLE waitlist_requests ADD CONSTRAINT waitlist_requests_phone_chk CHECK (guardian_phone ~ '^[0-9]{10,11}$')");
         $db->statement("ALTER TABLE waitlist_requests ADD CONSTRAINT waitlist_requests_status_chk CHECK (status IN ('aguardando', 'convocado', 'desistiu', 'atendido'))");
         $db->statement("ALTER TABLE waitlist_requests ADD CONSTRAINT waitlist_requests_stage_chk CHECK (stage IN ('bercario', 'maternal_1', 'maternal_2', 'pre_1', 'pre_2'))");
-        $db->statement("ALTER TABLE waitlist_requests ADD CONSTRAINT waitlist_requests_priority_chk CHECK (priority_count BETWEEN 0 AND 4)");
-        $db->statement("ALTER TABLE waitlist_preferences ADD CONSTRAINT waitlist_preferences_order_chk CHECK (preference_order BETWEEN 1 AND 3)");
-        $db->statement("ALTER TABLE waitlist_requests ADD CONSTRAINT waitlist_requests_deletion_chk CHECK ((deleted_at IS NULL AND deleted_by IS NULL AND deletion_reason IS NULL) OR (deleted_at IS NOT NULL AND deleted_by IS NOT NULL AND deletion_reason IS NOT NULL))");
+        $db->statement('ALTER TABLE waitlist_requests ADD CONSTRAINT waitlist_requests_priority_chk CHECK (priority_count BETWEEN 0 AND 4)');
+        $db->statement('ALTER TABLE waitlist_preferences ADD CONSTRAINT waitlist_preferences_order_chk CHECK (preference_order BETWEEN 1 AND 3)');
+        $db->statement('ALTER TABLE waitlist_requests ADD CONSTRAINT waitlist_requests_deletion_chk CHECK ((deleted_at IS NULL AND deleted_by IS NULL AND deletion_reason IS NULL) OR (deleted_at IS NOT NULL AND deleted_by IS NOT NULL AND deletion_reason IS NOT NULL))');
         // Protocolo e horário são gerados pelo servidor e permanecem imutáveis,
         // inclusive se alguém tentar alterá-los diretamente por SQL.
         $db->unprepared(<<<'SQL'

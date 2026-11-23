@@ -346,12 +346,15 @@ class WaitlistController extends Controller
 
         DB::connection('tenant')->transaction(function () use ($record, $data, $request): void {
             $locked = WaitlistRequest::query()->lockForUpdate()->findOrFail($record->id);
-            $locked->deleted_by = $request->user()->id;
-            $locked->deletion_reason = trim($data['reason']);
-            $locked->delete();
+            // O motivo fica no pedido (que pode conter dado sensível) e não vai para a auditoria.
+            $locked->forceFill([
+                'deleted_at' => now(),
+                'deleted_by' => $request->user()->id,
+                'deletion_reason' => trim($data['reason']),
+            ])->save();
 
             app(AuditTrail::class)->record('tenant', 'waitlist.archived', WaitlistRequest::class, $locked->id,
-                ['deleted_at' => null], ['deleted_at' => $locked->deleted_at, 'deletion_reason' => $data['reason']]);
+                ['deleted_at' => null], ['deleted_at' => $locked->deleted_at]);
         });
 
         return redirect()->route('waitlist.index', ['municipio' => $municipality->slug])

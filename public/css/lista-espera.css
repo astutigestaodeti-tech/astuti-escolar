@@ -4,11 +4,12 @@
 .pagina-lista-espera .lista-espera-filtros label{display:block;font-weight:700;margin-bottom:6px}
 .pagina-lista-espera .lista-espera-filtros select,.pagina-lista-espera .lista-espera-filtros input{width:100%;max-width:100%;min-height:42px;padding:8px 10px;background:#fff;border:1px solid var(--linha);border-radius:var(--raio-controle)}
 .pagina-lista-espera .lista-espera-ajuda{margin:14px 0 0}
-.pagina-lista-espera .lista-espera-tabela{width:100%;table-layout:fixed;font-size:13px}
-.pagina-lista-espera .lista-espera-tabela th,.pagina-lista-espera .lista-espera-tabela td{white-space:normal!important;overflow-wrap:break-word;word-break:normal;vertical-align:top}
-.pagina-lista-espera .lista-espera-tabela a{white-space:normal!important;overflow-wrap:break-word}
-.pagina-lista-espera .lista-espera-tabela th:nth-child(3){width:15%}
-.pagina-lista-espera .lista-espera-tabela th:nth-child(5){width:16%}
+.pagina-lista-espera .lista-espera-tabela{width:100%;min-width:1040px;table-layout:auto;font-size:13.5px}
+/* Quebra só entre palavras; protocolo, data e situação nunca se partem. */
+.pagina-lista-espera .lista-espera-tabela th,.pagina-lista-espera .lista-espera-tabela td{white-space:normal!important;overflow-wrap:normal;word-break:normal;vertical-align:top;padding-left:12px;padding-right:12px}
+.pagina-lista-espera .lista-espera-tabela th:first-child,.pagina-lista-espera .lista-espera-tabela td:first-child{padding-left:var(--recuo-folha)}
+.pagina-lista-espera .lista-espera-tabela th:last-child,.pagina-lista-espera .lista-espera-tabela td:last-child{padding-right:var(--recuo-folha)}
+.pagina-lista-espera .lista-espera-tabela td:nth-child(2),.pagina-lista-espera .lista-espera-tabela td:nth-child(2) a,.pagina-lista-espera .lista-espera-tabela td:nth-child(8),.pagina-lista-espera .lista-espera-tabela td:nth-child(9){white-space:nowrap!important}
 .pagina-lista-espera .lista-espera-grupo{min-width:0;margin:0 0 20px;padding:16px;border:1px solid var(--linha);border-radius:var(--raio-controle)}
 .pagina-lista-espera .lista-espera-grupo legend{font-size:17px;font-weight:700;padding:0 6px}
 .pagina-lista-espera .lista-espera-grupo .formulario-grade{margin-top:14px}
@@ -30,5 +31,4 @@
 .pagina-lista-espera .lista-espera-mudanca>label{display:flex;width:100%;max-width:650px;min-width:0;flex-direction:column;gap:6px;font-weight:700}
 .pagina-lista-espera .lista-espera-mudanca select{width:100%;min-height:42px;padding:8px;background:#fff;border:1px solid var(--linha);border-radius:var(--raio-controle)}
 .pagina-lista-espera .lista-espera-mudanca textarea{width:100%}
-@media(max-width:800px){.pagina-lista-espera .lista-espera-tabela{min-width:950px}}
 @media(max-width:520px){.pagina-lista-espera .lista-espera-filtros>div,.pagina-lista-espera .lista-espera-filtros>.botao{width:100%;flex:1 1 100%}.pagina-lista-espera .lista-espera-grupo{padding:12px}}

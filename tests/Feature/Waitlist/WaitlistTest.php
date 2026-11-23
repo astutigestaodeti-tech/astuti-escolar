@@ -11,6 +11,7 @@ use App\Security\Totp;
 use App\Tenancy\TenantContext;
 use App\Waitlist\StageCalculator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -273,7 +274,7 @@ class WaitlistTest extends TwoMunicipalityTestCase
                 'trashed' => $record->trashed(),
                 'count' => $audits->count(),
                 'snapshots' => $audits->pluck('after')->all(),
-                'history_count' => \Illuminate\Support\Facades\DB::connection('tenant')->table('waitlist_status_changes')
+                'history_count' => DB::connection('tenant')->table('waitlist_status_changes')
                     ->where('waitlist_request_id', $id)->count(),
             ];
         });
