@@ -6,7 +6,7 @@ Uso:
   ASTUTI_DUMP_TELAS=/tmp/telas php artisan test --filter=AllSchoolPagesOpenTest
   python3 scripts/qualidade/checar-margens.py /tmp/telas 1440 390
 
-Requer Python com Playwright e Chromium. Sai com código 1 se achar algo a menos de 12 px da borda.
+Requer Python com Playwright e Chromium. Sai com código 1 se achar algo a menos de 12 px da borda ou campo e botão empilhados a menos de 6 px.
 Tabelas e listas de borda a borda são permitidas.
 """
 import glob, sys
@@ -40,6 +40,18 @@ JS = r"""
       }
     });
   });
+  // Campos e botões empilhados sem respiro (ex.: botão colado embaixo da busca).
+  const controls = [...document.querySelectorAll('.folha input:not([type=hidden]):not([type=radio]):not([type=checkbox]), .folha select, .folha textarea, .folha button, .folha a.botao')]
+    .filter(el => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && !el.closest('details:not([open]) > :not(summary)') && !el.closest('table'); });
+  controls.forEach(a => controls.forEach(b => {
+    if (a === b) return;
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    const gap = rb.top - ra.bottom;
+    const overlap = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+    if (gap >= 0 && gap < 6 && overlap > 4) {
+      out.push({el: 'colado: ' + b.tagName.toLowerCase() + ' embaixo de ' + a.tagName.toLowerCase(), pai: '', folha: (a.closest('.folha')||{}).className || '', left: Math.round(gap), right: Math.round(gap), txt: ((b.innerText || b.value || '') + ' / ' + (a.innerText || a.placeholder || '')).trim().slice(0, 60)});
+    }
+  }));
   return out;
 }
 """

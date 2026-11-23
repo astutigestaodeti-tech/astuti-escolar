@@ -19,7 +19,7 @@
 ## Padrão visual dos cartões
 
 - Todo conteúdo dentro de um cartão (`.folha`), fora o título (`.folha-cabecalho`) e tabelas de borda a borda, fica dentro de `.folha-corpo` ou de um bloco que use `var(--recuo-folha)` (22 px; 16 px no celular). Nada de campo, botão, texto ou caixa encostado na borda.
-- Antes de abrir PR com tela nova ou alterada, inclua a tela em `tests/Feature/Layout/AllSchoolPagesOpenTest.php` e rode `ASTUTI_DUMP_TELAS=/tmp/telas php artisan test --filter=AllSchoolPagesOpenTest` seguido de `python3 scripts/qualidade/checar-margens.py /tmp/telas 1440 390`. O resultado precisa ser "Problemas de margem: 0".
+- Antes de abrir PR com tela nova ou alterada, inclua a tela em `tests/Feature/Layout/AllSchoolPagesOpenTest.php` e rode `ASTUTI_DUMP_TELAS=/tmp/telas php artisan test --filter=AllSchoolPagesOpenTest` seguido de `python3 scripts/qualidade/checar-margens.py /tmp/telas 1440 390`. O resultado precisa ser "Problemas de margem: 0" (a conferência também acusa campo e botão empilhados a menos de 6 px). Busca de lista usa o padrão `.busca` (campo com lupa e botão "Pesquisar" ao lado), como em Alunos e Servidores.
 
 ## Modo de trabalho aprovado em 21/11/2026
 

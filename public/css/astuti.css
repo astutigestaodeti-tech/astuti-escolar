@@ -921,3 +921,8 @@ select.entrada{cursor:pointer}
 .ficha-principal,.ficha-lateral{display:flex;flex-direction:column;gap:20px;min-width:0}
 .ficha-lateral .declaracoes-lista{margin-top:0}
 @media (max-width:960px){.ficha-lateral{order:2}}
+
+/* Servidores: contato em linhas separadas e ações com espaço. */
+.servidores-tabela .servidor-contato{display:block}
+.servidores-tabela .servidor-contato+.servidor-contato{margin-top:3px}
+.servidores-tabela .servidor-acoes a+a{margin-left:14px}
