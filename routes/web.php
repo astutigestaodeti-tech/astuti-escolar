@@ -24,6 +24,7 @@ use App\Http\Controllers\SchoolMonthlyAttendanceReportController;
 use App\Http\Controllers\SchoolPendenciesController;
 use App\Http\Controllers\SchoolStaffController;
 use App\Http\Controllers\SchoolStudentController;
+use App\Http\Controllers\SchoolTransportRoutesController;
 use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentHealthController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
@@ -98,6 +99,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/turmas/{turma}/chamada/corrigir', [SchoolAttendanceController::class, 'correct'])
         ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
         ->name('school.classes.attendance.correct');
+    Route::get('/escolas/{escola}/transporte/rotas', [SchoolTransportRoutesController::class, 'index'])->whereUuid('escola')->name('school.transport.routes.index');
     Route::get('/escolas/{escola}/matriculas', [SchoolEnrollmentController::class, 'index'])->whereUuid('escola')->name('school.enrollments.index');
     Route::get('/escolas/{escola}/importacoes/transporte', [ConfirmedTransportImportController::class, 'index'])->whereUuid('escola')->name('school.imports.transport.index');
     Route::post('/escolas/{escola}/importacoes/transporte/previa', [ConfirmedTransportImportController::class, 'preview'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:6,1'])->name('school.imports.transport.preview');
