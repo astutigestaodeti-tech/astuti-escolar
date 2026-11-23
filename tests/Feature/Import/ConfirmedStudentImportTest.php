@@ -949,7 +949,7 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
             ->join('students', 'students.id', '=', 'student_enrollments.student_id')
             ->whereIn('students.full_name', ['Bruna Ônibus Fictícia', 'Caio Sem Ônibus Fictício'])
             ->pluck('student_enrollments.transport_status', 'students.full_name')->all());
-        $this->assertSame(['Bruna Ônibus Fictícia' => 'active', 'Caio Sem Ônibus Fictício' => 'not_requested'], $novos);
+        $this->assertEquals(['Bruna Ônibus Fictícia' => 'active', 'Caio Sem Ônibus Fictício' => 'not_requested'], $novos); // sem ORDER BY: a ordem das chaves não importa
     }
 
     public function test_mesma_crianca_na_mesma_escola_sem_data_nao_e_cadastrada_de_novo_e_recebe_a_data(): void
