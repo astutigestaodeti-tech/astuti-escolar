@@ -10,7 +10,9 @@
 .pagina-transporte-rotas .transporte-escola{font-weight:700;color:var(--tinta-2)}
 .pagina-transporte-rotas .transporte-pendencia{margin-top:7px;color:#87481f}
 .pagina-transporte-rotas .transporte-tabela{width:100%;font-size:13px}
-.pagina-transporte-rotas .transporte-tabela th,.pagina-transporte-rotas .transporte-tabela td{overflow-wrap:anywhere;vertical-align:top}
+.pagina-transporte-rotas .transporte-tabela th,.pagina-transporte-rotas .transporte-tabela td{overflow-wrap:break-word;vertical-align:top;white-space:normal;padding:11px 10px}
+.pagina-transporte-rotas .transporte-tabela th:first-child,.pagina-transporte-rotas .transporte-tabela td:first-child{padding-left:var(--recuo-folha)}
+.pagina-transporte-rotas .transporte-tabela td:nth-child(7){white-space:nowrap}
 .pagina-transporte-rotas .transporte-tabela th:last-child,.pagina-transporte-rotas .transporte-tabela td:last-child{min-width:110px}
 .pagina-transporte-rotas .transporte-observacao{min-height:36px}
 .pagina-transporte-rotas .transporte-assinatura{display:flex;align-items:end;gap:8px;margin-top:26px;font-size:13px}
