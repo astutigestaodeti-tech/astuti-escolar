@@ -656,3 +656,27 @@ A tela utiliza as fotos internas de identificação apenas para consulta, com to
 Criado painel de leitura restrito à gestão escolar, com contador na ficha da escola, filtro por turma e motivo, três critérios de triagem (três faltas não justificadas consecutivas, frequência mensal e anual inferior a 75%) e priorização pelo número de ausências consecutivas. Exibe nome e turma com acesso à ficha, percentuais, última presença e o contato principal com telefone e WhatsApp quando celular.
 
 Os números vêm de uma consulta PostgreSQL agregada para todas as matrículas ativas da unidade, evitando N+1; faltas justificadas são mostradas em coluna própria, não reduzem o percentual de triagem e interrompem a sequência de ausências não justificadas. O painel não expõe observações de chamadas, justificativas médicas ou documentos e não substitui a frequência oficial. A autorização é verificada antes da consulta e usuários de outra escola ou professores não acessam os dados. Sem migração. Os testes usam exclusivamente dados fictícios e cobrem cálculos, filtros, desempenho e isolamento. Validação do CI e referência do PR constam na issue #57.
+
+## 22 e 23/11/2026 - Sessão do Claude como programador-chefe (PRs #59 a #86)
+
+**Coordenação.** O Claude distribuiu as tarefas ao ChatGPT por issue com rótulo `chatgpt`, revisou e mesclou. Como o ambiente do ChatGPT não roda PHP, os PRs dele passam a ser conferidos aqui com a suíte e a conferência de margens antes do merge; quando precisam de ajuste, entram por um PR de integração (`integracao/...`) e o PR original é fechado com comentário.
+
+**Entregas no main.**
+- Fotos: redução no navegador antes do envio e mensagem com o limite real do servidor (#59).
+- Busca ativa por faltas (#58, ChatGPT); desfazer saída registrada por engano e última saída na ficha, migração 000028 (#61).
+- Fuso: aplicação e sessão PostgreSQL em America/Sao_Paulo (#63).
+- Relatório mensal de frequência para impressão (#64, a partir do #62 do ChatGPT).
+- Ficha de saúde mínima com alertas graves para o professor, migração 000030 (#66). Decisão de Jefferson em 23/11: secretaria e direção veem e editam a ficha completa (#84).
+- Padrão visual dos cartões (`.folha-corpo`, `--recuo-folha`), `tests/Feature/Layout/AllSchoolPagesOpenTest.php` e `scripts/qualidade/checar-margens.py` (#68; campo e botão colados, #86).
+- Servidores e professores nas turmas, migração 000029 (#69, a partir do #67 do ChatGPT); busca de servidores no padrão `.busca` (#86).
+- Calendário escolar, migração 000031 (#71, ChatGPT), e feriados nacionais em um clique (#75).
+- Pendências do cadastro por aluno, com atalhos (#73).
+- Declaração de matrícula com código e QR Code, verificação pública mínima e tela `/verificar`, migração 000032 (#77, a partir do #76 do ChatGPT); verificação usa a única Prefeitura configurada quando falta `ASTUTI_MUNICIPALITY_DB_KEY` (#80).
+- Ficha do aluno em duas colunas independentes, `.ficha-principal` e `.ficha-lateral` (#81).
+- Transporte por rota para o motorista (#82, a partir do #79 do ChatGPT).
+
+**Repositório.** A cota gratuita de GitHub Actions acabou em 22/11; por decisão de Jefferson o repositório ficou público, com LICENSE proprietária (todos os direitos reservados) mesclada antes da abertura (#72), e aprovação obrigatória para workflows de PRs de colaboradores externos.
+
+**Em andamento.** Issue #83 (painel da rede para a Secretaria Municipal), PR #85 do ChatGPT, ainda sem revisão.
+
+**Próximo passo de infraestrutura.** Jefferson contratou uma VPS Locaweb (Debian 13, 4 GB, 2 vCPU) para desenvolvimento e homologação, substituindo o notebook. Dados do servidor ficam fora do repositório. Na VPS, instalar do zero (PHP 8.4, PostgreSQL 17, Nginx, Composer, Node, OCR) e recriar a base fictícia pelas migrações e pelo kit de Monte Sereno; não copiar bancos do notebook. Definir `APP_TIMEZONE`, `ASTUTI_MUNICIPALITY_DB_KEY` e os limites de envio (`upload_max_filesize` 12M, `post_max_size` 16M, `client_max_body_size` 16m), e não expor o sistema pelo IP sem HTTPS.
