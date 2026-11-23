@@ -45,6 +45,13 @@
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar turmas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
 
+        <section class="folha cartao" aria-labelledby="titulo-calendario">
+            <span class="acao-icone"><x-icon name="turmas" /></span>
+            <h2 id="titulo-calendario">Calendário escolar</h2>
+            <p>Dias letivos previstos, feriados, recessos e reposições da escola e da rede.</p>
+            <a class="botao secundario" href="{{ route('school.calendar.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar calendário <x-icon name="seta" :size="16" /></a>
+        </section>
+
         <section class="folha cartao" aria-labelledby="titulo-servidores">
             <span class="acao-icone"><x-icon name="alunos" /></span>
             <h2 id="titulo-servidores">Servidores</h2>

@@ -810,3 +810,24 @@ select.entrada{cursor:pointer}
 .atribuicao-encerrar summary{cursor:pointer;color:var(--caneta);font-weight:700}
 .atribuicao-encerrar form{display:grid;gap:6px;margin-top:8px;max-width:220px}
 .atribuicao-encerrar input.entrada{width:100%}
+
+/* Calendário escolar: os controles e a grade respeitam o recuo dos cartões. */
+.calendario-filtros,.calendario-formulario{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-top:14px}
+.calendario-filtros .formulario-campo,.calendario-formulario .formulario-campo{min-width:160px;flex:1}
+.calendario-formulario .calendario-descricao{flex-basis:260px}
+.calendario-total{margin-top:14px;font-size:17px;color:var(--tinta-1)}
+.calendario-aviso{margin-top:12px;padding:12px 14px;background:#fff5dc;border:1px solid #efd38a;border-radius:8px;color:#704b10}
+.calendario-navegacao{display:flex;justify-content:space-between;gap:12px;margin:14px 0}
+.calendario-grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:12px}
+.calendario-semana{text-align:center;font-weight:700;font-size:12px;color:var(--tinta-2);padding:6px 0}
+.calendario-dia{min-height:82px;padding:8px 6px;border:1px solid #d4dce8;border-radius:7px;overflow-wrap:anywhere}
+.calendario-dia.fora-mes{opacity:.4}
+.calendario-dia.dia-sem-aula{background:#fff5dc;border-color:#efd38a}
+.calendario-dia.dia-extra{background:#e9f2ff;border-color:#8caddf}
+.calendario-dia>strong{display:block;font-size:14px}
+.calendario-evento{display:block;margin-top:5px;font-size:11px;line-height:1.3}
+.calendario-linha{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #e0e5ee}
+.calendario-linha:last-child{border-bottom:0}
+.calendario-linha p{margin:4px 0}
+.calendario-linha small{color:var(--tinta-3)}
+@media(max-width:640px){.calendario-dia{min-height:62px;padding:5px 3px}.calendario-evento{font-size:9px}.calendario-formulario .formulario-campo,.calendario-filtros .formulario-campo{flex-basis:100%}}

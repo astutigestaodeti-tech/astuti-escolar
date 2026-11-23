@@ -11,6 +11,7 @@ use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\ClassTeacherAssignment;
 use App\Models\Tenant\Guardian;
 use App\Models\Tenant\School;
+use App\Models\Tenant\SchoolCalendarDay;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\StaffMember;
@@ -41,6 +42,7 @@ class AuditTrail
         StudentHealthAlert::class => ['id', 'student_id', 'kind', 'severity', 'alert_text', 'care_instructions', 'motivo'],
         StudentExit::class => ['id', 'student_id', 'school_id', 'person_type', 'person_id', 'person_name', 'person_relationship', 'exited_at', 'cancelled_at', 'cancelled_by', 'cancel_reason'],
         StudentPickupAuthorization::class => ['id', 'student_id', 'full_name', 'relationship', 'phone', 'document', 'expires_at', 'notes', 'motivo', 'photo_updated_at'],
+        SchoolCalendarDay::class => ['id', 'school_year_id', 'school_id', 'date', 'kind', 'created_at', 'updated_at'],
         School::class => ['id', 'name', 'inep_code', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at', 'latitude', 'longitude', 'geo_source', 'geo_updated_at'],
         SchoolYear::class => ['id', 'year', 'start_date', 'end_date', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
         SchoolClass::class => ['id', 'school_id', 'school_year_id', 'name', 'stage', 'modality', 'shift', 'capacity', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'restored_by', 'restoration_reason', 'created_at', 'updated_at'],
