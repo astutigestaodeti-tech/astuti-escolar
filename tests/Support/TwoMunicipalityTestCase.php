@@ -125,7 +125,7 @@ abstract class TwoMunicipalityTestCase extends TestCase
 
                 // Apagar primeiro os vinculos de teste, antes das FKs de
                 // escolas e anos, sem desativar a integridade referencial.
-                foreach (['waitlist_status_changes', 'waitlist_preferences', 'waitlist_requests', 'attendance_marks', 'attendance_sessions', 'postal_code_cache', 'transport_import_receipts', 'student_import_receipts', 'issued_documents', 'student_enrollment_destinations', 'student_enrollments', 'student_exits', 'student_health_alerts', 'student_health_profiles', 'student_pickup_authorizations', 'student_guardians', 'guardians', 'students', 'class_teacher_assignments', 'staff_members', 'school_classes', 'school_calendar_days', 'school_years', 'schools', 'audit_logs'] as $table) {
+                foreach (['grade_entries', 'academic_periods', 'waitlist_status_changes', 'waitlist_preferences', 'waitlist_requests', 'attendance_marks', 'attendance_sessions', 'postal_code_cache', 'transport_import_receipts', 'student_import_receipts', 'issued_documents', 'student_enrollment_destinations', 'student_enrollments', 'student_exits', 'student_health_alerts', 'student_health_profiles', 'student_pickup_authorizations', 'student_guardians', 'guardians', 'students', 'class_teacher_assignments', 'staff_members', 'school_classes', 'school_calendar_days', 'school_years', 'schools', 'audit_logs'] as $table) {
                     if (Schema::connection('tenant')->hasTable($table)) {
                         if ($table === 'audit_logs') {
                             $this->limparAuditoriaDescartavel('tenant', 'audit_logs', 'audit_logs_block_truncate');

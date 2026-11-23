@@ -1,0 +1,57 @@
+/* Notas e boletim: tabela fluida, sem quebra no meio de palavras ou códigos. */
+.pagina-notas .notas-filtros{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px}
+.pagina-notas .notas-filtros>label:not(.notas-checkbox){display:flex;flex-direction:column;gap:6px;flex:1 1 190px;min-width:0;font-weight:700}
+.pagina-notas .notas-filtros select,.pagina-notas .notas-filtros input{max-width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--linha);border-radius:var(--raio-controle);background:#fff}
+.pagina-notas .notas-filtros .botao{min-height:42px}
+.pagina-notas .notas-rolagem,.pagina-boletim .boletim-rolagem{width:100%;max-width:100%;overflow-x:auto}
+.pagina-notas .notas-tabela,.pagina-boletim .boletim-tabela{width:100%;table-layout:auto;min-width:600px}
+.pagina-notas .notas-tabela th,.pagina-notas .notas-tabela td,
+.pagina-boletim .boletim-tabela th,.pagina-boletim .boletim-tabela td{
+    white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;vertical-align:middle
+}
+.pagina-notas .notas-tabela th:first-child{min-width:180px}
+.pagina-notas .notas-tabela input{width:100%;max-width:200px;min-width:100px}
+.pagina-notas .notas-tabela tr{break-inside:avoid}
+.pagina-notas .notas-aviso{margin-top:14px}
+.pagina-notas .notas-secao{margin-top:20px}
+.pagina-notas .notas-fechamento{border-bottom:1px solid var(--linha);padding:12px 0}
+.pagina-notas .notas-fechamento:last-child{border-bottom:0}
+.pagina-notas .notas-fechamento form{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:8px}
+.pagina-notas .notas-fechamento label{display:flex;flex:1 1 260px;min-width:0;flex-direction:column;gap:6px}
+.pagina-notas .notas-checkbox{align-self:center}
+.pagina-notas .notas-periodos-tabela{min-width:600px}
+.pagina-notas .notas-componentes-tabela{min-width:650px}
+.pagina-notas .notas-componentes-tabela th:first-child{min-width:180px}
+.pagina-notas .notas-componentes-tabela td:last-child{white-space:nowrap!important}
+.pagina-boletim .boletim-folha{margin-top:12px}
+.pagina-boletim .boletim-identificacao{display:flex;flex-wrap:wrap;gap:16px;margin:0 0 14px}
+.pagina-boletim .boletim-identificacao>div{flex:1 1 160px;min-width:0}
+.pagina-boletim .boletim-identificacao dt{font-size:13px;color:var(--tinta-2)}
+.pagina-boletim .boletim-identificacao dd{margin:3px 0 0;font-weight:700}
+.pagina-boletim .boletim-tabela{min-width:780px;font-size:13px}
+.pagina-boletim .boletim-tabela th:first-child{min-width:150px}
+.pagina-boletim .boletim-tabela th small{display:block;font-weight:400;font-size:11px}
+.pagina-boletim .boletim-tabela td.numero{white-space:nowrap!important}
+.pagina-boletim .boletim-abaixo{color:#9a321f;font-weight:700}
+.pagina-boletim .boletim-resumo{padding:12px 0;border-top:1px solid var(--linha)}
+.pagina-boletim .boletim-rodape{font-size:12px;color:var(--tinta-2);margin-top:12px}
+@media(max-width:650px){.pagina-notas .notas-filtros>label:not(.notas-checkbox),.pagina-notas .notas-filtros>.botao{flex:1 1 100%}}
+@page{size:A4 portrait;margin:12mm}
+@media print{
+    html,body.pagina-boletim{background:#fff!important;color:#000!important}
+    .pagina-boletim .lateral,.pagina-boletim .topo,.pagina-boletim .folha-titulo,
+    .pagina-boletim .voltar,.pagina-boletim .rodape,.pagina-boletim .rodape-versao,
+    .pagina-boletim .aviso-demo,.pagina-boletim .pular{display:none!important}
+    .pagina-boletim .app,.pagina-boletim .area,.pagina-boletim .conteudo{
+        display:block!important;width:100%!important;max-width:none!important;padding:0!important;margin:0!important;min-height:0!important
+    }
+    .pagina-boletim .boletim-folha{border:0!important;box-shadow:none!important;margin:0!important}
+    .pagina-boletim .boletim-rolagem{overflow:visible!important}
+    .pagina-boletim .boletim-tabela{width:100%!important;min-width:0!important;table-layout:fixed;font-size:8.5pt}
+    .pagina-boletim .boletim-tabela th,.pagina-boletim .boletim-tabela td{padding:5px 3px!important;border:1px solid #888}
+    .pagina-boletim .boletim-tabela th:first-child{width:19%;min-width:0!important}
+    .pagina-boletim .boletim-tabela th small{font-size:7pt}
+    .pagina-boletim .boletim-tabela tr{break-inside:avoid;page-break-inside:avoid}
+    .pagina-boletim .boletim-tabela thead{display:table-header-group}
+    .pagina-boletim .boletim-identificacao{gap:12px}
+}

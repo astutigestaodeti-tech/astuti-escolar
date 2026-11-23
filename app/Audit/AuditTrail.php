@@ -5,10 +5,13 @@ namespace App\Audit;
 use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
 use App\Models\Platform\PlatformAuditLog;
+use App\Models\Tenant\AcademicPeriod;
 use App\Models\Tenant\AttendanceMark;
 use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\ClassTeacherAssignment;
+use App\Models\Tenant\CurricularComponent;
+use App\Models\Tenant\GradeEntry;
 use App\Models\Tenant\Guardian;
 use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\School;
@@ -34,6 +37,9 @@ class AuditTrail
 {
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
+        AcademicPeriod::class => ['id', 'school_year_id', 'kind', 'number', 'starts_on', 'ends_on', 'closed_at', 'closed_by', 'close_reason'],
+        CurricularComponent::class => ['id', 'code', 'name', 'is_optional', 'active', 'display_order'],
+        GradeEntry::class => ['id', 'student_enrollment_id', 'school_class_id', 'academic_period_id', 'curricular_component_id', 'grade', 'absences', 'recorded_by', 'updated_by', 'change_reason'],
         AttendanceSession::class => ['id', 'school_class_id', 'attendance_date', 'recorded_by', 'recorded_at', 'last_corrected_by', 'last_corrected_at', 'correction_reason', 'present_count', 'absent_count', 'justified_count'],
         ClassTeacherAssignment::class => ['id', 'school_class_id', 'staff_member_id', 'subject', 'is_main', 'starts_on', 'ends_on'],
         StaffMember::class => ['id', 'school_id', 'full_name', 'registration_number', 'role', 'institutional_email', 'phone', 'status', 'deleted_at', 'deleted_by', 'deletion_reason', 'created_at', 'updated_at'],
