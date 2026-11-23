@@ -39,7 +39,7 @@
                 <form class="calendario-filtros" method="GET" action="{{ route('school.calendar.index', $params) }}">
                     <div class="formulario-campo">
                         <label class="rotulo" for="calendario-ano">Ano letivo</label>
-                        <select id="calendario-ano" name="ano">
+                        <select class="entrada" id="calendario-ano" name="ano">
                             @foreach ($years as $option)
                                 <option value="{{ $option->id }}" @selected($option->id === $year->id)>{{ $option->year }}</option>
                             @endforeach
@@ -47,7 +47,7 @@
                     </div>
                     <div class="formulario-campo">
                         <label class="rotulo" for="calendario-mes">Mês</label>
-                        <input id="calendario-mes" name="mes" type="month" value="{{ $month->format('Y-m') }}">
+                        <input class="entrada" id="calendario-mes" name="mes" type="month" value="{{ $month->format('Y-m') }}">
                     </div>
                     <button class="botao secundario" type="submit">Consultar</button>
                 </form>
@@ -63,7 +63,7 @@
     @if ($year)
         <section class="folha" aria-labelledby="calendario-mes-titulo">
             <div class="folha-cabecalho">
-                <div><h2 id="calendario-mes-titulo">{{ ucfirst($month->locale('pt_BR')->translatedFormat('F Y')) }}</h2><p>Azul identifica os dias letivos extras; âmbar, dias sem aula.</p></div>
+                <div><h2 id="calendario-mes-titulo">{{ ucfirst($month->locale('pt_BR')->translatedFormat('F Y')) }}</h2><p>Âmbar: sem aula (feriado, recesso ou dia não letivo). Azul: dia letivo extra. Cinza: fim de semana.</p></div>
             </div>
             <div class="folha-corpo">
                 <nav class="calendario-navegacao" aria-label="Navegação mensal">
@@ -80,7 +80,7 @@
                             $closed = $records->whereIn('kind', ['holiday', 'recess', 'non_school_day'])->isNotEmpty();
                             $extra = $records->contains('kind', 'extra_school_day');
                         @endphp
-                        <div class="calendario-dia {{ $day->month !== $month->month ? 'fora-mes' : '' }} {{ $closed ? 'dia-sem-aula' : ($extra ? 'dia-extra' : '') }}" aria-label="{{ $day->format('d/m/Y') }}">
+                        <div @class(['calendario-dia', 'fora-mes' => $day->month !== $month->month, 'dia-sem-aula' => $closed, 'dia-extra' => ! $closed && $extra, 'fim-de-semana' => ! $closed && ! $extra && $day->isWeekend(), 'hoje' => $day->isToday()]) aria-label="{{ $day->format('d/m/Y') }}{{ $day->isToday() ? ', hoje' : '' }}">
                             <strong>{{ $day->format('d') }}</strong>
                             @foreach ($records as $record)
                                 <span class="calendario-evento">{{ \App\Models\Tenant\SchoolCalendarDay::KINDS[$record->kind] }}: {{ $record->description }}</span>
@@ -98,24 +98,33 @@
                     @if ($errors->any())
                         <div class="nota" role="alert"><strong>Confira os campos.</strong><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
                     @endif
+                    <form class="calendario-feriados" method="POST" action="{{ route('school.calendar.national-holidays', $params) }}">
+                        @csrf
+                        <input type="hidden" name="school_year_id" value="{{ $year->id }}">
+                        <div>
+                            <strong>Feriados nacionais em um clique</strong>
+                            <p class="texto-ajuda">Inclui Confraternização, Carnaval, Sexta-feira Santa, Tiradentes, Dia do Trabalho, Corpus Christi, Independência, Nossa Senhora Aparecida, Finados, Proclamação da República, Consciência Negra e Natal{{ $isMunicipalManager ? ' para toda a rede' : ' para esta escola' }}. Datas já lançadas são mantidas.</p>
+                        </div>
+                        <button class="botao secundario" type="submit">Incluir feriados nacionais</button>
+                    </form>
                     <form class="calendario-formulario" method="POST" action="{{ route('school.calendar.store', $params) }}">
                         @csrf
                         <input type="hidden" name="school_year_id" value="{{ $year->id }}">
                         <div class="formulario-campo">
                             <label class="rotulo" for="calendario-data">Data</label>
-                            <input id="calendario-data" type="date" name="date" required min="{{ $year->start_date?->toDateString() }}" max="{{ $year->end_date?->toDateString() }}" value="{{ old('date', $month->format('Y-m-d')) }}">
+                            <input class="entrada" id="calendario-data" type="date" name="date" required min="{{ $year->start_date?->toDateString() }}" max="{{ $year->end_date?->toDateString() }}" value="{{ old('date', $month->format('Y-m-d')) }}">
                         </div>
                         <div class="formulario-campo">
                             <label class="rotulo" for="calendario-tipo">Tipo</label>
-                            <select id="calendario-tipo" name="kind" required>
+                            <select class="entrada" id="calendario-tipo" name="kind" required>
                                 @foreach (\App\Models\Tenant\SchoolCalendarDay::KINDS as $code => $label)
                                     <option value="{{ $code }}" @selected(old('kind') === $code)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="formulario-campo">
+                        <div class="formulario-campo calendario-abrangencia">
                             <label class="rotulo" for="calendario-escopo">Abrangência</label>
-                            <select id="calendario-escopo" name="scope" required>
+                            <select class="entrada" id="calendario-escopo" name="scope" required>
                                 <option value="school">Somente esta escola</option>
                                 @if ($isMunicipalManager)
                                     <option value="municipality" @selected(old('scope') === 'municipality')>Toda a rede municipal</option>
@@ -124,7 +133,7 @@
                         </div>
                         <div class="formulario-campo calendario-descricao">
                             <label class="rotulo" for="calendario-descricao">Descrição</label>
-                            <input id="calendario-descricao" type="text" name="description" maxlength="120" required value="{{ old('description') }}" placeholder="Ex.: Recesso escolar">
+                            <input class="entrada" id="calendario-descricao" type="text" name="description" maxlength="120" required value="{{ old('description') }}" placeholder="Ex.: Recesso escolar">
                             <small class="texto-ajuda">Não inclua nomes de alunos ou dados pessoais na descrição.</small>
                         </div>
                         <button type="submit" class="botao primario">Adicionar data</button>
