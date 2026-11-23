@@ -18,7 +18,6 @@ use App\Models\User;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 

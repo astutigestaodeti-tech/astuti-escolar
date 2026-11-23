@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\AcademicConfigController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
-use App\Http\Controllers\AcademicConfigController;
 use App\Http\Controllers\ClassGradesController;
 use App\Http\Controllers\ClassTeacherAssignmentController;
 use App\Http\Controllers\ConfirmedStudentImportController;
