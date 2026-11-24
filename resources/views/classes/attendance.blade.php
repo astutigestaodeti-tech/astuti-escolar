@@ -18,6 +18,10 @@
     <span aria-current="page">Chamada</span>
 @endsection
 
+@push('head')
+    <link rel="stylesheet" href="{{ asset('css/conteudo-aula.css') }}?v={{ filemtime(public_path('css/conteudo-aula.css')) }}">
+@endpush
+
 @section('content')
     <div class="folha-titulo">
         <div>
@@ -121,4 +125,6 @@
             @endif
         @endif
     </section>
+
+    @include('classes.lesson-block')
 @endsection
