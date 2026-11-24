@@ -269,10 +269,32 @@ if [[ "${ASTUTI_TROCAR_DEMO_KIT:-}" == 1 ]]; then
 fi
 unset ASTUTI_TROCAR_DEMO_KIT
 
+# Opcional: cria a conta "admin" (ou troca a senha dela) SOMENTE na copia 55436.
+# A senha e digitada por voce no terminal e nao muda nas proximas atualizacoes.
+# Uso: ASTUTI_CRIAR_ADMIN=1 bash scripts/operacao/atualizar-notebook.sh
+#      ASTUTI_CRIAR_ADMIN=trocar bash scripts/operacao/atualizar-notebook.sh
+if [[ -n "${ASTUTI_CRIAR_ADMIN:-}" ]]; then
+    printf '===== CONTA ADMIN, APENAS NO ENSAIO 55436 =====\n'
+    php -r '
+        require "vendor/autoload.php";
+        $app = require "bootstrap/app.php";
+        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        $dados = \Illuminate\Support\Facades\DB::connection("platform")->selectOne(
+            "SELECT current_database() AS banco, current_user AS usuario, inet_server_port() AS porta"
+        );
+        exit($dados->banco === "astuti_platform_dev" && $dados->usuario === "astuti_ensaio" && (int) $dados->porta === 55436 ? 0 : 1);
+    ' || erro 'a conexao efetiva nao e a copia isolada 55436; a conta admin nao foi criada.'
+    opcoes=()
+    [[ "$ASTUTI_CRIAR_ADMIN" == trocar ]] && opcoes+=(--trocar-senha)
+    php artisan astuti:usuario-admin admin "${opcoes[@]}" || erro 'a conta admin nao foi criada; nada mais foi alterado.'
+fi
+unset ASTUTI_CRIAR_ADMIN
+
 printf '\n===== TESTE DA INTERFACE REAL, APENAS NO CLUSTER ISOLADO =====\n'
 printf 'Endereco: http://127.0.0.1:8002/login\n'
 printf 'E-mail: %s\n' "$email"
 printf 'Senha temporaria SOMENTE DO ENSAIO: %s\n' "$senha_login"
+printf 'Conta admin (se criada): usuario admin, com a senha que voce escolheu.\n'
 printf 'O PostgreSQL original 5432 e o MariaDB nao foram alterados por este comando.\n'
 printf 'Deixe este terminal aberto e pressione Ctrl+C para encerrar o servidor.\n\n'
 
