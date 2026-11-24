@@ -29,6 +29,7 @@
         : null;
     $iniciaisUsuario = mb_strtoupper(collect(preg_split('/\s+/u', trim((string) ($usuario?->name ?? ''))) ?: [])->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
     $painelAtivo = request()->routeIs('network.panel.*');
+    $relatorioSecretariaAtivo = request()->routeIs('secretariat.monthly.*');
     $censoAtivo = request()->routeIs('census.readiness.*');
     $integralAtivo = request()->routeIs('integral.*');
     $alfabetizacaoAtiva = request()->routeIs('literacy.*') || request()->routeIs('school.literacy.*');
@@ -45,6 +46,7 @@
         'waitlist.create', 'waitlist.show' => route('waitlist.index', $parametrosMunicipio),
         'waitlist.enroll.form' => route('waitlist.show', [...$parametrosMunicipio, 'pedido' => request()->route('pedido')]),
         'network.panel.index' => route('schools.index', $parametrosMunicipio),
+        'secretariat.monthly.index' => route('network.panel.index', $parametrosMunicipio),
         'literacy.network', 'literacy.settings' => route('network.panel.index', $parametrosMunicipio),
         'school.literacy.panel' => route('schools.show', $parametrosEscola),
         'school.literacy.classroom', 'school.literacy.save' => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
@@ -114,6 +116,9 @@
                 </a>
                 <a class="menu-item {{ $integralAtivo ? 'ativo' : '' }}" href="{{ route('integral.index', $parametrosMunicipio) }}" @if ($integralAtivo) aria-current="page" @endif>
                     <x-icon name="turmas" /><span>Tempo integral</span>
+                </a>
+                <a class="menu-item {{ $relatorioSecretariaAtivo ? 'ativo' : '' }}" href="{{ route('secretariat.monthly.index', $parametrosMunicipio) }}" @if ($relatorioSecretariaAtivo) aria-current="page" @endif>
+                    <x-icon name="indicadores" /><span>Relatório mensal</span>
                 </a>
                 <a class="menu-item {{ $alfabetizacaoAtiva ? 'ativo' : '' }}" href="{{ route('literacy.network', $parametrosMunicipio) }}" @if ($alfabetizacaoAtiva) aria-current="page" @endif>
                     <x-icon name="indicadores" /><span>Alfabetização</span>
