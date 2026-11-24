@@ -23,3 +23,4 @@
 .pagina-alimentacao .alimentacao-tabela{min-width:0;font-size:9pt}
 .pagina-alimentacao .alimentacao-tabela th,.pagina-alimentacao .alimentacao-tabela td{padding:6px;min-width:0}
 }
+.pagina-alimentacao .folha + .folha{margin-top:20px}

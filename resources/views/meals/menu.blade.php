@@ -34,10 +34,10 @@
 @if($week)
 <div class="alimentacao-links">
 @if($canEdit)<a class="botao secundario" href="{{ route('meals.report', $params) }}">Relatório mensal PNAE</a>@endif
-@if($weeks[0]->startOfWeek()->greaterThanOrEqualTo($year->start_date->copy()->startOfWeek()))
+@if($weeks[0]->startOfWeek(\Carbon\CarbonInterface::MONDAY)->greaterThanOrEqualTo($year->start_date->copy()->startOfWeek(\Carbon\CarbonInterface::MONDAY)))
 <a class="botao secundario" href="{{ $base.'?'.http_build_query(['ano' => $year->year, 'semana' => $weeks[0]->toDateString()]) }}">Semana anterior</a>
 @endif
-@if($weeks[1]->startOfWeek()->lessThanOrEqualTo($year->end_date->copy()->startOfWeek()))
+@if($weeks[1]->startOfWeek(\Carbon\CarbonInterface::MONDAY)->lessThanOrEqualTo($year->end_date->copy()->startOfWeek(\Carbon\CarbonInterface::MONDAY)))
 <a class="botao secundario" href="{{ $base.'?'.http_build_query(['ano' => $year->year, 'semana' => $weeks[1]->toDateString()]) }}">Próxima semana</a>
 @endif
 <a class="botao secundario" href="{{ $base.'?'.http_build_query(['ano' => $year->year, 'semana' => $start, 'imprimir' => 1]) }}">Versão A4 para o mural</a>

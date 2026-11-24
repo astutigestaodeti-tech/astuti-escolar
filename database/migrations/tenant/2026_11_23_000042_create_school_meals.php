@@ -44,7 +44,7 @@ return new class extends Migration
             $db->statement("ALTER TABLE {$table} ADD CONSTRAINT {$table}_meal_check CHECK (meal_type IN ('cafe', 'almoco', 'lanche', 'jantar'))");
         }
         $db->statement('ALTER TABLE school_meal_menus ADD CONSTRAINT school_meal_menus_weekday_check CHECK (weekday BETWEEN 1 AND 7)');
-        $db->statement("ALTER TABLE school_meal_menus ADD CONSTRAINT school_meal_menus_week_monday_check CHECK (EXTRACT(ISODOW FROM week_start) = 1)");
+        $db->statement('ALTER TABLE school_meal_menus ADD CONSTRAINT school_meal_menus_week_monday_check CHECK (EXTRACT(ISODOW FROM week_start) = 1)');
     }
 
     public function down(): void

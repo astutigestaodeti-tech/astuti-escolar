@@ -194,6 +194,7 @@ class SchoolMeals
             };
             if ($category === null) {
                 $unknown++;
+
                 continue;
             }
             $daily += (float) config('censo.categories.'.$category.'.pnae', 0);

@@ -2,17 +2,18 @@
 
 namespace Tests\Feature\Meals;
 
-use App\Models\Tenant\AuditLog;
-use App\Models\Tenant\AttendanceSession;
-use App\Models\Tenant\AttendanceMark;
-use App\Models\Tenant\StudentHealthAlert;
 use App\Meals\SchoolMeals;
+use App\Models\Tenant\AttendanceMark;
+use App\Models\Tenant\AttendanceSession;
+use App\Models\Tenant\AuditLog;
+use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolMealMenu;
 use App\Models\Tenant\SchoolMealServing;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
+use App\Models\Tenant\StudentHealthAlert;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
@@ -151,7 +152,7 @@ class SchoolMealsTest extends TwoMunicipalityTestCase
                 'id' => (string) Str::uuid(), 'attendance_session_id' => $session->id,
                 'student_id' => $student->id, 'status' => 'present',
             ]);
-            $school = \App\Models\Tenant\School::query()->findOrFail(self::ESCOLA_A1);
+            $school = School::query()->findOrFail(self::ESCOLA_A1);
             $year = SchoolYear::query()->findOrFail($this->yearId);
             $this->assertSame(1, app(SchoolMeals::class)->suggested($school, $year, '2027-10-14')['fundamental']);
             $this->assertNull(app(SchoolMeals::class)->suggested($school, $year, '2027-10-13'));

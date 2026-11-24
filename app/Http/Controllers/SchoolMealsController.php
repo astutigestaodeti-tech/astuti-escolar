@@ -10,6 +10,7 @@ use App\Models\Tenant\SchoolMealServing;
 use App\Models\Tenant\SchoolYear;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -55,7 +56,7 @@ class SchoolMealsController extends Controller
                 ? CarbonImmutable::parse($filter['semana'])
                 : (today()->year === $year->year && CarbonImmutable::today()->betweenIncluded(CarbonImmutable::parse($year->start_date), CarbonImmutable::parse($year->end_date))
                     ? CarbonImmutable::today() : CarbonImmutable::parse($year->start_date));
-            $week = $reference->startOfWeek();
+            $week = $reference->startOfWeek(CarbonInterface::MONDAY);
             $this->assertWeek($year, $week);
             $entries = SchoolMealMenu::query()->where('school_year_id', $year->id)
                 ->whereDate('week_start', $week->toDateString())->get()
@@ -295,8 +296,8 @@ class SchoolMealsController extends Controller
 
     private function assertWeek(SchoolYear $year, CarbonImmutable $week): void
     {
-        $first = CarbonImmutable::parse($year->start_date)->startOfWeek();
-        $last = CarbonImmutable::parse($year->end_date)->startOfWeek();
+        $first = CarbonImmutable::parse($year->start_date)->startOfWeek(CarbonInterface::MONDAY);
+        $last = CarbonImmutable::parse($year->end_date)->startOfWeek(CarbonInterface::MONDAY);
         if ($week->dayOfWeekIso !== 1 || $week->lt($first) || $week->gt($last)) {
             throw ValidationException::withMessages(['semana' => 'Escolha uma segunda-feira do período letivo.']);
         }
