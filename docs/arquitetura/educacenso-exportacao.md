@@ -278,6 +278,14 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - poder público do transporte e **tipo de veículo** por rota (60.23 a 33): **entregues** na tela "Transporte no Censo" (tabela `transport_route_census`), uma vez por rota, recusando nenhum veículo ou todos os dez;
   - série do aluno em turma multisseriada (60.8, ligado à #152).
 
+### Código da pessoa no sistema próprio
+
+Registros 30 e 60, campo 3: os 20 primeiros dígitos hexadecimais do identificador interno do aluno, em maiúsculas (`CodigoCenso::dePessoa`). É estável entre os anos sem precisar de coluna nova, e o retorno do Inep casa com o cadastro por ele.
+
+### Leitura literal pendente de confirmação
+
+A tabela do Anexo 4 não traz "Nenhum" para cegueira, surdocegueira e os transtornos de aprendizagem. O montador avisa (não recusa) quando um aluno com essas condições não tem recurso de prova marcado.
+
 ### Identificadores Inep
 
 **Novo:** ID Inep de aluno e servidor (12 dígitos), código Inep da turma e código da matrícula, vindos do retorno do Educacenso (seção 5).
@@ -292,7 +300,7 @@ Cada fase é um PR com testes. Nada vai para produção sem as regras da fase co
 | 1 | Dados de Censo da escola (00) e questionário de infraestrutura (10) gerado do leiaute, com cópia do ano anterior | ChatGPT (tela), revisão Claude |
 | 2 | Turma para o Censo: etapa Inep confirmada, horários por dia, tipo, componentes, turmas de AEE e atividade complementar (**entregue**: tela "Turmas no Censo", preenchimento em lote, registro 20 com as regras condicionais e coluna na Conferência do Censo) | Claude |
 | 3 | Servidores para o Censo: dados pessoais, formação (tabelas de cursos e IES), gestor, função e componentes por turma | ChatGPT, revisão Claude |
-| 4 | Alunos para o Censo: filiação, municípios em código, transtornos, recursos, transporte, hospital/domicílio | Claude (dados sensíveis) |
+| 4 | Alunos para o Censo: filiação, municípios em código, transtornos, recursos, transporte, hospital/domicílio (**entregue**: telas "Dados do Censo", educação especial ampliada e "Transporte no Censo"; montadores `Registro30Aluno` e `Registro60`, tela "Alunos no Censo" e coluna na Conferência do Censo) | Claude (dados sensíveis) |
 | 5 | Regras condicionais, aba Educacenso na Conferência e gerador do arquivo ISO-8859-1 (o validador genérico já está pronto) | Claude; o gerador só após a resposta do Inep (seção 4.2) |
 | 6 | Retorno: importação dos códigos Inep do arquivo de exportação | Claude |
 | 7 | Situação do Aluno 2026, assim que o Inep publicar o leiaute da 2ª etapa | Claude |

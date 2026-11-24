@@ -20,4 +20,14 @@ final class CodigoCenso
 
         return $codigo;
     }
+
+    /**
+     * Código estável de uma pessoa a partir do seu identificador interno (UUID):
+     * os 20 primeiros dígitos hexadecimais, em maiúsculas. Não muda entre os
+     * anos, como o Inep espera para casar o retorno com o cadastro.
+     */
+    public static function dePessoa(string $uuid): string
+    {
+        return strtoupper(substr(str_replace('-', '', $uuid), 0, 20));
+    }
 }

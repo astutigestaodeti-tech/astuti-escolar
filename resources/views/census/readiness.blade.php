@@ -145,7 +145,7 @@
 
     <section class="folha censo-secao" aria-labelledby="titulo-censo-escolas">
         <div class="folha-cabecalho">
-            <div><h2 id="titulo-censo-escolas">Por escola</h2><p>O número de matrículas com algo a corrigir abre a lista da escola. As turmas prontas seguem o formato do Educacenso (leiaute oficial do Inep).</p></div>
+            <div><h2 id="titulo-censo-escolas">Por escola</h2><p>O número de matrículas com algo a corrigir abre a lista da escola. Turmas e alunos prontos seguem o formato do Educacenso (leiaute oficial do Inep).</p></div>
         </div>
         <div class="rolagem censo-rolagem">
             <table class="tabela censo-tabela">
@@ -156,6 +156,7 @@
                         <th scope="col" class="numero">Matrículas ativas</th>
                         <th scope="col" class="numero">Com algo a corrigir</th>
                         <th scope="col" class="numero">Turmas prontas para o Educacenso</th>
+                        <th scope="col" class="numero">Alunos prontos para o Educacenso</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -178,6 +179,12 @@
                                     $turmasEscola = $classes->get($linha['school']->id, ['total' => 0, 'ready' => 0]);
                                 @endphp
                                 <a href="{{ route('school.census.classes.index', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}" @if ($turmasEscola['ready'] < $turmasEscola['total']) class="censo-atencao" @endif>{{ $turmasEscola['ready'] }} de {{ $turmasEscola['total'] }}</a>
+                            </td>
+                            <td class="numero">
+                                @php
+                                    $alunosEscola = $students->get($linha['school']->id, ['total' => 0, 'ready' => 0]);
+                                @endphp
+                                <a href="{{ route('school.census.students.index', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}" @if ($alunosEscola['ready'] < $alunosEscola['total']) class="censo-atencao" @endif>{{ $alunosEscola['ready'] }} de {{ $alunosEscola['total'] }}</a>
                             </td>
                         </tr>
                     @endforeach
