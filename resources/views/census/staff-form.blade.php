@@ -63,6 +63,42 @@
         </div>
     @endif
 
+    @if (session('status'))
+        <div class="status-sucesso" role="status">{{ session('status') }}</div>
+    @endif
+    @if ($managerEligible)
+        <form method="POST" action="{{ route('school.staff.census.manager', [...$parametros, 'servidor' => $member->id]) }}">
+            @csrf
+            @method('PUT')
+            <section class="folha" aria-labelledby="titulo-gestao">
+                <div class="folha-cabecalho"><div><h2 id="titulo-gestao">Gestão escolar</h2><p>Registro 40. Confirme o cargo; critério e situação funcional só quando se aplicam.</p></div></div>
+                <div class="folha-corpo">
+                    <div class="formulario-grade">
+                        @foreach (['position' => 'Cargo', 'access_criterion' => 'Critério de acesso ao cargo', 'employment_status' => 'Situação funcional'] as $campo => $rotulo)
+                            <div class="formulario-campo">
+                                <label class="rotulo" for="gestao-{{ $campo }}">{{ $rotulo }}</label>
+                                <select class="entrada" id="gestao-{{ $campo }}" name="{{ $campo }}">
+                                    <option value="">Não informado / não se aplica</option>
+                                    @foreach ($managerOptions[$campo] as $codigo => $nome)
+                                        <option value="{{ $codigo }}" @selected((string) old($campo, $manager?->{$campo}) === (string) $codigo)>{{ $nome }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endforeach
+                    </div>
+                    <ul class="censo-pendencias">
+                        @foreach ($managerRegistro->pendencias as $p)
+                            <li>{{ $p->recusa() ? 'Pendência' : 'Aviso' }} (campo {{ $p->campo }}): {{ $p->mensagem }}</li>
+                        @endforeach
+                    </ul>
+                    <div class="formulario-acoes censo-secao">
+                        <button class="botao" type="submit">Salvar gestão escolar</button>
+                    </div>
+                </div>
+            </section>
+        </form>
+    @endif
+
     <form method="POST" action="{{ route('school.staff.census.update', [...$parametros, 'servidor' => $member->id]) }}" novalidate>
         @csrf
         @method('PUT')

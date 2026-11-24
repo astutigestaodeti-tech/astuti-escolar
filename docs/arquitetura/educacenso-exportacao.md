@@ -261,11 +261,21 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - e-mail do gestor (110) vem do e-mail institucional do cadastro do servidor;
   - pelo Anexo 2, transtornos, recursos de prova e certidão (29 a 50) são só de aluno e vão nulos; a residência (51 a 55) é opcional fora do registro 60 e não é coletada.
   - Leitura literal a confirmar: o campo 13 exige povo indígena com cor/raça indígena, embora o Anexo 2 não marque o campo para gestor e profissional. O Astuti segue a regra do campo.
-- **Novo (40):** cargo (diretor ou outro), critério de acesso ao cargo e situação funcional.
-- **Novo (50):**
+- **Entregue (40):** bloco "Gestão escolar" na tela Dados do Censo, com cargo, critério de acesso e situação funcional em `staff_manager_census`. Direção e coordenação são elegíveis; o cargo do Inep é confirmado pelo operador.
+- **Entregue (50):** tela Atribuição no Censo, tabela `class_teacher_assignment_census`:
   - **função na turma** (1 a 9, conforme a turma);
   - situação funcional;
-  - **componentes que leciona** em código (9 a 33). A disciplina em texto vira sugestão.
+  - **componentes que leciona** em código (9 a 33). A disciplina em texto vira sugestão, sem seleção automática. Só aparecem os componentes marcados como 1 no registro 20. Os campos 34 a 38 permanecem nulos no escopo municipal.
+  - A Conferência de Servidores reúne 30, 40 e todos os 50 vigentes, em consultas por lote. Diretores e coordenadores ativos sem o 40 confirmado aparecem como pendentes, assim como atribuições vigentes ainda sem dados do 50. A referência de vigência é a data atual, como na Conferência de Turmas. Escola paralisada ou extinta não envia 50 (regra geral 18).
+  - Auditoria dos vínculos registra identificadores e nomes dos campos, sem conteúdo; segundo fator para acessar e gravar os dados do Censo.
+
+  **Avisos e verificações da montagem integral ainda pendentes:**
+  - 40, campos 2 a 4: correspondência com os registros 00 e 30; identificação única do Inep, quando disponível; unicidade do gestor e máximo de três gestores por escola (regra geral 21).
+  - 40, campos 6 e 7: se situação ou dependência do 00 ainda não estiverem informadas, avisar e completar o cadastro da escola antes da montagem integral; não supor esses valores.
+  - 50, campos 2 a 5: correspondência com 00, 30 e 20; identificação única do Inep, quando disponível; ausência de vínculo simultâneo como aluno (regra geral 30).
+  - 50, campo 7, regras 7 e 8: turma não pode ter apenas intérpretes de Libras ou tutores EAD; função 4 exige aluno ou outro profissional com surdez, deficiência auditiva ou surdocegueira. Esses cruzamentos não são recusas locais.
+  - 50, campos 7 a 33: quando faltam dados do 20 ou a dependência do 00, a conferência de combinações fica pendente. Com os dados disponíveis, função, mediação, tipo de turma, regime e componentes são conferidos diretamente.
+  - Os requisitos globais de existência de registros e de vínculos por turma (regras gerais 19, 26 e 27) e os itinerários fora do escopo municipal ficam para a montagem integral. O gerador segue bloqueado.
 
 ### Alunos (registros 30 e 60)
 

@@ -4,11 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Address\BrazilianStates;
 use App\Audit\AuditTrail;
+use App\Educacenso\Leiaute;
 use App\Educacenso\NomeDePessoa;
+use App\Educacenso\OpcoesDeCampo;
+use App\Educacenso\Registro40;
 use App\Educacenso\Tabelas;
 use App\Educacenso\Texto;
 use App\Models\Tenant\School;
+use App\Models\Tenant\SchoolCensus;
 use App\Models\Tenant\StaffCensus;
+use App\Models\Tenant\StaffManagerCensus;
 use App\Models\Tenant\StaffMember;
 use App\Models\Tenant\StudentCensus;
 use App\Models\Tenant\StudentSpecialEducation;
@@ -41,7 +46,21 @@ class StaffCensusController extends Controller
         $tabelas = Tabelas::do(Tabelas::anoMaisRecente());
         $record = StaffCensus::query()->find($member->id);
 
+        $manager = StaffManagerCensus::eligible($member) ? StaffManagerCensus::query()->find($member->id) : null;
+        $leiaute = Leiaute::do($tabelas->ano);
+        $schoolCensus = SchoolCensus::query()->find($school->id);
+        $criteria = OpcoesDeCampo::de($leiaute->campo('40', 6));
+        if (in_array($schoolCensus?->administrative_dependency, [1, 2, 3], true)) {
+            unset($criteria[1]);
+        } elseif ($schoolCensus?->administrative_dependency === 4) {
+            unset($criteria[4], $criteria[5], $criteria[6]);
+        }
+
         return response()->view('census.staff-form', [
+            'managerEligible' => StaffManagerCensus::eligible($member),
+            'manager' => $manager,
+            'managerOptions' => ['position' => OpcoesDeCampo::de($leiaute->campo('40', 5)), 'access_criterion' => $criteria, 'employment_status' => OpcoesDeCampo::de($leiaute->campo('40', 7))],
+            'managerRegistro' => StaffManagerCensus::eligible($member) ? Registro40::para($school, $member, $manager, $schoolCensus, $tabelas->ano) : null,
             'municipality' => $municipality,
             'school' => $school,
             'member' => $member,

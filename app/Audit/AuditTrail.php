@@ -14,6 +14,7 @@ use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\CensusParameter;
 use App\Models\Tenant\ClassTeacherAssignment;
+use App\Models\Tenant\ClassTeacherAssignmentCensus;
 use App\Models\Tenant\ClassYearClosure;
 use App\Models\Tenant\CurricularComponent;
 use App\Models\Tenant\GradeEntry;
@@ -33,6 +34,7 @@ use App\Models\Tenant\SchoolMealMenu;
 use App\Models\Tenant\SchoolMealServing;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\StaffCensus;
+use App\Models\Tenant\StaffManagerCensus;
 use App\Models\Tenant\StaffMember;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentCensus;
@@ -83,6 +85,8 @@ class AuditTrail
         StudentSpecialEducation::class => ['student_id', 'changed_fields'],
         StudentCensus::class => ['student_id', 'changed_fields'],
         StaffCensus::class => ['staff_member_id', 'changed_fields'],
+        StaffManagerCensus::class => ['staff_member_id', 'changed_fields'],
+        ClassTeacherAssignmentCensus::class => ['assignment_id', 'changed_fields'],
         SchoolCensus::class => ['school_id', 'changed_fields'],
         SchoolInfrastructureCensus::class => ['school_id', 'census_year', 'changed_fields'],
         StudentPriorSchoolYear::class => ['id', 'student_id', 'school_year', 'school_stage', 'result', 'attendance_percent', 'grades_changed', 'deleted_at', 'deleted_by'],
