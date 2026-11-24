@@ -274,8 +274,8 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - recursos de prova faltantes (CD com áudio, prova de Língua Portuguesa como segunda língua, prova em vídeo em Libras, material em Braille): **entregues**, com a combinação deficiência ou transtorno x recurso do Anexo 4 conferida ao gravar. "Nenhum" (49) é calculado na montagem do registro;
   - atividades do AEE (60.10 a 60.20): **entregues** na mesma tela, gravadas só quando o aluno frequenta o AEE;
   - certidão nova validada (32 caracteres);
-  - escolarização em hospital ou domicílio (60.21);
-  - poder público do transporte e **tipo de veículo** por rota (60.23 a 33);
+  - escolarização em hospital ou domicílio (60.21): **entregue** na tela "Dados do Censo", gravada na matrícula ativa da escola;
+  - poder público do transporte e **tipo de veículo** por rota (60.23 a 33): **entregues** na tela "Transporte no Censo" (tabela `transport_route_census`), uma vez por rota, recusando nenhum veículo ou todos os dez;
   - série do aluno em turma multisseriada (60.8, ligado à #152).
 
 ### Identificadores Inep

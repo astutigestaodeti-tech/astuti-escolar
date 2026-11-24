@@ -85,7 +85,7 @@ class StudentCensusTest extends TwoMunicipalityTestCase
             'filiacao' => '1', 'filiacao_1' => 'Mãe Fictícia de Souza', 'filiacao_2' => '',
             'nascimento_uf' => 'SP', 'nascimento_municipio' => 'São Paulo',
             'residencia_pais' => '76', 'residencia_uf' => 'SP', 'residencia_municipio' => 'santa isabel',
-            'localizacao_diferenciada' => '7',
+            'localizacao_diferenciada' => '7', 'escolarizacao' => '2',
         ], $override);
     }
 
@@ -115,7 +115,10 @@ class StudentCensusTest extends TwoMunicipalityTestCase
         $this->assertSame(3546801, $census->residence_municipality_code);
         $this->assertSame(7, $census->differentiated_location);
         $this->assertNull($census->indigenous_people_code);
-        $this->assertStringNotContainsString('Souza', json_encode($log->new_values ?? $log->toArray()));
+        $this->assertSame(2, $this->tenant(fn () => StudentEnrollment::query()->where('student_id', $this->studentId)->value('other_schooling_space')));
+        $this->assertSame($this->studentId, $log->after['student_id']);
+        $this->assertArrayHasKey('changed_fields', $log->after);
+        $this->assertStringNotContainsString('Souza', json_encode([$log->before, $log->after]));
 
         $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->studentId)->assertOk()
             ->assertSee('Dados para o Censo Escolar')->assertSee('São Paulo/SP')->assertSee('Santa Isabel/SP');

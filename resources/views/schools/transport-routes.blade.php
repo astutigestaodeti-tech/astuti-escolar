@@ -58,6 +58,7 @@
             <div class="transporte-resumo">
                 <strong>{{ $total }} {{ $total === 1 ? 'aluno' : 'alunos' }}</strong> em <strong>{{ $groups->count() }} {{ $groups->count() === 1 ? 'rota' : 'rotas' }}</strong> na lista selecionada.
                 <button class="botao secundario" type="button" data-action="print-transport-routes" @disabled($groups->isEmpty())>Imprimir lista</button>
+                <a class="botao secundario" href="{{ route('school.census.transport.edit', $parametrosEscola) }}">Transporte no Censo</a>
             </div>
         </div>
     </section>

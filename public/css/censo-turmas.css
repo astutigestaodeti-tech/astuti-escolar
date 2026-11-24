@@ -32,3 +32,5 @@
     .pagina-censo-turmas .censo-horarios td{padding:0}
     .pagina-censo-turmas .censo-horarios input.entrada{max-width:none}
 }
+.pagina-censo-turmas form > .folha + .folha{margin-top:20px}
+.pagina-censo-turmas .formulario-grade + .censo-opcoes{margin-top:20px}

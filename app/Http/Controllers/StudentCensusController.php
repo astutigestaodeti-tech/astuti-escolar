@@ -10,6 +10,7 @@ use App\Educacenso\Texto;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentCensus;
+use App\Models\Tenant\StudentEnrollment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -43,6 +44,8 @@ class StudentCensusController extends Controller
             'student' => $student,
             'record' => $record,
             'suggestions' => $this->suggestions($student, $tabelas),
+            'otherSchoolingSpace' => StudentEnrollment::query()->where('student_id', $student->id)->where('school_id', $school->id)
+                ->where('status', 'active')->value('other_schooling_space'),
             'birthMunicipality' => $record?->birth_municipality_code ? $tabelas->municipio($record->birth_municipality_code) : null,
             'residenceMunicipality' => $record?->residence_municipality_code ? $tabelas->municipio($record->residence_municipality_code) : null,
             'countries' => $tabelas->paises(),
@@ -70,6 +73,7 @@ class StudentCensusController extends Controller
             'residencia_uf' => ['nullable', Rule::in($ufs)],
             'residencia_municipio' => ['nullable', 'string', 'max:120'],
             'localizacao_diferenciada' => ['nullable', 'integer', Rule::in(array_keys(StudentCensus::DIFFERENTIATED_LOCATIONS))],
+            'escolarizacao' => ['nullable', 'integer', Rule::in(array_keys(StudentCensus::OTHER_SCHOOLING_SPACES))],
         ], [
             'filiacao.required' => 'Informe se a filiação é conhecida.',
             'pais_nacionalidade.in' => 'Escolha o país na lista do Censo.',
@@ -80,12 +84,22 @@ class StudentCensusController extends Controller
 
         $values = $this->values($data, $student, $tabelas);
 
-        DB::connection('tenant')->transaction(function () use ($student, $values, $request): void {
+        $escolarizacao = isset($data['escolarizacao']) ? (int) $data['escolarizacao'] : null;
+
+        DB::connection('tenant')->transaction(function () use ($student, $school, $values, $escolarizacao, $request): void {
             $record = StudentCensus::query()->lockForUpdate()->find($student->id)
                 ?? new StudentCensus(['student_id' => $student->id]);
             $created = ! $record->exists;
             $record->fill([...$values, 'updated_by' => $request->user()?->getAuthIdentifier()]);
             $changed = array_values(array_filter(self::FIELDS, fn (string $field): bool => $record->isDirty($field)));
+            // Campo 21 do registro 60: pertence à matrícula ativa nesta escola.
+            $matricula = StudentEnrollment::query()->where('student_id', $student->id)->where('school_id', $school->id)
+                ->where('status', 'active')->lockForUpdate()->first();
+            if ($matricula !== null && $matricula->other_schooling_space !== $escolarizacao) {
+                $matricula->other_schooling_space = $escolarizacao;
+                $matricula->save();
+                $changed[] = 'other_schooling_space';
+            }
             if ($created || $changed !== []) {
                 $record->save();
                 app(AuditTrail::class)->record('tenant', $created ? 'student_census.created' : 'student_census.updated',
