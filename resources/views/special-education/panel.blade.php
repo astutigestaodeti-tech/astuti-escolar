@@ -12,8 +12,8 @@
             <a class="botao secundario" href="{{ route('school.students.special-education.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">Editar educação especial</a>
         </div>
         <div class="folha-corpo">
-            @if ($specialEducation === null || $specialEducation->conditions === [])
-                <p class="texto-suave">Nenhuma deficiência, TEA ou altas habilidades informada.</p>
+            @if ($specialEducation === null || ($specialEducation->conditions === [] && ($specialEducation->learning_disorders ?? []) === []))
+                <p class="texto-suave">Nenhuma deficiência, TEA, altas habilidades ou transtorno de aprendizagem informado.</p>
             @else
                 <ul class="especial-lista">
                     @foreach ($specialEducation->conditionLabels() as $rotulo)
@@ -21,6 +21,9 @@
                     @endforeach
                 </ul>
                 <dl>
+                    @if ($specialEducation->disorderLabels() !== [])
+                        <div><dt>Transtornos de aprendizagem</dt><dd>{{ implode(', ', $specialEducation->disorderLabels()) }}</dd></div>
+                    @endif
                     <div><dt>AEE</dt><dd>{{ $specialEducation->aeeLabel() }}</dd></div>
                     <div><dt>Profissional de apoio</dt><dd>{{ $specialEducation->support_professional === null ? 'Não informado' : ($specialEducation->support_professional ? 'Sim' : 'Não') }}</dd></div>
                     <div><dt>Recursos para provas</dt><dd>{{ $specialEducation->resourceLabels() === [] ? 'Nenhum informado' : implode(', ', $specialEducation->resourceLabels()) }}</dd></div>

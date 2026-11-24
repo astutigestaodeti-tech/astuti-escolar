@@ -270,8 +270,9 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - povo indígena (campo 13), só com cor/raça indígena.
 - **Novo:**
   - deficiência múltipla (26);
-  - **transtornos que impactam a aprendizagem** (29 a 35, dado de saúde novo);
-  - recursos de prova faltantes: CD com áudio, prova de Língua Portuguesa como segunda língua, prova em vídeo em Libras, material em Braille, "nenhum";
+  - **transtornos que impactam a aprendizagem** (29 a 35, dado de saúde novo): **entregue** na tela de educação especial, com a mesma restrição de acesso e a auditoria só de nomes de campos;
+  - recursos de prova faltantes (CD com áudio, prova de Língua Portuguesa como segunda língua, prova em vídeo em Libras, material em Braille): **entregues**, com a combinação deficiência ou transtorno x recurso do Anexo 4 conferida ao gravar. "Nenhum" (49) é calculado na montagem do registro;
+  - atividades do AEE (60.10 a 60.20): **entregues** na mesma tela, gravadas só quando o aluno frequenta o AEE;
   - certidão nova validada (32 caracteres);
   - escolarização em hospital ou domicílio (60.21);
   - poder público do transporte e **tipo de veículo** por rota (60.23 a 33);

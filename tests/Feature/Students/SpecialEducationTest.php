@@ -103,6 +103,42 @@ class SpecialEducationTest extends TwoMunicipalityTestCase
         });
     }
 
+    public function test_transtornos_atividades_do_aee_e_recursos_seguem_o_anexo_4_do_censo(): void
+    {
+        $this->entrar('school_director');
+
+        // Prova ampliada não serve para cegueira; Libras não serve para dislexia.
+        $this->post($this->url('/educacao-especial'), [
+            'conditions' => ['cegueira'], 'learning_disorders' => ['dislexia'],
+            'exam_resources' => ['braille', 'prova_ampliada', 'libras'],
+        ])->assertSessionHasErrors(['exam_resources']);
+        app(TenantContext::class)->runFor($this->municipioA, fn () => $this->assertNull(StudentSpecialEducation::query()->find($this->student)));
+
+        $this->post($this->url('/educacao-especial'), [
+            'conditions' => ['cegueira'], 'learning_disorders' => ['dislexia', 'tdah'],
+            'exam_resources' => ['braille', 'material_braille', 'cd_audio', 'tempo_adicional'],
+            'aee_status' => 'participa', 'aee_school_id' => self::ESCOLA_A1,
+            'aee_activities' => ['braille', 'orientacao_mobilidade'],
+        ])->assertRedirect();
+
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $record = StudentSpecialEducation::query()->findOrFail($this->student);
+            $this->assertSame(['dislexia', 'tdah'], $record->learning_disorders);
+            $this->assertSame(['braille', 'orientacao_mobilidade'], $record->aee_activities);
+            $log = AuditLog::query()->where('action', 'special_education.created')->firstOrFail();
+            $this->assertStringNotContainsString('dislexia', json_encode([$log->before, $log->after]));
+        });
+        $this->get($this->url())->assertOk()->assertSee('Transtornos de aprendizagem')->assertSee('Dislexia');
+
+        // Só altas habilidades: o Censo não aceita recurso; sem AEE, as atividades são descartadas.
+        $this->post($this->url('/educacao-especial'), ['conditions' => ['altas_habilidades'], 'exam_resources' => ['tempo_adicional']])
+            ->assertSessionHasErrors(['exam_resources']);
+        $this->post($this->url('/educacao-especial'), [
+            'conditions' => ['altas_habilidades'], 'aee_status' => 'nao_participa', 'aee_activities' => ['enriquecimento'],
+        ])->assertRedirect();
+        app(TenantContext::class)->runFor($this->municipioA, fn () => $this->assertSame([], StudentSpecialEducation::query()->findOrFail($this->student)->aee_activities));
+    }
+
     public function test_validacao_de_categoria_e_escola_do_aee(): void
     {
         $this->entrar('school_director');
