@@ -317,4 +317,35 @@ class GeoLocationTest extends TwoMunicipalityTestCase
             return ($query['street'] ?? null) === '240 Rua Fernandes Cardoso' && ($query['state'] ?? null) === 'SP';
         });
     }
+
+    public function test_aluno_com_ponto_procura_o_endereco_do_cadastro_campo_a_campo(): void
+    {
+        Http::fake(['geocoder.example.test/*' => Http::response([['lat' => '-23.400000', 'lon' => '-46.500000']])]);
+        $this->inMunicipality(fn () => Student::query()->findOrFail($this->student)->forceFill(['latitude' => -23.1, 'longitude' => -46.1, 'geo_source' => 'mapa'])->save());
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $texto = 'Rua Fictícia 100, Centro, Monte Sereno, SP, 00000-000';
+
+        $this->get($this->base().'/alunos/'.$this->student.'/localizacao')
+            ->assertOk()
+            ->assertSee('Endereço do cadastro')
+            ->assertSee('Corrigir no cadastro')
+            ->assertSee('value="'.$texto.'"', false);
+        Http::assertNothingSent();
+
+        $this->get($this->base().'/alunos/'.$this->student.'/localizacao?procurar='.urlencode($texto))
+            ->assertOk()
+            ->assertSee('data-lat="-23.4"', false);
+        Http::assertSent(fn ($request): bool => str_contains(urldecode($request->url()), 'street=100 Rua Fictícia') && str_contains($request->url(), 'state=SP'));
+    }
+
+    public function test_endereco_digitado_no_formato_cidade_virgula_uf_e_lido_em_campos(): void
+    {
+        Http::fake(['geocoder.example.test/*' => Http::response([['lat' => '-23.300000', 'lon' => '-46.200000']])]);
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+
+        $this->get($this->base().'/alunos/'.$this->student.'/localizacao?procurar='.urlencode('Rua das Rosas 38, Novo Éden, Santa Isabel, SP, 07500-000'))
+            ->assertOk()
+            ->assertSee('data-lat="-23.3"', false);
+        Http::assertSent(fn ($request): bool => str_contains(urldecode($request->url()), 'street=38 Rua das Rosas') && str_contains(urldecode($request->url()), 'city=Santa Isabel'));
+    }
 }

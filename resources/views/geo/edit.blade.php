@@ -105,6 +105,21 @@
         </section>
     @endif
 
+    @if ($kind === 'aluno')
+        <section class="folha geo-endereco" aria-labelledby="titulo-endereco-aluno">
+            <div class="folha-cabecalho">
+                <div>
+                    <h2 id="titulo-endereco-aluno">Endereço do cadastro</h2>
+                    <p>{{ $addressText !== '' ? $addressText : 'Ainda não cadastrado. Você pode marcar a casa direto no mapa.' }}</p>
+                </div>
+                <a class="botao secundario" href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $subject->id]) }}#endereco">{{ $addressText !== '' ? 'Corrigir no cadastro' : 'Informar no cadastro' }}</a>
+            </div>
+            @if ($school->latitude !== null)
+                <p class="texto-ajuda geo-legenda folha-corpo">O círculo azul no mapa é a {{ $school->name }}. O marcador é a casa do aluno.</p>
+            @endif
+        </section>
+    @endif
+
     <section class="folha geo-folha" aria-labelledby="titulo-mapa">
         <h2 id="titulo-mapa" class="sr-only">Mapa</h2>
         <form class="busca geo-busca" method="GET" action="{{ url()->current() }}" role="search">
