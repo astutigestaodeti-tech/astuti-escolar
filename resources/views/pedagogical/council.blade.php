@@ -41,6 +41,8 @@
             </form>
             @if ($period === null)<p>Cadastre os períodos acadêmicos do ano para iniciar o conselho.</p>@else
                 <p><strong>{{ ClassCouncil::STATUSES[$status] }}</strong> | {{ $period->starts_on->format('d/m/Y') }} a {{ $period->ends_on->format('d/m/Y') }}</p>
+                @if ($council?->closed_at)<p>Conclusão: {{ $council->closed_at->format('d/m/Y H:i') }}</p>@endif
+                @if ($director && $council?->reopened_at)<p>Última reabertura: {{ $council->reopened_at->format('d/m/Y H:i') }}. Motivo: {{ $council->reopen_reason }}</p>@endif
             @endif
         </div>
     </section>
