@@ -209,7 +209,7 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
 
   - Campo 139, regra 2: alimentação escolar oferecida exige pelo menos uma turma (registro 20) com mediação 1 ou 2. O questionário não consulta as turmas; a conferência final da escola completa deverá cruzar os registros. Não é uma recusa local.
   - Campos 11 a 16, regra 2: existência e situação ativa das escolas com as quais há compartilhamento do prédio dependem da base do Inep (processamento). Código distinto e mesma UF são conferidos localmente; a situação da escola indicada fica como aviso.
-  - Regra geral 19: a existência de todos os registros exigidos de uma escola ativa deverá ser verificada na fase de montagem integral (registros 20, 30, 40, 50 e 60), não inferida pelo questionário. As regras gerais 12 e 20, de ordem e unicidade do registro no arquivo, também pertencem à fase de geração; a unicidade anual do questionário já é garantida no banco.
+  - A montagem lógica da escola já verifica presença, ordem e unicidade dos registros (regras gerais 18 a 20). A validação do arquivo serializado permanece bloqueada.
   - Regras 2 a 4 do campo 21 do registro 20: local de funcionamento diferenciado deve ser compatível com os campos 3 a 8 do registro 10. São verificações entre registros, a consolidar na conferência integral, sem inventar uma recusa no questionário de infraestrutura.
   - Campo 40: o grupo 37 a 40 exige pelo menos um valor 1, mas a V5 não traz regra de exclusão para "Não faz tratamento", diferentemente de outros grupos. Não se acrescenta recusa não documentada.
   - Campos 161 a 163: a V5 exige código válido quando o campo 160 for 1 ou 3 e nulo nos demais casos, com códigos distintos. Aplica-se a redação literal, inclusive aos campos 162 e 163; se o Inep confirmar que estes são opcionais, ajustar a regra com a fonte oficial. Os códigos da tabela de línguas são formatados com cinco dígitos, conforme o tamanho fixo do leiaute.
@@ -270,12 +270,24 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - Auditoria dos vínculos registra identificadores e nomes dos campos, sem conteúdo; segundo fator para acessar e gravar os dados do Censo.
 
   **Avisos e verificações da montagem integral ainda pendentes:**
-  - 40, campos 2 a 4: correspondência com os registros 00 e 30; identificação única do Inep, quando disponível; unicidade do gestor e máximo de três gestores por escola (regra geral 21).
+  - 40, campos 2 a 4: identificação única do Inep, quando disponível; a montagem lógica já confere unicidade do gestor e máximo de três gestores por escola.
   - 40, campos 6 e 7: se situação ou dependência do 00 ainda não estiverem informadas, avisar e completar o cadastro da escola antes da montagem integral; não supor esses valores.
-  - 50, campos 2 a 5: correspondência com 00, 30 e 20; identificação única do Inep, quando disponível; ausência de vínculo simultâneo como aluno (regra geral 30).
-  - 50, campo 7, regras 7 e 8: turma não pode ter apenas intérpretes de Libras ou tutores EAD; função 4 exige aluno ou outro profissional com surdez, deficiência auditiva ou surdocegueira. Esses cruzamentos não são recusas locais.
+  - 50, campos 2 a 5: identificação única do Inep, quando disponível; a montagem lógica já confere ausência de vínculo simultâneo como aluno na mesma turma.
   - 50, campos 7 a 33: quando faltam dados do 20 ou a dependência do 00, a conferência de combinações fica pendente. Com os dados disponíveis, função, mediação, tipo de turma, regime e componentes são conferidos diretamente.
-  - Os requisitos globais de existência de registros e de vínculos por turma (regras gerais 19, 26 e 27) e os itinerários fora do escopo municipal ficam para a montagem integral. O gerador segue bloqueado.
+  - Os itinerários fora do escopo municipal e a conferência de vínculos entre escolas permanecem fora desta montagem por escola. O gerador segue bloqueado.
+
+### Montagem lógica por escola (#177)
+
+`MontagemDaEscola` reutiliza as três conferências em lote e os montadores de campo, devolvendo registros 00, 10, 20, 30, 40, 50 e 60 na ordem, com valores, pendências e origem do cadastro. O 30 é único por cadastro de pessoa e escola, com as pendências de todos os vínculos do aluno. Cadastros distintos com CPF ou código próprios iguais são recusados; não se fundem automaticamente. A tela Educacenso é exclusiva da gestão municipal, só leitura, sem expor valores de campos pessoais. A contagem é local, não constitui homologação pelo Inep.
+
+- Regras 18 a 21: seleção dos registros conforme situação, presença e unicidade, limite de gestores.
+- Regras 24 a 27: limite de turmas, duplicidade pela assinatura completa da V5 e existência dos vínculos efetivamente montados.
+- Regras 30 a 34: vínculo repetido na mesma turma, horários coincidentes (Tabela de Regras de Horários Coincidentes, itens 3.1 a-d), e limites de vínculos por aluno. Horários adjacentes são permitidos; aluno x aluno curricular/AEE é exceção; aluno x profissional segue contenção dos horários do profissional nos do aluno; profissional x profissional não é conferido.
+- Registro 30: código próprio e CPF únicos na escola; campo 17, regra 2, verificado por vínculo 60 com a turma real.
+- Registro 50, campo 7, regras 7 e 8: conjunto de funções da turma e existência de vínculo compatível com função 4. Dados de outros vínculos incompletos geram aviso em vez de supor ausência.
+- As verificações preliminares 25, 26, 27, 30.17.2 e 50.7.8 são substituídas pelo resultado da montagem, para não contar duas vezes a mesma regra.
+
+A montagem desta issue só alcança a escola consultada. A tabela de horários e os limites de vínculos também abrangem escolas diferentes; o cruzamento da rede/lote inteiro fica pendente, assim como a base externa do Inep (regras 29, 37 a 40). A confirmação oficial do formato de arquivo continua pendente. Nenhum byte de arquivo é produzido.
 
 ### Alunos (registros 30 e 60)
 
