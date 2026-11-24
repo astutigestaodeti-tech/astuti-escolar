@@ -30,7 +30,10 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-        if (app()->environment('production') && $request->isSecure()) {
+        // HTTPS fora do próprio computador: produção e também a VPS de desenvolvimento publicada.
+        $publicHost = ! in_array($request->getHost(), ['localhost', '127.0.0.1', '::1', '[::1]'], true)
+            && ! str_ends_with($request->getHost(), '.localhost') && ! str_ends_with($request->getHost(), '.test');
+        if ($request->isSecure() && (app()->environment('production') || $publicHost)) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         } else {
             $response->headers->remove('Strict-Transport-Security');

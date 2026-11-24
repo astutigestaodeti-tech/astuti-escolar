@@ -15,6 +15,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // Protótipo visual /demonstracao: só no notebook, com ASTUTI_DEMONSTRACAO=1.
+    'demonstracao' => (bool) env('ASTUTI_DEMONSTRACAO', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

@@ -39,6 +39,14 @@ class SecurityHeadersTest extends TwoMunicipalityTestCase
         $this->get('https://localhost/login')->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
 
+    public function test_hsts_tambem_na_vps_publicada_mas_nao_no_proprio_computador(): void
+    {
+        app()->detectEnvironment(fn () => 'local');
+        $this->get('https://escolar-dev.exemplo.invalid/login')->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        $this->get('http://escolar-dev.exemplo.invalid/login')->assertHeaderMissing('Strict-Transport-Security');
+        $this->get('https://127.0.0.1/login')->assertHeaderMissing('Strict-Transport-Security');
+    }
+
     public function test_layout_usa_fontes_brasao_e_css_locais_sem_script_externo(): void
     {
         $this->assertFileExists(public_path('css/astuti.css'));

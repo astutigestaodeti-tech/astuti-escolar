@@ -793,6 +793,8 @@ select.entrada{cursor:pointer}
 .saude-secao textarea.entrada{font:inherit;resize:vertical}
 .ficha-escola>.ficha-saude{grid-column:1}
 .ficha-saude>.saude-alertas,.ficha-saude>.texto-suave,.ficha-saude>.saude-emergencia{margin-left:var(--recuo-folha);margin-right:var(--recuo-folha)}
+.ficha-saude>.nota-segundo-fator{display:flex;gap:8px;align-items:flex-start;margin:0 var(--recuo-folha) 12px;padding:10px 12px;border-radius:var(--raio-controle);background:var(--caneta-clara);color:var(--caneta-escura);font-size:14px;line-height:1.5}
+.ficha-saude>.nota-segundo-fator a{font-weight:700}
 .ficha-saude>:last-child{margin-bottom:20px}
 @media (max-width:960px){.ficha-escola>.ficha-saude{grid-column:auto;grid-row:auto}}
 

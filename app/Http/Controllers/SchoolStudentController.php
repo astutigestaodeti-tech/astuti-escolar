@@ -14,6 +14,7 @@ use App\Models\Tenant\StudentHealthAlert;
 use App\Models\Tenant\StudentHealthProfile;
 use App\Models\Tenant\StudentPickupAuthorization;
 use App\Models\Tenant\StudentSpecialEducation;
+use App\Security\TwoFactorSession;
 use App\Students\StudentSearch;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -119,7 +120,11 @@ class SchoolStudentController extends Controller
             ->values();
 
         // Saúde: a gestão vê tudo; quem só consulta vê apenas os alertas graves.
-        $canManageHealth = Gate::allows('manageHealth', [$school, $municipality]);
+        // Saúde completa e deficiência exigem o segundo fator confirmado nesta sessão;
+        // sem ele, a gestão vê só os alertas graves (segurança do aluno) e o convite para ativar.
+        $managesHealth = Gate::allows('manageHealth', [$school, $municipality]);
+        $canManageHealth = $managesHealth && app(TwoFactorSession::class)->isVerified($request, $request->user());
+        $healthLocked = $managesHealth && ! $canManageHealth;
         $healthAlerts = StudentHealthAlert::query()->where('student_id', $student->id)
             ->when(! $canManageHealth, fn ($query) => $query->where('severity', 'critical'))
             ->orderByRaw("CASE WHEN severity = 'critical' THEN 0 ELSE 1 END")->orderBy('created_at')->get();
@@ -152,6 +157,6 @@ class SchoolStudentController extends Controller
             $distanciaRuas !== null ? 'pelas ruas' : 'em linha reta',
         );
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile', 'specialEducation', 'declarations'));
+        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthLocked', 'healthAlerts', 'healthProfile', 'specialEducation', 'declarations'));
     }
 }

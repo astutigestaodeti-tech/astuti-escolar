@@ -17,6 +17,7 @@ class RegistrationPendencies
 {
     /** Ordem = prioridade: contato com a família primeiro. */
     public const TYPES = [
+        'repetido' => 'Possível cadastro repetido',
         'responsavel' => 'Sem responsável',
         'turma' => 'Sem turma',
         'nascimento' => 'Sem data de nascimento',
@@ -48,8 +49,30 @@ class RegistrationPendencies
         $schoolMapped = $school->latitude !== null && $school->longitude !== null;
         $minKm = (float) config('geo.transport_min_km');
 
-        return $rows->unique('id')->map(function (StudentEnrollment $row) use ($school, $schoolMapped, $minKm): array {
+        // Mesmo nome (sem acento, caixa ou espaço extra) e nascimento igual ou não informado: pode ser o
+        // mesmo aluno importado duas vezes. Só avisa; quem decide é a secretaria, na ficha.
+        $rows = $rows->unique('id');
+        $nameKey = fn (StudentEnrollment $row): string => preg_replace('/\s+/', ' ', Str::lower(Str::ascii(trim((string) $row->full_name))));
+        $repeated = $rows->groupBy($nameKey)->filter(fn (Collection $group): bool => $group->count() > 1)
+            ->flatMap(function (Collection $group): array {
+                $ids = [];
+                foreach ($group as $a) {
+                    foreach ($group as $b) {
+                        $sameBirth = $a->birth_date === null || $b->birth_date === null || (string) $a->birth_date === (string) $b->birth_date;
+                        if ($a->id !== $b->id && $sameBirth) {
+                            $ids[$a->id] = true;
+                        }
+                    }
+                }
+
+                return array_keys($ids);
+            })->flip();
+
+        return $rows->map(function (StudentEnrollment $row) use ($school, $schoolMapped, $minKm, $repeated): array {
             $pendencies = [];
+            if ($repeated->has($row->id)) {
+                $pendencies[] = 'repetido';
+            }
             // O banco já exige telefone em todo responsável; basta saber se há algum.
             if (! $row->has_guardian) {
                 $pendencies[] = 'responsavel';

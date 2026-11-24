@@ -7,6 +7,7 @@
     $atalho = function (string $tipo, array $aluno) use ($parametrosEscola): array {
         $parametrosAluno = [...$parametrosEscola, 'aluno' => $aluno['id']];
         return match ($tipo) {
+            'repetido' => [route('school.students.index', [...$parametrosEscola, 'busca' => $aluno['name']]), 'Comparar os cadastros'],
             'responsavel' => [route('school.students.guardians.create', $parametrosAluno), 'Adicionar responsável'],
             'turma' => [route('school.students.edit', [...$parametrosAluno, 'matricula' => $aluno['enrollment']]), 'Escolher turma'],
             'nascimento', 'endereco' => [route('school.students.edit', $parametrosAluno), 'Editar cadastro'],
@@ -76,7 +77,7 @@
                                 <ul class="pendencias-itens">
                                     @foreach ($aluno['pendencies'] as $tipo)
                                         @php [$url, $acao] = $atalho($tipo, $aluno); @endphp
-                                        <li><span @class(['etiqueta', 'conferir' => in_array($tipo, ['responsavel', 'turma', 'transporte'], true), 'neutra' => ! in_array($tipo, ['responsavel', 'turma', 'transporte'], true)])>{{ $types[$tipo] }}</span> <a href="{{ $url }}">{{ $acao }}</a></li>
+                                        <li><span @class(['etiqueta', 'conferir' => in_array($tipo, ['repetido', 'responsavel', 'turma', 'transporte'], true), 'neutra' => ! in_array($tipo, ['repetido', 'responsavel', 'turma', 'transporte'], true)])>{{ $types[$tipo] }}</span> <a href="{{ $url }}">{{ $acao }}</a></li>
                                     @endforeach
                                 </ul>
                             </td>

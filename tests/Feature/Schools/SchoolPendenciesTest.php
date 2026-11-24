@@ -107,6 +107,30 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
         $this->get($this->url('?tipo=qualquer'))->assertSessionHasErrors('tipo');
     }
 
+    public function test_avisa_possivel_cadastro_repetido_sem_confundir_homonimos(): void
+    {
+        $this->tenant(function (): void {
+            $year = SchoolYear::query()->where('year', 2027)->firstOrFail();
+            foreach ([['Júlia  Repetida Fictícia', null], ['julia repetida ficticia', '2016-03-02'], ['Homônimo Fictício', '2015-01-01'], ['Homonimo Ficticio', '2016-01-01']] as [$name, $birth]) {
+                $student = new Student;
+                $student->forceFill(['id' => (string) Str::uuid(), 'full_name' => $name, 'birth_date' => $birth])->save();
+                StudentEnrollment::query()->create(['id' => (string) Str::uuid(), 'student_id' => $student->id, 'school_id' => self::ESCOLA_A1, 'school_year_id' => $year->id, 'status' => 'active']);
+            }
+        });
+        $result = $this->tenant(fn () => collect(app(RegistrationPendencies::class)->forSchool(School::query()->findOrFail(self::ESCOLA_A1)))->keyBy('name')->map(fn ($s) => $s['pendencies'])->all());
+
+        // Mesmo nome e um nascimento em branco: pode ser o mesmo aluno. Nascimentos diferentes: são pessoas diferentes.
+        $this->assertSame('repetido', $result['Júlia  Repetida Fictícia'][0]);
+        $this->assertSame('repetido', $result['julia repetida ficticia'][0]);
+        $this->assertNotContains('repetido', $result['Homônimo Fictício']);
+        $this->assertNotContains('repetido', $result['Homonimo Ficticio']);
+
+        $this->login('school_secretary');
+        $this->get($this->url('?tipo=repetido'))->assertOk()
+            ->assertSee('Possível cadastro repetido')->assertSee('Comparar os cadastros')
+            ->assertDontSee('Homônimo Fictício');
+    }
+
     public function test_calcula_a_escola_inteira_em_uma_consulta(): void
     {
         $queries = $this->tenant(function (): int {

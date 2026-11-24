@@ -81,6 +81,7 @@ cache_dir="$(mktemp -d)" || erro 'nao foi possivel criar diretorio temporario.'
 trap 'rm -rf -- "$cache_dir"' EXIT
 export APP_CONFIG_CACHE="$cache_dir/config.php"
 export APP_ENV=local
+export ASTUTI_DEMONSTRACAO=1
 export APP_URL=http://127.0.0.1:8002
 export DB_CONNECTION=platform
 export PLATFORM_DB_HOST=127.0.0.1
