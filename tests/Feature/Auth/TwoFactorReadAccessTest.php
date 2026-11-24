@@ -12,7 +12,7 @@ class TwoFactorReadAccessTest extends TwoMunicipalityTestCase
 
     public function test_visitante_e_conta_sem_segundo_fator_conservam_as_consultas_atuais(): void
     {
-        $this->get('/')->assertOk();
+        $this->get('/')->assertRedirect(route('login'));
         $this->get('/m/municipio-a/escolas')->assertRedirect('/login');
 
         $user = $this->criarUsuario('consulta-sem-2fa@example.invalid');

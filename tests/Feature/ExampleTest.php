@@ -12,8 +12,8 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        // Sem página de apresentação: a raiz leva ao login, que abre normalmente.
+        $this->get('/')->assertRedirect(route('login'));
+        $this->get(route('login'))->assertOk();
     }
 }

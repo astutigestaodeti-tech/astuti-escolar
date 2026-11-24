@@ -37,14 +37,17 @@
 
             <form method="POST" action="{{ route('login.attempt') }}">
                 @csrf
-                <label class="rotulo" for="email">E-mail institucional</label>
-                <input class="entrada" id="email" name="email" type="email" autocomplete="username" required maxlength="255" value="{{ old('email') }}" autofocus>
+                <label class="rotulo" for="email">E-mail ou usuário</label>
+                <input class="entrada" id="email" name="email" type="text" inputmode="email" autocapitalize="none" spellcheck="false" autocomplete="username" required maxlength="255" value="{{ old('email') }}" autofocus>
                 <label class="rotulo" for="password">Senha</label>
                 <input class="entrada" id="password" name="password" type="password" autocomplete="current-password" required>
                 <button class="botao" type="submit">Acessar</button>
             </form>
 
             <p class="acesso-rodape">Acesso restrito a servidores autorizados. Esqueceu a senha? Procure a Secretaria Municipal de Educação.</p>
+            @if (app()->environment('local'))
+                <p class="acesso-rodape"><a href="{{ route('demo') }}">Ver a demonstração de Monte Sereno</a></p>
+            @endif
         </div>
     </main>
 </div>

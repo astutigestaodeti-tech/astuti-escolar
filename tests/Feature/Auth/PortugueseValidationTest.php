@@ -6,12 +6,15 @@ use Tests\Support\TwoMunicipalityTestCase;
 
 class PortugueseValidationTest extends TwoMunicipalityTestCase
 {
-    public function test_email_invalido_no_login_exibe_mensagem_e_nome_do_campo_em_portugues(): void
+    public function test_login_invalido_exibe_mensagem_em_portugues_sem_revelar_o_motivo(): void
     {
         app()->setLocale('pt_BR');
 
-        $this->post('/login', ['email' => 'nao-e-email', 'password' => 'Teste123!'])
-            ->assertSessionHasErrors(['email' => 'O campo e-mail deve ser um endereço de e-mail válido.']);
+        // O campo aceita e-mail ou usuário curto; qualquer erro mostra a mesma mensagem.
+        foreach (['nao-e-email', 'com espaço'] as $login) {
+            $this->post('/login', ['email' => $login, 'password' => 'Teste123!'])
+                ->assertSessionHasErrors(['email' => 'As credenciais informadas não correspondem aos nossos registros.']);
+        }
     }
 
     public function test_formulario_sem_campos_exibe_erros_em_portugues(): void

@@ -23,14 +23,21 @@ class LoginController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'string', 'email', 'max:255'],
+        $request->validate([
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
 
         // PostgreSQL compara varchar com distincao de caixa. Normalizar antes
         // da autenticacao e da atribuicao de tentativas falhas na auditoria.
-        $credentials['email'] = EmailNormalizer::normalize($credentials['email']);
+        // Aceita o e-mail ou o nome de usuário curto (ex.: "admin").
+        $credentials = [
+            'email' => EmailNormalizer::fromLogin((string) $request->input('email')),
+            'password' => (string) $request->input('password'),
+        ];
+        if (! filter_var($credentials['email'], FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages(['email' => __('auth.failed')]);
+        }
 
         if (! Auth::attempt([...$credentials, 'status' => 'active'])) {
             try {
