@@ -72,8 +72,12 @@ final class PublicDocumentVerificationController extends Controller
                 ];
             }
 
+            if (! isset(IssuedDocument::DECLARATIONS[$document->kind])) {
+                return null;
+            }
+
             return [
-                'kind' => 'enrollment_declaration',
+                'kind' => $document->kind,
                 'status' => $document->revoked_at === null ? 'Documento válido' : 'Documento revogado',
                 'student' => VerificationCode::abbreviate($document->snapshot_student_name),
                 'school' => $document->snapshot_school_name,

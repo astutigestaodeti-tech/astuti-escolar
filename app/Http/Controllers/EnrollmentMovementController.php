@@ -47,7 +47,8 @@ class EnrollmentMovementController extends Controller
 
         return redirect()->route('school.enrollments.index', [
             'municipio' => $municipality->slug, 'escola' => $school->id,
-        ])->with('status', 'Transferência concluída. A matrícula anterior foi encerrada e a matrícula de destino foi criada.');
+        ])->with('status', 'Transferência concluída. A matrícula anterior foi encerrada e a matrícula de destino foi criada.')
+            ->with('transfer_document', ['student' => $aluno, 'enrollment' => $matricula]);
     }
 
     public function end(Request $request, string $municipio, string $escola, string $aluno, string $matricula): RedirectResponse
@@ -65,7 +66,8 @@ class EnrollmentMovementController extends Controller
 
         return redirect()->route('school.enrollments.index', [
             'municipio' => $municipality->slug, 'escola' => $school->id,
-        ])->with('status', 'Matrícula encerrada. O histórico do aluno foi preservado.');
+        ])->with('status', 'Matrícula encerrada. O histórico do aluno foi preservado.')
+            ->with('transfer_document', $data['situacao'] === 'left_network' ? ['student' => $aluno, 'enrollment' => $matricula] : null);
     }
 
     public function deleteRegistration(Request $request, string $municipio, string $escola, string $aluno, string $matricula): RedirectResponse

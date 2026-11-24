@@ -4,27 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\Tenant\School;
 use App\Models\Tenant\StudentEnrollment;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class SchoolEnrollmentController extends Controller
 {
-    public function index(Request $request, string $municipio, string $escola): View|RedirectResponse
+    public function index(Request $request, string $municipio, string $escola): Response|RedirectResponse
     {
         $municipality = $request->attributes->get('astuti.municipality');
         $school = School::query()->where('status', 'active')->findOrFail($escola);
         Gate::authorize('view', [$school, $municipality]);
+
+        $transfers = $request->query('situacao') === 'transferidas';
+        $completed = $request->query('situacao') === 'concluidas';
+        if ($transfers || $completed) {
+            Gate::authorize('manageStudents', [$school, $municipality]);
+        }
 
         $query = StudentEnrollment::query()
             ->join('students', 'students.id', '=', 'student_enrollments.student_id')
             ->join('school_years', 'school_years.id', '=', 'student_enrollments.school_year_id')
             ->select('student_enrollments.*')
             ->where('student_enrollments.school_id', $school->id)
-            ->where('student_enrollments.status', 'active')
+            ->whereIn('student_enrollments.status', $transfers ? ['transferred', 'left_network'] : ($completed ? ['completed'] : ['active']))
             ->whereNull('students.deleted_at')
             ->whereNull('school_years.deleted_at')
             ->with(['student', 'schoolYear']);
@@ -58,6 +64,9 @@ class SchoolEnrollmentController extends Controller
                 : '';
 
             $filters = ['municipio' => $municipality->slug, 'escola' => $school->id];
+            if ($transfers || $completed) {
+                $filters['situacao'] = $transfers ? 'transferidas' : 'concluidas';
+            }
             if ($safeSearch !== '') {
                 $filters['busca'] = $safeSearch;
             }
@@ -91,6 +100,7 @@ class SchoolEnrollmentController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        return view('enrollments.index', compact('municipality', 'school', 'enrollments', 'search', 'availableYears', 'selectedYear'));
+        return response()->view('enrollments.index', compact('municipality', 'school', 'enrollments', 'search', 'availableYears', 'selectedYear', 'transfers', 'completed'))
+            ->header('Cache-Control', 'private, no-store');
     }
 }

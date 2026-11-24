@@ -80,8 +80,9 @@
         'school.classes.attendance.index', 'school.classes.attendance.store', 'school.classes.attendance.correct', 'school.classes.attendance.monthly'
             => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
+        'school.students.declarations.create', 'school.students.declarations.store', 'school.students.declarations.show', 'school.students.declarations.revoke'
+            => route('school.enrollments.index', $parametrosEscola),
         'school.students.edit', 'school.students.report-card.show',
-        'school.students.declarations.create', 'school.students.declarations.store', 'school.students.declarations.show', 'school.students.declarations.revoke',
         'school.students.guardians.unlink.form', 'school.students.guardians.unlink',
         'school.students.pickups.create', 'school.students.pickups.store', 'school.students.pickups.edit', 'school.students.pickups.update',
         'school.students.pickups.remove.form', 'school.students.pickups.remove',
@@ -213,7 +214,9 @@
             @endunless
 
             <footer class="rodape"><span>© {{ date('Y') }} Astuti Gestão Escolar</span><span>As permissões são conferidas a cada acesso.</span></footer>
-            @php($versao = \App\Support\SystemInfo::version())
+            @php
+                $versao = \App\Support\SystemInfo::version();
+            @endphp
             <p class="rodape-versao">
                 @if ($versao['commit'])
                     Versão {{ $versao['commit'] }}@if ($versao['branch']) ({{ $versao['branch'] }})@endif, atualizada em {{ $versao['updated_at']->format('d/m/Y') }} às {{ $versao['updated_at']->format('H:i') }}

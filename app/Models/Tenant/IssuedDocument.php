@@ -2,8 +2,15 @@
 
 namespace App\Models\Tenant;
 
+use App\Documents\SchoolDeclarationSnapshot;
+
 class IssuedDocument extends TenantModel
 {
+    public const DECLARATIONS = [
+        'enrollment_declaration' => 'Declaração de matrícula',
+        ...SchoolDeclarationSnapshot::TYPES,
+    ];
+
     protected $keyType = 'string';
 
     public $incrementing = false;
@@ -13,7 +20,7 @@ class IssuedDocument extends TenantModel
         'issued_by', 'issued_at', 'purpose', 'revoked_at', 'revoked_by', 'revoke_reason',
         'snapshot_student_name', 'snapshot_school_name', 'snapshot_municipality_name',
         'snapshot_school_year', 'snapshot_stage', 'snapshot_class_name', 'snapshot_shift',
-        'transcript_snapshot', 'transcript_sha256', 'active_search_case_id', 'referral_snapshot',
+        'transcript_snapshot', 'transcript_sha256', 'active_search_case_id', 'referral_snapshot', 'declaration_snapshot',
     ];
 
     protected function casts(): array
@@ -24,6 +31,7 @@ class IssuedDocument extends TenantModel
             'snapshot_school_year' => 'integer',
             'transcript_snapshot' => 'array',
             'referral_snapshot' => 'array',
+            'declaration_snapshot' => 'array',
         ];
     }
 }

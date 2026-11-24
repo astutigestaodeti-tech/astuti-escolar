@@ -217,19 +217,24 @@
 
         @if ($canManage)
             <section class="folha declaracoes-lista" aria-labelledby="titulo-declaracoes">
-                <div class="folha-cabecalho"><div><h2 id="titulo-declaracoes">Declarações de matrícula</h2>
+                <div class="folha-cabecalho"><div><h2 id="titulo-declaracoes">Declarações escolares</h2>
                     <p>Documentos emitidos nesta unidade, com código de autenticidade.</p></div></div>
                 <div class="folha-corpo">
                     @if ($enrollments->contains('status', 'active'))
                         <a class="botao primario" href="{{ route('school.students.declarations.create', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}">Emitir declaração de matrícula</a>
                     @endif
+                    <div class="formulario-acoes">
+                        @foreach (\App\Documents\SchoolDeclarationSnapshot::TYPES as $kind => $label)
+                            <a class="botao secundario" href="{{ route('school.students.declarations.create', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id, 'tipo' => $kind]) }}">Emitir {{ mb_strtolower($label) }}</a>
+                        @endforeach
+                    </div>
                     @if ($declarations->isEmpty())
                         <p class="texto-suave declaracoes-vazio">Nenhuma declaração emitida para este aluno nesta escola.</p>
                     @else
                         <ul class="declaracoes-itens">
                             @foreach ($declarations as $document)
                                 <li>
-                                    <div><strong>Declaração de {{ $document->snapshot_school_year }}</strong>
+                                    <div><strong>{{ \App\Models\Tenant\IssuedDocument::DECLARATIONS[$document->kind] }} - {{ $document->snapshot_school_year }}</strong>
                                         <small>Emitida em {{ $document->issued_at->format('d/m/Y H:i') }}</small>
                                         <span class="etiqueta {{ $document->revoked_at ? 'conferir' : 'ok' }}">{{ $document->revoked_at ? 'Revogada' : 'Válida' }}</span>
                                     </div>
