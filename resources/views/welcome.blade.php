@@ -20,7 +20,7 @@
             @else
                     <ul class="redes">
                         @foreach ($redes as $rede)
-                            <li><a href="{{ route('schools.index', ['municipio' => $rede->slug]) }}"><x-icon name="escola" /><span>{{ $rede->legal_name }}</span><x-icon name="seta" /></a></li>
+                            <li><a href="{{ route(in_array($rede->slug, $teamOnlySlugs ?? [], true) ? 'team.index' : 'schools.index', ['municipio' => $rede->slug]) }}"><x-icon name="escola" /><span>{{ $rede->legal_name }}</span><x-icon name="seta" /></a></li>
                         @endforeach
                 </ul>
             @endif

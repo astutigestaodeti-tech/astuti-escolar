@@ -35,6 +35,17 @@
             <p class="texto-ajuda">Não registre laudos, diagnósticos ou relatos pessoais. A situação encaminhado é registrada na emissão do documento. A revogação invalida o papel; a equipe deve atualizar a situação do caso separadamente.</p>
         </div>
     </section>
+    @if ($canReferTeam)
+        <section class="folha">
+            <div class="folha-cabecalho"><div><h2>Equipe multiprofissional</h2><p>Abrir pedido para Serviço Social, sem copiar motivos ou contatos.</p></div></div>
+            <div class="folha-corpo">
+                <form method="POST" action="{{ route('school.team.active-search', $params) }}" class="busca-ativa-form">
+                    @csrf
+                    <button class="botao secundario" type="submit">Encaminhar à assistente social</button>
+                </form>
+            </div>
+        </section>
+    @endif
     @if($case)
         @if($case->status !== 'closed')
             <section class="folha">

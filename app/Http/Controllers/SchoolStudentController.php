@@ -6,18 +6,23 @@ use App\Audit\AuditTrail;
 use App\Geo\Distance;
 use App\Geo\RouteDistance;
 use App\Models\Tenant\IssuedDocument;
+use App\Models\Tenant\MultiprofessionalRequest;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
+use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentExit;
 use App\Models\Tenant\StudentGuardian;
 use App\Models\Tenant\StudentHealthAlert;
 use App\Models\Tenant\StudentHealthProfile;
 use App\Models\Tenant\StudentPickupAuthorization;
 use App\Models\Tenant\StudentSpecialEducation;
+use App\Multiprofessional\TeamAccess;
+use App\Security\TwoFactorSession;
 use App\Students\StudentSearch;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 class SchoolStudentController extends Controller
@@ -88,7 +93,7 @@ class SchoolStudentController extends Controller
         return view('students.index', compact('municipality', 'school', 'students', 'search', 'canManage', 'transport', 'transportCounts', 'transportFilters'));
     }
 
-    public function show(Request $request, string $municipio, string $escola, string $aluno): View
+    public function show(Request $request, string $municipio, string $escola, string $aluno): Response
     {
         $municipality = $request->attributes->get('astuti.municipality');
         $school = School::query()->where('status', 'active')->findOrFail($escola);
@@ -126,6 +131,27 @@ class SchoolStudentController extends Controller
         $healthProfile = $canManageHealth ? StudentHealthProfile::query()->find($student->id) : null;
         $specialEducation = $canManageHealth ? StudentSpecialEducation::query()->find($student->id) : null;
 
+        // Só direção ou professor com atribuição vigente recebe a devolutiva.
+        // Os dados técnicos e a área/motivo do pedido nunca vão para esta view.
+        $teamAccess = app(TeamAccess::class);
+        $teamEnrollments = $enrollments->filter(fn (StudentEnrollment $entry): bool => $teamAccess->schoolAccess($request->user(), $municipality, $school, $entry));
+        $teamVerified = $teamEnrollments->isNotEmpty() && app(TwoFactorSession::class)->isVerified($request, $request->user());
+        $teamRows = ! $teamVerified ? collect() : MultiprofessionalRequest::query()
+            ->where('school_id', $school->id)->where('student_id', $student->id)
+            ->whereIn('enrollment_id', $teamEnrollments->pluck('id'))
+            ->get(['enrollment_id', 'status', 'school_guidance'])->groupBy('enrollment_id');
+        $teamPanels = $teamEnrollments->map(function (StudentEnrollment $entry) use ($teamRows): array {
+            $rows = $teamRows->get($entry->id, collect());
+
+            return [
+                'enrollment' => $entry->id,
+                'class' => $entry->schoolClass?->name ?? 'Sem turma',
+                'year' => $entry->schoolYear?->year,
+                'ongoing' => $rows->contains(fn (MultiprofessionalRequest $row): bool => $row->status !== 'closed'),
+                'guidance' => $rows->pluck('school_guidance')->filter()->values()->all(),
+            ];
+        })->values()->all();
+
         // Última saída válida nesta escola, para quem atende a família por telefone.
         $lastExit = StudentExit::query()->valid()->where('student_id', $student->id)->where('school_id', $school->id)
             ->orderByDesc('exited_at')->first();
@@ -152,6 +178,6 @@ class SchoolStudentController extends Controller
             $distanciaRuas !== null ? 'pelas ruas' : 'em linha reta',
         );
 
-        return view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile', 'specialEducation', 'declarations'));
+        return response()->view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthAlerts', 'healthProfile', 'specialEducation', 'declarations', 'teamPanels', 'teamVerified'))->header('Cache-Control', 'private, no-store');
     }
 }
