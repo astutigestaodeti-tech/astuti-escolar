@@ -732,3 +732,7 @@ Os números vêm de uma consulta PostgreSQL agregada para todas as matrículas a
   - validação com um município cliente.
 
 **Ordem:** #124 (manual) e depois #136, com o ChatGPT. O Claude segue com a exportação para o Educacenso.
+
+## 24/11/2026 - Manual do usuário (issue #124)
+
+Entrega de doze capítulos e índice em `docs/manual/`, incluindo primeiro acesso, segundo fator e dados da Prefeitura. Caminhos e botões conferidos na main após #140, incluindo gravação coletiva da sondagem. Orientações por perfil, passos numerados, dúvidas e proteção de dados. Sem código, migrations ou prints; capturas após validação de Jefferson.
