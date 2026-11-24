@@ -1,0 +1,81 @@
+Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira
+Diretoria de Estatísticas Educacionais
+Coordenação-Geral do Censo Escolar da Educação Básica
+Coordenação de Verificação de Dados e Sistemas Informatizados
+,Censo Escolar 2026
+,Regras horários coincidentes
+,1.      Objetivo
+,Descrever as regras para impedir vínculos inconsistentes que se caracterizam como:
+,·         Vínculos na mesma turma
+,·         Vínculos em turmas diferentes com o mesmo horário.
+,2.      Vínculos na mesma turma
+,2.1. Regras
+,"a) Não será permitido mais de um vínculo do mesmo cadastro na mesma turma sendo o mesmo tipo de vínculo (aluno x aluno, profissional x profissional) ou diferentes tipos de vínculo (aluno x profissional escolar)"
+,3.      Vínculos em turmas diferentes com o mesmo horário e dia da semana
+,3.1. Regras
+,Deverão ser verificados os vínculos de:
+,·         aluno x aluno
+,·         aluno x profissional escolar.
+,Observação: Não deverá existir verificação entre vínculos profissional escolar x profissional escolar.
+,Aluno X Aluno
+,"a)      Deverão ser verificados vínculos para turmas do tipo ""6. Curricular (etapa de ensino)"" ou ""9. Curricular (etapa de ensino) com Atividade complementar"" com tipo de mediação didático-pedagógica presencial, de atividade complementar e de atendimento educacional especializado - AEE, não permitindo o vínculo no mesmo horário e dia da semana na mesma escola ou escolas diferentes nas seguintes combinações:"
+,Vínculo 1,Vínculo 2,Exceção
+,6 ou 9,6 ou 9,-
+,6 ou 9,Atividade complementar,-
+,6 ou 9,AEE,Turma Curricular (etapa de ensino) com qualquer duração
+,Atividade complementar,Atividade complementar,-
+,Atividade complementar,AEE,-
+,AEE,AEE,-
+,"b)      Considera-se vínculo no mesmo dia e horário quando o dia da semana e o horário de funcionamento informados em ambas as turmas se coincidem. Dessa forma, para identificar e impedir vínculos no mesmo horário as seguintes variáveis devem ser verificadas:"
+,·         Tipo de turma – conforme quadro acima.
+,"·         Dias da semana da turma – deve-se considerar qualquer coincidência de dias nas turmas, ou seja, pode ser apenas um dia ou todos coincidentes."
+,·         Horário de funcionamento da turma – deve-se considerar para cada dia da semana:
+,Horários coincidentes (mesmo dia e  horário de início e término da turma).
+,Exemplo:
+,Horário de funcionamento da turma A: 14:00 às 18:00
+,Horário de funcionamento da turma B: 14:00 às 18:00
+,Horários intercalados (quando os dias e horários de funcionamento das turmas se chocam em seus intervalos).
+,Exemplo:
+,Dia e horário de funcionamento da turma A: Segunda-feira: 14:00 às 18:00
+,Dia e horário de funcionamento da turma B: Segunda-feira:15:00 às 17:00
+,Observação
+,Em horários intercalados exclui-se da verificação (permite o vínculo) o dia e horário de término de uma turma igual ao horário inicial de outra turma.
+,Exemplo:
+,Horário de funcionamento da turma A: 14:00 às 16:00
+,Horário de funcionamento da turma B: 16:00 às 17:00
+,Aluno X Profissional Escolar
+,"c)      Deverão ser verificados vínculos para turmas do tipo ""6. Curricular (etapa de ensino)"" ou ""9. Curricular (etapa de ensino) com Atividade complementar"" com tipo de mediação didático-pedagógica presencial, de atividade complementar e de atendimento educacional especializado - AEE, não permitindo o vínculo no mesmo horário e dia da semana na mesma escola ou escolas diferentes nas seguintes combinações:"
+,Vínculo 1,Vínculo 2
+,6 ou 9,6 ou 9
+,6 ou 9,Atividade complementar
+,6 ou 9,AEE
+,Atividade complementar,Atividade complementar
+,Atividade complementar,AEE
+,AEE,AEE
+,"d)     Considera-se vínculo no mesmo horário quando o dia da semana e o horário de funcionamento informados em ambas as turmas se coincidem. Dessa forma, para identificar e impedir vínculos no mesmo horário as seguintes variáveis devem ser verificadas:"
+,·         Tipo de turma – conforme quadro acima.
+,"·         Dias da semana da turma – deve-se considerar qualquer coincidência de dias nas turmas, ou seja, pode ser apenas um dia ou todos coincidentes."
+,·         Horário de funcionamento da turma – deve-se considerar para cada dia da semana:
+,Horários coincidentes (mesmo dia e horário de início e término da turma).
+,Exemplo:
+,Horário de funcionamento da turma A: 14:00 às 18:00
+,Horário de funcionamento da turma B: 14:00 às 18:00
+,"Horário de funcionamento da turma do vínculo de profissional escolar é um subconjunto do horário de funcionamento da turma do vínculo de aluno, ou seja, o horário em todos os dias de funcionamento da turma em que o cadastro está vinculado como aluno é maior que o horário em todos os dias de funcionamento da turma em que está vinculado como profissional escolar."
+,Exemplo – Bloqueio de vínculo:
+,Dia e horário de funcionamento da turma A –Aluno: Segunda-feira: 14:00 às 18:00
+,Dia e horário de funcionamento da turma B – Profissional Escolar: Segunda-feira: 15:00 às 17:00
+,Permissão de vínculo : Aluno X Profissional Escolar -
+,I - São permitidos os casos de aluno e profissional escolar em horário diferente onde os vínculos da pessoa como aluno e profissional escolar são:
+,- Em turma de horário de funcionamento diferente (horário de início e término da turma diferente) em pelo menos 1 dia da semana.
+,Exemplo:
+,Horário de funcionamento da turma A – Profissional escolar: 14:00 às 18:00
+,Horário de funcionamento da turma B – Aluno: 08:00 às 14:00
+,Observação: Considerar horários diferentes quando o horário de término de uma turma é igual ao horário inicial de outra turma.
+,"II - São permitidos os casos de aluno e profissional escolar nos quais o horário de funcionamento da turma do aluno, em pelo menos 1 dia da semana é um subconjunto do horário de funcionamento da turma em que está como profissional escolar:"
+,Exemplo:
+,Dia e horário de funcionamento da turma A – Profissional escolar:  Terça-feira: 14:00 às 18:00
+,Dia e horário de funcionamento da turma B – Aluno: Terça-feira: 15:00 às 17:00
+,"III - São permitidos os casos de aluno e profissional escolar nos quais os horários são intercalados, em pelo menos 1 dia da semana (quando os horários de funcionamento das turmas se chocam em seus intervalos)."
+,Exemplo:
+,Dia e horário de funcionamento da turma A: terça-feira: 14:00 às 18:00
+,Dia e horário de funcionamento da turma B: terça-feira: 15:00 às 17:00
