@@ -5,6 +5,7 @@ use App\Http\Controllers\ActiveSearchController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\CensusReadinessController;
+use App\Http\Controllers\EducacensoSchoolController;
 use App\Http\Controllers\ClassCensusController;
 use App\Http\Controllers\ClassGradesController;
 use App\Http\Controllers\ClassTeacherAssignmentController;
@@ -178,6 +179,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/busca-ativa/{matricula}/documentos/{documento}/revogar', [ActiveSearchController::class, 'revoke'])
         ->whereUuid('escola')->whereUuid('matricula')->whereUuid('documento')
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.active-search.revoke');
+    Route::get('/escolas/{escola}/educacenso', [EducacensoSchoolController::class, 'show'])->whereUuid('escola')->name('census.educacenso.school');
     Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
     Route::post('/conferencia-do-censo/parametros', [CensusReadinessController::class, 'updateParameters'])
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.readiness.parameters');
