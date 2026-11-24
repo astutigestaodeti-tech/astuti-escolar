@@ -118,7 +118,7 @@ class GeoLocationTest extends TwoMunicipalityTestCase
         $this->user('school_secretary', [self::ESCOLA_A1]);
 
         $this->post($this->base().'/localizacao', ['latitude' => '-23.500000', 'longitude' => '-46.600000', 'geo_source' => 'mapa'])
-            ->assertRedirect($this->base())->assertSessionHas('status', 'Localização da escola salva.');
+            ->assertRedirect($this->base())->assertSessionHas('status', 'Endereço e localização da escola salvos.');
         // Cerca de 3,3 km ao norte da escola.
         $this->post($this->base().'/alunos/'.$this->student.'/localizacao', ['latitude' => '-23.470000', 'longitude' => '-46.600000', 'geo_source' => 'mapa'])
             ->assertRedirect()->assertSessionHas('status', 'Localização da residência salva.');
@@ -235,5 +235,57 @@ class GeoLocationTest extends TwoMunicipalityTestCase
             ->assertSee('1,7 km')
             ->assertSee('Não foi possível calcular agora')
             ->assertDontSee('Mora a mais de');
+    }
+
+    public function test_escola_salva_endereco_e_ponto_juntos_e_endereco_sem_ponto_volta_ao_mapa_procurando(): void
+    {
+        $this->user('school_director', [self::ESCOLA_A1]);
+        $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1;
+
+        $this->get($base.'/localizacao')->assertOk()
+            ->assertSee('Endereço da escola')->assertSee('Preencher pelo mapa')->assertSee('Salvar endereço e localização');
+
+        // Só o endereço, sem ponto: volta ao mapa já procurando o endereço salvo.
+        $this->post($base.'/localizacao', [
+            'postal_code' => '07500000', 'address_street' => 'Rua das Flores Fictícia', 'address_number' => '100',
+            'address_district' => 'Centro', 'address_city' => 'Monte Sereno', 'address_state' => 'SP',
+            'latitude' => '', 'longitude' => '', 'geo_source' => 'endereco',
+        ])->assertRedirectContains('procurar=Rua');
+
+        $this->post($base.'/localizacao', [
+            'address_street' => 'Rua das Flores Fictícia', 'address_number' => '100', 'address_district' => 'Centro',
+            'address_city' => 'Monte Sereno', 'address_state' => 'SP', 'postal_code' => '07500-000',
+            'latitude' => '-23.300000', 'longitude' => '-46.200000', 'geo_source' => 'mapa',
+        ])->assertRedirect($base);
+
+        $this->get($base)->assertOk()->assertSee('Rua das Flores Fictícia 100, Centro, Monte Sereno/SP, 07500-000');
+        $this->inMunicipality(function (): void {
+            $school = School::query()->findOrFail(self::ESCOLA_A1);
+            $this->assertSame('07500-000', $school->postal_code);
+            $this->assertSame(-23.3, (float) $school->latitude);
+        });
+
+        $this->post($base.'/localizacao', ['address_state' => 'XX', 'latitude' => '-23.3', 'longitude' => '-46.2', 'geo_source' => 'mapa'])
+            ->assertSessionHasErrors('address_state');
+    }
+
+    public function test_endereco_pelo_ponto_do_mapa_vem_do_geocodificador_reverso(): void
+    {
+        config(['geo.reverse_url' => 'https://geo.example.test/reverse']);
+        Http::fake(['geo.example.test/*' => Http::response(['address' => [
+            'road' => 'Rua Fictícia do Mapa', 'house_number' => '856', 'suburb' => 'Jardim Teste',
+            'town' => 'Monte Sereno', 'ISO3166-2-lvl4' => 'BR-SP', 'postcode' => '07500000', 'country_code' => 'br',
+        ]])]);
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $url = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/localizacao/endereco';
+
+        $this->getJson($url.'?lat=-23.3&lon=-46.2')->assertOk()->assertExactJson([
+            'street' => 'Rua Fictícia do Mapa', 'number' => '856', 'district' => 'Jardim Teste',
+            'city' => 'Monte Sereno', 'state' => 'SP', 'postal_code' => '07500-000',
+        ]);
+        $this->getJson($url.'?lat=10&lon=-46.2')->assertStatus(422);
+
+        $this->user('teacher', [self::ESCOLA_A1]);
+        $this->getJson($url.'?lat=-23.3&lon=-46.2')->assertForbidden();
     }
 }

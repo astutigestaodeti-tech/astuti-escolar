@@ -38,6 +38,7 @@
         if (manual) {
             origem.value = 'mapa';
             situacao.textContent = 'Ponto marcado no mapa. Confira e salve.';
+            document.dispatchEvent(new CustomEvent('astuti:ponto-marcado'));
         }
     }
 

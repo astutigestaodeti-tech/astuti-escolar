@@ -279,6 +279,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
 
     // Localização no mapa (residência do aluno e escola): só quem gere a escola; gravação com segundo fator.
     Route::get('/escolas/{escola}/localizacao', [GeoLocationController::class, 'editSchool'])->whereUuid('escola')->name('schools.geo.edit');
+    Route::get('/escolas/{escola}/localizacao/endereco', [GeoLocationController::class, 'reverseSchool'])->whereUuid('escola')->middleware('throttle:20,1')->name('schools.geo.reverse');
     Route::post('/escolas/{escola}/localizacao', [GeoLocationController::class, 'updateSchool'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('schools.geo.update');
     Route::get('/escolas/{escola}/alunos/{aluno}/localizacao', [GeoLocationController::class, 'editStudent'])->whereUuid('escola')->whereUuid('aluno')->name('school.students.geo.edit');
     Route::post('/escolas/{escola}/alunos/{aluno}/localizacao', [GeoLocationController::class, 'updateStudent'])->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.geo.update');

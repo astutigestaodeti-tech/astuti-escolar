@@ -28,6 +28,12 @@
             <dl>
                 <div><dt>Nome</dt><dd>{{ $school->name }}</dd></div>
                 <div><dt>Código INEP</dt><dd class="numero">{{ $school->inep_code ?: 'Não informado' }}</dd></div>
+                <div><dt>Endereço</dt><dd>
+                    {{ $school->addressLine() !== '' ? $school->addressLine() : 'Não informado' }}
+                    @can('manageStudents', [$school, $municipality])
+                        <small class="ficha-idade"><a href="{{ route('schools.geo.edit', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">{{ $school->addressLine() !== '' ? 'Alterar' : 'Informar' }}</a></small>
+                    @endcan
+                </dd></div>
                 <div><dt>Situação</dt><dd>Em funcionamento</dd></div>
                 <div><dt>Localização no mapa</dt><dd>
                     {{ $school->latitude !== null ? 'Marcada' : 'Não marcada' }}

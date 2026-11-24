@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Address\BrazilianStates;
 use App\Geo\Coordinates;
 use App\Geo\Geocoder;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -49,7 +51,8 @@ class GeoLocationController extends Controller
     public function editSchool(Request $request, string $municipio, string $escola, Geocoder $geocoder): View
     {
         [$municipality, $school] = $this->school($request, $escola);
-        $suggestion = $this->suggestion($request, $geocoder, null);
+        // Sem ponto salvo, o endereço cadastrado já posiciona o marcador.
+        $suggestion = $this->suggestion($request, $geocoder, $school->latitude === null ? $school : null);
 
         return view('geo.edit', [
             'municipality' => $municipality,
@@ -57,8 +60,9 @@ class GeoLocationController extends Controller
             'subject' => $school,
             'subjectName' => $school->name,
             'kind' => 'escola',
-            'addressText' => '',
+            'addressText' => $school->addressLine(),
             'suggestion' => $suggestion,
+            'reverseUrl' => route('schools.geo.reverse', ['municipio' => $municipality->slug, 'escola' => $school->id]),
             'saveUrl' => route('schools.geo.update', ['municipio' => $municipality->slug, 'escola' => $school->id]),
             'backUrl' => route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id]),
         ]);
@@ -67,10 +71,71 @@ class GeoLocationController extends Controller
     public function updateSchool(Request $request, string $municipio, string $escola): RedirectResponse
     {
         [$municipality, $school] = $this->school($request, $escola);
+        if ($request->boolean('remover')) {
+            $this->store($request, $school);
+
+            return redirect()->route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id])
+                ->with('status', 'Localização da escola removida.');
+        }
+
+        // Endereço e ponto na mesma gravação: um botão só.
+        $this->saveSchoolAddress($request, $school);
+        if (trim((string) $request->input('latitude')) === '') {
+            $params = ['municipio' => $municipality->slug, 'escola' => $school->id];
+            if ($school->wasChanged(School::ADDRESS_FIELDS) && $school->addressLine() !== '') {
+                // Endereço novo sem ponto: volta ao mapa já procurando o endereço.
+                return redirect()->route('schools.geo.edit', [...$params, 'procurar' => $school->addressLine()])
+                    ->with('status', 'Endereço salvo. Confira o ponto no mapa e salve de novo.');
+            }
+        }
         $this->store($request, $school);
 
         return redirect()->route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id])
-            ->with('status', $school->latitude === null ? 'Localização da escola removida.' : 'Localização da escola salva.');
+            ->with('status', 'Endereço e localização da escola salvos.');
+    }
+
+    /** Endereço sugerido para o ponto marcado no mapa (a pessoa confere e salva). */
+    public function reverseSchool(Request $request, string $municipio, string $escola, Geocoder $geocoder): JsonResponse
+    {
+        $this->school($request, $escola);
+        $data = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-34,6'],
+            'lon' => ['required', 'numeric', 'between:-74,-28'],
+        ]);
+        $address = $geocoder->reverse((float) $data['lat'], (float) $data['lon']);
+
+        return $address === null
+            ? response()->json(['message' => 'Não encontrei o endereço deste ponto. Preencha pelo CEP.'], 404)
+            : response()->json($address);
+    }
+
+    private function saveSchoolAddress(Request $request, School $school): void
+    {
+        $fields = School::ADDRESS_FIELDS;
+        foreach ($fields as $field) {
+            $value = $request->input($field);
+            $request->merge([$field => is_string($value) ? (preg_replace('/\s+/u', ' ', trim($value)) ?: null) : $value]);
+        }
+        $data = $request->validate([
+            'postal_code' => ['nullable', 'regex:/\A\d{5}-?\d{3}\z/'],
+            'address_street' => ['nullable', 'string', 'max:180'],
+            'address_number' => ['nullable', 'string', 'max:20'],
+            'address_complement' => ['nullable', 'string', 'max:180'],
+            'address_district' => ['nullable', 'string', 'max:120'],
+            'address_city' => ['nullable', 'string', 'max:120'],
+            'address_state' => ['nullable', 'string', 'size:2', BrazilianStates::VALIDATION_RULE],
+        ], [
+            'postal_code.regex' => 'Informe o CEP com oito números (00000-000).',
+            'address_state.in' => 'Selecione uma UF válida.',
+            'address_state.size' => 'Selecione uma UF válida.',
+        ]);
+        if (($data['postal_code'] ?? null) !== null && ! str_contains($data['postal_code'], '-')) {
+            $data['postal_code'] = substr($data['postal_code'], 0, 5).'-'.substr($data['postal_code'], 5);
+        }
+        $school->fill(array_intersect_key($data, array_flip($fields)));
+        if ($school->isDirty($fields)) {
+            $school->save();
+        }
     }
 
     /** @return array{0: mixed, 1: School} */
@@ -94,7 +159,7 @@ class GeoLocationController extends Controller
      *
      * @return array{lat: float, lon: float, found: bool, query: string}|null
      */
-    private function suggestion(Request $request, Geocoder $geocoder, ?Student $fromAddress): ?array
+    private function suggestion(Request $request, Geocoder $geocoder, Student|School|null $fromAddress): ?array
     {
         $query = trim((string) $request->query('procurar', ''));
         if ($query !== '') {
@@ -115,7 +180,7 @@ class GeoLocationController extends Controller
         if ($fromAddress !== null && $fromAddress->address_city !== null) {
             $point = $geocoder->locate($fromAddress->address_street, $fromAddress->address_number, $fromAddress->address_district, $fromAddress->address_city, $fromAddress->address_state, $fromAddress->postal_code);
 
-            return $point === null ? null : [...$point, 'found' => true, 'query' => $this->addressText($fromAddress)];
+            return $point === null ? null : [...$point, 'found' => true, 'query' => $fromAddress instanceof School ? $fromAddress->addressLine() : $this->addressText($fromAddress)];
         }
 
         return null;
