@@ -84,6 +84,22 @@ class SchoolAccess
             ->exists();
     }
 
+    /** @return list<string>|null Escolas com autorização de gestão, não mera consulta. */
+    public function manageableSchoolIds(User $user, Municipality $municipality): ?array
+    {
+        if ($user->status !== 'active' || $municipality->status !== 'active') {
+            return [];
+        }
+        $memberships = Membership::query()->where('user_id', $user->id)->where('municipality_id', $municipality->id)
+            ->where('status', 'active')->whereIn('role', ['municipal_manager', 'school_director', 'school_secretary'])->get();
+        if ($memberships->contains('role', 'municipal_manager')) {
+            return null;
+        }
+
+        return DB::connection('platform')->table('school_scopes')->whereIn('membership_id', $memberships->pluck('id'))
+            ->distinct()->pluck('school_id')->all();
+    }
+
     /** Exclusão por erro de cadastro cabe somente à direção da unidade ou gestão municipal. */
     public function mayDeleteEnrollment(User $user, Municipality $municipality, string $schoolId): bool
     {

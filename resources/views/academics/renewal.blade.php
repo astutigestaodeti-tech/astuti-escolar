@@ -57,10 +57,10 @@
             @if ($data['nextYear'] === null)
                 <p class="renovacao-aviso">O ano letivo {{ $data['nextNumber'] }} não está cadastrado ou está encerrado. Solicite o cadastro de um ano planejado ou em andamento.</p>
             @elseif ($data['classes']->isEmpty())
-                <p class="renovacao-aviso">Não há turmas abertas nesta escola para {{ $data['nextNumber'] }}. Cadastre as turmas do ano seguinte.</p>
+                <p class="renovacao-aviso">Não há turmas abertas nesta escola ou nas demais autorizadas para {{ $data['nextNumber'] }}. Cadastre as turmas do ano seguinte.</p>
             @else
-                <p>Aprovados e aprovados com acompanhamento avançam uma série; retidos permanecem na mesma série. O turno da turma de origem tem preferência. Só aparecem destinos da série e modalidade correspondentes, nesta escola.</p>
-                <p class="texto-ajuda">Turmas sem série identificável e saídas não são renovadas automaticamente. A aprovação no 9º ano exige outra providência. O transporte do ano anterior não é copiado.</p>
+                <p>Aprovados e aprovados com acompanhamento avançam uma série; retidos permanecem na mesma série. O turno da turma de origem tem preferência. Só aparecem destinos da etapa e modalidade correspondentes nas escolas sob sua gestão. Destino em outra escola é apenas sugerido: selecione-o expressamente.</p>
+                <p class="texto-ajuda">Na educação infantil, a continuidade respeita a data de corte da lista de espera. Na multisseriada, a série precisa estar na matrícula ou no histórico. Turmas sem série identificável e saídas não são renovadas automaticamente. Se a série individual estiver ausente, confira a matrícula e o histórico antes de renovar. A aprovação no 9º ano exige outra providência. O transporte do ano anterior não é copiado.</p>
             @endif
         </div>
     </section>
@@ -78,17 +78,23 @@
                             @forelse ($data['rows'] as $row)
                                 <tr>
                                     <th scope="row">{{ $row['entry']->student->full_name }}</th>
-                                    <td>{{ $results[$row['result']] ?? 'Não confirmado' }}</td>
+                                    <td>{{ \App\Academics\RenewalStage::isInfant($class) && $row['result'] === 'aprovado' ? 'Continuidade confirmada' : ($results[$row['result']] ?? 'Não confirmado') }}
+                                        @if ($row['target'] !== null)<br><small class="texto-ajuda">Destino: {{ \App\Academics\RenewalStage::LABELS[$row['target']] }}</small>@endif</td>
                                     <td>
                                         @if ($row['reason'] !== null)
                                             <span class="etiqueta neutra">{{ $reasons[$row['reason']] }}</span>
                                         @else
+                                            @if ($row['crossSchool'])
+                                                <p class="texto-ajuda">Sugestão em outra escola: {{ $data['classes']->get($row['suggestion'])->school->name }} | {{ $data['classes']->get($row['suggestion'])->name }}. Confirme escolhendo o destino.</p>
+                                            @endif
                                             <label class="sr-only" for="destino-{{ $row['entry']->id }}">Turma de destino de {{ $row['entry']->student->full_name }}</label>
                                             <select class="entrada renovacao-destino" id="destino-{{ $row['entry']->id }}" name="destinos[{{ $row['entry']->id }}]">
                                                 <option value="">Não renovar</option>
                                                 @foreach ($row['choices'] as $choice)
-                                                    @php $occupied = (int) $data['counts']->get($choice->id, 0); @endphp
-                                                    <option value="{{ $choice->id }}" @selected(old('destinos.'.$row['entry']->id, $row['suggestion']) === $choice->id)>{{ $choice->name }} | {{ $choice->shift }} | {{ $occupied }}/{{ $choice->capacity ?? 'sem limite informado' }}</option>
+                                                    @php
+                                                        $occupied = (int) $data['counts']->get($choice->id, 0);
+                                                    @endphp
+                                                    <option value="{{ $choice->id }}" @selected(old('destinos.'.$row['entry']->id, $row['crossSchool'] ? null : $row['suggestion']) === $choice->id)>{{ $choice->school->name }} | {{ $choice->name }} | {{ $choice->shift }} | {{ $occupied }}/{{ $choice->capacity ?? 'sem limite informado' }}</option>
                                                 @endforeach
                                             </select>
                                         @endif
@@ -111,10 +117,10 @@
                     @foreach ($data['classes'] as $destination)
                         @php
                             $occupied = (int) $data['counts']->get($destination->id, 0);
-                            $suggested = $data['rows']->where('suggestion', $destination->id)->count();
+                            $suggested = $data['rows']->where('suggestion', $destination->id)->where('crossSchool', false)->count();
                         @endphp
                         <p class="renovacao-capacidade" data-class="{{ $destination->id }}" data-occupied="{{ $occupied }}" data-capacity="{{ $destination->capacity ?? '' }}">
-                            <strong>{{ $destination->name }} | {{ $destination->shift }}</strong>:
+                            <strong>{{ $destination->school->name }} | {{ $destination->name }} | {{ $destination->shift }}</strong>:
                             <span data-projected>{{ $occupied + $suggested }}</span> previstas / {{ $destination->capacity ?? 'capacidade não informada' }}.
                             <span class="renovacao-aviso" data-capacity-warning @if ($destination->capacity === null || $occupied + $suggested <= $destination->capacity) hidden @endif>Capacidade excedida.</span>
                         </p>

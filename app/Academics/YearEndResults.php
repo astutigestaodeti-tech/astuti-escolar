@@ -59,6 +59,10 @@ class YearEndResults
             ->where(fn ($q) => $q->where('active', true)->orWhereIn('id', $usedComponentIds))
             ->orderBy('display_order')->orderBy('name')->get();
 
+        $infant = RenewalStage::isInfant($class);
+        if ($infant) {
+            $components = collect();
+        }
         $byEnrollment = $grades->groupBy('student_enrollment_id');
         $year = $class->schoolYear;
         $marks = $studentIds->isEmpty() ? collect() : DB::connection('tenant')
@@ -88,14 +92,15 @@ class YearEndResults
         $noRetention = app(Literacy::class)->noRetention($class);
 
         $records = $enrollments->map(function (StudentEnrollment $enrollment) use (
-            $byEnrollment, $components, $marks, $minGrade, $minAttendance, $confirmed, $noRetention
+            $byEnrollment, $components, $marks, $minGrade, $minAttendance, $confirmed, $noRetention, $infant, $class
         ): array {
+            $infantEntry = $infant || (RenewalStage::isMulti($class) && in_array($enrollment->inep_stage_code, [1, 2], true));
             $entries = $byEnrollment->get($enrollment->id, collect())->groupBy('curricular_component_id');
             $averages = [];
             $below = [];
             $pending = [];
 
-            foreach ($components as $component) {
+            foreach ($infantEntry ? collect() : $components as $component) {
                 $values = $entries->get($component->id, collect())
                     ->filter(fn (GradeEntry $grade): bool => $grade->grade !== null)
                     ->pluck('grade')->map(fn ($grade): float => (float) $grade);
@@ -124,6 +129,9 @@ class YearEndResults
             if ($enrollment->status !== 'active') {
                 $suggestion = null;
                 $reasons = ['Situação da matrícula preservada: '.self::EXIT_LABELS[$enrollment->status]];
+            } elseif ($infantEntry) {
+                $suggestion = 'aprovado';
+                $reasons = ['Continuidade da educação infantil, sem avaliação para promoção ou retenção'];
             } elseif ($reasons !== []) {
                 $suggestion = $noRetention ? 'acompanhado' : 'retido';
                 if ($noRetention) {
@@ -144,6 +152,7 @@ class YearEndResults
 
             return [
                 'enrollment' => $enrollment,
+                'infant' => $infantEntry,
                 'averages' => $averages,
                 'frequency' => $frequency,
                 'suggestion' => $suggestion,
@@ -157,6 +166,7 @@ class YearEndResults
         $closure = ClassYearClosure::query()->findOrFail($class->id);
 
         return [
+            'infant' => $infant,
             'periods' => $periods,
             'components' => $components,
             'records' => $records,
