@@ -38,7 +38,7 @@ final class Registro40
         $atividade = $censo?->operating_status;
         $dependencia = $censo?->administrative_dependency;
         $publica = in_array($dependencia, [1, 2, 3], true);
-        if ($diretor && $atividade === null || $diretor && $dependencia === null) {
+        if ($diretor && ($atividade === null || $dependencia === null)) {
             $registro->aviso(6, 'Confirme a situação e a dependência administrativa no registro 00.');
         }
         if (! $diretor || in_array($atividade, [2, 3], true)) {
@@ -51,7 +51,7 @@ final class Registro40
         } elseif ($atividade === 1 && $vinculo?->access_criterion === null) {
             $registro->recusa(6, 'Informe o critério de acesso do diretor.');
         }
-        if ($publica && $vinculo?->access_criterion === 1 || $dependencia === 4 && in_array($vinculo?->access_criterion, [4, 5, 6], true)) {
+        if (($publica && $vinculo?->access_criterion === 1) || ($dependencia === 4 && in_array($vinculo?->access_criterion, [4, 5, 6], true))) {
             $registro->recusa(6, 'Critério incompatível com a dependência administrativa.');
         }
         if ($diretor && $atividade === 1 && $publica && $vinculo?->employment_status === null) {
