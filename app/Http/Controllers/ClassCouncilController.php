@@ -62,7 +62,7 @@ class ClassCouncilController extends Controller
         }
         DB::connection('tenant')->transaction(function () use ($request, $class, $director, $data): void {
             SchoolClass::query()->lockForUpdate()->findOrFail($class->id);
-            $period = AcademicPeriod::query()->where('school_year_id', $class->school_year_id)->findOrFail($data['periodo']);
+            $period = AcademicPeriod::query()->where('school_year_id', $class->school_year_id)->lockForUpdate()->findOrFail($data['periodo']);
             $council = ClassCouncil::query()->where('school_class_id', $class->id)->where('academic_period_id', $period->id)->lockForUpdate()->first();
             abort_if($council?->status === 'completed', 409, 'Conselho concluído. Solicite reabertura à direção.');
             $students = $data['students'] ?? [];
@@ -117,7 +117,7 @@ class ClassCouncilController extends Controller
         $data = $validator->validated();
         DB::connection('tenant')->transaction(function () use ($request, $class, $data): void {
             SchoolClass::query()->lockForUpdate()->findOrFail($class->id);
-            $period = AcademicPeriod::query()->where('school_year_id', $class->school_year_id)->findOrFail($data['periodo']);
+            $period = AcademicPeriod::query()->where('school_year_id', $class->school_year_id)->lockForUpdate()->findOrFail($data['periodo']);
             $council = ClassCouncil::query()->where('school_class_id', $class->id)->where('academic_period_id', $period->id)->lockForUpdate()->firstOrFail();
             if ($data['acao'] === 'complete') {
                 abort_unless($council->status === 'in_progress' && $council->meeting_date !== null, 422, 'Informe a data do conselho antes de concluir.');
