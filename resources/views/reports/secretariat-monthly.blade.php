@@ -5,6 +5,7 @@
 @section('body-class', 'pagina-relatorio-secretaria')
 
 @push('head')
+    <link rel="stylesheet" href="{{ asset('css/equipe-multiprofissional.css') }}?v={{ filemtime(public_path('css/equipe-multiprofissional.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/relatorio-secretaria.css') }}?v={{ filemtime(public_path('css/relatorio-secretaria.css')) }}">
 @endpush
 
@@ -199,6 +200,11 @@
                     </tbody>
                 </table></div>
                 <div class="folha-corpo secretaria-apos-tabela"><p class="texto-ajuda">Indicadores internos, não equivalem ao SARESP ou às avaliações oficiais de alfabetização.</p></div>
+            </section>
+
+            <section class="folha">
+                <div class="folha-cabecalho"><div><h2>9. Equipe multiprofissional</h2><p>Indicadores agregados da Lei 13.935/2019, sem identificação dos alunos.</p></div></div>
+                @include('multiprofessional.indicator-data', ['teamIndicators' => $data['team']])
             </section>
 
             <footer class="folha secretaria-assinatura">

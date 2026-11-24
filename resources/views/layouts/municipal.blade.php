@@ -21,7 +21,7 @@
     $partes = preg_split('/\s+/u', $nomeCurto) ?: [];
     $monograma = mb_strtoupper(mb_substr($partes[0] ?? '', 0, 1).mb_substr($partes[count($partes) - 1] ?? '', 0, 1));
     $usuario = auth()->user();
-    $nomesPapeis = ['municipal_manager' => 'Gestão municipal', 'school_director' => 'Direção escolar', 'school_secretary' => 'Secretaria escolar', 'teacher' => 'Professor(a)'];
+    $nomesPapeis = ['municipal_manager' => 'Gestão municipal', 'school_director' => 'Direção escolar', 'school_secretary' => 'Secretaria escolar', 'teacher' => 'Professor(a)', 'psicologo' => 'Psicologia', 'assistente_social' => 'Serviço Social', 'pedagogo_equipe' => 'Pedagogia da equipe'];
     $papelUsuario = $usuario
         ? \App\Models\Platform\Membership::query()
             ->where('user_id', $usuario->id)->where('municipality_id', $municipality->id)->where('status', 'active')
@@ -32,6 +32,7 @@
     $painelAtivo = request()->routeIs('network.panel.*');
     $relatorioSecretariaAtivo = request()->routeIs('secretariat.monthly.*');
     $dadosPrefeituraAtivo = request()->routeIs('institution.*');
+    $equipeAtiva = request()->routeIs('team.*');
     $censoAtivo = request()->routeIs('census.readiness.*');
     $integralAtivo = request()->routeIs('integral.*');
     $alfabetizacaoAtiva = request()->routeIs('literacy.*') || request()->routeIs('school.literacy.*');
@@ -48,6 +49,9 @@
         'waitlist.create', 'waitlist.show' => route('waitlist.index', $parametrosMunicipio),
         'waitlist.enroll.form' => route('waitlist.show', [...$parametrosMunicipio, 'pedido' => request()->route('pedido')]),
         'network.panel.index' => route('schools.index', $parametrosMunicipio),
+        'team.index' => route('home'),
+        'team.show', 'team.document' => route('team.index', $parametrosMunicipio),
+        'team.indicators' => route('network.panel.index', $parametrosMunicipio),
         'secretariat.monthly.index', 'institution.edit' => route('network.panel.index', $parametrosMunicipio),
         'literacy.network', 'literacy.settings' => route('network.panel.index', $parametrosMunicipio),
         'school.literacy.panel' => route('schools.show', $parametrosEscola),
@@ -131,14 +135,24 @@
                 <a class="menu-item {{ $alimentacaoAtiva ? 'ativo' : '' }}" href="{{ route('meals.menu', $parametrosMunicipio) }}" @if ($alimentacaoAtiva) aria-current="page" @endif>
                     <x-icon name="turmas" /><span>Alimentação escolar</span>
                 </a>
+                <a class="menu-item {{ $equipeAtiva ? 'ativo' : '' }}" href="{{ route('team.indicators', $parametrosMunicipio) }}" @if ($equipeAtiva) aria-current="page" @endif>
+                    <x-icon name="indicadores" /><span>Equipe multiprofissional</span>
+                </a>
                 <a class="menu-item {{ $dadosPrefeituraAtivo ? 'ativo' : '' }}" href="{{ route('institution.edit', $parametrosMunicipio) }}" @if ($dadosPrefeituraAtivo) aria-current="page" @endif>
                     <x-icon name="escola" /><span>Dados da Prefeitura</span>
                 </a>
             @endcan
+            @if ($usuario && app(\App\Multiprofessional\TeamAccess::class)->isTeam($usuario, $municipality))
+                <a class="menu-item {{ $equipeAtiva ? 'ativo' : '' }}" href="{{ route('team.index', $parametrosMunicipio) }}" @if ($equipeAtiva) aria-current="page" @endif>
+                    <x-icon name="alunos" /><span>Equipe multiprofissional</span>
+                </a>
+            @endif
+            @can('viewAny', [\App\Models\Tenant\School::class, $municipality])
             <a class="menu-item {{ $escolasAtivo ? 'ativo' : '' }}" href="{{ route('schools.index', ['municipio' => $municipality->slug]) }}" @if ($escolasAtivo) aria-current="page" @endif>
                 <x-icon name="escola" />
                 <span>Escolas</span>
             </a>
+            @endcan
             @can('viewWaitlist', [\App\Models\Tenant\School::class, $municipality])
                 <a class="menu-item {{ $listaEsperaAtiva ? 'ativo' : '' }}" href="{{ route('waitlist.index', $parametrosMunicipio) }}" @if ($listaEsperaAtiva) aria-current="page" @endif>
                     <x-icon name="alunos" /><span>Lista de espera</span>

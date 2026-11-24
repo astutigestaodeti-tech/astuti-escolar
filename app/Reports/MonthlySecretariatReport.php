@@ -19,6 +19,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\VaarCondition;
 use App\Models\Tenant\WaitlistRequest;
+use App\Multiprofessional\TeamIndicators;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -37,6 +38,7 @@ class MonthlySecretariatReport
         private readonly ActiveSearchAlerts $alerts,
         private readonly Literacy $literacy,
         private readonly SchoolMeals $meals,
+        private readonly TeamIndicators $team,
     ) {}
 
     public function forMonth(SchoolYear $year, Carbon $month): array
@@ -84,6 +86,7 @@ class MonthlySecretariatReport
             'meals' => $this->mealTotals($year, $month),
             'literacy' => $this->literacyTotals($year),
             'waitlist' => $this->waitlist($year, $from, $until),
+            'team' => $this->team->forMonth($year, $month),
         ];
     }
 

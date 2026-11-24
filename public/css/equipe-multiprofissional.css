@@ -1,0 +1,33 @@
+/* Equipe multiprofissional: dados administrativos mínimos e cartões da rede. */
+.pagina-equipe .folha + .folha { margin-top: 20px; }
+.equipe-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.equipe-form + .equipe-form { margin-top: 16px; }
+.equipe-form label { display: grid; gap: 8px; flex: 1 1 180px; min-width: 0; }
+.equipe-form .entrada { width: 100%; min-width: 0; box-sizing: border-box; }
+.equipe-form label.equipe-check { display: flex; align-items: center; flex: 1 1 180px; }
+.equipe-form label.equipe-largo { flex: 1 1 100%; }
+.equipe-dados { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 12px; margin: 12px 0; }
+.equipe-dados > div { border: 1px solid var(--linha); border-radius: 8px; padding: 12px; min-width: 0; }
+.equipe-dados dt { margin: 0 0 6px; font-size: .9rem; }
+.equipe-dados dd { margin: 0; font-weight: 700; }
+.equipe-rolagem { overflow-x: auto; max-width: 100%; }
+.equipe-tabela { width: 100%; min-width: 780px; }
+.equipe-tabela-agregada { min-width: 340px; }
+.equipe-tabela th, .equipe-tabela td { white-space: normal; word-break: normal; overflow-wrap: normal; hyphens: none; }
+.equipe-apos { padding-top: 16px; }
+.equipe-apos h3 { margin: 0; }
+.equipe-encaminhamento { padding: 12px 0; }
+.equipe-encaminhamento + .equipe-encaminhamento { margin-top: 12px; border-top: 1px solid var(--linha); }
+.equipe-encaminhamento h3 { margin: 0 0 8px; }
+.equipe-encaminhamento .equipe-form { margin-top: 12px; }
+@media (max-width: 600px) {
+    .equipe-form label, .equipe-form .botao { flex-basis: 100%; }
+}
+@media print {
+    .equipe-aluno, .equipe-restrita .conteudo { display: none !important; }
+    .pagina-equipe .equipe-form, .pagina-equipe .folha-titulo { display: none !important; }
+    .equipe-dados > div, .equipe-tabela tr { break-inside: avoid; }
+    .equipe-rolagem { overflow: visible !important; }
+    .equipe-tabela { min-width: 0; }
+    .equipe-tabela thead { display: table-header-group; }
+}
