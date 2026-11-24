@@ -20,6 +20,7 @@
         <div class="acoes-titulo">
             <span class="marcador"><x-icon name="alunos" :size="16" /> {{ $students->total() }} {{ $students->total() === 1 ? 'aluno' : 'alunos' }}</span>
             @if ($canManage)
+                <a class="botao secundario" href="{{ route('school.census.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="conferir" :size="16" /> Alunos no Censo</a>
                 <a class="botao" href="{{ route('school.students.create', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="alunos" :size="16" /> Novo aluno</a>
             @endif
         </div>

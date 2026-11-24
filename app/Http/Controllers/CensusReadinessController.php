@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Attendance\SchoolAbsenceAlerts;
 use App\Audit\AuditTrail;
 use App\Census\CensusReadiness;
+use App\Educacenso\ConferenciaDeAlunos;
 use App\Educacenso\ConferenciaDeTurmas;
 use App\Models\Tenant\CensusParameter;
 use App\Models\Tenant\School;
@@ -24,7 +25,7 @@ class CensusReadinessController extends Controller
 {
     private const LIMIT = 300;
 
-    public function index(Request $request, string $municipio, CensusReadiness $readiness, ConferenciaDeTurmas $turmas): Response
+    public function index(Request $request, string $municipio, CensusReadiness $readiness, ConferenciaDeTurmas $turmas, ConferenciaDeAlunos $alunos): Response
     {
         $municipality = $request->attributes->get('astuti.municipality');
         Gate::authorize('viewNetworkPanel', [School::class, $municipality]);
@@ -42,10 +43,17 @@ class CensusReadinessController extends Controller
 
         // Turmas no formato do Educacenso (registro 20), por escola.
         $year = app(SchoolAbsenceAlerts::class)->currentYear();
-        $classes = $year === null ? collect() : $turmas->para(School::query()->where('status', 'active')->get(['id', 'name', 'inep_code']), $year)
+        $escolas = School::query()->where('status', 'active')->get(['id', 'name', 'inep_code']);
+        $classes = $year === null ? collect() : $turmas->para($escolas, $year)
             ->map(fn (array $linhas): array => [
                 'total' => count($linhas),
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['registro']->pronto())),
+            ]);
+        // Alunos no formato do Educacenso (registros 30 e 60), por escola.
+        $students = $year === null ? collect() : $alunos->para($escolas, $year)
+            ->map(fn (array $linhas): array => [
+                'total' => count($linhas),
+                'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['r30']->pronto() && $linha['r60']->pronto())),
             ]);
 
         // A auditoria guarda apenas que houve a consulta, sem dados pessoais.
@@ -56,6 +64,7 @@ class CensusReadinessController extends Controller
             'data' => $data,
             'list' => $list->take(self::LIMIT),
             'classes' => $classes,
+            'students' => $students,
             'listTotal' => $list->count(),
             'limit' => self::LIMIT,
             'filters' => ['escola' => $validated['escola'] ?? null, 'aviso' => $validated['aviso'] ?? null],

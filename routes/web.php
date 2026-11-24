@@ -48,6 +48,7 @@ use App\Http\Controllers\StudentHealthController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
 use App\Http\Controllers\StudentRecordController;
 use App\Http\Controllers\StudentReportCardController;
+use App\Http\Controllers\StudentsCensusController;
 use App\Http\Controllers\StudentSpecialEducationController;
 use App\Http\Controllers\TransportCensusController;
 use App\Http\Controllers\WaitlistController;
@@ -245,6 +246,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::put('/escolas/{escola}/turmas/{turma}', [SchoolClassController::class, 'update'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.update');
     // Dados das turmas para o Censo Escolar (registro 20 do Educacenso).
     Route::get('/escolas/{escola}/censo/turmas', [ClassCensusController::class, 'index'])->whereUuid('escola')->name('school.census.classes.index');
+    Route::get('/escolas/{escola}/censo/alunos', [StudentsCensusController::class, 'index'])->whereUuid('escola')->name('school.census.students.index');
     Route::post('/escolas/{escola}/censo/turmas/lote', [ClassCensusController::class, 'batch'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.census.classes.batch');
     Route::get('/escolas/{escola}/turmas/{turma}/censo', [ClassCensusController::class, 'edit'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.census.classes.edit');
     Route::put('/escolas/{escola}/turmas/{turma}/censo', [ClassCensusController::class, 'update'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.census.classes.update');
