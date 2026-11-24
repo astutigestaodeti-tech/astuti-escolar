@@ -3,6 +3,10 @@
 namespace Tests\Feature\Meals;
 
 use App\Models\Tenant\AuditLog;
+use App\Models\Tenant\AttendanceSession;
+use App\Models\Tenant\AttendanceMark;
+use App\Models\Tenant\StudentHealthAlert;
+use App\Meals\SchoolMeals;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolMealMenu;
 use App\Models\Tenant\SchoolMealServing;
@@ -130,6 +134,77 @@ class SchoolMealsTest extends TwoMunicipalityTestCase
             'data' => '2027-10-14', 'etapa' => 'fundamental', 'refeicao' => 'almoco',
             'quantidade' => 2,
         ])->assertRedirect(route('two-factor.challenge'));
+        $this->assertSame(0, $this->tenant(fn (): int => SchoolMealServing::query()->count()));
+    }
+
+    public function test_chamada_e_apenas_sugestao_e_pode_ser_superada_pela_contagem_real(): void
+    {
+        $this->tenant(function (): void {
+            $class = SchoolClass::query()->firstOrFail();
+            $student = Student::query()->firstOrFail();
+            $session = AttendanceSession::query()->create([
+                'id' => (string) Str::uuid(), 'school_class_id' => $class->id,
+                'attendance_date' => '2027-10-14', 'recorded_by' => $this->auditFixtureUser->id,
+                'recorded_at' => now(),
+            ]);
+            AttendanceMark::query()->create([
+                'id' => (string) Str::uuid(), 'attendance_session_id' => $session->id,
+                'student_id' => $student->id, 'status' => 'present',
+            ]);
+            $school = \App\Models\Tenant\School::query()->findOrFail(self::ESCOLA_A1);
+            $year = SchoolYear::query()->findOrFail($this->yearId);
+            $this->assertSame(1, app(SchoolMeals::class)->suggested($school, $year, '2027-10-14')['fundamental']);
+            $this->assertNull(app(SchoolMeals::class)->suggested($school, $year, '2027-10-13'));
+        });
+
+        $this->login('school_director', [self::ESCOLA_A1]);
+        $url = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alimentacao';
+        $this->post($url, [
+            'data' => '2027-10-14', 'etapa' => 'fundamental', 'refeicao' => 'almoco',
+            'quantidade' => 4,
+        ])->assertRedirect();
+        $this->tenant(function (): void {
+            $row = SchoolMealServing::query()->sole();
+            $this->assertSame(1, $row->suggested_present);
+            $this->assertSame(4, $row->quantity);
+        });
+    }
+
+    public function test_restricoes_alimentares_so_exibem_contagens_na_cozinha(): void
+    {
+        $this->tenant(function (): void {
+            $student = Student::query()->firstOrFail();
+            StudentHealthAlert::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $student->id,
+                'kind' => 'allergy', 'severity' => 'attention',
+                'alert_text' => 'Alergia a amendoim', 'care_instructions' => 'Instrução reservada',
+            ]);
+        });
+        $url = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alimentacao';
+        $this->login('municipal_manager');
+        $this->get($url.'/cozinha')->assertOk()->assertSee('Amendoim')
+            ->assertDontSee('Estudante de teste')->assertDontSee('Instrução reservada');
+        $this->get($url.'/restricoes')->assertForbidden();
+
+        $this->login('school_secretary', [self::ESCOLA_A1]);
+        $this->get($url.'/restricoes')->assertOk()->assertSee('Estudante de teste')
+            ->assertDontSee('Instrução reservada');
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A2.'/alimentacao/restricoes')
+            ->assertForbidden();
+    }
+
+    public function test_datas_invalidas_nao_geram_lancamentos(): void
+    {
+        $this->login('school_director', [self::ESCOLA_A1]);
+        $url = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alimentacao';
+        foreach (['2027-12-16', '2028-01-02'] as $date) {
+            $this->post($url, [
+                'data' => $date, 'etapa' => 'fundamental', 'refeicao' => 'almoco', 'quantidade' => 4,
+            ])->assertSessionHasErrors();
+        }
+        $this->post($url, [
+            'data' => '2027-10-14', 'etapa' => 'fundamental', 'refeicao' => 'almoco', 'quantidade' => -1,
+        ])->assertSessionHasErrors('quantidade');
         $this->assertSame(0, $this->tenant(fn (): int => SchoolMealServing::query()->count()));
     }
 }

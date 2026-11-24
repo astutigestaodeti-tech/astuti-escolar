@@ -53,7 +53,8 @@ class SchoolMealsController extends Controller
         if ($year !== null) {
             $reference = isset($filter['semana'])
                 ? CarbonImmutable::parse($filter['semana'])
-                : (today()->year === $year->year ? CarbonImmutable::today() : CarbonImmutable::parse($year->start_date));
+                : (today()->year === $year->year && CarbonImmutable::today()->betweenIncluded(CarbonImmutable::parse($year->start_date), CarbonImmutable::parse($year->end_date))
+                    ? CarbonImmutable::today() : CarbonImmutable::parse($year->start_date));
             $week = $reference->startOfWeek();
             $this->assertWeek($year, $week);
             $entries = SchoolMealMenu::query()->where('school_year_id', $year->id)

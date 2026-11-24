@@ -22,7 +22,7 @@
 <button class="botao" type="submit">Consultar</button>
 </form>
 <div class="alimentacao-links">
-<a class="botao secundario" href="{{ route('school.meals.menu', [...$params, 'ano' => $year?->year, 'semana' => $date->startOfWeek()->toDateString()]) }}">Cardápio da semana</a>
+@if($validDate)<a class="botao secundario" href="{{ route('school.meals.menu', [...$params, 'ano' => $year->year, 'semana' => $date->startOfWeek()->toDateString()]) }}">Cardápio da semana</a>@endif
 <a class="botao secundario" href="{{ route('school.meals.report', [...$params, 'mes' => $date->format('Y-m')]) }}">Relatório mensal</a>
 <a class="botao secundario" href="{{ route('school.meals.kitchen', $params) }}">Quadro para a cozinha</a>
 @can('viewMealAllergyNames', [$school, $municipality])
