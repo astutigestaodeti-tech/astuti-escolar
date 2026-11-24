@@ -713,3 +713,22 @@ Os números vêm de uma consulta PostgreSQL agregada para todas as matrículas a
 **Financeiro:** gestão municipal registra receita do ano, mínimo de 4%, aplicações e documentos PDF privados; auditoria por whitelist e 2FA recente. Direção e secretaria só consultam escola própria; professor sem acesso ao painel. Nova migração não modifica as anteriores.
 
 **Qualidade:** testes fictícios para limites de jornada, metas, 4%, Censo, auditoria, permissões e comprovantes. Novas telas integradas ao AllSchoolPagesOpenTest. Pint/CI e margens aguardam revisão antes de merge, sem deploy.
+
+## 24/11/2026 - Busca ativa, alfabetização, relatório mensal e decisão sobre a equipe multiprofissional
+
+**Integrados (trabalho do ChatGPT revisado pelo Claude):**
+- **Busca ativa (#121, PR #131):** alertas de faltas e frequência, ficha com contatos e encaminhamento verificável ao Conselho Tutelar. Ajuste na integração: um dia sem chamada não zera a sequência de faltas.
+- **Alfabetização (#122, PR #134):** sondagem do 1º e 2º ano, painéis e ciclo sem retenção no fechamento ("Aprovado com acompanhamento"). Ajuste na integração: a sondagem da turma inteira é salva de uma vez.
+- **Relatório mensal da Secretaria (#123):** documento em A4 para o prefeito, só com números agregados.
+
+**Mapa (Claude, PRs #130 e #132):** o endereço do cadastro passou a ser procurado campo a campo, com aproximação pelo bairro ou pela cidade quando a rua não está no OpenStreetMap. O mapa do aluno ganhou o cartão "Endereço do cadastro".
+
+**Decisão sobre a equipe multiprofissional (Lei 13.935/2019), issue #136.** Fica no planejamento em duas etapas:
+- **Etapa 1:** pedidos de atendimento, fila, devolutiva à escola, rede de proteção e indicadores, sem guardar conteúdo técnico sigiloso.
+- **Etapa 2:** o prontuário psicológico e social fica bloqueado até cumprir quatro condições:
+  - leitura das resoluções do CFP e do CFESS;
+  - de preferência, consulta ao CRP e ao CRESS;
+  - desenho com criptografia por registro, sem acesso administrativo;
+  - validação com um município cliente.
+
+**Ordem:** #124 (manual) e depois #136, com o ChatGPT. O Claude segue com a exportação para o Educacenso.
