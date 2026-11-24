@@ -130,6 +130,9 @@
                                 <td>{{ $assignment->is_main ? 'Principal' : 'Demais docentes' }}</td>
                                 @if ($canManage)
                                     <td>
+                                        @if ($assignment->staffMember && ! $assignment->staffMember->trashed())
+                                            <a href="{{ route('school.classes.teachers.census.edit', [...$parametrosTurma, 'atribuicao' => $assignment->id]) }}">Atribuição no Censo</a>
+                                        @endif
                                         @if ($assignment->ends_on === null)
                                             <details class="atribuicao-encerrar">
                                                 <summary>Encerrar atribuição</summary>
