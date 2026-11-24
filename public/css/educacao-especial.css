@@ -10,3 +10,5 @@
 .ficha-especial dt{font-size:13px;color:var(--tinta-2)}
 .ficha-especial dd{margin:3px 0 0;font-weight:600}
 .pagina-educacao-especial .especial-opcoes + .texto-ajuda{margin-top:16px}
+.pagina-educacao-especial .formulario-grade + .especial-opcoes{margin-top:22px}
+.pagina-educacao-especial .especial-opcoes > legend.rotulo{margin-bottom:8px}

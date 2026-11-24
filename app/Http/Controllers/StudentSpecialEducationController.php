@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
+use App\Educacenso\RecursosDeProva;
+use App\Educacenso\Tabelas;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentSpecialEducation;
@@ -12,6 +14,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Educação especial e AEE no padrão do Censo Escolar. Mesmo acesso da ficha
@@ -20,7 +23,7 @@ use Illuminate\Validation\Rule;
  */
 class StudentSpecialEducationController extends Controller
 {
-    private const FIELDS = ['conditions', 'exam_resources', 'aee_status', 'aee_school_id', 'aee_started_on', 'support_professional'];
+    private const FIELDS = ['conditions', 'learning_disorders', 'exam_resources', 'aee_activities', 'aee_status', 'aee_school_id', 'aee_started_on', 'support_professional'];
 
     public function edit(Request $request, string $municipio, string $escola, string $aluno): Response
     {
@@ -42,6 +45,10 @@ class StudentSpecialEducationController extends Controller
         $data = $request->validate([
             'conditions' => ['nullable', 'array'],
             'conditions.*' => ['string', Rule::in(array_keys(StudentSpecialEducation::CONDITIONS))],
+            'learning_disorders' => ['nullable', 'array'],
+            'learning_disorders.*' => ['string', Rule::in(array_keys(StudentSpecialEducation::LEARNING_DISORDERS))],
+            'aee_activities' => ['nullable', 'array'],
+            'aee_activities.*' => ['string', Rule::in(array_keys(StudentSpecialEducation::AEE_ACTIVITIES))],
             'exam_resources' => ['nullable', 'array'],
             'exam_resources.*' => ['string', Rule::in(array_keys(StudentSpecialEducation::EXAM_RESOURCES))],
             'aee_status' => ['nullable', Rule::in(array_keys(StudentSpecialEducation::AEE_STATUSES))],
@@ -51,6 +58,8 @@ class StudentSpecialEducationController extends Controller
         ], [
             'conditions.*.in' => 'Escolha as categorias da lista do Censo.',
             'exam_resources.*.in' => 'Escolha os recursos da lista.',
+            'learning_disorders.*.in' => 'Escolha os transtornos da lista do Censo.',
+            'aee_activities.*.in' => 'Escolha as atividades do AEE da lista do Censo.',
             'aee_status.in' => 'Escolha a situação do AEE na lista.',
             'aee_school_id.required_if' => 'Informe a escola onde o aluno frequenta o AEE.',
             'aee_school_id.exists' => 'Escolha uma escola ativa da rede para o AEE.',
@@ -59,9 +68,19 @@ class StudentSpecialEducationController extends Controller
         ]);
 
         $participa = ($data['aee_status'] ?? null) === 'participa';
+        $condicoes = array_values(array_unique($data['conditions'] ?? []));
+        $transtornos = array_values(array_unique($data['learning_disorders'] ?? []));
+        $recursos = array_values(array_unique($data['exam_resources'] ?? []));
+        $recusados = RecursosDeProva::naoPermitidos($condicoes, $transtornos, $recursos, Tabelas::anoMaisRecente());
+        if ($recusados !== []) {
+            throw ValidationException::withMessages(['exam_resources' => 'O Censo não aceita estes recursos para as categorias marcadas: '
+                .implode(', ', array_map(fn (string $r): string => StudentSpecialEducation::EXAM_RESOURCES[$r], $recusados)).'.']);
+        }
         $values = [
-            'conditions' => array_values(array_unique($data['conditions'] ?? [])),
-            'exam_resources' => array_values(array_unique($data['exam_resources'] ?? [])),
+            'conditions' => $condicoes,
+            'learning_disorders' => $transtornos,
+            'exam_resources' => $recursos,
+            'aee_activities' => $participa ? array_values(array_unique($data['aee_activities'] ?? [])) : [],
             'aee_status' => $data['aee_status'] ?? null,
             'aee_school_id' => $participa ? $data['aee_school_id'] : null,
             'aee_started_on' => $participa ? ($data['aee_started_on'] ?? null) : null,

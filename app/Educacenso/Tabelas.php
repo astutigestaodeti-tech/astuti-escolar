@@ -31,6 +31,9 @@ final class Tabelas
     /** @var array<int, string>|null */
     private ?array $povos = null;
 
+    /** @var array<string, list<string>>|null */
+    private ?array $recursos = null;
+
     /** @param  array<string, mixed>  $dados */
     private function __construct(public readonly int $ano, private readonly array $dados)
     {
@@ -193,6 +196,47 @@ final class Tabelas
         return $this->povos;
     }
 
+    /**
+     * Recursos de prova permitidos para cada deficiência, TEA ou transtorno
+     * (Anexo 4: tabelas "Deficiência x Recursos" e "Transtorno x Recursos").
+     * Chaves e valores com o nome normalizado (maiúsculas, sem acentos).
+     *
+     * @return array<string, list<string>>
+     */
+    public function recursosPorCondicao(): array
+    {
+        if ($this->recursos !== null) {
+            return $this->recursos;
+        }
+        $this->recursos = [];
+        foreach (['deficiencia_recurso.csv', 'transtorno_recurso.csv'] as $arquivo) {
+            $handle = fopen(resource_path("educacenso/{$this->ano}/tabelas/{$arquivo}"), 'r');
+            $dados = false;
+            while (($linha = fgetcsv($handle, escape: '')) !== false) {
+                if (! $dados) {
+                    $dados = in_array(strtoupper(trim($linha[0] ?? '')), ['DEFICIENCIA', 'TRANSTORNO'], true);
+
+                    continue;
+                }
+                if (count($linha) < 2 || trim($linha[0]) === '') {
+                    continue;
+                }
+                $this->recursos[self::chaveDeNome($linha[0])][] = self::chaveDeNome($linha[1]);
+            }
+            fclose($handle);
+        }
+
+        return $this->recursos;
+    }
+
+    /** Nome normalizado usado para comparar rótulos das tabelas com os do leiaute. */
+    public static function chaveDeNome(string $nome): string
+    {
+        $texto = (string) Texto::normalizar(str_replace(["'", '`', '´', '’', '-'], ' ', $nome));
+
+        return (string) preg_replace('/\s+/', ' ', trim($texto));
+    }
+
     private function carregarMunicipios(): void
     {
         if ($this->municipios !== null) {
@@ -237,13 +281,6 @@ final class Tabelas
         } finally {
             fclose($handle);
         }
-    }
-
-    private static function chaveDeNome(string $nome): string
-    {
-        $texto = (string) Texto::normalizar(str_replace(["'", '`', '´', '’', '-'], ' ', $nome));
-
-        return (string) preg_replace('/\s+/', ' ', trim($texto));
     }
 
     /** Código IBGE da UF => sigla. */

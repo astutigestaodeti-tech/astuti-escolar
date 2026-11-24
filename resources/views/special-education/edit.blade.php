@@ -5,6 +5,8 @@
     $parametros = ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id];
     $condicoes = old('conditions', $record?->conditions ?? []);
     $recursos = old('exam_resources', $record?->exam_resources ?? []);
+    $transtornos = old('learning_disorders', $record?->learning_disorders ?? []);
+    $atividades = old('aee_activities', $record?->aee_activities ?? []);
     $situacaoAee = old('aee_status', $record?->aee_status);
     $apoio = old('support_professional', $record?->support_professional === null ? '' : ($record->support_professional ? 'sim' : 'nao'));
 @endphp
@@ -69,6 +71,18 @@
             </div>
         </section>
 
+        <section class="folha especial-secao" aria-labelledby="titulo-transtornos">
+            <div class="folha-cabecalho"><div><h2 id="titulo-transtornos">Transtornos que impactam a aprendizagem</h2><p>Novidade do Censo: marque só o que a escola identificou na avaliação pedagógica.</p></div></div>
+            <div class="folha-corpo">
+                <fieldset class="especial-opcoes">
+                    <legend class="sr-only">Transtornos que impactam a aprendizagem</legend>
+                    @foreach (Especial::LEARNING_DISORDERS as $valor => $rotulo)
+                        <label><input type="checkbox" name="learning_disorders[]" value="{{ $valor }}" @checked(in_array($valor, $transtornos, true))> {{ $rotulo }}</label>
+                    @endforeach
+                </fieldset>
+            </div>
+        </section>
+
         <section class="folha especial-secao" aria-labelledby="titulo-aee">
             <div class="folha-cabecalho"><div><h2 id="titulo-aee">Atendimento educacional especializado (AEE)</h2><p>A matrícula de AEE no contraturno conta a mais no Fundeb e na merenda.</p></div></div>
             <div class="folha-corpo">
@@ -104,11 +118,17 @@
                         </select>
                     </div>
                 </div>
+                <fieldset class="especial-opcoes">
+                    <legend class="rotulo">Atividades no AEE (se frequenta)</legend>
+                    @foreach (Especial::AEE_ACTIVITIES as $valor => $rotulo)
+                        <label><input type="checkbox" name="aee_activities[]" value="{{ $valor }}" @checked(in_array($valor, $atividades, true))> {{ $rotulo }}</label>
+                    @endforeach
+                </fieldset>
             </div>
         </section>
 
         <section class="folha especial-secao" aria-labelledby="titulo-recursos">
-            <div class="folha-cabecalho"><div><h2 id="titulo-recursos">Recursos para provas e avaliações</h2><p>Usados no Saeb e no SARESP. Pedir o recurso certo evita que o aluno fique sem fazer a prova.</p></div></div>
+            <div class="folha-cabecalho"><div><h2 id="titulo-recursos">Recursos para provas e avaliações</h2><p>Usados no Saeb e no SARESP. O Censo só aceita os recursos compatíveis com as categorias e transtornos marcados.</p></div></div>
             <div class="folha-corpo">
                 <fieldset class="especial-opcoes">
                     <legend class="sr-only">Recursos para provas</legend>
