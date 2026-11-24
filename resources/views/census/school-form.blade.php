@@ -44,6 +44,10 @@
         <a class="botao secundario" href="{{ route('schools.show', $parametros) }}">Voltar à escola</a>
     </div>
 
+    <div class="formulario-acoes censo-secao">
+        <a class="botao secundario" href="{{ route('school.census.infrastructure.edit', $parametros) }}">Infraestrutura no Censo</a>
+    </div>
+
     @if (session('status'))
         <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
     @endif

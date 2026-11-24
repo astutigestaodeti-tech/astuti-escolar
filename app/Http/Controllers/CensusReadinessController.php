@@ -8,10 +8,12 @@ use App\Census\CensusReadiness;
 use App\Educacenso\ConferenciaDeAlunos;
 use App\Educacenso\ConferenciaDeTurmas;
 use App\Educacenso\Registro00;
+use App\Educacenso\Registro10;
 use App\Educacenso\Tabelas;
 use App\Models\Tenant\CensusParameter;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCensus;
+use App\Models\Tenant\SchoolInfrastructureCensus;
 use App\Models\Tenant\SchoolYear;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -60,12 +62,14 @@ class CensusReadinessController extends Controller
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['r30']->pronto() && $linha['r60']->pronto())),
             ]);
 
-        // Registro 00: ano correspondente ao leiaute, sem consultas por escola.
+        // Registros 00 e 10: ano correspondente ao leiaute, sem consultas por escola.
         $ano = Tabelas::anoMaisRecente();
         $anoLetivo = SchoolYear::query()->where('year', $ano)->first();
         $dadosEscolas = SchoolCensus::query()->whereIn('school_id', $schools->pluck('id'))->get()->keyBy('school_id');
+        $infraestruturas = SchoolInfrastructureCensus::query()->where('census_year', $ano)->whereIn('school_id', $schools->pluck('id'))->get()->keyBy('school_id');
         $schoolReadiness = $schools->mapWithKeys(fn (School $school): array => [
-            $school->id => Registro00::para($school, $dadosEscolas->get($school->id), $anoLetivo, $ano)->pronto(),
+            $school->id => Registro00::para($school, $dadosEscolas->get($school->id), $anoLetivo, $ano)->pronto()
+                && Registro10::para($school, $infraestruturas->get($school->id), $dadosEscolas->get($school->id), $ano)->pronto(),
         ]);
 
         // A auditoria guarda apenas que houve a consulta, sem dados pessoais.

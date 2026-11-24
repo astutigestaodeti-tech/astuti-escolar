@@ -226,6 +226,19 @@ final class Tabelas
         return $this->paises;
     }
 
+    /** @return array<string, string> código de importação => língua indígena */
+    public function linguasIndigenas(): array
+    {
+        $linguas = [];
+        foreach ($this->linhasComCodigo('linguas_indigenas.csv', 4) as $linha) {
+            if (isset($linha[5])) {
+                $linguas[str_pad(trim($linha[4]), 5, '0', STR_PAD_LEFT)] = trim($linha[5]);
+            }
+        }
+
+        return $linguas;
+    }
+
     /** @return array<int, string> código => nome do povo indígena */
     public function povosIndigenas(): array
     {

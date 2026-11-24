@@ -55,6 +55,12 @@ final class Leiaute
         return self::$carregados[$ano] = new self($ano, $dados);
     }
 
+    /** @return list<array{de: int, ate: int, nome: string, regras: array}> */
+    public function grupos(string $registro): array
+    {
+        return $this->dados['registros'][$registro]['grupos'] ?? [];
+    }
+
     /** @return list<string> */
     public function registros(): array
     {

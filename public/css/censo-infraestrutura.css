@@ -1,0 +1,12 @@
+/* Questionário anual, com rótulos longos do leiaute oficial. */
+.pagina-censo-infraestrutura .infra-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px 20px}
+.pagina-censo-infraestrutura .infra-campo{min-width:0;overflow-wrap:anywhere}
+.pagina-censo-infraestrutura .infra-campo .entrada{min-width:0;width:100%;max-width:100%}
+.pagina-censo-infraestrutura .infra-checkbox{display:flex;gap:10px;align-items:flex-start;line-height:1.4;min-width:0}
+.pagina-censo-infraestrutura .infra-checkbox input{margin-top:3px;flex:0 0 auto;width:18px;height:18px}
+.pagina-censo-infraestrutura .infra-checkbox span{min-width:0}
+.pagina-censo-infraestrutura .infra-indice{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:8px 16px;margin-top:16px}
+.pagina-censo-infraestrutura .infra-indice a{overflow-wrap:anywhere}
+.pagina-censo-infraestrutura .infra-campo.infra-inaplicavel{opacity:.75}
+.pagina-censo-infraestrutura .censo-pendencias{overflow-wrap:anywhere}
+@media(max-width:640px){.pagina-censo-infraestrutura .infra-grade{grid-template-columns:minmax(0,1fr)}}
