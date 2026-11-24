@@ -210,8 +210,8 @@ class ActiveSearchController extends Controller
                 throw ValidationException::withMessages(['confirmar' => 'Registre as tentativas de contato antes de emitir o encaminhamento.']);
             }
             $summary = $this->alerts->summaries($school, $entry->schoolYear, collect([$entry]), today())[$entry->id] ?? null;
-            if ($summary === null) {
-                throw ValidationException::withMessages(['confirmar' => 'Não há período de frequência disponível.']);
+            if ($summary === null || $summary['absences'] + $summary['justified'] === 0) {
+                throw ValidationException::withMessages(['confirmar' => 'Não existem faltas registradas no período para fundamentar o documento.']);
             }
             $code = null;
             for ($attempt = 0; $attempt < 12; $attempt++) {
@@ -267,6 +267,29 @@ class ActiveSearchController extends Controller
 
         return response()->view('active-search.document', compact('municipality', 'school', 'entry', 'document', 'verificationUrl', 'qrSvg'))
             ->header('Cache-Control', 'no-store, private');
+    }
+
+    public function revoke(Request $request, string $municipio, string $escola, string $matricula, string $documento): RedirectResponse
+    {
+        [$municipality, $school] = $this->managedSchool($request, $escola);
+        $request->validate(['confirmar' => ['accepted']]);
+        DB::connection('tenant')->transaction(function () use ($school, $matricula, $documento, $request): void {
+            $entry = $this->enrollment($school, $matricula, true);
+            $document = IssuedDocument::query()->where('kind', 'active_search_referral')
+                ->where('school_id', $school->id)->where('enrollment_id', $entry->id)
+                ->lockForUpdate()->findOrFail($documento);
+            if ($document->revoked_at !== null) {
+                throw ValidationException::withMessages(['confirmar' => 'O encaminhamento já foi revogado.']);
+            }
+            $document->fill(['revoked_at' => now(), 'revoked_by' => $request->user()->id,
+                'revoke_reason' => 'Documento invalidado pela gestão escolar.'])->save();
+            app(AuditTrail::class)->record('tenant', 'active_search.referral.revoked', IssuedDocument::class,
+                $document->id, ['revoked_at' => null], $document->only(['revoked_at', 'revoked_by']));
+        });
+
+        return redirect()->route('school.active-search.document', [
+            'municipio' => $municipality->slug, 'escola' => $school->id, 'matricula' => $matricula, 'documento' => $documento,
+        ])->with('status', 'Encaminhamento revogado. A consulta pública informa a revogação.');
     }
 
     private function managedSchool(Request $request, string $id): array

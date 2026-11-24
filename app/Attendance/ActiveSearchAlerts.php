@@ -56,19 +56,22 @@ class ActiveSearchAlerts
             ->whereBetween('attendance_date', [$start, $end])
             ->with(['marks' => fn ($query) => $query->whereIn('student_id', $enrollments->pluck('student_id')->unique())])
             ->get()->groupBy('school_class_id');
-        $monthStart = max($start, $day->copy()->startOfMonth()->toDateString());
+        $monthStart = max($start, Carbon::parse($end)->startOfMonth()->toDateString());
         $result = [];
         foreach ($enrollments as $entry) {
             $marks = ($sessions->get($entry->school_class_id) ?? collect())->mapWithKeys(
                 fn ($session) => [$session->attendance_date->toDateString() => $session->marks->firstWhere('student_id', $entry->student_id)?->status]
             );
+            // Não apagar um alerta só porque a próxima chamada ainda não foi feita.
+            $lastRecorded = $marks->filter()->keys()->sort()->last();
+            $entryEnd = min($end, $entry->ended_at?->toDateString() ?? $end, $lastRecorded ?? $start);
             $streak = 0;
             $present = 0;
             $monthCount = 0;
             $absences = 0;
             $justified = 0;
             $entryStart = max($start, $entry->started_at?->toDateString() ?? $start);
-            for ($date = Carbon::parse($entryStart); $date->toDateString() <= $end; $date->addDay()) {
+            for ($date = Carbon::parse($entryStart); $date->toDateString() <= $entryEnd; $date->addDay()) {
                 $key = $date->toDateString();
                 $kinds = ($calendar->get($key) ?? collect())->pluck('kind');
                 if ($kinds->intersect(['holiday', 'recess', 'non_school_day'])->isNotEmpty()
@@ -91,6 +94,7 @@ class ActiveSearchAlerts
                 'absences' => $absences,
                 'justified' => $justified,
                 'monthly' => $percentage,
+                'month' => substr($end, 0, 7),
                 'alert' => $streak >= $settings['days'] || ($monthCount > 0 && 100 * $present < $settings['percentage'] * $monthCount),
             ];
         }

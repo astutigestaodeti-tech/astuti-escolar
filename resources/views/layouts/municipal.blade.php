@@ -45,7 +45,7 @@
         'waitlist.enroll.form' => route('waitlist.show', [...$parametrosMunicipio, 'pedido' => request()->route('pedido')]),
         'network.panel.index' => route('schools.index', $parametrosMunicipio),
         'active-search.network', 'active-search.parameters' => route('network.panel.index', $parametrosMunicipio),
-        'school.active-search.index', 'school.active-search.detail', 'school.active-search.save', 'school.active-search.contact', 'school.active-search.issue', 'school.active-search.document' => route('schools.show', $parametrosEscola),
+        'school.active-search.index', 'school.active-search.detail', 'school.active-search.save', 'school.active-search.contact', 'school.active-search.issue', 'school.active-search.document', 'school.active-search.revoke' => route('schools.show', $parametrosEscola),
         'school.active-search.class' => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'census.readiness.index', 'equity.vaar.index', 'integral.index', 'meals.menu', 'meals.report' => route('network.panel.index', $parametrosMunicipio),
         'meals.menu.save', 'meals.menu.copy' => route('meals.menu', $parametrosMunicipio),

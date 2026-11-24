@@ -20,7 +20,7 @@
             <h2 class="declaracao-titulo">Encaminhamento ao Conselho Tutelar</h2>
             @if($document->revoked_at)<p class="declaracao-revogada">DOCUMENTO REVOGADO - sem validade</p>@endif
             <p>Documento de acesso restrito, para avaliação e providências de proteção da frequência escolar. Estudante: <strong>{{ $document->snapshot_student_name }}</strong>. Ano letivo: {{ $document->snapshot_school_year }}. Turma: {{ $document->snapshot_class_name ?? 'Não informada' }}.</p>
-            <p>Faltas não justificadas no período: {{ $summary['absences'] }}. Justificadas: {{ $summary['justified'] }}. Sequência de faltas não justificadas: {{ $summary['streak'] }}. Frequência no mês de referência: {{ $summary['monthly'] === null ? 'Sem chamada' : number_format($summary['monthly'], 2, ',', '.').'%' }}.</p>
+            <p>Faltas não justificadas no período: {{ $summary['absences'] }}. Justificadas: {{ $summary['justified'] }}. Sequência de faltas não justificadas: {{ $summary['streak'] }}. Frequência no mês de referência ({{ $summary['month'] ?? 'não informado' }}): {{ $summary['monthly'] === null ? 'Sem chamada' : number_format($summary['monthly'], 2, ',', '.').'%' }}.</p>
             <h3>Providências de contato com a família</h3>
             <table class="tabela busca-ativa-tabela">
                 <thead><tr><th scope="col">Data</th><th scope="col">Meio</th><th scope="col">Resultado</th></tr></thead>
@@ -32,5 +32,17 @@
             <footer class="declaracao-rodape"><div class="declaracao-verificacao"><strong>Verificação de autenticidade</strong><p>Código: {{ $document->verification_code }}</p><p>Endereço: <span class="declaracao-url">{{ $verificationUrl }}</span></p></div><div class="declaracao-qr">{!! $qrSvg !!}</div></footer>
         </div>
     </section>
+    @unless($document->revoked_at)
+        <section class="folha declaracao-acoes">
+            <div class="folha-cabecalho"><div><h2>Revogar encaminhamento</h2><p>O documento permanece no histórico, marcado como inválido.</p></div></div>
+            <div class="folha-corpo">
+                <form method="POST" action="{{ route('school.active-search.revoke', [...$params, 'documento' => $document->id]) }}" class="busca-ativa-confirmar">
+                    @csrf
+                    <label><input type="checkbox" name="confirmar" value="1" required> Confirmo a revogação do documento.</label>
+                    <button type="submit" class="botao secundario">Revogar documento</button>
+                </form>
+            </div>
+        </section>
+    @endunless
     <script type="module" src="{{ asset('js/declaracao-imprimir.js') }}"></script>
 @endsection

@@ -32,7 +32,7 @@
                 <label>Motivo informado (opcional) <select name="motivo" class="entrada"><option value="">Não informado</option>@foreach($reasons as $key => $label)<option value="{{ $key }}" @selected(old('motivo', $case?->reason_category) === $key)>{{ $label }}</option>@endforeach</select></label>
                 <button type="submit" class="botao">{{ $case ? 'Salvar ficha' : 'Abrir caso' }}</button>
             </form>
-            <p class="texto-ajuda">Não registre laudos, diagnósticos ou relatos pessoais. A situação encaminhado é registrada na emissão do documento.</p>
+            <p class="texto-ajuda">Não registre laudos, diagnósticos ou relatos pessoais. A situação encaminhado é registrada na emissão do documento. A revogação invalida o papel; a equipe deve atualizar a situação do caso separadamente.</p>
         </div>
     </section>
     @if($case)

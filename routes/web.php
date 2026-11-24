@@ -125,6 +125,9 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.active-search.issue');
     Route::get('/escolas/{escola}/busca-ativa/{matricula}/documentos/{documento}', [ActiveSearchController::class, 'document'])
         ->whereUuid('escola')->whereUuid('matricula')->whereUuid('documento')->name('school.active-search.document');
+    Route::post('/escolas/{escola}/busca-ativa/{matricula}/documentos/{documento}/revogar', [ActiveSearchController::class, 'revoke'])
+        ->whereUuid('escola')->whereUuid('matricula')->whereUuid('documento')
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.active-search.revoke');
     Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
     Route::post('/conferencia-do-censo/parametros', [CensusReadinessController::class, 'updateParameters'])
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.readiness.parameters');
