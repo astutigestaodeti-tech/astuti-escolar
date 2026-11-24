@@ -25,6 +25,7 @@ use App\Models\Tenant\IntegralFundebExpense;
 use App\Models\Tenant\IntegralFundebFinance;
 use App\Models\Tenant\IntegralPactTarget;
 use App\Models\Tenant\IssuedDocument;
+use App\Models\Tenant\LessonRecord;
 use App\Models\Tenant\LiteracyAssessment;
 use App\Models\Tenant\LiteracyCycleSetting;
 use App\Models\Tenant\PresenceRegistration;
@@ -74,6 +75,7 @@ class AuditTrail
         IntegralPactTarget::class => ['id', 'school_year_id', 'stage', 'target_enrollments', 'updated_by'],
         VaarCondition::class => ['id', 'reference_year', 'condition_number', 'status', 'responsible', 'updated_by', 'has_evidence'],
         CensusParameter::class => ['id', 'reference_year', 'vaaf_base', 'source_note', 'updated_by'],
+        LessonRecord::class => ['version', 'changed_fields'],
         ClassCouncil::class => ['status', 'changed_fields'],
         ClassCouncilStudent::class => ['changed_fields'],
         ClassYearClosure::class => ['school_class_id', 'closed_at', 'closed_by', 'close_reason', 'reopened_at', 'reopened_by', 'reopen_reason'],
