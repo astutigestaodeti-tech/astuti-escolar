@@ -27,7 +27,10 @@ class PedagogicalPanelController extends Controller
         $manager = Gate::allows('viewNetworkPanel', [School::class, $municipality]);
         abort_unless($manager || $access->directs($request->user(), $municipality, $school), 403);
 
-        return $this->render($request, $municipality, $panel, $school, $request->boolean('nominal'));
+        $nominal = $request->boolean('nominal');
+        abort_if($nominal && ! Gate::allows('viewEquity', [$school, $municipality]), 403);
+
+        return $this->render($request, $municipality, $panel, $school, $nominal);
     }
 
     private function render(Request $request, $municipality, PedagogicalPanel $panel, ?School $school, bool $nominal): Response
