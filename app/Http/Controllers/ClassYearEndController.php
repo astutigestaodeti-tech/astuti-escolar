@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Academics\GradeAccess;
+use App\Academics\Literacy;
 use App\Academics\YearEndResults;
 use App\Audit\AuditTrail;
 use App\Models\Tenant\ClassYearClosure;
@@ -63,7 +64,7 @@ class ClassYearEndController extends Controller
         $data = $request->validate([
             'all' => ['nullable', 'boolean'],
             'enrollment' => ['required_unless:all,1', 'nullable', 'uuid'],
-            'result' => ['required_unless:all,1', 'nullable', Rule::in(self::OPTIONS)],
+            'result' => ['required_unless:all,1', 'nullable', Rule::in(Literacy::grade($class) === null ? self::OPTIONS : [...self::OPTIONS, 'acompanhado'])],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
         $all = (string) ($data['all'] ?? '') === '1';
@@ -100,6 +101,13 @@ class ClassYearEndController extends Controller
 
                 $suggestion = $row['suggestion'];
                 $decision = $all ? $suggestion : $data['result'];
+                // Reenviar a decisão já confirmada não a reclassifica após uma mudança de política.
+                if ($existing !== null && $existing->result === $decision && $existing->suggested_result !== $suggestion) {
+                    continue;
+                }
+                if ($decision === 'acompanhado' && ! $calculated['noRetention'] && $existing?->result !== 'acompanhado') {
+                    throw ValidationException::withMessages(['result' => 'A aprovação com acompanhamento está disponível para o ciclo sem retenção.']);
+                }
                 $override = $decision !== $suggestion ? $reason : null;
                 if ($override !== null && mb_strlen($override) < 10) {
                     throw ValidationException::withMessages([

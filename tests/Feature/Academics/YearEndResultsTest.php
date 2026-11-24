@@ -154,6 +154,44 @@ class YearEndResultsTest extends TwoMunicipalityTestCase
         return '/m/municipio-a/escolas/'.$school.'/turmas/'.($class ?? $this->classId);
     }
 
+    public function test_ciclo_sem_retencao_altera_apenas_sugestao_e_preserva_confirmados(): void
+    {
+        $this->tenant(function (): void {
+            $class = SchoolClass::query()->findOrFail($this->classId);
+            $class->fill(['name' => '2º Ano A'])->save();
+        });
+        $this->login('school_secretary');
+        $this->post($this->base().'/resultado-final/confirmar', [
+            'enrollment' => $this->enrollments['bruno'], 'result' => 'retido',
+        ])->assertRedirect();
+        $before = $this->tenant(fn () => StudentFinalResult::query()->where('student_enrollment_id', $this->enrollments['bruno'])->sole()->getAttributes());
+
+        $this->login('municipal_manager', []);
+        $this->post('/m/municipio-a/alfabetizacao/politica', [
+            'ano' => $this->yearId, 'retain_first' => '1', 'retain_second' => '0',
+        ])->assertRedirect();
+        $this->tenant(function () use ($before): void {
+            $class = SchoolClass::query()->with('schoolYear')->findOrFail($this->classId);
+            $data = app(\App\Academics\YearEndResults::class)->forClass($class);
+            $row = $data['records']->first(fn (array $row): bool => $row['enrollment']->id === $this->enrollments['bruno']);
+            $this->assertSame('acompanhado', $row['suggestion']);
+            $this->assertSame('retido', $row['confirmed']->result);
+            $this->assertSame($before, $row['confirmed']->getAttributes());
+        });
+
+        $this->login('school_secretary');
+        $this->confirmAll();
+        $this->tenant(function () use ($before): void {
+            $record = StudentFinalResult::query()->where('student_enrollment_id', $this->enrollments['bruno'])->sole();
+            $this->assertSame($before, $record->getAttributes());
+            $this->assertSame('cursando', StudentFinalResult::query()->where('student_enrollment_id', $this->enrollments['carla'])->sole()->result);
+        });
+        $this->post($this->base().'/resultado-final/confirmar', [
+            'enrollment' => $this->enrollments['bruno'], 'result' => 'acompanhado',
+        ])->assertRedirect();
+        $this->tenant(fn () => $this->assertSame('acompanhado', StudentFinalResult::query()->where('student_enrollment_id', $this->enrollments['bruno'])->sole()->result));
+    }
+
     private function confirmAll(): void
     {
         $this->post($this->base().'/resultado-final/confirmar', ['all' => '1'])->assertRedirect();

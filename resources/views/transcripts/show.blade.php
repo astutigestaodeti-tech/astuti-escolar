@@ -73,7 +73,7 @@
                                     @endforelse
                                 </td>
                                 <td class="historico-numero">{{ $year['frequency'] === null ? '-' : number_format((float) $year['frequency'], 1, ',', '.').'%' }}</td>
-                                <td>{{ ucfirst($year['result']) }}</td>
+                                <td>{{ $year['result'] === 'acompanhado' ? 'Aprovado com acompanhamento' : ucfirst($year['result']) }}</td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -124,6 +124,14 @@
                 @endif
                 <a class="botao secundario" style="margin-top:12px" href="{{ route('school.pendencies.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Ver o que falta completar <x-icon name="seta" :size="16" /></a>
             </section>
+            <section class="folha cartao" aria-labelledby="titulo-alfabetizacao">
+                <div class="folha-corpo">
+                    <span class="acao-icone"><x-icon name="indicadores" /></span>
+                    <h2 id="titulo-alfabetizacao">Alfabetização</h2>
+                    <p>Sondagem de escrita e leitura do 1º e 2º ano e acompanhamento pedagógico.</p>
+                    <a class="botao secundario" href="{{ route('school.literacy.panel', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Abrir alfabetização</a>
+                </div>
+            </section>
             <section class="folha cartao" aria-labelledby="titulo-busca-ativa">
                 <div class="folha-corpo">
                     <span class="acao-icone"><x-icon name="indicadores" /></span>

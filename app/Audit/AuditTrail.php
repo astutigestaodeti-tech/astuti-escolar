@@ -22,6 +22,8 @@ use App\Models\Tenant\IntegralFundebExpense;
 use App\Models\Tenant\IntegralFundebFinance;
 use App\Models\Tenant\IntegralPactTarget;
 use App\Models\Tenant\IssuedDocument;
+use App\Models\Tenant\LiteracyAssessment;
+use App\Models\Tenant\LiteracyCycleSetting;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCalendarDay;
 use App\Models\Tenant\SchoolClass;
@@ -51,6 +53,8 @@ class AuditTrail
 {
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
+        LiteracyAssessment::class => ['school_class_id', 'student_enrollment_id', 'term', 'writing', 'reading', 'updated_by', 'change_reason'],
+        LiteracyCycleSetting::class => ['school_year_id', 'retain_first', 'retain_second', 'updated_by'],
         ActiveSearchParameter::class => ['school_year_id', 'consecutive_days', 'monthly_percentage', 'updated_by'],
         ActiveSearchCase::class => ['id', 'status', 'opened_at', 'returned_at', 'updated_by', 'reason_changed'],
         ActiveSearchContact::class => ['id', 'active_search_case_id', 'contact_date', 'recorded_by'],

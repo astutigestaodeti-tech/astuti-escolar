@@ -1,0 +1,15 @@
+/* Cartões e formulários da sondagem, com o recuo institucional. */
+.pagina-alfabetizacao .folha + .folha { margin-top: 20px; }
+.pagina-alfabetizacao .alfabetizacao-form { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; margin: 8px 0 16px; }
+.pagina-alfabetizacao .alfabetizacao-form label { display: grid; gap: 8px; flex: 1 1 230px; min-width: 0; }
+.pagina-alfabetizacao .alfabetizacao-form .entrada { width: 100%; min-width: 0; box-sizing: border-box; }
+.pagina-alfabetizacao .alfabetizacao-aluno + .alfabetizacao-aluno { border-top: 1px solid var(--linha, #ddd); padding-top: 16px; margin-top: 16px; }
+.pagina-alfabetizacao .alfabetizacao-aluno h3 { margin: 0 0 8px; }
+.pagina-alfabetizacao .alfabetizacao-rolagem { overflow-x: auto; max-width: 100%; }
+.pagina-alfabetizacao .alfabetizacao-tabela { min-width: 680px; width: 100%; }
+.pagina-alfabetizacao .alfabetizacao-tabela th, .pagina-alfabetizacao .alfabetizacao-tabela td { white-space: normal; word-break: normal; overflow-wrap: normal; hyphens: none; min-width: 90px; vertical-align: top; }
+.pagina-alfabetizacao .alfabetizacao-tabela th:first-child { min-width: 220px; }
+@media (max-width: 600px) {
+    .pagina-alfabetizacao .alfabetizacao-form .botao { width: 100%; }
+    .pagina-alfabetizacao .alfabetizacao-form label { flex-basis: 100%; }
+}
