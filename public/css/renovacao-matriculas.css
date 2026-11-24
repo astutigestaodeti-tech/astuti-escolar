@@ -4,7 +4,9 @@
 .renovacao-tabela th, .renovacao-tabela td { white-space: normal; word-break: normal; overflow-wrap: normal; vertical-align: middle; }
 .renovacao-tabela th:first-child { min-width: 175px; }
 .renovacao-tabela .entrada { width: 100%; min-width: 240px; }
-.renovacao-aviso { color: var(--texto); font-weight: 700; }
+.renovacao-aviso { color: var(--margem); font-weight: 700; }
+.renovacao-confirmar { padding-top: 16px; }
+.renovacao-confirmar .texto-ajuda { margin: 0 0 12px; }
 .renovacao-capacidade { overflow-wrap: anywhere; }
 .renovacao-capacidade + .renovacao-capacidade { margin-top: 12px; }
 @media print {

@@ -87,7 +87,7 @@
                                             <select class="entrada renovacao-destino" id="destino-{{ $row['entry']->id }}" name="destinos[{{ $row['entry']->id }}]">
                                                 <option value="">Não renovar</option>
                                                 @foreach ($row['choices'] as $choice)
-                                                    @php($occupied = (int) $data['counts']->get($choice->id, 0))
+                                                    @php $occupied = (int) $data['counts']->get($choice->id, 0); @endphp
                                                     <option value="{{ $choice->id }}" @selected(old('destinos.'.$row['entry']->id, $row['suggestion']) === $choice->id)>{{ $choice->name }} | {{ $choice->shift }} | {{ $occupied }}/{{ $choice->capacity ?? 'sem limite informado' }}</option>
                                                 @endforeach
                                             </select>
@@ -100,7 +100,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="folha-corpo">
+                <div class="folha-corpo renovacao-confirmar">
                     <p class="texto-ajuda">Confira a seleção e a capacidade abaixo. A confirmação exige segundo fator recente.</p>
                     <button type="submit" class="botao" @disabled($data['rows']->every(fn ($row) => $row['reason'] !== null))>Renovar matrículas da turma</button>
                 </div>

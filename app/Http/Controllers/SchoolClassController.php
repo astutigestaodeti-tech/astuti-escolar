@@ -67,7 +67,6 @@ class SchoolClassController extends Controller
             ->orderBy('name')
             ->get();
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
-        $canRenew = $canManage && ClassYearClosure::query()->whereKey($class->id)->whereNotNull('closed_at')->exists();
 
         return view('classes.index', compact('municipality', 'school', 'classes', 'canManage'));
     }
@@ -141,6 +140,9 @@ class SchoolClassController extends Controller
             : null;
         $visualPercentage = min(100, $occupancyPercentage ?? 0);
         $aboveCapacity = $capacity !== null && $occupied > $capacity;
+
+        // Renovação só depois do fechamento do ano da turma.
+        $canRenew = $canManage && ClassYearClosure::query()->whereKey($class->id)->whereNotNull('closed_at')->exists();
 
         return view('classes.show', compact(
             'municipality', 'school', 'class', 'roster', 'cutoff',
