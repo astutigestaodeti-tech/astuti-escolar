@@ -82,6 +82,7 @@
         'school.classes.renewal.index', 'school.classes.renewal.store',
         'school.classes.year-end.index', 'school.classes.year-end.minutes',
         'school.classes.year-end.confirm', 'school.classes.year-end.close', 'school.classes.year-end.reopen',
+        'school.classes.lessons.report', 'school.classes.lessons.store',
         'school.classes.attendance.index', 'school.classes.attendance.store', 'school.classes.attendance.correct', 'school.classes.attendance.monthly'
             => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
