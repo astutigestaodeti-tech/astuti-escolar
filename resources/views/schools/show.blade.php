@@ -116,6 +116,14 @@
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar matrículas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
         @can('manageStudents', [$school, $municipality])
+            <section class="folha cartao" aria-labelledby="titulo-censo-escola">
+                <div class="folha-corpo">
+                    <span class="acao-icone"><x-icon name="indicadores" /></span>
+                    <h2 id="titulo-censo-escola">Censo Escolar</h2>
+                    <p>Confira os dados de identificação da unidade para o Educacenso e as pendências do registro 00.</p>
+                    <a class="botao secundario" href="{{ route('school.census.school.edit', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Escola no Censo</a>
+                </div>
+            </section>
             <section class="folha cartao pendencias-resumo" aria-labelledby="titulo-pendencias">
                 <span class="acao-icone"><x-icon name="alunos" /></span>
                 <h2 id="titulo-pendencias">Pendências do cadastro</h2>
