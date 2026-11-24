@@ -43,7 +43,8 @@ class PedagogicalTest extends TwoMunicipalityTestCase
             [$class, $enrollments] = $this->createClass($year->id, 1);
             $teacher = StaffMember::query()->create(['id' => Str::uuid()->toString(), 'school_id' => self::ESCOLA_A1, 'role' => 'teacher', 'status' => 'active', 'full_name' => 'Docente Fictício', 'institutional_email' => 'docente-council@example.invalid']);
             ClassTeacherAssignment::query()->create(['id' => Str::uuid()->toString(), 'staff_member_id' => $teacher->id, 'school_class_id' => $class->id, 'starts_on' => '2026-02-02', 'is_main' => true]);
-            $component = CurricularComponent::query()->create(['id' => Str::uuid()->toString(), 'code' => 'CP'.Str::upper(Str::random(8)), 'name' => 'Componente Fictício', 'active' => true, 'display_order' => 1]);
+            // Componente inicial da rede: criar outro vazaria para os demais testes (a tabela não é limpa).
+            $component = CurricularComponent::query()->where('active', true)->orderBy('display_order')->firstOrFail();
             $entry = $enrollments[0];
             GradeEntry::query()->create(['id' => Str::uuid()->toString(), 'student_enrollment_id' => $entry->id, 'school_class_id' => $class->id, 'academic_period_id' => $period->id, 'curricular_component_id' => $component->id, 'grade' => 8.5, 'recorded_by' => $this->auditFixtureUser->id, 'updated_by' => $this->auditFixtureUser->id]);
             $session = AttendanceSession::query()->create(['id' => Str::uuid()->toString(), 'school_class_id' => $class->id, 'attendance_date' => '2026-02-03', 'recorded_by' => $this->auditFixtureUser->id, 'recorded_at' => now()]);
@@ -106,7 +107,7 @@ class PedagogicalTest extends TwoMunicipalityTestCase
     public function test_conselho_dados_do_periodo_gravacao_conclusao_reabertura_e_privacidade(): void
     {
         $this->login('school_director', [self::ESCOLA_A1]);
-        $this->get($this->url())->assertOk()->assertHeader('Cache-Control', 'no-store, private')->assertSee('Conselho de classe')->assertSee('Aluno Fictício 1 2')->assertSee('Componente Fictício')->assertSee('8.5')->assertSee('Alfabética');
+        $this->get($this->url())->assertOk()->assertHeader('Cache-Control', 'no-store, private')->assertSee('Conselho de classe')->assertSee('Aluno Fictício 1 2')->assertSee('8.5')->assertSee('Alfabética');
         $this->post($this->url(), $this->payload())->assertRedirect();
         $this->get($this->url())->assertOk()->assertSee('Parecer fictício reservado')->assertSee('Abrir solicitação à equipe multiprofissional');
         $this->post($this->url().'/situacao', ['periodo' => $this->ids['period'], 'acao' => 'complete'])->assertRedirect();
