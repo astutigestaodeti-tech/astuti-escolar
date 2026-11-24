@@ -88,6 +88,9 @@
                 <section class="folha censo-secao" aria-labelledby="grupo-{{ $loop->index }}">
                     <div class="folha-cabecalho"><div><h2 id="grupo-{{ $loop->index }}">{{ $bloco['nome'] }}</h2></div></div>
                     <div class="folha-corpo">
+                        @foreach ($bloco['regras'] ?? [] as $regra)
+                            <p class="texto-ajuda">{{ $regra['texto'] }}</p>
+                        @endforeach
                         <div class="infra-grade">
                             @foreach ($bloco['campos'] as $numero => $campo)
                                 @php
