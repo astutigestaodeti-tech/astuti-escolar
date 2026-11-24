@@ -1,6 +1,6 @@
 # Exportação para o Educacenso (Matrícula Inicial)
 
-Planejamento aprovado para implementação em fases. Base: **leiaute oficial de importação e exportação da Matrícula Inicial 2026 (versão V5)** e **tabelas auxiliares 2026** do Inep. Nenhum campo, código ou regra deste documento vem de leiaute de outro ano.
+Planejamento aprovado para implementação em fases. Base: **leiaute oficial de importação e exportação da Matrícula Inicial 2026 (versão V5)**, **tabelas auxiliares 2026** e **"Etapas e Instruções Gerais para a Migração no Sistema Educacenso, 1ª Etapa da Coleta do Censo Escolar 2026"** (PDF de 21 páginas), todos do Inep. Nenhum campo, código ou regra deste documento vem de leiaute de outro ano.
 
 ## 1. Calendário e para que serve agora
 
@@ -22,13 +22,16 @@ Os arquivos foram baixados pela VPS de desenvolvimento, contornando um erro de c
 | Metadados internos | Criador "inep"; última edição em 01/07/2026 por servidor da equipe do Censo, o mesmo editor final das 21 tabelas, todas datadas de maio a junho de 2026. |
 | Coerência com fontes públicas independentes | As datas de referência do leiaute (início do ano letivo até 27/05/2026; término a partir de 28/05/2026) conferem com a data de referência oficial de 27/05/2026 (Portaria Inep nº 217/2026). A tabela de municípios tem 5.571 municípios com os códigos do IBGE (por exemplo, São Paulo 3550308 e Santa Isabel/SP 3546801). O código 76 para o Brasil segue o padrão ISO usado pelo Inep. |
 | Coerência interna | O histórico de versões V1 a V5 da própria planilha bate com os campos. A contagem de campos de cada registro bate com as regras gerais. |
+| PDF de instruções | Sem formulário nem JavaScript. Gerado pelo Word em 03/08/2026; o próprio texto diz "publicada on-line em junho de 2026", o que indica revisão posterior sem mudar o ano. A equipe técnica listada inclui os mesmos servidores que aparecem como editores da planilha e das tabelas. Os contatos são do domínio inep.gov.br. Os parágrafos centrais têm o mesmo texto da versão de 2025 publicada pelo Inep. |
+| Implementação independente | O i-Educar, sistema de gestão escolar de código aberto usado por redes municipais, foi atualizado entre maio e junho de 2026 para o Censo 2026. Ele usa a data de referência 27/05/2026 e implementa exatamente as novidades desta planilha: o campo 56 do registro 10 (laboratório de robótica, V3), o registro 30 com 110 campos e o campo 9 do registro 60 (carga horária integralizada, V5). Foi só consultado: nenhum código dele foi copiado, porque a licença é GPL. |
 
-**Conclusão:** não há sinal de adulteração, e o material é consistente com o publicado pelo Inep. **Risco residual baixo.** A prova definitiva continua pendente porque o Inep não publica somas e o servidor deles está com o certificado inválido. Quando o certificado for corrigido, baixar de novo e comparar com as somas abaixo:
+**Conclusão:** não há sinal de adulteração. Os três materiais são coerentes entre si, com fontes públicas e com uma implementação independente feita por terceiros a partir dos arquivos oficiais. **Risco residual muito baixo.** A prova definitiva continua pendente porque o Inep não publica somas e o servidor deles está com o certificado inválido. Quando o certificado for corrigido, baixar de novo e comparar com as somas abaixo:
 
 | Arquivo | SHA-256 |
 |---|---|
 | `layout_de_importacao_e_exportacao_2026.xlsx` | `68abca006f808d8c7d0ae405e350de7b77e3c70385f329cf4b8e7ff597296a09` |
 | `tabelas_auxiliares_2026.rar` | `ca7d1c033dfdebf47f1dc61cc25c3c9fdf4ee227189dd3257d72ae8118e46ac0` |
+| `instrucoes_da_migracao_censo_escolar_1_etapa_2026.pdf` | `efdf88b968da214b79cc7396ebcd91703e1c10efaaab995f0e3f16d181529e22` |
 
 As somas de cada tabela estão em `resources/educacenso/2026/ORIGEM.md`.
 
@@ -86,16 +89,46 @@ São 745 regras de campo (677 conferidas na validação do arquivo e 63 no proce
   Por isso **guardar o ID Inep de cada aluno e servidor é essencial** para não duplicar pessoas na base nacional.
 - **Descaracterização:** é proibido alterar ao mesmo tempo dois campos do grupo 1 (nome, nascimento, filiação 1 e 2) e um do grupo 2, ou três do grupo 1.
 
-## 4. Pontos em aberto: não presumir
+## 4. Formato do arquivo: o que está documentado e o que falta
 
-1. **Formato da linha.** A planilha fala do pipe só na regra do `99|`. Ela não diz se cada registro termina com pipe, nem como se representa o campo vazio, nem a quebra de linha (CRLF ou LF). Isso está no documento oficial "Etapas e Instruções Gerais para a Migração 2026" (PDF na mesma página do Inep), que ainda não temos. **O gerador não será escrito antes de obter esse PDF.** Pedido: baixar `instrucoes_da_migracao_censo_escolar_1_etapa_2026.pdf` pela VPS, como foi feito com a planilha.
-2. **Inconsistências no próprio material do Inep.** Quando houver conflito, segue a regra mais restritiva do leiaute e fica registrado:
-   - Registro 00, campo 11 (Número): tamanho 100 na coluna, mas a regra diz "até 10 caracteres". Seguir 10.
-   - Registro 60, campo 21: a aba de versões diz que mudou de nome para "Recebe atendimento educacional em regime hospitalar ou domiciliar", mas a aba do registro mantém o nome antigo. As opções (1, 2, 3) são as mesmas.
-   - Anexo 2 ainda numera os campos do registro 30 até 108, mas o registro tem 110. Vale o registro.
-   - A tabela auxiliar "Tipo de turma x Etapa" difere do Anexo 7, por exemplo em EAD no Ensino Médio. A V4 do leiaute diz que vale o Anexo 7, que é idêntico ao arquivo "Tabela de mediação didático-pedagógica" (o mais recente). Vale o Anexo 7.
-   - A tabela de etapas ainda lista as antigas etapas 30 a 34 (técnico integrado). O registro 20 manda usar as etapas agregadas 304/305 em vez delas. Para rede municipal isso não ocorre.
-   - O arquivo "Tabela de Deficiência x Recurso" tem "2025" no nome dentro do pacote 2026. Vale o Anexo 4 do leiaute.
+### 4.1 O que os documentos oficiais definem
+
+| Tema | Definição oficial | Fonte |
+|---|---|---|
+| Estrutura | Registros 00, 10, 20, 30, 40, 50 e 60 por escola e um 99 no fim do arquivo. Cada registro ocupa uma linha. Um arquivo pode ter várias escolas, até 100. | PDF, 5º passo e Figura 5; leiaute, regras gerais 3 e 11 a 23 |
+| Separador de campos | Pipe (`\|`). | PDF, 3º passo (arquivo de identificação); regra geral 22 (`99\|`); Figura 5 |
+| Campo vazio, nulo ou não aplicável | Não se preenche nada: dois pipes seguidos (`\|\|`). | PDF, 3º passo |
+| Tamanho | Só os campos de tamanho fixo devem ter o tamanho exato. Os demais não recebem espaços nem zeros à esquerda. | PDF, 3º passo; coluna "fixo" do leiaute |
+| Codificação | ISO-8859-1. | Regra geral 1 |
+| Caracteres | Sem minúsculas e sem acentos; em cada campo, só os caracteres da coluna "valores permitidos". | Regra geral 28; leiaute |
+| Datas | `dd/mm/aaaa`. Horários de turma `hh:mm-hh:mm`, minutos múltiplos de 5. | Leiaute |
+| Números | Só dígitos. Códigos de tamanho fixo (escola 8, município 7, distrito 2, CPF 11, ID Inep 12) com todos os dígitos. | Leiaute |
+| Nome do arquivo | `.txt`, até 20 caracteres (letras sem acento, números e sublinhado), até 20 MB. | Regra geral 2; PDF |
+| Envio | **Cada importação substitui todos os dados da escola no Educacenso e não pode ser desfeita.** O arquivo tem de levar a escola completa: uma turma deixada de fora é apagada lá. | PDF, 6º e 7º passos |
+| Retorno | O Educacenso devolve um `.zip` com um `.txt` no mesmo leiaute, com os códigos do sistema próprio e os IDs Inep. | PDF, 1º e 2º passos |
+| Resultado | "Importado parcialmente" é o resultado mais comum. Arquivos de avisos e erros indicam linha e registro. | PDF, 7º passo |
+
+### 4.2 Divergências e omissões: precisam de confirmação antes de gerar o arquivo
+
+1. **Pipe no fim de cada linha (omissão e divergência).**
+   - O texto do PDF não diz se cada registro termina com pipe.
+   - O exemplo oficial do arquivo de identificação (Figura 1) termina cada linha com `|`, e a Figura 5 mostra `00|dados...|`.
+   - O i-Educar gera as linhas **sem** pipe final (`60|...|último campo`) e só o `99|` com pipe.
+   
+   As duas formas podem ser aceitas pelo Educacenso, mas isso não está escrito em lugar nenhum.
+2. **Quebra de linha (omissão).** Nenhum documento diz se é CRLF (Windows) ou LF. A Figura 1 é um Bloco de Notas do Windows, o que sugere CRLF, sem afirmar. O i-Educar usa LF.
+3. **E-mail (divergência interna).** A regra de e-mail do Inep aceita hífen no domínio (`@monte-sereno.gov.br`), mas a coluna de caracteres permitidos (`A-Z 0-9 _ . @`) não. Por enquanto vale a mais restritiva, e um e-mail com hífen vira pendência.
+4. **Código da turma (divergência interna, resolvida).** O registro 20, campo 3, diz tamanho 20 **fixo**, mas a regra diz "até 20 caracteres". O Astuti vai gerar códigos com exatamente 20 caracteres, o que atende às duas leituras.
+5. **Espaço em campos de texto (omissão, resolvida por evidência oficial).** A coluna de caracteres permitidos não lista o espaço, mas as regras exigem "mais de uma palavra" no nome, e o exemplo oficial usa "JOAO DA SILVA". O espaço é aceito em nomes, endereços e nomes de turma, nunca em códigos.
+6. **Outras inconsistências já registradas (resolvidas pela regra mais restritiva):**
+   - registro 00, campo 11 (até 10 caracteres);
+   - nome do campo 21 do registro 60;
+   - numeração do Anexo 2;
+   - Anexo 7 no lugar da tabela "Tipo de turma x Etapa";
+   - etapas antigas 30 a 34;
+   - tabela de deficiência com "2025" no nome.
+
+**Decisão:** o gerador do arquivo (fase 5) só será escrito depois da resposta do Inep aos itens 1 e 2. Contato oficial da migração para SP, conforme o PDF: Henrique Almeida, `henrique.almeida@inep.gov.br`, (61) 2022-3194. O resto do motor (leitura do leiaute, normalização, validação, cadastros e Conferência) não depende disso e segue em frente.
 
 ## 5. Arquitetura
 
@@ -108,10 +141,19 @@ O leiaute de cada ano é um **arquivo de dados**, não código.
   2. **Condicional**, uma regra de código por regra do Inep que dependa de outro campo ou registro (por exemplo "deve ser nulo quando…", Anexos 3 a 8, horários coincidentes). Cada regra implementada leva o número do campo e o número da regra do Inep, para rastrear e atualizar no ano seguinte.
 
   As regras de processamento, que dependem da base do Inep (CPF na Receita, CEP no DNE, escola existente), ficam como aviso. Só o Educacenso decide sobre elas.
+- **Núcleo já implementado** (`app/Educacenso`):
+  - `Leiaute` lê o leiaute do ano;
+  - `Campo` descreve cada campo como a planilha;
+  - `Texto` normaliza (maiúsculas, sem acento, ISO-8859-1);
+  - `ValidadorDeCampo` confere obrigatoriedade, tamanho, tipo, opções, data, horário, e-mail e caracteres permitidos.
+  
+  Testes em `tests/Unit/Educacenso`.
 - **Normalização de texto.** Maiúsculas, sem acento e só os caracteres permitidos em cada campo (nomes: só A-Z e espaço). A Conferência mostra o valor exato que vai no arquivo quando ele difere do cadastro, por exemplo "D'ÁVILA" vira "DAVILA". Nada é cortado sem aviso: texto maior que o permitido vira pendência.
-- **Gravação.** Codificação ISO-8859-1. Formato de linha conforme o PDF de instruções (seção 4, item 1). Lotes de até 100 escolas.
+- **Gravação.** Codificação ISO-8859-1, lotes de até 100 escolas, cada escola completa. Pipe final e quebra de linha só depois da confirmação do Inep (seção 4.2).
+- **Escola completa ou nada.** Como cada envio substitui todos os dados da escola, o Astuti nunca omite uma turma, um aluno ou um profissional com pendência. A escola inteira fica fora do arquivo até a pendência ser resolvida, e a Conferência explica o motivo.
+- **Códigos estáveis do sistema próprio.** O Inep devolve, no ano seguinte, o "código da pessoa física no sistema próprio" e o "código da turma na escola". Por isso esses códigos não podem mudar de um ano para outro. Cada pessoa e turma recebe um código próprio do Censo, de 20 caracteres (A-Z e 0-9), gerado uma vez e nunca reaproveitado. Não pode ser o identificador interno do Astuti, que tem 36 caracteres e hífens.
 - **Conferência do Censo (já existe).** Passa a ter uma aba "Educacenso" com as pendências por escola, turma, servidor e aluno, cada uma com o link para corrigir. A contagem diz quantas escolas, turmas e matrículas estão prontas. O botão de gerar só libera escolas sem pendência que recuse a escola.
-- **Retorno dos códigos.** Importa o arquivo de exportação que o Educacenso devolve (mesmo leiaute) e grava:
+- **Retorno dos códigos.** Importa o arquivo de exportação que o Educacenso devolve (`.zip` com `.txt` no mesmo leiaute) e grava:
   - o ID Inep da pessoa (12 dígitos);
   - o código Inep da turma;
   - o código da matrícula.
@@ -246,7 +288,7 @@ Cada fase é um PR com testes. Nada vai para produção sem as regras da fase co
 | 2 | Turma para o Censo: etapa Inep confirmada, horários por dia, tipo, componentes, turmas de AEE e atividade complementar | Claude |
 | 3 | Servidores para o Censo: dados pessoais, formação (tabelas de cursos e IES), gestor, função e componentes por turma | ChatGPT, revisão Claude |
 | 4 | Alunos para o Censo: filiação, municípios em código, transtornos, recursos, transporte, hospital/domicílio | Claude (dados sensíveis) |
-| 5 | Gerador, validador genérico e condicional, aba Educacenso na Conferência, arquivo ISO-8859-1 | Claude, após o PDF de instruções |
+| 5 | Regras condicionais, aba Educacenso na Conferência e gerador do arquivo ISO-8859-1 (o validador genérico já está pronto) | Claude; o gerador só após a resposta do Inep (seção 4.2) |
 | 6 | Retorno: importação dos códigos Inep do arquivo de exportação | Claude |
 | 7 | Situação do Aluno 2026, assim que o Inep publicar o leiaute da 2ª etapa | Claude |
 
