@@ -14,8 +14,8 @@
     <div class="folha-titulo">
         <div>
             <span class="contexto">Secretaria escolar</span>
-            <h1>Matrículas ativas de {{ $school->name }}</h1>
-            <p>Relação de vínculos atuais desta escola, com ano letivo e situação. Acesso restrito à sua conta.</p>
+            <h1>Matrículas {{ $transfers ? 'transferidas' : ($completed ? 'concluídas' : 'ativas') }} de {{ $school->name }}</h1>
+            <p>Relação de vínculos desta escola, com ano letivo e situação. Acesso restrito à sua conta.</p>
         </div>
         <span class="marcador"><x-icon name="alunos" :size="16" /> {{ $enrollments->total() }} {{ $enrollments->total() === 1 ? 'matrícula' : 'matrículas' }}</span>
     </div>
@@ -24,10 +24,28 @@
         <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
     @endif
 
-    <section class="folha" aria-labelledby="titulo-matriculas">
-        <div class="folha-cabecalho"><div><h2 id="titulo-matriculas">Matrículas ativas</h2><p>Pesquise pelo nome para localizar um vínculo desta unidade.</p></div></div>
+    @if (session('transfer_document') && auth()->user()->can('manageStudents', [$school, $municipality]))
+        <section class="folha">
+            <div class="folha-corpo">
+                <a class="botao" href="{{ route('school.students.declarations.create', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => session('transfer_document.student'), 'matricula' => session('transfer_document.enrollment'), 'tipo' => 'transfer_declaration']) }}">Emitir declaração de transferência</a>
+            </div>
+        </section>
+    @endif
 
+    <section class="folha" aria-labelledby="titulo-matriculas">
+        <div class="folha-cabecalho"><div><h2 id="titulo-matriculas">Matrículas {{ $transfers ? 'transferidas' : ($completed ? 'concluídas' : 'ativas') }}</h2><p>Pesquise pelo nome para localizar um vínculo desta unidade.</p></div></div>
+
+        @can('manageStudents', [$school, $municipality])
+            <div class="folha-corpo">
+                <div class="formulario-acoes">
+                    <a class="botao secundario" href="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar matrículas ativas</a>
+                    <a class="botao secundario" href="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'situacao' => 'transferidas']) }}">Consultar matrículas transferidas</a>
+                    <a class="botao secundario" href="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'situacao' => 'concluidas']) }}">Consultar matrículas concluídas</a>
+                </div>
+            </div>
+        @endcan
         <form class="busca busca-matriculas" method="GET" action="{{ route('school.enrollments.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}" role="search">
+            @if ($transfers || $completed)<input type="hidden" name="situacao" value="{{ $transfers ? 'transferidas' : 'concluidas' }}">@endif
             <div class="campo">
                 <x-icon name="busca" :size="18" />
                 <label class="sr-only" for="busca-matricula">Nome do aluno</label>
@@ -53,7 +71,7 @@
         @endif
 
         @if ($enrollments->isEmpty())
-            <div class="vazio">Nenhuma matrícula ativa {{ $search !== '' || $selectedYear !== null ? 'encontrada para os filtros informados.' : 'cadastrada nesta escola.' }}</div>
+            <div class="vazio">Nenhuma matrícula {{ $transfers ? 'transferida' : ($completed ? 'concluída' : 'ativa') }} {{ $search !== '' || $selectedYear !== null ? 'encontrada para os filtros informados.' : 'cadastrada nesta escola.' }}</div>
         @else
             <div class="rolagem">
                 <table class="tabela">
@@ -61,9 +79,17 @@
                     <tbody>
                     @foreach ($enrollments as $enrollment)
                         <tr>
-                            <td><a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $enrollment->student_id]) }}" aria-label="Abrir ficha de {{ $enrollment->student->full_name }}"><strong>{{ $enrollment->student->full_name }}</strong></a></td>
+                            <td>
+                                @if ($transfers || $completed)
+                                    <strong>{{ $enrollment->student->full_name }}</strong>
+                                    <a href="{{ route('school.students.declarations.create', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $enrollment->student_id, 'matricula' => $enrollment->id, 'tipo' => $transfers ? 'transfer_declaration' : 'completion_declaration']) }}">{{ $transfers ? 'Declaração de transferência' : 'Declaração de conclusão' }}</a>
+                                    <a href="{{ route('school.students.declarations.create', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $enrollment->student_id, 'matricula' => $enrollment->id, 'tipo' => 'attendance_declaration']) }}">Declaração de frequência</a>
+                                @else
+                                    <a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $enrollment->student_id]) }}" aria-label="Abrir ficha de {{ $enrollment->student->full_name }}"><strong>{{ $enrollment->student->full_name }}</strong></a>
+                                @endif
+                            </td>
                             <td><span class="etiqueta neutra numero">Ano letivo {{ $enrollment->schoolYear?->year ?? 'Não informado' }}</span></td>
-                            <td><span class="etiqueta ok">Ativa</span></td>
+                            <td><span class="etiqueta {{ ($transfers || $completed) ? 'neutra' : 'ok' }}">{{ $transfers ? 'Transferida' : ($completed ? 'Concluída' : 'Ativa') }}</span></td>
                             <td class="numero">{{ $enrollment->started_at?->format('d/m/Y') ?? 'Não informada' }}</td>
                         </tr>
                     @endforeach

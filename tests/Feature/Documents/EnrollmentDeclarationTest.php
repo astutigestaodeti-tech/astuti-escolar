@@ -3,15 +3,23 @@
 namespace Tests\Feature\Documents;
 
 use App\Documents\VerificationCode;
+use App\Models\Tenant\AttendanceMark;
+use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
+use App\Models\Tenant\ClassYearClosure;
+use App\Models\Tenant\InstitutionProfile;
 use App\Models\Tenant\IssuedDocument;
+use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
+use App\Models\Tenant\StudentFinalResult;
 use App\Models\User;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -213,5 +221,125 @@ class EnrollmentDeclarationTest extends TwoMunicipalityTestCase
         });
         $this->post($this->baseUrl(), ['matricula' => $this->enrollmentId])->assertNotFound();
         $this->post($this->baseUrl(self::ESCOLA_A2), ['matricula' => $this->enrollmentId])->assertForbidden();
+    }
+
+    public function test_frequencia_calculada_por_periodo_e_reimpressao_preservada(): void
+    {
+        $this->travelTo(Carbon::parse('2027-06-15 10:00:00'));
+        $this->inMunicipality(function (): void {
+            $entry = StudentEnrollment::query()->findOrFail($this->enrollmentId);
+            foreach (['present', 'absent', 'justified', 'present'] as $i => $status) {
+                $session = AttendanceSession::query()->create([
+                    'id' => (string) Str::uuid(), 'school_class_id' => $entry->school_class_id,
+                    'attendance_date' => '2027-06-0'.($i + 1), 'recorded_by' => $this->auditFixtureUser->id, 'recorded_at' => now(),
+                ]);
+                AttendanceMark::query()->create([
+                    'id' => (string) Str::uuid(), 'attendance_session_id' => $session->id,
+                    'student_id' => $entry->student_id, 'status' => $status,
+                ]);
+            }
+            InstitutionProfile::query()->updateOrCreate(['id' => 1], [
+                'department_name' => 'Secretaria Fictícia Original', 'email' => 'original@example.invalid',
+            ]);
+        });
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $kind = 'attendance_declaration';
+        $this->get($this->baseUrl().'/nova?tipo='.$kind)->assertOk()->assertSee('Início do período');
+        $payload = ['kind' => $kind, 'matricula' => $this->enrollmentId, 'inicio' => '2027-06-01', 'fim' => '2027-06-10'];
+        $this->post($this->baseUrl(), [...$payload, 'fim' => '2027-06-30'])->assertSessionHasErrors('inicio');
+        $this->post($this->baseUrl(), [...$payload, 'inicio' => '2027-05-01', 'fim' => '2027-05-31'])->assertSessionHasErrors('inicio');
+        $this->post($this->baseUrl(), $payload)->assertRedirect();
+        $document = $this->inMunicipality(fn () => IssuedDocument::query()->sole());
+        $this->assertSame(4, $document->declaration_snapshot['total']);
+        $this->assertSame(2, $document->declaration_snapshot['present']);
+        $this->assertEquals(50, $document->declaration_snapshot['percentage']);
+        $this->assertSame(1, $document->declaration_snapshot['justified']);
+        $url = $this->baseUrl().'/'.$document->id;
+        $before = $this->get($url)->assertOk()->assertSee('50,0%')->assertSee('original@example.invalid')
+            ->assertSee('doc-timbre', false)->assertSee('doc-rodape', false)->assertSee('<svg', false)->getContent();
+        $this->inMunicipality(function (): void {
+            Student::query()->findOrFail($this->studentId)->update(['full_name' => 'Nome Fictício Alterado']);
+            School::query()->findOrFail(self::ESCOLA_A1)->update(['name' => 'Nome Alterado da Escola']);
+            InstitutionProfile::query()->findOrFail(1)->update(['email' => 'novo@example.invalid']);
+            AttendanceMark::query()->where('status', 'absent')->firstOrFail()->update(['status' => 'present']);
+        });
+        $after = $this->get($url)->assertOk()->assertSee('50,0%')->assertSee('Ana Clara Souza')->assertSee('original@example.invalid')
+            ->assertDontSee('Nome Fictício Alterado')->assertDontSee('novo@example.invalid')->getContent();
+        $this->assertSame(1, preg_match('/<section class="folha declaracao-papel".*?<\/section>/s', $before, $original));
+        $this->assertSame(1, preg_match('/<section class="folha declaracao-papel".*?<\/section>/s', $after, $reprint));
+        $this->assertSame($original[0], $reprint[0]);
+        config()->set('tenancy.deployed_db_key', 'municipio_a');
+        $this->get('/verificar/'.$document->verification_code)->assertOk()->assertSee('Declaração de frequência')
+            ->assertSee('Ana C. S.')->assertDontSee('50,0%')->assertDontSee('Ana Clara Souza');
+        $this->post($url.'/revogar', ['motivo' => 'Substituição da declaração emitida'])->assertRedirect();
+        $this->assertSame(1, $this->inMunicipality(fn (): int => AuditLog::query()->where('action', 'attendance_declaration.issued')->count()));
+        $this->assertSame(1, $this->inMunicipality(fn (): int => AuditLog::query()->where('action', 'attendance_declaration.revoked')->count()));
+        $this->get('/verificar/'.$document->verification_code)->assertOk()->assertSee('Documento revogado')
+            ->assertDontSee('Substituição da declaração emitida');
+    }
+
+    public function test_transferencia_exige_saida_registrada_e_fica_acessivel_apos_saida(): void
+    {
+        $this->travelTo(Carbon::parse('2027-06-15 10:00:00'));
+        $this->user('school_director', [self::ESCOLA_A1]);
+        $payload = ['kind' => 'transfer_declaration', 'matricula' => $this->enrollmentId];
+        $this->post($this->baseUrl(), $payload)->assertNotFound();
+        $this->inMunicipality(function (): void {
+            StudentEnrollment::query()->findOrFail($this->enrollmentId)->update([
+                'status' => 'left_network', 'ended_at' => '2027-06-12',
+            ]);
+        });
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?situacao=transferidas')
+            ->assertOk()->assertSee('Ana Clara Souza')->assertSee('Declaração de transferência');
+        $this->get($this->baseUrl().'/nova?tipo=transfer_declaration')->assertOk()->assertSee('Emitir declaração de transferência');
+        $this->post($this->baseUrl(), $payload)->assertRedirect();
+        $document = $this->inMunicipality(fn () => IssuedDocument::query()->sole());
+        $url = $this->baseUrl().'/'.$document->id;
+        $this->get($url)->assertOk()->assertSee('12/06/2027')->assertSee('O histórico escolar será encaminhado')
+            ->assertSee('transferência para fora da rede');
+        config()->set('tenancy.deployed_db_key', 'municipio_a');
+        $this->get('/verificar/'.$document->verification_code)->assertOk()->assertSee('Declaração de transferência')
+            ->assertDontSee('12/06/2027')->assertDontSee('transferência para fora da rede');
+        $this->user('teacher', [self::ESCOLA_A1]);
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/matriculas?situacao=transferidas')->assertForbidden();
+        $this->get($url)->assertForbidden();
+        $this->post($this->baseUrl(), $payload)->assertForbidden();
+        $this->post($url.'/revogar', ['motivo' => 'Não autorizado'])->assertForbidden();
+    }
+
+    public function test_conclusao_exige_fechamento_e_aprovacao_e_snapshot_e_imutavel(): void
+    {
+        $this->travelTo(Carbon::parse('2027-12-18 10:00:00'));
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $payload = ['kind' => 'completion_declaration', 'matricula' => $this->enrollmentId];
+        $this->post($this->baseUrl(), $payload)->assertSessionHasErrors('matricula');
+        $this->inMunicipality(function (): void {
+            $entry = StudentEnrollment::query()->findOrFail($this->enrollmentId);
+            StudentFinalResult::query()->create([
+                'id' => (string) Str::uuid(), 'school_class_id' => $entry->school_class_id,
+                'student_enrollment_id' => $entry->id, 'result' => 'retido', 'suggested_result' => 'retido',
+                'confirmed_at' => now(), 'confirmed_by' => $this->auditFixtureUser->id,
+            ]);
+            ClassYearClosure::query()->findOrFail($entry->school_class_id)->forceFill([
+                'closed_at' => now(), 'closed_by' => $this->auditFixtureUser->id, 'close_reason' => 'Fechamento fictício',
+            ])->save();
+        });
+        $this->post($this->baseUrl(), $payload)->assertSessionHasErrors('matricula');
+        $this->inMunicipality(function (): void {
+            $entry = StudentEnrollment::query()->findOrFail($this->enrollmentId);
+            $closure = ClassYearClosure::query()->findOrFail($entry->school_class_id);
+            $closure->forceFill(['closed_at' => null, 'closed_by' => null, 'close_reason' => null])->save();
+            StudentFinalResult::query()->sole()->update(['result' => 'aprovado', 'suggested_result' => 'aprovado']);
+            $closure->forceFill(['closed_at' => now(), 'closed_by' => $this->auditFixtureUser->id, 'close_reason' => 'Fechamento fictício'])->save();
+        });
+        $this->post($this->baseUrl(), $payload)->assertRedirect();
+        $document = $this->inMunicipality(fn () => IssuedDocument::query()->sole());
+        $this->get($this->baseUrl().'/'.$document->id)->assertOk()->assertSee('Declaração de conclusão')->assertSee('3º Ano B')
+            ->assertSee('resultado confirmado de aprovação');
+        config()->set('tenancy.deployed_db_key', 'municipio_a');
+        $this->get('/verificar/'.$document->verification_code)->assertOk()->assertSee('Declaração de conclusão')
+            ->assertDontSee('resultado confirmado de aprovação');
+        $this->expectException(QueryException::class);
+        $this->inMunicipality(fn () => IssuedDocument::query()->findOrFail($document->id)->update(['snapshot_student_name' => 'Alteração proibida']));
     }
 }

@@ -22,12 +22,12 @@
             @elseif ($info !== null)
                 <p class="verificacao-situacao {{ $info['status'] === 'Documento válido' ? 'verificacao-valida' : 'verificacao-invalida' }}" role="status">{{ $info['status'] }}</p>
                 <dl class="verificacao-dados">
-                    <div><dt>Tipo</dt><dd>{{ match ($info['kind']) { 'school_transcript' => 'Histórico escolar', 'active_search_referral' => 'Documento escolar de acesso restrito', default => 'Declaração de matrícula' } }}</dd></div>
-                    @if ($info['kind'] === 'enrollment_declaration')
+                    <div><dt>Tipo</dt><dd>{{ match ($info['kind']) { 'school_transcript' => 'Histórico escolar', 'active_search_referral' => 'Documento escolar de acesso restrito', default => \App\Models\Tenant\IssuedDocument::DECLARATIONS[$info['kind']] ?? 'Documento escolar' } }}</dd></div>
+                    @if (isset($info['student']))
                         <div><dt>Aluno</dt><dd>{{ $info['student'] }}</dd></div>
                     @endif
                     <div><dt>Escola</dt><dd>{{ $info['school'] }}</dd></div>
-                    @if ($info['kind'] === 'enrollment_declaration')
+                    @if (isset($info['student']))
                         <div><dt>Ano letivo</dt><dd>{{ $info['year'] }}</dd></div>
                         @if ($info['stage'])<div><dt>Etapa</dt><dd>{{ $info['stage'] }}</dd></div>@endif
                     @endif
