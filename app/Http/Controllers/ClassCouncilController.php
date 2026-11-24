@@ -11,6 +11,7 @@ use App\Models\Tenant\ClassCouncil;
 use App\Models\Tenant\ClassCouncilStudent;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
+use App\Security\TwoFactorSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -94,7 +95,7 @@ class ClassCouncilController extends Controller
                     $changed = array_keys($record->getDirty());
                     $record->updated_by = $request->user()->id;
                     $record->save();
-                    app(AuditTrail::class)->record('tenant', 'pedagogical.council.student.updated', ClassCouncilStudent::class, $record->id, null, ['changed_fields' => $changed]);
+                    app(AuditTrail::class)->record('tenant', 'pedagogical.council.student.updated', ClassCouncilStudent::class, $record->id, null, ['changed_fields' => implode(',', $changed)]);
                 }
             }
         });
@@ -106,6 +107,10 @@ class ClassCouncilController extends Controller
     {
         [$municipality, $school, $class, $director] = $this->context($request, $escola, $turma);
         abort_unless($director, 403);
+        // A confirmação recente não deve guardar o motivo em texto na sessão.
+        if (! app(TwoFactorSession::class)->isRecentlyVerified($request, $request->user())) {
+            abort(403, 'Confirme novamente o segundo fator antes de concluir ou reabrir o conselho.');
+        }
         $validator = Validator::make($request->all(), [
             'periodo' => ['required', 'uuid'],
             'acao' => ['required', Rule::in(['complete', 'reopen'])],
@@ -138,7 +143,7 @@ class ClassCouncilController extends Controller
     private function audit(ClassCouncil $council, string $action, array $fields): void
     {
         app(AuditTrail::class)->record('tenant', 'pedagogical.council.'.$action, ClassCouncil::class, $council->id, null,
-            ['status' => $council->status, 'changed_fields' => $fields]);
+            ['status' => $council->status, 'changed_fields' => implode(',', $fields)]);
     }
 
     private function context(Request $request, string $schoolId, string $classId): array
