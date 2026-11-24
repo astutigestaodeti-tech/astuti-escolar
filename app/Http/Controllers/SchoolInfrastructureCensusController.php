@@ -120,7 +120,7 @@ class SchoolInfrastructureCensusController extends Controller
         $inicio = 3;
         foreach ($leiaute->grupos('10') as $grupo) {
             if ($inicio < $grupo['de']) {
-                $blocos[] = ['nome' => 'Campos complementares ('.$inicio.' a '.($grupo['de'] - 1).')', 'campos' => array_intersect_key($campos, array_flip(range($inicio, $grupo['de'] - 1)))];
+                $blocos[] = ['nome' => $inicio === $grupo['de'] - 1 ? 'Campo complementar ('.$inicio.')' : 'Campos complementares ('.$inicio.' a '.($grupo['de'] - 1).')', 'campos' => array_intersect_key($campos, array_flip(range($inicio, $grupo['de'] - 1)))];
             }
             $blocos[] = ['nome' => $grupo['nome'], 'regras' => $grupo['regras'], 'campos' => array_intersect_key($campos, array_flip(range($grupo['de'], $grupo['ate'])))];
             $inicio = $grupo['ate'] + 1;
