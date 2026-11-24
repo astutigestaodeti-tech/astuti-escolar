@@ -36,7 +36,7 @@
         @else
             <div class="rolagem">
                 <table class="tabela">
-                    <thead><tr><th scope="col">Turma</th><th scope="col">Etapa</th><th scope="col">Modalidade</th><th scope="col">Turno</th><th scope="col">Vagas</th><th scope="col">Ano letivo</th>@if ($canManage)<th scope="col">Ações</th>@endif</tr></thead>
+                    <thead><tr><th scope="col">Turma</th><th scope="col">Etapa</th><th scope="col">Modalidade</th><th scope="col">Turno</th><th scope="col">Jornada diária</th><th scope="col">Conferência</th><th scope="col">Vagas</th><th scope="col">Ano letivo</th>@if ($canManage)<th scope="col">Ações</th>@endif</tr></thead>
                     <tbody>
                     @foreach ($classes as $class)
                         <tr>
@@ -44,6 +44,14 @@
                             <td>{{ $class->stage }}</td>
                             <td>{{ $class->modality }}</td>
                             <td>{{ $class->shift }}</td>
+                            <td class="numero">{{ $class->daily_hours === null ? 'Não informada' : number_format((float) $class->daily_hours, 1, ',', '.').' h' }}</td>
+                            <td>@if (\App\Integral\FullTimeReadiness::mismatch($class))
+                                <strong>Turno e jornada divergem</strong>
+                            @elseif ($class->daily_hours === null)
+                                Conferir jornada
+                            @else
+                                {{ \App\Integral\FullTimeReadiness::integral($class) ? 'Integral' : 'Parcial' }}
+                            @endif</td>
                             <td class="numero">{{ $class->capacity !== null ? $class->capacity.' vagas' : 'Não informada' }}</td>
                             <td><span class="etiqueta neutra numero">{{ $class->schoolYear->year }}</span></td>
                             @if ($canManage)

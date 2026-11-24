@@ -17,6 +17,10 @@
     <span aria-current="page">{{ $class->name }}</span>
 @endsection
 
+@push('head')
+    <link rel="stylesheet" href="{{ asset('css/tempo-integral.css') }}?v={{ filemtime(public_path('css/tempo-integral.css')) }}">
+@endpush
+
 @section('content')
     <div class="folha-titulo">
         <div>
@@ -47,8 +51,23 @@
             <div><dt>Nome</dt><dd>{{ $class->name }}</dd></div>
             <div><dt>Etapa</dt><dd>{{ $class->stage }}</dd></div>
             <div><dt>Turno</dt><dd>{{ $class->shift }}</dd></div>
+            <div><dt>Jornada diária</dt><dd>{{ $class->daily_hours === null ? 'Não informada' : number_format((float) $class->daily_hours, 1, ',', '.').' horas' }}</dd></div>
             <div><dt>Ano letivo</dt><dd class="numero">{{ $class->schoolYear->year }}</dd></div>
         </dl>
+
+        @can('viewNetworkPanel', [\App\Models\Tenant\School::class, $municipality])
+            <div class="folha-corpo">
+                <form action="{{ route('integral.hours.update', [...$parametrosTurma]) }}" method="POST" class="integral-jornada-form">
+                    @csrf
+                    <label for="daily-hours-{{ $class->id }}">Jornada diária em horas (gestão municipal)
+                        <input class="entrada" id="daily-hours-{{ $class->id }}" type="number" name="daily_hours"
+                            min="0.5" max="16" step="0.1" value="{{ $class->daily_hours }}" placeholder="Ex.: 7.0">
+                    </label>
+                    <button class="botao secundario" type="submit">Salvar jornada</button>
+                    <p class="texto-ajuda">Integral a partir de 7 horas diárias. Remova o valor para voltar à classificação provisória pelo turno.</p>
+                </form>
+            </div>
+        @endcan
 
         <div class="turma-ocupacao">
             <div class="turma-ocupacao-titulo">
