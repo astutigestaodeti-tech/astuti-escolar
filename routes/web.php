@@ -36,6 +36,7 @@ use App\Http\Controllers\SchoolCensusController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
+use App\Http\Controllers\SchoolInfrastructureCensusController;
 use App\Http\Controllers\SchoolMealsController;
 use App\Http\Controllers\SchoolMonthlyAttendanceReportController;
 use App\Http\Controllers\SchoolPendenciesController;
@@ -251,6 +252,9 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     // Dados da escola para o Censo Escolar (registro 00 do Educacenso).
     Route::get('/escolas/{escola}/censo/escola', [SchoolCensusController::class, 'edit'])->whereUuid('escola')->name('school.census.school.edit');
     Route::put('/escolas/{escola}/censo/escola', [SchoolCensusController::class, 'update'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.census.school.update');
+    // Infraestrutura anual da escola (registro 10 do Educacenso).
+    Route::get('/escolas/{escola}/censo/infraestrutura', [SchoolInfrastructureCensusController::class, 'edit'])->whereUuid('escola')->name('school.census.infrastructure.edit');
+    Route::put('/escolas/{escola}/censo/infraestrutura', [SchoolInfrastructureCensusController::class, 'update'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.census.infrastructure.update');
     // Dados das turmas para o Censo Escolar (registro 20 do Educacenso).
     Route::get('/escolas/{escola}/censo/turmas', [ClassCensusController::class, 'index'])->whereUuid('escola')->name('school.census.classes.index');
     Route::get('/escolas/{escola}/censo/alunos', [StudentsCensusController::class, 'index'])->whereUuid('escola')->name('school.census.students.index');
