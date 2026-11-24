@@ -20,6 +20,7 @@ use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdentificationPhotoController;
 use App\Http\Controllers\LiteracyController;
+use App\Http\Controllers\MonthlySecretariatReportController;
 use App\Http\Controllers\NetworkPanelController;
 use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\PublicDocumentVerificationController;
@@ -108,6 +109,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
         ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
+    Route::get('/relatorio-mensal-secretaria', [MonthlySecretariatReportController::class, 'index'])->name('secretariat.monthly.index');
     // Busca ativa: ficha restrita, alertas de turma e documento verificável.
     Route::get('/alfabetizacao', [LiteracyController::class, 'network'])->name('literacy.network');
     Route::post('/alfabetizacao/politica', [LiteracyController::class, 'settings'])

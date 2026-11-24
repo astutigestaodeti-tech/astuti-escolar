@@ -44,7 +44,7 @@ class CensusReadiness
      *     totals: array{enrollments: int, with_warnings: int, weighted: float, fundeb: ?float, pnae: float, at_risk_enrollments: int, at_risk_fundeb: ?float, at_risk_pnae: float}
      * }
      */
-    public function forNetwork(?CarbonImmutable $today = null): array
+    public function forNetwork(?CarbonImmutable $today = null, ?string $schoolYearId = null): array
     {
         $today ??= CarbonImmutable::today();
 
@@ -54,6 +54,7 @@ class CensusReadiness
             ->leftJoin('school_classes', 'school_classes.id', '=', 'student_enrollments.school_class_id')
             ->leftJoin('student_special_education', 'student_special_education.student_id', '=', 'students.id')
             ->where('student_enrollments.status', 'active')
+            ->when($schoolYearId !== null, fn ($query) => $query->where('student_enrollments.school_year_id', $schoolYearId))
             ->whereNull('students.deleted_at')
             ->where('schools.status', 'active')
             ->select([
