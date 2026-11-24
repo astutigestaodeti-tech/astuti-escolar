@@ -95,9 +95,11 @@
                             @foreach ($bloco['campos'] as $numero => $campo)
                                 @php
                                     $opcoes = [];
-                                    foreach (explode("\n", (string) $campo->permitidos) as $linha) {
-                                        if (preg_match('/^(\d+)\s*-\s*(.+)$/u', trim($linha), $m)) {
-                                            $opcoes[$m[1]] = $m[2];
+                                    if ($campo->tipo === 'selec' || $numero === 139) {
+                                        foreach (explode("\n", (string) $campo->permitidos) as $linha) {
+                                            if (preg_match('/^(\d+)\s*-\s*(.+)$/u', trim($linha), $m)) {
+                                                $opcoes[$m[1]] = $m[2];
+                                            }
                                         }
                                     }
                                     $binario = array_keys($opcoes) === [0, 1];
