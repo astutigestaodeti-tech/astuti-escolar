@@ -5,6 +5,7 @@ use App\Http\Controllers\ActiveSearchController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\CensusReadinessController;
+use App\Http\Controllers\ClassCensusController;
 use App\Http\Controllers\ClassGradesController;
 use App\Http\Controllers\ClassTeacherAssignmentController;
 use App\Http\Controllers\ClassYearEndController;
@@ -240,6 +241,11 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/turmas', [SchoolClassController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.store');
     Route::get('/escolas/{escola}/turmas/{turma}/editar', [SchoolClassController::class, 'edit'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.edit');
     Route::put('/escolas/{escola}/turmas/{turma}', [SchoolClassController::class, 'update'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.update');
+    // Dados das turmas para o Censo Escolar (registro 20 do Educacenso).
+    Route::get('/escolas/{escola}/censo/turmas', [ClassCensusController::class, 'index'])->whereUuid('escola')->name('school.census.classes.index');
+    Route::post('/escolas/{escola}/censo/turmas/lote', [ClassCensusController::class, 'batch'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.census.classes.batch');
+    Route::get('/escolas/{escola}/turmas/{turma}/censo', [ClassCensusController::class, 'edit'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.census.classes.edit');
+    Route::put('/escolas/{escola}/turmas/{turma}/censo', [ClassCensusController::class, 'update'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.census.classes.update');
     // Notas do Ensino Fundamental, com ajuste excepcional de período fechado.
     Route::get('/escolas/{escola}/turmas/{turma}/notas', [ClassGradesController::class, 'index'])
         ->whereUuid('escola')->whereUuid('turma')->name('school.classes.grades.index');

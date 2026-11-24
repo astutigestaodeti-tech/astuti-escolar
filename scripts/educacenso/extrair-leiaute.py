@@ -8,6 +8,7 @@ Uso:
 Grava em resources/educacenso/ANO/:
     leiaute.json      registros, campos, grupos e regras, como estão na planilha
     tabelas/*.csv     tabelas auxiliares usadas pelos campos (UTF-8)
+    tabelas.json      etapas e áreas do conhecimento por etapa, lidas das tabelas oficiais
     ORIGEM.md         SHA-256 de cada arquivo oficial de origem
 
 Recusa a planilha se a contagem de campos de algum registro não bater com a
@@ -158,6 +159,107 @@ def tabela(caminho, aba):
     return linhas
 
 
+def regras_areas(caminho, codigos_areas):
+    """Tabela de Regras de Áreas do Conhecimento -> {etapa: [códigos que podem ser 1]}.
+
+    A planilha agrupa etapas e áreas em blocos visuais. Um bloco novo começa
+    depois do bloco "Nenhuma" (educação infantil) ou quando a coluna de áreas
+    volta a um código menor. Cada bloco precisa cobrir as 27 áreas do registro 20
+    (permitidas + não permitidas), senão a extração é recusada.
+    """
+    ws = openpyxl.load_workbook(caminho, data_only=True).worksheets[0]
+    blocos, atual, anterior = [], None, None
+    for a, b, c in ws.iter_rows(min_col=1, max_col=3, values_only=True):
+        a, b, c = (texto(v) or '' for v in (a, b, c))
+        if a.startswith('Etapa/'):
+            atual = None
+            continue
+        mb = re.match(r'^(\d+)\s*-', b)
+        mc = re.match(r'^(\d+)\s*-', c)
+        ma = re.match(r'^(\d+)\b', a)
+        codigo_b = int(mb.group(1)) if mb else None
+        novo = atual is None or b == 'Nenhuma' or (atual['nenhuma'] and codigo_b is not None) \
+            or (codigo_b is not None and anterior is not None and codigo_b < anterior)
+        if novo and (ma or b == 'Nenhuma' or codigo_b is not None):
+            atual = {'etapas': [], 'permitidas': [], 'proibidas': [], 'nenhuma': b == 'Nenhuma'}
+            blocos.append(atual)
+            anterior = None
+        if atual is None:
+            continue
+        if ma:
+            atual['etapas'].append(int(ma.group(1)))
+        if codigo_b is not None:
+            atual['permitidas'].append(codigo_b)
+            anterior = codigo_b
+        if mc:
+            atual['proibidas'].append(int(mc.group(1)))
+    # Bloco sem etapa é continuação do anterior (linha que sobrou depois do 99).
+    unidos = []
+    for bloco in blocos:
+        if not bloco['etapas'] and unidos:
+            unidos[-1]['permitidas'] += bloco['permitidas']
+            unidos[-1]['proibidas'] += bloco['proibidas']
+        else:
+            unidos.append(bloco)
+    saida = {}
+    todas = set(codigos_areas)
+    for bloco in unidos:
+        permitidas = [] if bloco['nenhuma'] else sorted(set(bloco['permitidas']))
+        if not bloco['nenhuma']:
+            proibidas = set(bloco['proibidas'])
+            if set(permitidas) & proibidas or set(permitidas) | proibidas != todas:
+                raise SystemExit(f"regras de áreas: bloco {bloco['etapas']} não cobre as 27 áreas")
+        for etapa in bloco['etapas']:
+            if etapa in saida:
+                raise SystemExit(f'regras de áreas: etapa {etapa} repetida')
+            saida[str(etapa)] = permitidas
+    return saida
+
+
+def etapas(caminho):
+    """Tabela de Etapas (colunas da esquerda) -> lista de {codigo, nome, agregada, nome_agregada}."""
+    ws = openpyxl.load_workbook(caminho, data_only=True)['Etapas de ensino']
+    saida, agregada, nome_agregada = [], None, None
+    for a, b, c, d in ws.iter_rows(min_col=1, max_col=4, values_only=True):
+        if isinstance(a, (int, float)):
+            agregada, nome_agregada = int(a), re.sub(r'\s+', ' ', texto(b) or '')
+        if isinstance(c, (int, float)) and agregada is not None:
+            saida.append({'codigo': int(c), 'nome': re.sub(r'\s+', ' ', texto(d) or ''), 'agregada': agregada, 'nome_agregada': nome_agregada})
+    return saida
+
+
+def organizacao_por_etapa(anexo6):
+    """Anexo 6 -> {etapa: {'formas': [1..5 permitidas], 'alternancia': bool}}."""
+    saida = {}
+    for linha in anexo6:
+        linha = list(linha) + [None] * (10 - len(linha))
+        if linha[2] is None or not str(linha[2]).isdigit():
+            continue
+        formas = [i + 1 for i, v in enumerate(linha[4:9]) if v == 'X']
+        saida[str(int(linha[2]))] = {'formas': formas, 'alternancia': linha[9] == 'X'}
+    return saida
+
+
+def mediacao_tipo_etapa(anexo7, registro20):
+    """Anexo 7 -> lista de {mediacao, tipo_turma, etapas}; códigos tirados das opções do registro 20."""
+    def codigo(campo, rotulo):
+        for opcao in registro20[campo - 1]['opcoes']:
+            if opcao['rotulo'].lower() == rotulo.lower() or opcao['rotulo'].lower().endswith(rotulo.lower()):
+                return int(opcao['codigo'])
+        raise SystemExit(f'Anexo 7: {rotulo!r} não corresponde a uma opção do campo {campo} do registro 20')
+    saida, mediacao, tipo = [], None, None
+    for linha in anexo7[2:]:
+        linha = list(linha) + [None] * (4 - len(linha))
+        if linha[0]:
+            mediacao = codigo(6, linha[0].strip())
+        if linha[1]:
+            tipo = codigo(14, linha[1].strip())
+        etapas = linha[3] or ''
+        lista = [int(v) for v in re.findall(r'\d+', etapas)]
+        saida.append({'mediacao': mediacao, 'tipo_turma': tipo, 'agregada': (linha[2] or '').strip(), 'etapas': lista, 'observacao': None if lista or etapas.strip() in ('-', '') else etapas.strip()})
+    return saida
+
+
 def main():
     if len(sys.argv) != 4 or not re.fullmatch(r'20\d\d', sys.argv[1]):
         raise SystemExit(__doc__)
@@ -190,6 +292,20 @@ def main():
         with open(os.path.join(raiz, 'tabelas', chave + '.csv'), 'w', encoding='utf-8', newline='') as f:
             csv.writer(f, lineterminator='\n').writerows(tabela(caminho, aba))
         origem.append((chave, achados[0], sha256(caminho)))
+
+    codigos_areas = [int(m.group(1)) for c in saida['registros']['20']['campos'][38:65] for m in [re.match(r'^(\d+)\.', c['nome'])]]
+    if len(codigos_areas) != 27:
+        raise SystemExit('registro 20: esperadas 27 áreas do conhecimento (campos 39 a 65)')
+    derivados = {
+        'etapas': etapas(arquivos[sorted(f for f in arquivos if f.startswith(TABELAS['etapas'][0]))[0]]),
+        'areas_por_etapa': regras_areas(arquivos[sorted(f for f in arquivos if f.startswith(TABELAS['regras_areas_conhecimento'][0]))[0]], codigos_areas),
+        'areas_campo': {str(codigo): 39 + i for i, codigo in enumerate(codigos_areas)},
+        'organizacao_por_etapa': organizacao_por_etapa(saida['anexos']['Anexo 6']),
+        'mediacao_tipo_etapa': mediacao_tipo_etapa(saida['anexos']['Anexo 7'], saida['registros']['20']['campos']),
+    }
+    with open(os.path.join(raiz, 'tabelas.json'), 'w', encoding='utf-8') as f:
+        json.dump(derivados, f, ensure_ascii=False, indent=1)
+        f.write('\n')
 
     with open(os.path.join(raiz, 'ORIGEM.md'), 'w', encoding='utf-8') as f:
         f.write(f'# Arquivos oficiais do Educacenso {ano}\n\n')

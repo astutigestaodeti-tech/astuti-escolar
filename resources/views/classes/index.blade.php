@@ -20,6 +20,7 @@
         <div class="acoes-titulo">
             <span class="marcador"><x-icon name="turmas" :size="16" /> {{ $classes->count() }} {{ $classes->count() === 1 ? 'turma' : 'turmas' }}</span>
             @if ($canManage)
+                <a class="botao secundario" href="{{ route('school.census.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="conferir" :size="16" /> Turmas no Censo</a>
                 <a class="botao" href="{{ route('school.classes.create', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="turmas" :size="16" /> Nova turma</a>
             @endif
         </div>
