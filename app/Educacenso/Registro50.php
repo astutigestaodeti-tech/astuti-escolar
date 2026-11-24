@@ -47,8 +47,9 @@ final class Registro50
         $anterior = false;
         $vistos = [];
         $oferecidos = self::componentesOferecidos($turma, $tabelas);
+        $areas = $tabelas->areasDoConhecimento();
         foreach ($componentes as $i => $codigo) {
-            if (! is_int($i) || $i < 0 || $i > 24 || ! is_int($codigo) && ! is_string($codigo)) {
+            if (! is_int($i) || $i < 0 || $i > 24 || (! is_int($codigo) && ! is_string($codigo))) {
                 $registro->recusa(9, 'Componentes devem formar uma lista sequencial de códigos.');
 
                 continue;
@@ -56,16 +57,16 @@ final class Registro50
             $campo = 9 + $i;
             $v[$campo] = (string) $codigo;
             // Campos 9 a 33, regras 1 e regras de grupo 1 e 2.
-            if (! in_array($funcao, [1, 5], true) || ($i > 0 && ! $anterior) || in_array($v[$campo], $vistos, true)) {
+            if (! in_array($funcao, [1, 5], true) || ($i > 0 && ! $anterior) || in_array((int) $codigo, $vistos, true)) {
                 $registro->recusa($campo, 'Componentes só para funções 1 e 5, em sequência e sem repetição.');
             }
-            if (! isset($tabelas->areasDoConhecimento()[$codigo])) {
+            if (! isset($areas[$codigo])) {
                 $registro->recusa($campo, 'Código fora da tabela oficial de áreas.');
             } elseif ($turma !== null && ! isset($oferecidos[$codigo])) {
                 $registro->recusa($campo, 'Componente não oferecido no registro 20 da turma.');
             }
             $anterior = true;
-            $vistos[] = $v[$campo];
+            $vistos[] = (int) $codigo;
             if ($i !== count($vistos) - 1) {
                 $registro->recusa($campo, 'Não deixe lacunas entre os códigos.');
             }
@@ -82,10 +83,10 @@ final class Registro50
         if ($turma === null || $mediacao === null || $tipo === null) {
             $registro->aviso(7, 'Complete os dados do registro 20 para conferir função e componentes.');
         }
-        if ($mediacao === 3 && in_array($funcao, [1, 2, 3, 4, 7, 8], true) || $mediacao !== null && $mediacao !== 3 && in_array($funcao, [5, 6], true)) {
+        if (($mediacao === 3 && in_array($funcao, [1, 2, 3, 4, 7, 8], true)) || ($mediacao !== null && $mediacao !== 3 && in_array($funcao, [5, 6], true))) {
             $registro->recusa(7, 'Função incompatível com a mediação da turma.');
         }
-        if ($tipo !== null && ($funcao === 2 && ! in_array($tipo, [6, 9], true) || $funcao === 3 && ! in_array($tipo, [4, 9], true))) {
+        if ($tipo !== null && (($funcao === 2 && ! in_array($tipo, [6, 9], true)) || ($funcao === 3 && ! in_array($tipo, [4, 9], true)))) {
             $registro->recusa(7, 'Função incompatível com o tipo de turma.');
         }
         if ($funcao === 9) {
