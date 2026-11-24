@@ -147,6 +147,7 @@
         </section>
 
         @include('guardians.panel')
+        @include('census.student-panel')
 
         @include('health.panel')
         @include('special-education.panel')

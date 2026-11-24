@@ -42,6 +42,7 @@ use App\Http\Controllers\SchoolStaffController;
 use App\Http\Controllers\SchoolStudentController;
 use App\Http\Controllers\SchoolTranscriptController;
 use App\Http\Controllers\SchoolTransportRoutesController;
+use App\Http\Controllers\StudentCensusController;
 use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentHealthController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
@@ -365,6 +366,11 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     // Ficha de saúde: gestão vê e edita (2FA); quem consulta vê só alertas graves na ficha e na chamada.
     Route::get('/escolas/{escola}/alunos/{aluno}/boletim', [StudentReportCardController::class, 'show'])
         ->whereUuid('escola')->whereUuid('aluno')->name('school.students.report-card.show');
+    // Dados do aluno para o Censo (registro 30): mesmo acesso do cadastro do aluno.
+    Route::get('/escolas/{escola}/alunos/{aluno}/censo', [StudentCensusController::class, 'edit'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.census.edit');
+    Route::put('/escolas/{escola}/alunos/{aluno}/censo', [StudentCensusController::class, 'update'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.census.update');
     // Educação especial e AEE (Censo): mesmo acesso da ficha de saúde.
     Route::get('/escolas/{escola}/alunos/{aluno}/educacao-especial', [StudentSpecialEducationController::class, 'edit'])
         ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.special-education.edit');
