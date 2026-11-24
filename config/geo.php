@@ -8,6 +8,8 @@
  */
 return [
     'geocoder_url' => env('ASTUTI_GEOCODER_URL', 'https://nominatim.openstreetmap.org/search'),
+    // Endereço a partir do ponto do mapa (preenche o cadastro da escola). Vazio desliga.
+    'reverse_url' => env('ASTUTI_GEOCODER_REVERSO_URL', 'https://nominatim.openstreetmap.org/reverse'),
     'tiles_url' => env('ASTUTI_MAPA_TILES_URL', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
     'tiles_attribution' => env('ASTUTI_MAPA_ATRIBUICAO', '© colaboradores do OpenStreetMap'),
     // O Nominatim pede identificação da aplicação; o contato vem do .env de cada instalação.

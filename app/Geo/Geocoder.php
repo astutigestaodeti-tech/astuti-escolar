@@ -123,6 +123,57 @@ class Geocoder
      * @param  array<string, string>  $params
      * @return array{lat: float, lon: float}|null
      */
+    /**
+     * Endereço de um ponto do mapa (geocodificação reversa), para preencher o
+     * cadastro da escola sem digitar. Sugestão: a pessoa confere e salva.
+     *
+     * @return array{street: ?string, number: ?string, district: ?string, city: ?string, state: ?string, postal_code: ?string}|null
+     */
+    public function reverse(float $lat, float $lon): ?array
+    {
+        $url = (string) config('geo.reverse_url');
+        if ($url === '') {
+            return null;
+        }
+        $key = 'geo:reverso:'.sha1($url.sprintf('|%.5F,%.5F', $lat, $lon));
+        $cached = Cache::get($key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        try {
+            $response = Http::withHeaders(['User-Agent' => config('geo.user_agent')])
+                ->acceptJson()->timeout(5)
+                ->get($url, ['lat' => $lat, 'lon' => $lon, 'format' => 'jsonv2', 'zoom' => 18, 'addressdetails' => 1]);
+            $address = $response->successful() ? $response->json('address') : null;
+        } catch (Throwable) {
+            return null;
+        }
+        if (! is_array($address) || ($address['country_code'] ?? 'br') !== 'br') {
+            return null;
+        }
+
+        $state = null;
+        if (preg_match('/^BR-([A-Z]{2})$/', (string) ($address['ISO3166-2-lvl4'] ?? ''), $match) === 1) {
+            $state = $match[1];
+        }
+        $postal = preg_replace('/\D/', '', (string) ($address['postcode'] ?? ''));
+        $result = [
+            'street' => $address['road'] ?? $address['pedestrian'] ?? null,
+            'number' => $address['house_number'] ?? null,
+            'district' => $address['suburb'] ?? $address['neighbourhood'] ?? $address['quarter'] ?? $address['city_district'] ?? null,
+            'city' => $address['city'] ?? $address['town'] ?? $address['village'] ?? $address['municipality'] ?? null,
+            'state' => $state,
+            'postal_code' => strlen($postal) === 8 ? substr($postal, 0, 5).'-'.substr($postal, 5) : null,
+        ];
+        if ($result['street'] === null && $result['city'] === null) {
+            return null;
+        }
+        Cache::put($key, $result, now()->addDays(30));
+
+        return $result;
+    }
+
     private function query(array $params): ?array
     {
         $key = 'geo:'.sha1(mb_strtolower(json_encode($params, JSON_UNESCAPED_UNICODE)));
