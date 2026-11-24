@@ -187,7 +187,7 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - unidade vinculada (51 e 52).
   
   Dependência administrativa = 3 (municipal) vem da instalação.
-- **Novo (10):** questionário anual de infraestrutura com 187 campos:
+- **Entregue (10):** questionário anual de infraestrutura com 187 campos (185 respostas editáveis; campos 1 e 2 montados pelo sistema):
   - local de funcionamento;
   - água, energia, esgoto e lixo;
   - dependências;
@@ -203,7 +203,18 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - projeto pedagógico;
   - educação ambiental.
   
-  A tela é gerada a partir do `leiaute.json`, em blocos, com as regras de grupo ("pelo menos um", "nenhum dos itens") já na tela. O questionário do ano anterior serve de ponto de partida, sempre com confirmação. Alguns campos têm sugestão vinda do Astuti, sem preenchimento automático: "alimentação escolar" vem do módulo de merenda, e a contagem de profissionais por função vem do cadastro de servidores.
+  A tela "Infraestrutura no Censo" é gerada a partir do `leiaute.json`, nos 16 grupos oficiais e nos intervalos de campos avulsos. A tabela `school_infrastructure_census` guarda um objeto de respostas por escola e ano. A cópia do ano anterior só sugere valores pelo número do campo, com aviso explícito para conferir rótulos e respostas, pois o leiaute pode mudar. Nenhum dado é gravado antes de salvar, e o histórico anterior não é alterado. Sugestões automáticas a partir do módulo de merenda e do cadastro de servidores ficam para etapa posterior. A regra geral 18 torna o registro 10 não aplicável a escola paralisada ou extinta; o histórico é mantido.
+
+  **Registro 10: regras mantidas como aviso e verificações entre registros ainda pendentes.**
+
+  - Campo 139, regra 2: alimentação escolar oferecida exige pelo menos uma turma (registro 20) com mediação 1 ou 2. O questionário não consulta as turmas; a conferência final da escola completa deverá cruzar os registros. Não é uma recusa local.
+  - Campos 11 a 16, regra 2: existência e situação ativa das escolas com as quais há compartilhamento do prédio dependem da base do Inep (processamento). Código distinto e mesma UF são conferidos localmente; a situação da escola indicada fica como aviso.
+  - Regra geral 19: a existência de todos os registros exigidos de uma escola ativa deverá ser verificada na fase de montagem integral (registros 20, 30, 40, 50 e 60), não inferida pelo questionário. As regras gerais 12 e 20, de ordem e unicidade do registro no arquivo, também pertencem à fase de geração; a unicidade anual do questionário já é garantida no banco.
+  - Regras 2 a 4 do campo 21 do registro 20: local de funcionamento diferenciado deve ser compatível com os campos 3 a 8 do registro 10. São verificações entre registros, a consolidar na conferência integral, sem inventar uma recusa no questionário de infraestrutura.
+  - Campo 40: o grupo 37 a 40 exige pelo menos um valor 1, mas a V5 não traz regra de exclusão para "Não faz tratamento", diferentemente de outros grupos. Não se acrescenta recusa não documentada.
+  - Campos 161 a 163: a V5 exige código válido quando o campo 160 for 1 ou 3 e nulo nos demais casos, com códigos distintos. Aplica-se a redação literal, inclusive aos campos 162 e 163; se o Inep confirmar que estes são opcionais, ajustar a regra com a fonte oficial. Os códigos da tabela de línguas são formatados com cinco dígitos, conforme o tamanho fixo do leiaute.
+
+  A coluna de prontidão da escola exige registro 00 e registro 10 prontos, respeitando a não aplicabilidade do registro 10. O gerador permanece bloqueado.
 
 ### Turma (registro 20)
 
