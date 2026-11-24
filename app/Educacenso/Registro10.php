@@ -144,7 +144,6 @@ final class Registro10
 
         // Campos 9 e 10, regra 1; campo 11, regra 1.
         $this->condicional(9, $v[3] === '1');
-        $this->condicional(10, $v[3] === '1');
         $this->condicional(11, $v[10] === '1');
         foreach (range(11, 16) as $numero) {
             if ($v[$numero] === null) {
