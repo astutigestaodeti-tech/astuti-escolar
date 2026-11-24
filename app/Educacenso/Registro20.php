@@ -120,10 +120,10 @@ final class Registro20
         }
         // Regras gerais 26 e 27: toda turma com pelo menos um aluno e um profissional.
         if ($this->alunos === 0) {
-            $this->pendencias[] = new Pendencia('20', null, 'A turma não tem aluno matriculado: o Educacenso recusa turma sem aluno.');
+            $this->pendencias[] = new Pendencia('20', null, 'A turma não tem aluno matriculado: o Educacenso recusa turma sem aluno.', regra: '26');
         }
         if ($this->professores === 0) {
-            $this->pendencias[] = new Pendencia('20', null, 'A turma não tem professor vinculado: o Educacenso recusa turma sem profissional.');
+            $this->pendencias[] = new Pendencia('20', null, 'A turma não tem professor vinculado: o Educacenso recusa turma sem profissional.', regra: '27');
         }
     }
 

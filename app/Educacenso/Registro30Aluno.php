@@ -190,7 +190,7 @@ final class Registro30Aluno
         }
         // Campo 17, regra 2: aluno em classe especial ou turma de AEE tem de ter deficiência, TEA ou altas habilidades.
         if ($v[17] === '0' && ($this->turma?->special_class === true || $this->turma?->class_type === 5)) {
-            $this->recusa(17, 'Aluno em classe especial ou AEE precisa ter a categoria de educação especial informada.');
+            $this->recusa(17, 'Aluno em classe especial ou AEE precisa ter a categoria de educação especial informada.', '30.17.2');
         }
         // Campo 49, Anexo 4: "Nenhum" só vale se alguma condição marcada o admite; recursos compatíveis.
         if ($v[49] === '1') {
@@ -243,13 +243,13 @@ final class Registro30Aluno
         }
     }
 
-    private function recusa(?int $campo, string $mensagem): void
+    private function recusa(?int $campo, string $mensagem, ?string $regra = null): void
     {
         foreach ($this->pendencias as $pendencia) {
             if ($campo !== null && $pendencia->campo === $campo && $pendencia->recusa()) {
                 return;
             }
         }
-        $this->pendencias[] = new Pendencia('30', $campo, $mensagem);
+        $this->pendencias[] = new Pendencia('30', $campo, $mensagem, regra: $regra);
     }
 }

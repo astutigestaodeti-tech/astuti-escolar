@@ -16,6 +16,7 @@ final readonly class Pendencia
         public ?int $campo,
         public string $mensagem,
         public string $gravidade = self::RECUSA,
+        public ?string $regra = null,
     ) {}
 
     public function recusa(): bool

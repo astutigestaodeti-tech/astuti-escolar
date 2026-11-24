@@ -81,6 +81,10 @@ final class Registro00
         }
 
         foreach ($this->leiaute->campos('00') as $numero => $campo) {
+            // Sem a tela "Escola no Censo" preenchida, uma pendência só cobre os campos dela.
+            if ($c === null && array_key_exists($numero, self::CAMPOS)) {
+                continue;
+            }
             foreach (ValidadorDeCampo::conferir($campo, $valores[$numero]) as $problema) {
                 $this->recusa($numero, "{$campo->nome}: {$problema}.");
             }

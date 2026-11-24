@@ -162,6 +162,7 @@
                         <th scope="col" class="numero">Alunos prontos para o Educacenso</th>
                         <th scope="col" class="numero">Servidores</th>
                         <th scope="col">Escola pronta para o Educacenso</th>
+                        <th scope="col">Montagem</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -200,6 +201,7 @@
                             <td>
                                 <a href="{{ route('school.census.school.edit', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}" @if (! $schoolReadiness->get($linha['school']->id, false)) class="censo-atencao" @endif>{{ $schoolReadiness->get($linha['school']->id, false) ? 'Sim' : 'Não - conferir' }}</a>
                             </td>
+                            <td><a href="{{ route('census.educacenso.school', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}">Educacenso</a></td>
                         </tr>
                     @endforeach
                 </tbody>
