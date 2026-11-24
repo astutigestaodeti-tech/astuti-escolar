@@ -35,6 +35,13 @@ class StudentCensus extends TenantModel
 
     public const BRASIL = 76;
 
+    /** Escolarização fora da escola (registro 60, campo 21). */
+    public const OTHER_SCHOOLING_SPACES = [
+        1 => 'Não recebe escolarização fora da escola',
+        2 => 'Em hospital',
+        3 => 'Em domicílio',
+    ];
+
     protected $table = 'student_census';
 
     protected $primaryKey = 'student_id';

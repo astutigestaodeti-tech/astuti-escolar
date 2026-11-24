@@ -198,6 +198,23 @@
             </div>
         </section>
 
+        <section class="folha" aria-labelledby="titulo-escolarizacao">
+            <div class="folha-cabecalho"><div><h2 id="titulo-escolarizacao">Escolarização fora da escola</h2><p>Para aluno em classe hospitalar ou atendimento domiciliar nesta matrícula.</p></div></div>
+            <div class="folha-corpo">
+                <div class="formulario-grade">
+                    <div class="formulario-campo">
+                        <label class="rotulo" for="escolarizacao">Recebe escolarização em outro espaço</label>
+                        <select class="entrada" id="escolarizacao" name="escolarizacao">
+                            <option value="">Não informado</option>
+                            @foreach (\App\Models\Tenant\StudentCensus::OTHER_SCHOOLING_SPACES as $valor => $rotulo)
+                                <option value="{{ $valor }}" @selected((string) old('escolarizacao', $otherSchoolingSpace ?? ($primeiro ? 1 : '')) === (string) $valor)>{{ $rotulo }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <div class="formulario-acoes censo-secao">
             <p class="texto-ajuda">Gravar pede o código do segundo fator. A auditoria registra quais campos mudaram, nunca o conteúdo.</p>
             <button class="botao" type="submit">Salvar dados do Censo</button>

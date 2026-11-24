@@ -20,6 +20,7 @@ class StudentEnrollment extends TenantModel
         'school_year_id',
         'school_class_id',
         'inep_stage_code',
+        'other_schooling_space',
         'status',
         'started_at',
         'ended_at',
@@ -31,7 +32,7 @@ class StudentEnrollment extends TenantModel
 
     protected function casts(): array
     {
-        return ['inep_stage_code' => 'integer', 'started_at' => 'date', 'ended_at' => 'date', 'transport_adapted_vehicle' => 'boolean'];
+        return ['inep_stage_code' => 'integer', 'other_schooling_space' => 'integer', 'started_at' => 'date', 'ended_at' => 'date', 'transport_adapted_vehicle' => 'boolean'];
     }
 
     public function student(): BelongsTo

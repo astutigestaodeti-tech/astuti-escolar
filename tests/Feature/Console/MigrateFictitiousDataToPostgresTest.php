@@ -106,7 +106,7 @@ class MigrateFictitiousDataToPostgresTest extends TestCase
                         'students' => ['ra', 'address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state', 'postal_code', 'residence_zone', 'social_name', 'sex', 'race_color', 'nationality', 'birthplace_city', 'birthplace_state', 'cpf', 'photo_path', 'photo_updated_at', 'rg_number', 'rg_issuer', 'rg_state', 'rg_issued_at', 'birth_certificate', 'latitude', 'longitude', 'geo_source', 'geo_updated_at'],
                         'schools' => ['latitude', 'longitude', 'geo_source', 'geo_updated_at', 'postal_code', 'address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state'],
                         'school_classes' => ['daily_hours'],
-                        'student_enrollments' => ['school_class_id', 'inep_stage_code', 'transport_status', 'transport_route', 'transport_stop', 'transport_adapted_vehicle'],
+                        'student_enrollments' => ['school_class_id', 'inep_stage_code', 'other_schooling_space', 'transport_status', 'transport_route', 'transport_stop', 'transport_adapted_vehicle'],
                         'users' => self::TARGET_ONLY_COLUMNS['users'],
                         default => [],
                     },
