@@ -1,0 +1,12 @@
+.pagina-renovacao .folha + .folha, .pagina-renovacao .folha + form { margin-top: 20px; }
+.renovacao-rolagem { overflow-x: auto; max-width: 100%; }
+.renovacao-tabela { width: 100%; min-width: 680px; }
+.renovacao-tabela th, .renovacao-tabela td { white-space: normal; word-break: normal; overflow-wrap: normal; vertical-align: middle; }
+.renovacao-tabela th:first-child { min-width: 175px; }
+.renovacao-tabela .entrada { width: 100%; min-width: 240px; }
+.renovacao-aviso { color: var(--texto); font-weight: 700; }
+.renovacao-capacidade { overflow-wrap: anywhere; }
+.renovacao-capacidade + .renovacao-capacidade { margin-top: 12px; }
+@media print {
+    .pagina-renovacao .conteudo { display: none !important; }
+}

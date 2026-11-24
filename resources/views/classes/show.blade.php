@@ -45,6 +45,9 @@
                 @endif
                 <a class="botao secundario" href="{{ route('school.classes.year-end.minutes', $parametrosTurma) }}">Ata de resultados finais</a>
             @endif
+            @if ($canRenew)
+                <a class="botao secundario" href="{{ route('school.classes.renewal.index', $parametrosTurma) }}">Renovar matrículas para {{ $class->schoolYear->year + 1 }}</a>
+            @endif
             <a class="botao secundario" href="{{ route('school.classes.index', $parametrosEscola) }}">Todas as turmas</a>
         </div>
     </div>

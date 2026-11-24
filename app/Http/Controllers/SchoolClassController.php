@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Attendance\AttendanceSummary;
 use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\ClassTeacherAssignment;
+use App\Models\Tenant\ClassYearClosure;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
@@ -66,6 +67,7 @@ class SchoolClassController extends Controller
             ->orderBy('name')
             ->get();
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
+        $canRenew = $canManage && ClassYearClosure::query()->whereKey($class->id)->whereNotNull('closed_at')->exists();
 
         return view('classes.index', compact('municipality', 'school', 'classes', 'canManage'));
     }
@@ -143,7 +145,7 @@ class SchoolClassController extends Controller
         return view('classes.show', compact(
             'municipality', 'school', 'class', 'roster', 'cutoff',
             'occupied', 'capacity', 'occupancyPercentage', 'visualPercentage', 'aboveCapacity',
-            'canManage', 'todaySessionExists', 'previousDates', 'assignments', 'availableTeachers',
+            'canManage', 'canRenew', 'todaySessionExists', 'previousDates', 'assignments', 'availableTeachers',
         ));
     }
 
