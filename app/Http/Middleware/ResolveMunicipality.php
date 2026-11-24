@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Auth\SchoolAccess;
 use App\Models\Platform\Municipality;
+use App\Multiprofessional\TeamAccess;
 use App\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -25,7 +26,10 @@ class ResolveMunicipality
 
         $user = $request->user();
 
-        if ($user === null || $this->access->hasMunicipalAccess($user, $municipality) === false) {
+        // A equipe entra somente nas rotas próprias. Não ganha escopo nas
+        // fichas escolares, nos módulos de gestão ou nas demais rotas.
+        if ($user === null || (! $this->access->hasMunicipalAccess($user, $municipality)
+            && ! ($request->routeIs('team.*') && app(TeamAccess::class)->isTeam($user, $municipality)))) {
             abort(403);
         }
 

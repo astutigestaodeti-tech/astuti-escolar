@@ -14,6 +14,7 @@ use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\StudentEnrollment;
+use App\Multiprofessional\TeamAccess;
 use App\Support\Qr\VerificationQrCode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -129,9 +130,11 @@ class ActiveSearchController extends Controller
         $contacts = $case ? ActiveSearchContact::query()->where('active_search_case_id', $case->id)->orderBy('contact_date')->orderBy('created_at')->get() : collect();
         $documents = $case ? IssuedDocument::query()->where('kind', 'active_search_referral')->where('active_search_case_id', $case->id)->orderByDesc('issued_at')->get() : collect();
         $summary = $this->alerts->summaries($school, $entry->schoolYear, collect([$entry]), today())[$entry->id] ?? null;
+        $canReferTeam = $entry->status === 'active' && $case !== null && in_array($case->status, ['open', 'referred'], true)
+            && app(TeamAccess::class)->isDirector($request->user(), $municipality, $school);
         app(AuditTrail::class)->record('tenant', 'active_search.case.viewed', ActiveSearchCase::class, $case?->id);
 
-        return response()->view('active-search.detail', compact('municipality', 'school', 'entry', 'case', 'contacts', 'documents', 'summary'))
+        return response()->view('active-search.detail', compact('municipality', 'school', 'entry', 'case', 'contacts', 'documents', 'summary', 'canReferTeam'))
             ->header('Cache-Control', 'no-store, private');
     }
 

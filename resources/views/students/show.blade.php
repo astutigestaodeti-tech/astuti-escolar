@@ -150,6 +150,7 @@
 
         @include('health.panel')
         @include('special-education.panel')
+        @include('multiprofessional.student-panel')
         @include('pickups.panel')
         </div>
 

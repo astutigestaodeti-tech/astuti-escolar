@@ -22,6 +22,8 @@ use App\Http\Controllers\IdentificationPhotoController;
 use App\Http\Controllers\InstitutionProfileController;
 use App\Http\Controllers\LiteracyController;
 use App\Http\Controllers\MonthlySecretariatReportController;
+use App\Http\Controllers\MultiprofessionalController;
+use App\Http\Controllers\MultiprofessionalIndicatorsController;
 use App\Http\Controllers\NetworkPanelController;
 use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\PublicDocumentVerificationController;
@@ -111,6 +113,27 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
     Route::get('/relatorio-mensal-secretaria', [MonthlySecretariatReportController::class, 'index'])->name('secretariat.monthly.index');
+    Route::get('/equipe-multiprofissional/indicadores', [MultiprofessionalIndicatorsController::class, 'index'])->name('team.indicators');
+    Route::get('/equipe-multiprofissional', [MultiprofessionalController::class, 'index'])
+        ->middleware(RequireConfirmedTwoFactor::class)->name('team.index');
+    Route::get('/equipe-multiprofissional/{pedido}', [MultiprofessionalController::class, 'show'])
+        ->whereUuid('pedido')->middleware(RequireConfirmedTwoFactor::class)->name('team.show');
+    Route::get('/equipe-multiprofissional/{pedido}/encaminhamentos/{encaminhamento}', [MultiprofessionalController::class, 'document'])
+        ->whereUuid('pedido')->whereUuid('encaminhamento')->middleware(RequireConfirmedTwoFactor::class)->name('team.document');
+    Route::middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->group(function (): void {
+        Route::post('/escolas/{escola}/equipe-multiprofissional/{matricula}', [MultiprofessionalController::class, 'store'])
+            ->whereUuid('escola')->whereUuid('matricula')->name('school.team.store');
+        Route::post('/escolas/{escola}/busca-ativa/{matricula}/equipe-multiprofissional', [MultiprofessionalController::class, 'fromActiveSearch'])
+            ->whereUuid('escola')->whereUuid('matricula')->name('school.team.active-search');
+        Route::post('/equipe-multiprofissional/{pedido}/assumir', [MultiprofessionalController::class, 'claim'])->whereUuid('pedido')->name('team.claim');
+        Route::post('/equipe-multiprofissional/{pedido}/agendar', [MultiprofessionalController::class, 'schedule'])->whereUuid('pedido')->name('team.schedule');
+        Route::post('/equipe-multiprofissional/{pedido}/atendimento', [MultiprofessionalController::class, 'attend'])->whereUuid('pedido')->name('team.attend');
+        Route::post('/equipe-multiprofissional/{pedido}/devolutiva', [MultiprofessionalController::class, 'guidance'])->whereUuid('pedido')->name('team.guidance');
+        Route::post('/equipe-multiprofissional/{pedido}/encaminhar', [MultiprofessionalController::class, 'refer'])->whereUuid('pedido')->name('team.refer');
+        Route::post('/equipe-multiprofissional/{pedido}/encaminhamentos/{encaminhamento}/retorno', [MultiprofessionalController::class, 'recordReturn'])
+            ->whereUuid('pedido')->whereUuid('encaminhamento')->name('team.return');
+        Route::post('/equipe-multiprofissional/{pedido}/encerrar', [MultiprofessionalController::class, 'close'])->whereUuid('pedido')->name('team.close');
+    });
     // Dados da Prefeitura: timbre e rodapé de todos os documentos emitidos.
     Route::get('/dados-da-prefeitura', [InstitutionProfileController::class, 'edit'])->name('institution.edit');
     Route::post('/dados-da-prefeitura', [InstitutionProfileController::class, 'update'])
