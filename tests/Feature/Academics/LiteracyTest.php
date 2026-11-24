@@ -29,6 +29,8 @@ class LiteracyTest extends TwoMunicipalityTestCase
 
     private string $otherEnrollmentId;
 
+    private string $secondEnrollmentId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,7 +53,7 @@ class LiteracyTest extends TwoMunicipalityTestCase
                 'modality' => 'Regular', 'shift' => 'Manhã', 'status' => 'active',
             ]);
             $this->enrollmentId = $this->enroll($class, 'Estudante Fictício Sondagem');
-            $this->enroll($class, 'Estudante Fictício Sem Avaliação');
+            $this->secondEnrollmentId = $this->enroll($class, 'Estudante Fictício Sem Avaliação');
             $this->otherEnrollmentId = $this->enroll($other, 'Estudante Fictício Outra Escola');
             $teacher = StaffMember::query()->create([
                 'id' => (string) Str::uuid(), 'school_id' => self::ESCOLA_A1,
@@ -163,5 +165,32 @@ class LiteracyTest extends TwoMunicipalityTestCase
         });
         $this->post($this->url(), [...$this->payload(), 'escrita' => 'alphabetic', 'motivo' => 'Correção pedagógica fictícia'])->assertSessionHasErrors('bimestre');
         $this->assertSame(1, $this->tenant(fn (): int => LiteracyAssessment::query()->count()));
+    }
+
+    public function test_turma_inteira_e_salva_de_uma_vez_e_linhas_vazias_ficam_como_estao(): void
+    {
+        $this->login('teacher', [self::ESCOLA_A1], 'sondagem@example.invalid');
+        $this->get($this->url())->assertOk()->assertSee('Salvar sondagem da turma')->assertSee('name="sondagem['.$this->enrollmentId.'][escrita]"', false);
+
+        // Linha com só um dos dois campos é recusada; aluno de outra escola não entra.
+        $this->post($this->url(), ['bimestre' => 4, 'sondagem' => [$this->enrollmentId => ['escrita' => 'alphabetic', 'leitura' => '']]])->assertSessionHasErrors('sondagem');
+        $this->post($this->url(), ['bimestre' => 4, 'sondagem' => [$this->otherEnrollmentId => ['escrita' => 'alphabetic', 'leitura' => 'words']]])->assertNotFound();
+
+        $this->post($this->url(), ['bimestre' => 4, 'sondagem' => [
+            $this->enrollmentId => ['escrita' => 'alphabetic', 'leitura' => 'fluent_texts'],
+            $this->secondEnrollmentId => ['escrita' => 'syllabic_sound', 'leitura' => 'words'],
+        ]])->assertRedirect()->assertSessionHas('status', 'Sondagem registrada para 2 alunos.');
+
+        // Reenviar com um aluno em branco não apaga nem altera o que já foi lançado.
+        $this->post($this->url(), ['bimestre' => 4, 'sondagem' => [
+            $this->enrollmentId => ['escrita' => '', 'leitura' => ''],
+            $this->secondEnrollmentId => ['escrita' => 'syllabic_sound', 'leitura' => 'words'],
+        ]])->assertRedirect()->assertSessionHas('status', 'Nada mudou na sondagem.');
+
+        $this->tenant(function (): void {
+            $this->assertSame(2, LiteracyAssessment::query()->where('term', 4)->count());
+            $this->assertSame('alphabetic', LiteracyAssessment::query()->where('student_enrollment_id', $this->enrollmentId)->value('writing'));
+            $this->assertSame(2, AuditLog::query()->where('action', 'literacy.assessment.created')->count());
+        });
     }
 }

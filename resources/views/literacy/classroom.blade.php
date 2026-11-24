@@ -33,29 +33,42 @@
     <section class="folha">
         <div class="folha-cabecalho"><div><h2>Registros do {{ $term }}º bimestre</h2><p>Informe os níveis observados na escrita e na leitura. Sem registro permanece sem sondagem.</p></div></div>
         <div class="folha-corpo">
-            @forelse ($enrollments as $entry)
-                @php($record = $records->get($entry->id))
-                <div class="alfabetizacao-aluno">
-                    <h3>{{ $entry->student->full_name }}</h3>
-                    @if ($canWrite)
-                        <form method="POST" action="{{ route('school.literacy.save', $params) }}" class="alfabetizacao-form">
-                            @csrf
-                            <input type="hidden" name="bimestre" value="{{ $term }}">
-                            <input type="hidden" name="matricula" value="{{ $entry->id }}">
-                            <label>Escrita <select class="entrada" name="escrita" required><option value="">Selecione</option>@foreach($writing as $key => $label)<option value="{{ $key }}" @selected($record?->writing === $key)>{{ $label }}</option>@endforeach</select></label>
-                            <label>Leitura <select class="entrada" name="leitura" required><option value="">Selecione</option>@foreach($reading as $key => $label)<option value="{{ $key }}" @selected($record?->reading === $key)>{{ $label }}</option>@endforeach</select></label>
-                            @if ($periodClosed)<label>Justificativa da correção <input class="entrada" name="motivo" minlength="10" maxlength="500" required></label>@endif
-                            <button type="submit" class="botao secundario">Salvar sondagem</button>
-                        </form>
-                    @elseif ($record)
-                        <p>Escrita: {{ $writing[$record->writing] }}. Leitura: {{ $reading[$record->reading] }}.</p>
-                    @else
-                        <p>Sem sondagem.</p>
-                    @endif
-                </div>
-            @empty
+            @if ($enrollments->isEmpty())
                 <p>Nenhuma matrícula ativa nesta turma.</p>
-            @endforelse
+            @elseif ($canWrite)
+                <form method="POST" action="{{ route('school.literacy.save', $params) }}">
+                    @csrf
+                    <input type="hidden" name="bimestre" value="{{ $term }}">
+                    <div class="alfabetizacao-rolagem">
+                        <table class="tabela alfabetizacao-tabela alfabetizacao-lancamento">
+                            <thead><tr><th scope="col">Aluno</th><th scope="col">Escrita</th><th scope="col">Leitura</th></tr></thead>
+                            <tbody>
+                                @foreach ($enrollments as $entry)
+                                    @php($record = $records->get($entry->id))
+                                    <tr>
+                                        <th scope="row">{{ $entry->student->full_name }}</th>
+                                        <td><select class="entrada" name="sondagem[{{ $entry->id }}][escrita]" aria-label="Escrita de {{ $entry->student->full_name }}"><option value="">Sem sondagem</option>@foreach($writing as $key => $label)<option value="{{ $key }}" @selected(old('sondagem.'.$entry->id.'.escrita', $record?->writing) === $key)>{{ $label }}</option>@endforeach</select></td>
+                                        <td><select class="entrada" name="sondagem[{{ $entry->id }}][leitura]" aria-label="Leitura de {{ $entry->student->full_name }}"><option value="">Sem sondagem</option>@foreach($reading as $key => $label)<option value="{{ $key }}" @selected(old('sondagem.'.$entry->id.'.leitura', $record?->reading) === $key)>{{ $label }}</option>@endforeach</select></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alfabetizacao-form">
+                        @if ($periodClosed)<label>Justificativa da correção <input class="entrada" name="motivo" minlength="10" maxlength="500" required></label>@endif
+                        <button type="submit" class="botao">Salvar sondagem da turma</button>
+                    </div>
+                    <p class="texto-ajuda">Preencha os alunos avaliados e salve uma vez só. Quem ficar em "Sem sondagem" não é alterado.</p>
+                </form>
+            @else
+                @foreach ($enrollments as $entry)
+                    @php($record = $records->get($entry->id))
+                    <div class="alfabetizacao-aluno">
+                        <h3>{{ $entry->student->full_name }}</h3>
+                        <p>{{ $record ? 'Escrita: '.$writing[$record->writing].'. Leitura: '.$reading[$record->reading].'.' : 'Sem sondagem.' }}</p>
+                    </div>
+                @endforeach
+            @endif
         </div>
     </section>
     @include('literacy.distribution')

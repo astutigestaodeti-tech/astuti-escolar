@@ -13,3 +13,7 @@
     .pagina-alfabetizacao .alfabetizacao-form .botao { width: 100%; }
     .pagina-alfabetizacao .alfabetizacao-form label { flex-basis: 100%; }
 }
+.pagina-alfabetizacao .alfabetizacao-lancamento td { min-width: 220px; }
+.pagina-alfabetizacao .alfabetizacao-lancamento .entrada { width: 100%; }
+.pagina-alfabetizacao .alfabetizacao-tabela.alfabetizacao-lancamento th, .pagina-alfabetizacao .alfabetizacao-tabela.alfabetizacao-lancamento td { vertical-align: middle; }
+.pagina-alfabetizacao .alfabetizacao-rolagem + .alfabetizacao-form { margin-top: 18px; }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Academics;
 
+use App\Academics\YearEndResults;
 use App\Models\Tenant\AcademicPeriod;
 use App\Models\Tenant\AttendanceMark;
 use App\Models\Tenant\AttendanceSession;
@@ -172,7 +173,7 @@ class YearEndResultsTest extends TwoMunicipalityTestCase
         ])->assertRedirect();
         $this->tenant(function () use ($before): void {
             $class = SchoolClass::query()->with('schoolYear')->findOrFail($this->classId);
-            $data = app(\App\Academics\YearEndResults::class)->forClass($class);
+            $data = app(YearEndResults::class)->forClass($class);
             $row = $data['records']->first(fn (array $row): bool => $row['enrollment']->id === $this->enrollments['bruno']);
             $this->assertSame('acompanhado', $row['suggestion']);
             $this->assertSame('retido', $row['confirmed']->result);

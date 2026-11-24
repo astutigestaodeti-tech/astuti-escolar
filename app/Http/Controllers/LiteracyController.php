@@ -121,16 +121,40 @@ class LiteracyController extends Controller
     {
         [$municipality, $school, $class] = $this->authorizedClass($request, $escola, $turma);
         abort_unless($this->access->canWrite($request->user(), $municipality, $school, $class), 403);
+        $writing = array_keys(LiteracyAssessment::WRITING);
+        $reading = array_keys(LiteracyAssessment::READING);
         $input = $request->validate([
             'bimestre' => ['required', 'integer', 'between:1,4'],
-            'matricula' => ['required', 'uuid'],
-            'escrita' => ['required', Rule::in(array_keys(LiteracyAssessment::WRITING))],
-            'leitura' => ['required', Rule::in(array_keys(LiteracyAssessment::READING))],
             'motivo' => ['nullable', 'string', 'min:10', 'max:500'],
+            // Turma inteira de uma vez (tela da turma) ou um aluno só.
+            'sondagem' => ['sometimes', 'array', 'max:80'],
+            'sondagem.*.escrita' => ['nullable', Rule::in($writing)],
+            'sondagem.*.leitura' => ['nullable', Rule::in($reading)],
+            'matricula' => ['exclude_with:sondagem', 'required', 'uuid'],
+            'escrita' => ['exclude_with:sondagem', 'required', Rule::in($writing)],
+            'leitura' => ['exclude_with:sondagem', 'required', Rule::in($reading)],
         ]);
+        $items = [];
+        if (isset($input['sondagem'])) {
+            foreach ($input['sondagem'] as $enrollmentId => $row) {
+                $values = [$row['escrita'] ?? null, $row['leitura'] ?? null];
+                if ($values === [null, null]) {
+                    continue;
+                }
+                if (! Str::isUuid((string) $enrollmentId) || in_array(null, $values, true)) {
+                    throw ValidationException::withMessages(['sondagem' => 'Para cada aluno, informe a escrita e a leitura, ou deixe as duas em branco.']);
+                }
+                $items[(string) $enrollmentId] = ['writing' => $values[0], 'reading' => $values[1]];
+            }
+            if ($items === []) {
+                throw ValidationException::withMessages(['sondagem' => 'Informe a sondagem de pelo menos um aluno.']);
+            }
+        } else {
+            $items[$input['matricula']] = ['writing' => $input['escrita'], 'reading' => $input['leitura']];
+        }
         $term = (int) $input['bimestre'];
         $management = $this->access->isManagement($request->user(), $municipality, $school);
-        DB::connection('tenant')->transaction(function () use ($request, $school, $class, $input, $term, $management): void {
+        $changed = DB::connection('tenant')->transaction(function () use ($request, $school, $class, $input, $items, $term, $management): int {
             // Mesma ordem de bloqueios da gravação de notas: período e turma.
             $period = $this->period($class, $term, true);
             $closure = ClassYearClosure::query()->lockForUpdate()->findOrFail($class->id);
@@ -141,32 +165,45 @@ class LiteracyController extends Controller
                 throw ValidationException::withMessages(['motivo' => 'Bimestre fechado: somente a gestão pode corrigir com justificativa.']);
             }
 
-            $entry = StudentEnrollment::query()->where('school_id', $school->id)
+            $entries = StudentEnrollment::query()->where('school_id', $school->id)
                 ->where('school_year_id', $class->school_year_id)->where('school_class_id', $class->id)
                 ->where('status', 'active')->whereHas('student', fn ($query) => $query->whereNull('deleted_at'))
-                ->lockForUpdate()->findOrFail($input['matricula']);
-            $record = LiteracyAssessment::query()->where('school_class_id', $class->id)
-                ->where('student_enrollment_id', $entry->id)->where('term', $term)->lockForUpdate()->first();
-            $before = $record?->only(['writing', 'reading']);
-            $values = ['writing' => $input['escrita'], 'reading' => $input['leitura']];
-            if ($before === $values) {
-                return;
-            }
-            $record ??= new LiteracyAssessment([
-                'id' => (string) Str::uuid(), 'school_class_id' => $class->id,
-                'student_enrollment_id' => $entry->id, 'term' => $term, 'recorded_by' => $request->user()->id,
-            ]);
-            $record->fill([...$values, 'updated_by' => $request->user()->id])->save();
-            app(AuditTrail::class)->record('tenant', $before === null ? 'literacy.assessment.created' : 'literacy.assessment.updated',
-                LiteracyAssessment::class, $record->id, $before, [
-                    ...$record->only(['school_class_id', 'student_enrollment_id', 'term', 'writing', 'reading', 'updated_by']),
-                    'change_reason' => $period?->closed_at !== null ? trim($input['motivo']) : null,
+                ->whereIn('id', array_keys($items))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            abort_if($entries->count() !== count($items), 404);
+            $records = LiteracyAssessment::query()->where('school_class_id', $class->id)
+                ->whereIn('student_enrollment_id', array_keys($items))->where('term', $term)
+                ->lockForUpdate()->get()->keyBy('student_enrollment_id');
+
+            $changed = 0;
+            foreach ($items as $enrollmentId => $values) {
+                $record = $records->get($enrollmentId);
+                $before = $record?->only(['writing', 'reading']);
+                if ($before === $values) {
+                    continue;
+                }
+                $record ??= new LiteracyAssessment([
+                    'id' => (string) Str::uuid(), 'school_class_id' => $class->id,
+                    'student_enrollment_id' => $enrollmentId, 'term' => $term, 'recorded_by' => $request->user()->id,
                 ]);
+                $record->fill([...$values, 'updated_by' => $request->user()->id])->save();
+                app(AuditTrail::class)->record('tenant', $before === null ? 'literacy.assessment.created' : 'literacy.assessment.updated',
+                    LiteracyAssessment::class, $record->id, $before, [
+                        ...$record->only(['school_class_id', 'student_enrollment_id', 'term', 'writing', 'reading', 'updated_by']),
+                        'change_reason' => $period?->closed_at !== null ? trim($input['motivo']) : null,
+                    ]);
+                $changed++;
+            }
+
+            return $changed;
         });
 
         return redirect()->route('school.literacy.classroom', [
             'municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $class->id, 'bimestre' => $term,
-        ])->with('status', 'Sondagem registrada.');
+        ])->with('status', match (true) {
+            $changed === 0 => 'Nada mudou na sondagem.',
+            $changed === 1 => 'Sondagem registrada para 1 aluno.',
+            default => "Sondagem registrada para {$changed} alunos.",
+        });
     }
 
     public function settings(Request $request, string $municipio): RedirectResponse
