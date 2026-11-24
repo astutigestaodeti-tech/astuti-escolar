@@ -10,6 +10,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Security\TwoFactorSession;
+use App\Students\DuplicateStudents;
 use App\Validation\Cpf;
 use App\Validation\IdentityDocuments;
 use App\Validation\SedRa;
@@ -162,15 +163,25 @@ class StudentRecordController extends Controller
 
         // Nome e nascimento iguais podem ser a mesma criança: nunca fundir
         // automaticamente, mas exigir que a pessoa confirme conscientemente.
-        if (! $request->boolean('confirmar_duplicidade') && $this->possibleDuplicate($data['full_name'], $data['birth_date'] ?? null)) {
-            return back()->withInput()->with('possivel_duplicidade', true)->withErrors([
-                'full_name' => 'Já existe no município um aluno com o mesmo nome'.(empty($data['birth_date']) ? '' : ' e a mesma data de nascimento')
-                    .'. Confira antes de continuar. Se for outra pessoa, marque a confirmação e salve de novo.',
-            ]);
+        $duplicateMessage = 'Já existe no município um aluno com o mesmo nome'.(empty($data['birth_date']) ? '' : ' e data de nascimento igual ou em branco')
+            .'. Confira antes de continuar. Se for outra pessoa, marque a confirmação e salve de novo.';
+        $confirmed = $request->boolean('confirmar_duplicidade');
+        if (! $confirmed && DuplicateStudents::exists($data['full_name'], $data['birth_date'] ?? null)) {
+            return back()->withInput()->with('possivel_duplicidade', true)->withErrors(['full_name' => $duplicateMessage]);
         }
 
         try {
-            $student = DB::connection('tenant')->transaction(function () use ($data, $school, $year): Student {
+            $student = DB::connection('tenant')->transaction(function () use ($data, $school, $year, $confirmed, $duplicateMessage): Student {
+                // Clique duplo ou duas abas: a trava por nome faz o segundo envio esperar o primeiro
+                // e encontrá-lo. Mesmo com a confirmação de homônimo, o mesmo aluno não entra duas
+                // vezes na mesma escola e ano em menos de 10 minutos.
+                DuplicateStudents::lock($data['full_name']);
+                if (! $confirmed && DuplicateStudents::exists($data['full_name'], $data['birth_date'] ?? null)) {
+                    throw ValidationException::withMessages(['full_name' => $duplicateMessage]);
+                }
+                if ($this->sameSchoolJustNow($data['full_name'], $data['birth_date'] ?? null, $school->id, $year->id)) {
+                    throw ValidationException::withMessages(['full_name' => 'Este aluno acabou de ser cadastrado nesta escola (o formulário foi enviado duas vezes). Abra a lista de alunos para conferir.']);
+                }
                 $student = Student::query()->create([
                     'id' => (string) Str::uuid(),
                     'full_name' => $data['full_name'],
@@ -580,14 +591,13 @@ class StudentRecordController extends Controller
         return is_string($name) ? preg_replace('/\s+/u', ' ', trim($name)) : $name;
     }
 
-    private function possibleDuplicate(string $name, ?string $birthDate): bool
+    private function sameSchoolJustNow(string $name, ?string $birthDate, string $schoolId, string $yearId): bool
     {
-        $query = Student::query()->whereRaw('public.f_unaccent(lower(full_name)) = public.f_unaccent(lower(?))', [$name]);
-
-        if ($birthDate !== null) {
-            $query->whereDate('birth_date', $birthDate);
-        }
-
-        return $query->exists();
+        return StudentEnrollment::query()->where('school_id', $schoolId)->where('school_year_id', $yearId)
+            ->where('created_at', '>=', now()->subMinutes(10))
+            ->whereIn('student_id', Student::query()->select('id')
+                ->whereRaw(DuplicateStudents::NAME_KEY." = regexp_replace(public.f_unaccent(lower(btrim(?))), '\\s+', ' ', 'g')", [$name])
+                ->when($birthDate !== null, fn ($query) => $query->where(fn ($q) => $q->whereNull('birth_date')->orWhereDate('birth_date', $birthDate))))
+            ->exists();
     }
 }

@@ -76,6 +76,9 @@ main() {
     php artisan astuti:demo-preparar || erro 'falha ao atualizar a estrutura. Nada mais foi feito; mande a mensagem acima para o Claude.'
     php artisan view:clear >/dev/null
 
+    passo 'CADASTROS DE ALUNOS REPETIDOS (so conferencia, nada e alterado)'
+    php artisan astuti:alunos-repetidos || printf 'Aviso: a conferencia de repetidos nao rodou; o sistema segue normal.\n'
+
     passo 'PERMISSOES DO SITE (pode pedir a sua senha do Debian)'
     sudo chgrp -R www-data app bootstrap config database lang public resources routes vendor storage
     sudo chmod -R g+rX app bootstrap config database lang public resources routes vendor

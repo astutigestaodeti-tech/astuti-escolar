@@ -248,8 +248,27 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
             ->assertSessionHas('possivel_duplicidade', true);
         $this->assertSame(1, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
 
+        // Logo em seguida, mesmo confirmando, é envio repetido do mesmo formulário: bloqueia.
+        $this->post($this->url(), $this->dados(['full_name' => 'joao FICTICIO repetido', 'confirmar_duplicidade' => '1']))
+            ->assertSessionHasErrors(['full_name' => 'Este aluno acabou de ser cadastrado nesta escola (o formulário foi enviado duas vezes). Abra a lista de alunos para conferir.']);
+        $this->assertSame(1, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+
+        // Depois, a secretaria pode confirmar conscientemente que é outra pessoa.
+        $this->travel(11)->minutes();
         $this->post($this->url(), $this->dados(['full_name' => 'joao FICTICIO repetido', 'confirmar_duplicidade' => '1']))->assertRedirect();
         $this->assertSame(2, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+    }
+
+    public function test_cadastro_sem_nascimento_tambem_conta_como_possivel_repeticao(): void
+    {
+        $user = $this->conta('duplicado-sem-data@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->post($this->url(), $this->dados(['full_name' => 'Rita Fictícia Sem Data', 'birth_date' => null]))->assertRedirect();
+        // O cadastro anterior não tem data: com data agora, ainda pode ser a mesma criança.
+        $this->post($this->url(), $this->dados(['full_name' => 'Rita Ficticia sem data']))
+            ->assertSessionHasErrors('full_name')->assertSessionHas('possivel_duplicidade', true);
+        $this->assertSame(1, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
     }
 
     public function test_edicao_auditada_com_antes_e_depois(): void
