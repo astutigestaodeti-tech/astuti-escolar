@@ -79,7 +79,11 @@ class ActiveSearchAlerts
                     continue;
                 }
                 $mark = $marks->get($key);
-                // Sem chamada não se presume falta. Justificativa interrompe a sequência.
+                // Sem chamada não se presume falta nem presença: o dia não conta e
+                // não interrompe a sequência. Presença ou justificativa interrompem.
+                if ($mark === null) {
+                    continue;
+                }
                 $streak = $mark === 'absent' ? $streak + 1 : 0;
                 $absences += $mark === 'absent' ? 1 : 0;
                 $justified += $mark === 'justified' ? 1 : 0;
