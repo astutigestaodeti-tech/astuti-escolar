@@ -52,6 +52,26 @@ class SchoolCalendar
         return $count;
     }
 
+    /** Último dia letivo já transcorrido; hoje ainda pode receber chamada. */
+    public function lastSchoolDay(SchoolYear $year, Collection $entries, Carbon $day): ?Carbon
+    {
+        if ($year->start_date === null || $year->end_date === null) {
+            return null;
+        }
+
+        $kindsByDate = $entries->groupBy(fn (SchoolCalendarDay $entry): string => $entry->date->toDateString());
+        $date = $day->copy()->startOfDay()->subDay()->min($year->end_date->copy());
+        while ($date->gte($year->start_date)) {
+            $kinds = $kindsByDate->get($date->toDateString(), collect())->pluck('kind');
+            if ($kinds->intersect(self::NON_SCHOOL_KINDS)->isEmpty() && ($date->isWeekday() || $kinds->contains('extra_school_day'))) {
+                return $date;
+            }
+            $date->subDay();
+        }
+
+        return null;
+    }
+
     /** Retorna a interrupção explícita aplicável à chamada, sem impedir o registro. */
     public function nonSchoolNotice(string $schoolYearId, string $schoolId, Carbon $date): ?string
     {

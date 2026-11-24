@@ -37,9 +37,16 @@ class GradeAccess
         School $school,
         SchoolClass $class,
     ): bool {
+        return $class->school_id === $school->id
+            && in_array($class->id, $this->assignedClassIds($user, $municipality, $school), true);
+    }
+
+    /** @return list<string> Atribuições vigentes, sem consulta por turma. */
+    public function assignedClassIds(User $user, Municipality $municipality, School $school): array
+    {
         if ($user->status !== 'active' || $municipality->status !== 'active'
             || ! $this->access->maySeeSchool($user, $municipality, $school->id)) {
-            return false;
+            return [];
         }
 
         $teacherMembership = DB::connection('platform')->table('memberships as vinculo')
@@ -52,12 +59,11 @@ class GradeAccess
             ->exists();
 
         if (! $teacherMembership || ! is_string($user->email) || trim($user->email) === '') {
-            return false;
+            return [];
         }
 
         return ClassTeacherAssignment::query()
             ->join('staff_members as servidor', 'servidor.id', '=', 'class_teacher_assignments.staff_member_id')
-            ->where('class_teacher_assignments.school_class_id', $class->id)
             ->where('servidor.school_id', $school->id)
             ->where('servidor.status', 'active')
             ->where('servidor.role', 'teacher')
@@ -68,7 +74,7 @@ class GradeAccess
                 $query->whereNull('class_teacher_assignments.ends_on')
                     ->orWhereDate('class_teacher_assignments.ends_on', '>=', today()->toDateString());
             })
-            ->exists();
+            ->distinct()->pluck('class_teacher_assignments.school_class_id')->all();
     }
 
     public function canWrite(User $user, Municipality $municipality, School $school, SchoolClass $class): bool
