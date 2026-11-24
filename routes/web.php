@@ -25,6 +25,7 @@ use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdentificationPhotoController;
 use App\Http\Controllers\InstitutionProfileController;
+use App\Http\Controllers\LessonRecordController;
 use App\Http\Controllers\LiteracyController;
 use App\Http\Controllers\MonthlySecretariatReportController;
 use App\Http\Controllers\MultiprofessionalController;
@@ -322,6 +323,10 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/turmas/{turma}/professores/{atribuicao}/encerrar', [ClassTeacherAssignmentController::class, 'end'])
         ->whereUuid('escola')->whereUuid('turma')->whereUuid('atribuicao')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.teachers.end');
     // Presença diária: consulta da escola registra hoje; correção histórica requer gestão e 2FA recente.
+    Route::post('/escolas/{escola}/turmas/{turma}/conteudo-da-aula', [LessonRecordController::class, 'store'])
+        ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('school.classes.lessons.store');
+    Route::get('/escolas/{escola}/turmas/{turma}/conteudos-ministrados', [LessonRecordController::class, 'report'])
+        ->whereUuid('escola')->whereUuid('turma')->name('school.classes.lessons.report');
     Route::get('/escolas/{escola}/turmas/{turma}/chamada', [SchoolAttendanceController::class, 'index'])
         ->whereUuid('escola')->whereUuid('turma')->name('school.classes.attendance.index');
     Route::get('/escolas/{escola}/turmas/{turma}/frequencia-mensal', [SchoolMonthlyAttendanceReportController::class, 'index'])
