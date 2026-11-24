@@ -25,6 +25,12 @@ final class Tabelas
     /** @var array<string, int>|null chave "UF|NOME NORMALIZADO" => código */
     private ?array $municipiosPorNome = null;
 
+    /** @var array<int, array<string, string>>|null */
+    private ?array $distritos = null;
+
+    /** @var array<int, array<string, string>>|null */
+    private ?array $orgaosRegionais = null;
+
     /** @var array<int, string>|null */
     private ?array $paises = null;
 
@@ -167,6 +173,37 @@ final class Tabelas
         $this->carregarMunicipios();
 
         return $this->municipiosPorNome[strtoupper(trim($uf)).'|'.self::chaveDeNome($nome)] ?? null;
+    }
+
+    /** @return array<string, string> código de importação => nome do distrito */
+    public function distritos(int $municipio): array
+    {
+        if ($this->distritos === null) {
+            $this->distritos = [];
+            foreach ($this->linhasComCodigo('distritos.csv', 2) as $linha) {
+                if (isset($linha[6]) && preg_match('/^\\d{2}$/', trim($linha[6])) === 1) {
+                    $this->distritos[(int) $linha[2]][trim($linha[6])] = trim($linha[5]);
+                }
+            }
+        }
+
+        return $this->distritos[$municipio] ?? [];
+    }
+
+    /** @return array<string, string> código => nome do órgão regional da UF */
+    public function orgaosRegionais(string $uf): array
+    {
+        if ($this->orgaosRegionais === null) {
+            $this->orgaosRegionais = [];
+            foreach ($this->linhasComCodigo('orgaos_regionais.csv') as $linha) {
+                if (isset($linha[5]) && preg_match('/^[A-Z0-9]{1,5}$/', trim($linha[4])) === 1) {
+                    $this->orgaosRegionais[(int) $linha[0]][trim($linha[4])] = trim($linha[5]);
+                }
+            }
+        }
+        $codigo = array_search(strtoupper(trim($uf)), self::SIGLAS_UF, true);
+
+        return $codigo === false ? [] : ($this->orgaosRegionais[$codigo] ?? []);
     }
 
     /** @return array<int, string> código => nome do país */
