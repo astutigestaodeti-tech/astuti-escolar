@@ -52,7 +52,10 @@ class ActiveSearchController extends Controller
             ];
         });
 
-        return response()->view('active-search.network', compact('municipality', 'years', 'year', 'settings', 'rows'))
+        $returned = $cases->filter(fn (ActiveSearchCase $item): bool => $item->returned_at !== null);
+        $networkAverage = $returned->avg(fn (ActiveSearchCase $item): float => $item->opened_at->diffInDays($item->returned_at));
+
+        return response()->view('active-search.network', compact('municipality', 'years', 'year', 'settings', 'rows', 'networkAverage'))
             ->header('Cache-Control', 'no-store, private');
     }
 
@@ -150,6 +153,7 @@ class ActiveSearchController extends Controller
                 throw ValidationException::withMessages(['situacao' => 'Abra o caso antes de mudar sua situação.']);
             }
             $before = $case?->only(['id', 'status', 'opened_at', 'returned_at']);
+            $previousReason = $case?->reason_category;
             $case ??= new ActiveSearchCase([
                 'id' => (string) Str::uuid(), 'enrollment_id' => $entry->id, 'school_id' => $school->id,
                 'school_year_id' => $entry->school_year_id, 'student_id' => $entry->student_id, 'opened_at' => now(),
@@ -160,7 +164,10 @@ class ActiveSearchController extends Controller
             $case->fill(['status' => $input['situacao'], 'reason_category' => $input['motivo'] ?? null, 'updated_by' => $request->user()->id])->save();
             // O motivo, mesmo em categoria fechada, não é copiado para a auditoria.
             app(AuditTrail::class)->record('tenant', 'active_search.case.saved', ActiveSearchCase::class,
-                $case->id, $before, $case->only(['id', 'status', 'opened_at', 'returned_at', 'updated_by']));
+                $case->id, $before, [
+                    ...$case->only(['id', 'status', 'opened_at', 'returned_at', 'updated_by']),
+                    'reason_changed' => $previousReason !== $case->reason_category,
+                ]);
         });
 
         return $this->backToCase($municipality->slug, $school->id, $matricula)->with('status', 'Ficha atualizada.');

@@ -22,10 +22,10 @@
             <p>Documento de acesso restrito, para avaliação e providências de proteção da frequência escolar. Estudante: <strong>{{ $document->snapshot_student_name }}</strong>. Ano letivo: {{ $document->snapshot_school_year }}. Turma: {{ $document->snapshot_class_name ?? 'Não informada' }}.</p>
             <p>Faltas não justificadas no período: {{ $summary['absences'] }}. Justificadas: {{ $summary['justified'] }}. Sequência de faltas não justificadas: {{ $summary['streak'] }}. Frequência no mês de referência ({{ $summary['month'] ?? 'não informado' }}): {{ $summary['monthly'] === null ? 'Sem chamada' : number_format($summary['monthly'], 2, ',', '.').'%' }}.</p>
             <h3>Providências de contato com a família</h3>
-            <table class="tabela busca-ativa-tabela">
+            <div class="rolagem busca-ativa-rolagem"><table class="tabela busca-ativa-tabela">
                 <thead><tr><th scope="col">Data</th><th scope="col">Meio</th><th scope="col">Resultado</th></tr></thead>
                 <tbody>@foreach($contacts as $contact)<tr><td>{{ \Illuminate\Support\Carbon::parse($contact['date'])->format('d/m/Y') }}</td><td>{{ $channels[$contact['channel']] }}</td><td>{{ $outcomes[$contact['outcome']] }}</td></tr>@endforeach</tbody>
-            </table>
+            </table></div>
             <p>Solicita-se a avaliação das providências pertinentes, sem caracterização automática de abandono ou responsabilização familiar.</p>
             <p class="declaracao-data">{{ $document->issued_at->format('d/m/Y') }}.</p>
             <div class="declaracao-assinatura"><span>Assinatura da direção</span></div>

@@ -40,7 +40,7 @@
                 @foreach($rows as $row)
                     <tr><th scope="row"><a href="{{ route('school.active-search.index', [...$params, 'escola' => $row['school']->id, 'ano' => $year->year]) }}">{{ $row['school']->name }}</a></th><td>{{ $row['open'] }}</td><td>{{ $row['returns'] }}</td><td>{{ $row['average'] === null ? 'Sem retorno' : number_format($row['average'], 1, ',', '.').' dias' }}</td></tr>
                 @endforeach
-                <tr><th scope="row">Total</th><td>{{ $rows->sum('open') }}</td><td>{{ $rows->sum('returns') }}</td><td>Consulte as médias por escola</td></tr>
+                <tr><th scope="row">Total</th><td>{{ $rows->sum('open') }}</td><td>{{ $rows->sum('returns') }}</td><td>{{ $networkAverage === null ? 'Sem retorno' : number_format($networkAverage, 1, ',', '.').' dias' }}</td></tr>
                 </tbody>
             </table></div>
             <div class="folha-corpo"><p class="texto-ajuda">Casos em acompanhamento incluem os abertos e encaminhados. O painel não exibe nomes ou motivos familiares.</p></div>

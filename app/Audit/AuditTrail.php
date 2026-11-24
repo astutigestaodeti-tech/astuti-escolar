@@ -52,7 +52,7 @@ class AuditTrail
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
         ActiveSearchParameter::class => ['school_year_id', 'consecutive_days', 'monthly_percentage', 'updated_by'],
-        ActiveSearchCase::class => ['id', 'status', 'opened_at', 'returned_at', 'updated_by'],
+        ActiveSearchCase::class => ['id', 'status', 'opened_at', 'returned_at', 'updated_by', 'reason_changed'],
         ActiveSearchContact::class => ['id', 'active_search_case_id', 'contact_date', 'recorded_by'],
         SchoolMealMenu::class => ['id', 'school_year_id', 'week_start', 'weekday', 'stage', 'meal_type', 'description', 'updated_by'],
         SchoolMealServing::class => ['id', 'school_id', 'school_year_id', 'meal_date', 'stage', 'meal_type', 'quantity', 'suggested_present', 'confirmed_by', 'confirmed_at'],
