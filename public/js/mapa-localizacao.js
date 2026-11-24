@@ -35,6 +35,11 @@
         const p = L.latLng(ponto);
         campoLat.value = p.lat.toFixed(6);
         campoLon.value = p.lng.toFixed(6);
+        // O botão do Google Maps acompanha o ponto marcado.
+        const google = document.getElementById('abrir-google-maps');
+        if (google) {
+            google.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(campoLat.value + ',' + campoLon.value);
+        }
         if (manual) {
             origem.value = 'mapa';
             situacao.textContent = 'Ponto marcado no mapa. Confira e salve.';
