@@ -96,10 +96,15 @@ class ActiveSearchController extends Controller
         $cases = $year ? ActiveSearchCase::query()->where('school_id', $school->id)
             ->where('school_year_id', $year->id)->get()->keyBy('enrollment_id') : collect();
         $alerted = $enrollments->filter(fn ($entry): bool => $summaries[$entry->id]['alert'] ?? false);
+        $withoutContact = $request->boolean('sem_contato');
+        if ($withoutContact) {
+            $contacted = ActiveSearchContact::query()->whereIn('active_search_case_id', $cases->pluck('id'))->pluck('active_search_case_id')->flip();
+            $alerted = $alerted->filter(fn ($entry): bool => ! $contacted->has($cases->get($entry->id)?->id ?? ''));
+        }
         $caseEnrollments = StudentEnrollment::query()->where('school_id', $school->id)
             ->whereIn('id', $cases->keys())->with(['student', 'schoolClass'])->get()->keyBy('id');
 
-        return response()->view('active-search.school', compact('municipality', 'school', 'years', 'year', 'settings', 'summaries', 'alerted', 'cases', 'caseEnrollments'))
+        return response()->view('active-search.school', compact('municipality', 'school', 'years', 'year', 'settings', 'summaries', 'alerted', 'cases', 'caseEnrollments', 'withoutContact'))
             ->header('Cache-Control', 'no-store, private');
     }
 

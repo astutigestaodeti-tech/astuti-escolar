@@ -22,6 +22,8 @@
         <div class="status-sucesso" role="status"><x-icon name="info" :size="18" /> {{ session('status') }}</div>
     @endif
 
+    @include('schools.today-items', ['items' => $todayItems, 'unit' => $school, 'heading' => 'Hoje na escola', 'sectionId' => 'hoje-na-escola'])
+
     <div class="ficha-escola">
         <section class="folha" aria-labelledby="titulo-dados">
             <div class="folha-cabecalho"><div><h2 id="titulo-dados">Dados da unidade</h2><p>Informações cadastradas pela Secretaria.</p></div></div>

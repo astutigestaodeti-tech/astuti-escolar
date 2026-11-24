@@ -184,18 +184,21 @@ class NetworkPanelTest extends TwoMunicipalityTestCase
 
     public function test_agregados_para_tres_escolas_nao_criam_n_mais_um_por_aluno(): void
     {
-        for ($i = 1; $i <= 18; $i++) {
-            $this->student('Estudante Fictício '.str_pad((string) $i, 2, '0', STR_PAD_LEFT), self::ESCOLA_A1, $this->classA, true, 'Rota Azul');
-        }
         $this->login('municipal_manager', []);
-
         $queries = [];
         DB::listen(function (QueryExecuted $event) use (&$queries): void {
             if ($event->connectionName === 'tenant') {
                 $queries[] = $event->sql;
             }
         });
+        $this->get($this->url())->assertOk();
+        $baseline = count($queries);
+        for ($i = 1; $i <= 18; $i++) {
+            $this->student('Estudante Fictício '.str_pad((string) $i, 2, '0', STR_PAD_LEFT), self::ESCOLA_A1, $this->classA, true, 'Rota Azul');
+        }
+        $queries = [];
         $this->get($this->url())->assertOk()->assertSee('21');
-        $this->assertLessThanOrEqual(34, count($queries), 'A quantidade de consultas cresceu por aluno.');
+        $this->assertLessThanOrEqual($baseline, count($queries), 'A quantidade de consultas cresceu por aluno.');
+        $this->assertLessThanOrEqual(90, $baseline);
     }
 }

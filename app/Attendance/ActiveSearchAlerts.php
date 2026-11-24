@@ -27,7 +27,7 @@ class ActiveSearchAlerts
         return ['days' => $saved?->consecutive_days ?? 5, 'percentage' => $saved?->monthly_percentage ?? 75];
     }
 
-    public function enrollments(School $school, SchoolYear $year, ?string $classId = null): Collection
+    public function enrollments(School $school, SchoolYear $year, ?string $classId = null, bool $summaryOnly = false): Collection
     {
         return StudentEnrollment::query()->where('school_id', $school->id)
             ->where('school_year_id', $year->id)->where('status', 'active')
@@ -36,7 +36,8 @@ class ActiveSearchAlerts
             ->whereHas('student', fn ($query) => $query->whereNull('deleted_at'))
             ->whereHas('schoolClass', fn ($query) => $query->where('school_id', $school->id)
                 ->where('school_year_id', $year->id)->where('status', 'active')->whereNull('deleted_at'))
-            ->with(['student', 'schoolClass'])->get();
+            ->when(! $summaryOnly, fn ($query) => $query->with(['student', 'schoolClass']))
+            ->get($summaryOnly ? ['id', 'student_id', 'school_class_id', 'started_at', 'ended_at'] : ['*']);
     }
 
     public function summaries(School $school, SchoolYear $year, Collection $enrollments, Carbon $day): array
@@ -54,7 +55,8 @@ class ActiveSearchAlerts
             ->groupBy(fn ($entry) => $entry->date->toDateString());
         $sessions = AttendanceSession::query()->whereIn('school_class_id', $enrollments->pluck('school_class_id')->unique())
             ->whereBetween('attendance_date', [$start, $end])
-            ->with(['marks' => fn ($query) => $query->whereIn('student_id', $enrollments->pluck('student_id')->unique())])
+            ->with(['marks' => fn ($query) => $query->whereIn('student_id', $enrollments->pluck('student_id')->unique())
+                ->select('id', 'attendance_session_id', 'student_id', 'status')])
             ->get()->groupBy('school_class_id');
         $monthStart = max($start, Carbon::parse($end)->startOfMonth()->toDateString());
         $result = [];

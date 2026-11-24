@@ -31,6 +31,12 @@
         <div class="nota"><x-icon name="info" /><div><strong>Educação infantil</strong><p>Pedidos de creche e pré-escola por ordem de prioridade e protocolo. <a href="{{ route('waitlist.index', ['municipio' => $municipality->slug]) }}">Consultar lista de espera</a>.</p></div></div>
     @endcan
 
+    @foreach ($schools as $unit)
+        @if (array_key_exists($unit->id, $todayRows))
+            @include('schools.today-items', ['items' => $todayRows[$unit->id], 'unit' => $unit, 'heading' => 'Hoje na escola - '.$unit->name, 'sectionId' => 'hoje-'.$unit->id])
+        @endif
+    @endforeach
+
     @if ($schools->isEmpty())
         <div class="folha vazio">
             Nenhuma escola está liberada para a sua conta. Peça à Secretaria Municipal de Educação que inclua as unidades em que você trabalha.
