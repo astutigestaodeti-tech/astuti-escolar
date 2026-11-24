@@ -1,0 +1,19 @@
+/* Busca ativa: espaçamento entre cartões e formulários responsivos. */
+.pagina-busca-ativa .folha + .folha { margin-top: 20px; }
+.pagina-busca-ativa .busca-ativa-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; margin: 8px 0 16px; }
+.pagina-busca-ativa .busca-ativa-form label { display: grid; gap: 8px; flex: 1 1 190px; min-width: 0; }
+.pagina-busca-ativa .busca-ativa-form .entrada { width: 100%; min-width: 0; box-sizing: border-box; }
+.pagina-busca-ativa .busca-ativa-confirmar { display: grid; gap: 14px; justify-items: start; margin-bottom: 16px; }
+.pagina-busca-ativa .busca-ativa-rolagem { overflow-x: auto; max-width: 100%; }
+.pagina-busca-ativa .busca-ativa-tabela { min-width: 560px; width: 100%; }
+.pagina-busca-ativa .busca-ativa-tabela th, .pagina-busca-ativa .busca-ativa-tabela td { white-space: normal; word-break: normal; overflow-wrap: normal; hyphens: none; vertical-align: top; min-width: 90px; }
+@media (max-width: 600px) {
+    .pagina-busca-ativa .busca-ativa-form .botao { width: 100%; }
+}
+@media print {
+    .pagina-busca-ativa.impressao-declaracao .busca-ativa-rolagem { overflow: visible; }
+    .pagina-busca-ativa.impressao-declaracao .busca-ativa-tabela { min-width: 0; font-size: 10pt; }
+    .pagina-busca-ativa.impressao-declaracao .busca-ativa-tabela th, .pagina-busca-ativa.impressao-declaracao .busca-ativa-tabela td { min-width: 0; }
+    .pagina-busca-ativa.impressao-declaracao .declaracao-papel { break-inside: auto; }
+    .pagina-busca-ativa.impressao-declaracao tr { break-inside: avoid; }
+}

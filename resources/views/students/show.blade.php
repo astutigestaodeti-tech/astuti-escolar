@@ -197,6 +197,7 @@
                         <div class="vinculo-datas"><small>Transporte escolar:</small> @include('students.partials.transporte', ['situacao' => $enrollment->transport_status])</div>
                         @if ($canManage && $enrollment->status === 'active')
                             <a href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id, 'matricula' => $enrollment->id]) }}">Editar turma desta matrícula</a>
+                            <a href="{{ route('school.active-search.detail', ['municipio' => $municipality->slug, 'escola' => $school->id, 'matricula' => $enrollment->id]) }}">Ficha de busca ativa</a>
                         @endif
                         @if ($enrollment->started_at || $enrollment->ended_at)
                             <div class="vinculo-datas">

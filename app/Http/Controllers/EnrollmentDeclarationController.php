@@ -90,7 +90,7 @@ final class EnrollmentDeclarationController extends Controller
         $reason = trim((string) $request->validate(['motivo' => ['required', 'string', 'min:10', 'max:500']])['motivo']);
 
         DB::connection('tenant')->transaction(function () use ($school, $student, $documento, $request, $reason): void {
-            $document = IssuedDocument::query()->where('school_id', $school->id)
+            $document = IssuedDocument::query()->where('kind', 'enrollment_declaration')->where('school_id', $school->id)
                 ->where('student_id', $student->id)->lockForUpdate()->findOrFail($documento);
             if ($document->revoked_at !== null) {
                 throw ValidationException::withMessages(['motivo' => 'Esta declaração já foi revogada.']);
@@ -120,7 +120,7 @@ final class EnrollmentDeclarationController extends Controller
 
     private function document(School $school, Student $student, string $documentId): IssuedDocument
     {
-        return IssuedDocument::query()->where('school_id', $school->id)
+        return IssuedDocument::query()->where('kind', 'enrollment_declaration')->where('school_id', $school->id)
             ->where('student_id', $student->id)->findOrFail($documentId);
     }
 }

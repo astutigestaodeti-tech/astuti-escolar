@@ -54,6 +54,15 @@ final class PublicDocumentVerificationController extends Controller
                 return null;
             }
 
+            if ($document->kind === 'active_search_referral') {
+                return [
+                    'kind' => 'active_search_referral',
+                    'status' => $document->revoked_at === null ? 'Documento válido' : 'Documento revogado',
+                    'school' => $document->snapshot_school_name,
+                    'issued' => $document->issued_at->format('d/m/Y'),
+                ];
+            }
+
             if ($document->kind === 'school_transcript') {
                 return [
                     'kind' => 'school_transcript',
