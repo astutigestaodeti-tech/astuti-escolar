@@ -13,6 +13,7 @@ use App\Models\Tenant\StaffManagerCensus;
 use App\Models\Tenant\StaffMember;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -23,6 +24,7 @@ class StaffLinkCensusTest extends TwoMunicipalityTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-05-20 10:00:00'));
         $this->ids = $this->tenant(function (): array {
             $year = SchoolYear::query()->create(['id' => (string) Str::uuid(), 'year' => 2026, 'start_date' => '2026-02-01', 'end_date' => '2026-12-18', 'status' => 'active']);
             $class = SchoolClass::query()->create(['id' => (string) Str::uuid(), 'school_id' => self::ESCOLA_A1, 'school_year_id' => $year->id, 'name' => 'Turma Fictícia', 'stage' => 'Ensino Fundamental', 'modality' => 'Regular', 'shift' => 'Manhã', 'status' => 'active', 'capacity' => 30]);
@@ -34,6 +36,12 @@ class StaffLinkCensusTest extends TwoMunicipalityTestCase
 
             return ['class' => $class->id, 'teacher' => $teacher->id, 'director' => $director->id, 'assignment' => $assignment->id];
         });
+    }
+
+    protected function tearDown(): void
+    {
+        $this->travelBack();
+        parent::tearDown();
     }
 
     private function tenant(callable $callback): mixed
