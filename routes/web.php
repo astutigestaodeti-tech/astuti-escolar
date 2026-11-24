@@ -231,7 +231,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas/{escola}/gestao-pedagogica', [PedagogicalPanelController::class, 'school'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('pedagogical.school');
     Route::get('/escolas/{escola}/turmas/{turma}/conselho-de-classe', [ClassCouncilController::class, 'index'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('pedagogical.council.index');
     Route::post('/escolas/{escola}/turmas/{turma}/conselho-de-classe', [ClassCouncilController::class, 'save'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('pedagogical.council.save');
-    Route::post('/escolas/{escola}/turmas/{turma}/conselho-de-classe/situacao', [ClassCouncilController::class, 'transition'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('pedagogical.council.transition');
+    Route::post('/escolas/{escola}/turmas/{turma}/conselho-de-classe/situacao', [ClassCouncilController::class, 'transition'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('pedagogical.council.transition');
     Route::get('/equidade-vaar', [EquityVaarController::class, 'index'])->name('equity.vaar.index');
     Route::get('/escolas/{escola}/equidade-vaar', [EquityVaarController::class, 'school'])
         ->whereUuid('escola')->name('equity.vaar.school');
