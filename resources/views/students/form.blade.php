@@ -122,6 +122,18 @@
                     <p class="texto-ajuda">A turma deve pertencer a esta escola e ao mesmo ano letivo da matrícula. Se ainda não foi definida, deixe em branco.</p>
                 </div>
 
+                <div class="formulario-campo largo">
+                    <label class="rotulo" for="inep_stage_code">Etapa individual (turma multisseriada)</label>
+                    <select class="entrada" id="inep_stage_code" name="inep_stage_code">
+                        <option value="">Não informada / turma de série única</option>
+                        @foreach (\App\Academics\RenewalStage::INEP as $code => $label)
+                            <option value="{{ $code }}" @selected((string) old('inep_stage_code', $enrollment?->inep_stage_code) === (string) $code)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('inep_stage_code')<p class="campo-erro">{{ $message }}</p>@enderror
+                    <p class="texto-ajuda">Somente para turma multisseriada. Confira a série no histórico do aluno. O código é usado na renovação e no Educacenso.</p>
+                </div>
+
                 <fieldset class="grupo-endereco grupo-censo" id="censo">
                     <legend>Dados do Censo Escolar</legend>
                     <p class="texto-ajuda">Pedidos pelo Educacenso. Todos são opcionais: preencha o que a família informou na matrícula.</p>

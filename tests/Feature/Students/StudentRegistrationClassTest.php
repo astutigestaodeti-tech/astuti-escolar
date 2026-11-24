@@ -444,4 +444,27 @@ class StudentRegistrationClassTest extends TwoMunicipalityTestCase
 
         $this->assertSame(0, app(TenantContext::class)->runFor($this->municipioA, fn (): int => Student::query()->count()));
     }
+
+    public function test_etapa_individual_inep_e_opcional_e_restrita_a_multisseriada(): void
+    {
+        $multi = app(TenantContext::class)->runFor($this->municipioA, fn (): string => $this->turma(self::ESCOLA_A1, 'Multi 1º ao 3º ano'));
+        $this->entrar();
+        $this->post($this->url(), $this->dados(['inep_stage_code' => 14]))->assertSessionHasErrors('inep_stage_code');
+        $this->post($this->url(), $this->dados(['school_class_id' => $multi, 'inep_stage_code' => 22]))->assertSessionHasErrors('inep_stage_code');
+        $this->post($this->url(), $this->dados(['school_class_id' => $multi, 'inep_stage_code' => 19]))->assertSessionHasErrors('inep_stage_code');
+        $this->assertSame(0, app(TenantContext::class)->runFor($this->municipioA, fn (): int => Student::query()->count()));
+        $this->post($this->url(), $this->dados(['school_class_id' => $multi, 'inep_stage_code' => 15]))->assertRedirect();
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $entry = StudentEnrollment::query()->sole();
+            $this->assertSame(15, $entry->inep_stage_code);
+            try {
+                $entry->inep_stage_code = 22;
+                $entry->save();
+                $this->fail('O banco deve rejeitar o código de turma multi como etapa individual.');
+            } catch (QueryException $exception) {
+                $this->assertSame('23514', $exception->getCode());
+            }
+            $this->assertSame(15, $entry->fresh()->inep_stage_code);
+        });
+    }
 }

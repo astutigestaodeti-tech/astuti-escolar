@@ -3,6 +3,7 @@
 namespace Tests\Feature\Academics;
 
 use App\Academics\EnrollmentRenewal;
+use App\Models\Tenant\AcademicPeriod;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\ClassYearClosure;
 use App\Models\Tenant\SchoolClass;
@@ -10,6 +11,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentFinalResult;
+use App\Models\Tenant\StudentPriorSchoolYear;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
@@ -38,6 +40,7 @@ class EnrollmentRenewalTest extends TwoMunicipalityTestCase
     {
         parent::setUp();
         $this->travelTo(Carbon::parse('2027-12-18 10:00:00'));
+        config()->set('waitlist.cutoff_date', '2028-03-31');
         $this->tenant(function (): void {
             $year = $this->year(2027, 'active');
             $next = $this->year(2028, 'planned');
@@ -106,11 +109,11 @@ class EnrollmentRenewalTest extends TwoMunicipalityTestCase
         ]);
     }
 
-    private function room(SchoolYear $year, string $school, string $name, string $shift, int $capacity): SchoolClass
+    private function room(SchoolYear $year, string $school, string $name, string $shift, int $capacity, string $stage = 'Ensino Fundamental'): SchoolClass
     {
         return SchoolClass::query()->create([
             'id' => (string) Str::uuid(), 'school_id' => $school, 'school_year_id' => $year->id,
-            'name' => $name, 'stage' => 'Ensino Fundamental', 'modality' => 'Regular',
+            'name' => $name, 'stage' => $stage, 'modality' => 'Regular',
             'shift' => $shift, 'status' => 'active', 'capacity' => $capacity,
         ]);
     }
@@ -270,5 +273,147 @@ class EnrollmentRenewalTest extends TwoMunicipalityTestCase
         });
         $this->get($this->url())->assertOk()->assertSee('não está cadastrado ou está encerrado');
         $this->post($this->url(), $this->payload())->assertSessionHasErrors('destinos');
+    }
+
+    private function confirmedEntry(SchoolClass $class, string $name, ?string $birth = null, ?int $code = null, string $result = 'aprovado'): StudentEnrollment
+    {
+        $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => $name, 'birth_date' => $birth]);
+        $entry = $this->enroll($student, $class);
+        if ($code !== null) {
+            $entry->inep_stage_code = $code;
+            $entry->save();
+        }
+        StudentFinalResult::query()->create([
+            'id' => (string) Str::uuid(), 'school_class_id' => $class->id, 'student_enrollment_id' => $entry->id,
+            'suggested_result' => $result, 'result' => $result, 'confirmed_by' => $this->auditFixtureUser->id, 'confirmed_at' => now(),
+        ]);
+
+        return $entry;
+    }
+
+    private function closeRoom(SchoolClass $class): void
+    {
+        ClassYearClosure::query()->findOrFail($class->id)->forceFill([
+            'closed_at' => now(), 'closed_by' => $this->auditFixtureUser->id, 'close_reason' => 'Fechamento fictício',
+        ])->save();
+    }
+
+    public function test_pre_ii_primeiro_ano_e_maternal_respeitam_corte_da_lista_de_espera(): void
+    {
+        $this->tenant(function (): void {
+            $year = SchoolYear::query()->findOrFail($this->yearId);
+            $next = SchoolYear::query()->findOrFail($this->nextYearId);
+            $pre = $this->room($year, self::ESCOLA_A1, 'Pré II A', 'Manhã', 30, 'Educação Infantil');
+            $maternal = $this->room($year, self::ESCOLA_A1, 'Maternal II A', 'Manhã', 30, 'Educação Infantil');
+            $first = $this->room($next, self::ESCOLA_A1, '1º Ano A', 'Manhã', 30);
+            $preI = $this->room($next, self::ESCOLA_A1, 'Pré I A', 'Manhã', 30, 'Educação Infantil');
+            $eligible = $this->confirmedEntry($pre, 'Aluna Fictícia Corte', '2022-03-31');
+            $young = $this->confirmedEntry($pre, 'Aluna Fictícia Após Corte', '2022-04-01');
+            $unknown = $this->confirmedEntry($pre, 'Aluna Fictícia Sem Data');
+            $child = $this->confirmedEntry($maternal, 'Aluna Fictícia Maternal', '2024-03-31');
+            $this->closeRoom($pre);
+            $this->closeRoom($maternal);
+            $service = app(EnrollmentRenewal::class);
+            $rows = $service->preview($pre)['rows']->keyBy('entry.id');
+            $this->assertSame($first->id, $rows[$eligible->id]['suggestion']);
+            $this->assertSame('age_cutoff', $rows[$young->id]['reason']);
+            $this->assertSame('age_cutoff', $rows[$unknown->id]['reason']);
+            $this->assertSame($preI->id, $service->preview($maternal)['rows']->first()['suggestion']);
+            $summary = $service->renew($pre, [$eligible->id => $first->id], $next->id);
+            $this->assertSame(1, $summary['renewed']);
+            $this->assertNull(StudentEnrollment::query()->where('student_id', $eligible->student_id)->where('school_year_id', $next->id)->sole()->inep_stage_code);
+        });
+    }
+
+    public function test_multisseriada_usa_codigo_ou_historico_e_grava_etapa_individual_no_destino(): void
+    {
+        $this->tenant(function (): void {
+            $year = SchoolYear::query()->findOrFail($this->yearId);
+            $next = SchoolYear::query()->findOrFail($this->nextYearId);
+            $source = $this->room($year, self::ESCOLA_A1, 'Multi 1º ao 3º ano', 'Manhã', 30);
+            $destination = $this->room($next, self::ESCOLA_A1, 'Multi 2º ao 4º ano', 'Manhã', 1);
+            $unknownRoom = $this->room($next, self::ESCOLA_A1, 'Multisseriada sem série', 'Manhã', 30);
+            $first = $this->confirmedEntry($source, 'Aluno Fictício Multi A', null, 14);
+            $second = $this->confirmedEntry($source, 'Aluno Fictício Multi B', null, null, 'retido');
+            $unknown = $this->confirmedEntry($source, 'Aluno Fictício Multi C');
+            StudentPriorSchoolYear::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $second->student_id, 'school_year' => 2026,
+                'school_stage' => '1º ano do Ensino Fundamental', 'school_name' => 'Escola Fictícia', 'city' => 'Cidade Fictícia', 'state' => 'SP',
+                'result' => 'Aprovado', 'recorded_by' => $this->auditFixtureUser->id, 'updated_by' => $this->auditFixtureUser->id,
+            ]);
+            $this->closeRoom($source);
+            $service = app(EnrollmentRenewal::class);
+            $rows = $service->preview($source)['rows']->keyBy('entry.id');
+            $this->assertSame(2, $rows[$first->id]['target']);
+            $this->assertSame(2, $rows[$second->id]['target']);
+            $this->assertTrue($rows[$first->id]['choices']->has($destination->id));
+            $this->assertFalse($rows[$first->id]['choices']->has($unknownRoom->id));
+            $this->assertSame('unknown_grade', $rows[$unknown->id]['reason']);
+            $summary = $service->renew($source, [$first->id => $destination->id, $second->id => $destination->id], $next->id);
+            $this->assertSame(2, $summary['renewed']);
+            $this->assertSame(2, $summary['warnings'][0]['occupied']);
+            $this->assertSame([15, 15], StudentEnrollment::query()->where('school_class_id', $destination->id)->orderBy('id')->pluck('inep_stage_code')->all());
+            $this->assertNull($second->fresh()->inep_stage_code);
+        });
+    }
+
+    public function test_outra_escola_requer_escolha_expressa_e_permissao_de_gestao_no_destino(): void
+    {
+        [$sourceId, $entryId, $destinationId] = $this->tenant(function (): array {
+            $year = SchoolYear::query()->findOrFail($this->yearId);
+            $next = SchoolYear::query()->findOrFail($this->nextYearId);
+            $source = $this->room($year, self::ESCOLA_A1, '5º Ano A', 'Manhã', 30);
+            $destination = $this->room($next, self::ESCOLA_A2, '6º Ano A', 'Manhã', 30);
+            $entry = $this->confirmedEntry($source, 'Aluno Fictício Outra Unidade');
+            $this->closeRoom($source);
+
+            return [$source->id, $entry->id, $destination->id];
+        });
+        $url = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/turmas/'.$sourceId.'/renovacao';
+        $payload = ['ano_destino' => $this->nextYearId, 'destinos' => [$entryId => $destinationId]];
+        $this->login('school_secretary');
+        $this->get($url)->assertOk()->assertDontSee($destinationId);
+        $this->post($url, $payload)->assertSessionHasErrors('destinos');
+        $this->login('school_secretary', [self::ESCOLA_A1, self::ESCOLA_A2]);
+        $response = $this->get($url)->assertOk()->assertSee('Sugestão em outra escola');
+        $row = $response->viewData('data')['rows']->first();
+        $this->assertTrue($row['crossSchool']);
+        $this->assertSame($destinationId, $row['suggestion']);
+        $this->post($url, ['ano_destino' => $this->nextYearId, 'destinos' => [$entryId => null]])
+            ->assertSessionHas('renewal_summary.renewed', 0);
+        $this->post($url, $payload)->assertSessionHas('renewal_summary.renewed', 1);
+        $this->tenant(function () use ($entryId, $destinationId): void {
+            $entry = StudentEnrollment::query()->findOrFail($entryId);
+            $renewed = StudentEnrollment::query()->where('student_id', $entry->student_id)->where('school_year_id', $this->nextYearId)->sole();
+            $this->assertSame(self::ESCOLA_A2, $renewed->school_id);
+            $this->assertSame($destinationId, $renewed->school_class_id);
+            $this->assertSame('active', $entry->status);
+        });
+        $this->post($url, $payload)->assertSessionHas('renewal_summary.renewed', 0);
+    }
+
+    public function test_fechamento_infantil_confirma_continuidade_sem_notas_e_sem_retencao(): void
+    {
+        [$sourceId, $entryId] = $this->tenant(function (): array {
+            $year = SchoolYear::query()->findOrFail($this->yearId);
+            $source = $this->room($year, self::ESCOLA_A1, 'Pré II B', 'Manhã', 30, 'Educação Infantil');
+            $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'Criança Fictícia Continuidade', 'birth_date' => '2022-03-31']);
+            $entry = $this->enroll($student, $source);
+            foreach (AcademicPeriod::query()->where('school_year_id', $year->id)->get() as $period) {
+                $period->forceFill(['closed_at' => now(), 'closed_by' => $this->auditFixtureUser->id, 'close_reason' => 'Fechamento fictício'])->save();
+            }
+
+            return [$source->id, $entry->id];
+        });
+        $this->login('school_secretary');
+        $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/turmas/'.$sourceId;
+        $this->get($base.'/resultado-final')->assertOk()->assertSee('Continuidade confirmada');
+        $this->post($base.'/resultado-final/confirmar', ['enrollment' => $entryId, 'result' => 'retido', 'reason' => 'Motivo fictício de teste'])->assertSessionHasErrors('result');
+        $this->post($base.'/resultado-final/confirmar', ['all' => '1'])->assertRedirect();
+        $this->post($base.'/resultado-final/fechar', ['reason' => 'Fechamento fictício de turma'])->assertRedirect();
+        $this->tenant(function () use ($sourceId, $entryId): void {
+            $this->assertNotNull(ClassYearClosure::query()->findOrFail($sourceId)->closed_at);
+            $this->assertSame('aprovado', StudentFinalResult::query()->where('student_enrollment_id', $entryId)->sole()->result);
+        });
     }
 }

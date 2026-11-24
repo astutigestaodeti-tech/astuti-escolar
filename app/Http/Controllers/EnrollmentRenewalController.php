@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Academics\EnrollmentRenewal;
 use App\Audit\AuditTrail;
+use App\Auth\SchoolAccess;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +19,7 @@ class EnrollmentRenewalController extends Controller
     public function index(Request $request, string $municipio, string $escola, string $turma, EnrollmentRenewal $renewal): Response
     {
         [$municipality, $school, $class] = $this->authorizedClass($request, $escola, $turma);
-        $data = $renewal->preview($class);
+        $data = $renewal->preview($class, app(SchoolAccess::class)->manageableSchoolIds($request->user(), $municipality));
         app(AuditTrail::class)->record('tenant', 'enrollment.renewal.viewed', SchoolClass::class, $class->id);
 
         return response()->view('academics.renewal', compact('municipality', 'school', 'class', 'data'))
@@ -40,7 +41,7 @@ class EnrollmentRenewalController extends Controller
             }
         }
 
-        $summary = $renewal->renew($class, $selected, $input['ano_destino']);
+        $summary = $renewal->renew($class, $selected, $input['ano_destino'], app(SchoolAccess::class)->manageableSchoolIds($request->user(), $municipality));
 
         return redirect()->route('school.classes.renewal.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $class->id])
             ->with('renewal_summary', $summary);

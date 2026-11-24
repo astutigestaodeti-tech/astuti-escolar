@@ -312,7 +312,7 @@ class YearEndResultsTest extends TwoMunicipalityTestCase
         });
     }
 
-    public function test_professor_so_consulta_ata_da_turma_atribuida_e_infantil_nao_tem_fechamento(): void
+    public function test_professor_so_consulta_ata_da_turma_atribuida_e_infantil_tem_continuidade(): void
     {
         $this->login('teacher', [self::ESCOLA_A1], 'professora@example.invalid');
         $this->get($this->base().'/ata-final')->assertOk()
@@ -328,8 +328,8 @@ class YearEndResultsTest extends TwoMunicipalityTestCase
         $this->login('school_secretary', [self::ESCOLA_A2]);
         $this->get($this->base().'/ata-final')->assertForbidden();
         $this->get($this->base().'/resultado-final')->assertForbidden();
-        $this->get($this->base($this->infantClassId, self::ESCOLA_A2).'/ata-final')->assertNotFound();
-        $this->get($this->base($this->infantClassId, self::ESCOLA_A2).'/resultado-final')->assertNotFound();
+        $this->get($this->base($this->infantClassId, self::ESCOLA_A2).'/ata-final')->assertOk()->assertSee('Registro de continuidade da educação infantil');
+        $this->get($this->base($this->infantClassId, self::ESCOLA_A2).'/resultado-final')->assertOk()->assertSee('Na educação infantil, a continuidade');
     }
 
     public function test_segundo_fator_recente_e_gestao_municipal_nao_confirmam_resultados(): void

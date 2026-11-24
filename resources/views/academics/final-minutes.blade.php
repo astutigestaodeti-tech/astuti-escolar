@@ -7,6 +7,9 @@
 @php
     $params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $class->id];
     $statusNames = ['aprovado' => 'Aprovado', 'acompanhado' => 'Aprovado com acompanhamento', 'retido' => 'Retido', 'cursando' => 'Cursando'];
+    if ($data['infant']) {
+        $statusNames['aprovado'] = 'Continuidade confirmada';
+    }
     $totals = ['aprovado' => 0, 'acompanhado' => 0, 'retido' => 0, 'cursando' => 0, 'pendente' => 0, 'transferido' => 0, 'abandono' => 0, 'outros' => 0];
     foreach ($data['records'] as $row) {
         if ($row['exitLabel']) {
@@ -55,8 +58,12 @@
             @else
                 <p class="texto-ajuda">Turma fechada em {{ $data['closure']->closed_at->format('d/m/Y H:i') }}.</p>
             @endif
+            @if ($data['infant'])
+                <p class="texto-ajuda">Registro de continuidade da educação infantil, sem finalidade de promoção.</p>
+            @else
             <p class="texto-ajuda">Legenda de componentes: @foreach ($data['components'] as $component){{ $loop->first ? '' : '; ' }}{{ $loop->iteration }} - {{ $component->name }}@endforeach.
                 Médias calculadas somente sobre notas lançadas. Dados ausentes aparecem como traço.</p>
+            @endif
         </div>
         <div class="rolagem ata-rolagem">
             <table class="tabela ata-tabela">
@@ -79,7 +86,7 @@
                             @endforeach
                             <td class="numero">{{ $row['frequency'] === null ? '-' : number_format($row['frequency'], 1, ',', '.').'%' }}</td>
                             <td class="ata-resultado">
-                                {{ $row['exitLabel'] ?? ($row['confirmed'] ? $statusNames[$row['confirmed']->result] : 'Pendente') }}
+                                {{ $row['exitLabel'] ?? ($row['confirmed'] ? ($row['infant'] && $row['confirmed']->result === 'aprovado' ? 'Continuidade confirmada' : $statusNames[$row['confirmed']->result]) : 'Pendente') }}
                             </td>
                         </tr>
                     @empty
@@ -91,7 +98,7 @@
         <div class="folha-corpo">
             <p class="ata-totais">
                 <strong>Totais:</strong>
-                aprovados {{ $totals['aprovado'] }};
+                {{ $data['infant'] ? 'continuidade confirmada' : 'aprovados' }} {{ $totals['aprovado'] }};
                 aprovados com acompanhamento {{ $totals['acompanhado'] }};
                 retidos {{ $totals['retido'] }};
                 cursando {{ $totals['cursando'] }};
