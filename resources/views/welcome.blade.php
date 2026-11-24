@@ -13,35 +13,24 @@
     <div class="inicio-caixa">
         <div class="folha">
             <x-astuti-marca />
-            @auth
-                <h1>Olá, {{ auth()->user()->name }}</h1>
-                <p>Escolha a rede de ensino em que você vai trabalhar agora.</p>
-                @if ($redes->isEmpty())
+            <h1>Olá, {{ auth()->user()->name }}</h1>
+            <p>Escolha a rede de ensino em que você vai trabalhar agora.</p>
+            @if ($redes->isEmpty())
                     <div class="nota"><x-icon name="info" /><div><strong>Nenhuma rede liberada para a sua conta</strong><p>Peça à Secretaria Municipal de Educação que vincule a sua conta às escolas em que você trabalha.</p></div></div>
-                @else
+            @else
                     <ul class="redes">
                         @foreach ($redes as $rede)
                             <li><a href="{{ route('schools.index', ['municipio' => $rede->slug]) }}"><x-icon name="escola" /><span>{{ $rede->legal_name }}</span><x-icon name="seta" /></a></li>
                         @endforeach
-                    </ul>
-                @endif
-                <div class="inicio-acoes">
-                    <a class="botao secundario" href="{{ route('two-factor.settings') }}"><x-icon name="escudo" :size="18" /> Segurança da conta</a>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button class="botao secundario" type="submit"><x-icon name="sair" :size="18" /> Sair</button>
-                    </form>
-                </div>
-            @else
-                <h1>Gestão escolar para redes municipais</h1>
-                <p>Matrículas, turmas e documentos das escolas públicas, com menos redigitação e conferência humana em cada etapa.</p>
-                <div class="inicio-acoes">
-                    <a class="botao" href="{{ route('login') }}">Entrar no sistema</a>
-                    @if (app()->environment('local'))
-                        <a class="botao secundario" href="{{ route('demo') }}">Ver a demonstração de Monte Sereno</a>
-                    @endif
-                </div>
-            @endauth
+                </ul>
+            @endif
+            <div class="inicio-acoes">
+                <a class="botao secundario" href="{{ route('two-factor.settings') }}"><x-icon name="escudo" :size="18" /> Segurança da conta</a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button class="botao secundario" type="submit"><x-icon name="sair" :size="18" /> Sair</button>
+                </form>
+            </div>
         </div>
     </div>
 </main>

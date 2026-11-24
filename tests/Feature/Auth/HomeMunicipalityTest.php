@@ -16,13 +16,9 @@ class HomeMunicipalityTest extends TwoMunicipalityTestCase
         );
     }
 
-    public function test_visitante_ve_a_pagina_publica_sem_redes(): void
+    public function test_visitante_vai_direto_para_o_login(): void
     {
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('Gestão escolar para redes municipais')
-            ->assertDontSee('Municipio A')
-            ->assertDontSee('Municipio B');
+        $this->get('/')->assertRedirect(route('login'));
     }
 
     public function test_usuario_ve_so_municipio_com_vinculo_e_escopo_validos(): void

@@ -16,7 +16,12 @@ class HomeController extends Controller
         $redes = collect();
         $user = $request->user();
 
-        if ($user !== null && $user->status === 'active') {
+        // Não há página de apresentação: quem não entrou vai direto para o login.
+        if ($user === null) {
+            return redirect()->route('login');
+        }
+
+        if ($user->status === 'active') {
             $municipalityIds = Membership::query()
                 ->where('user_id', $user->id)
                 ->where('status', 'active')
