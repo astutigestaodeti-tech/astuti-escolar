@@ -196,7 +196,8 @@ class TransportRoutesTest extends TwoMunicipalityTestCase
 
         $this->get($this->url())->assertOk()->assertSee('25 alunos')
             ->assertSee('Estudante Fictício 20');
-        $this->assertLessThanOrEqual(9, count($queries), 'A listagem realizou consultas por aluno (N+1).');
+        // +1 fixa: o timbre oficial de impressão (dados da Prefeitura) é lido uma vez por página.
+        $this->assertLessThanOrEqual(10, count($queries), 'A listagem realizou consultas por aluno (N+1).');
     }
 
     public function test_impressao_usa_css_a4_e_javascript_externo_sem_script_inline(): void

@@ -1,5 +1,6 @@
 @extends('layouts.municipal')
 
+@section('timbre-proprio', '1')
 @section('title', 'Boletim de '.$student->full_name)
 @section('body-class', 'pagina-boletim')
 
@@ -27,10 +28,11 @@
     </div>
 
     <section class="folha boletim-folha" aria-labelledby="titulo-boletim">
+        <div class="folha-corpo so-impressao"><x-documento.timbre :municipality="$municipality" :school-name="$school->name" :school-inep="$school->inep_code" /></div>
         <div class="folha-cabecalho">
-            <div><span class="contexto">Secretaria Municipal de Educação</span>
+            <div><span class="contexto so-tela">Secretaria Municipal de Educação</span>
                 <h2 id="titulo-boletim">Boletim parcial do ano letivo {{ $enrollment->schoolYear->year }}</h2>
-                <p>{{ $municipality->legal_name }}. {{ $school->name }}.</p>
+                <p class="so-tela">{{ $municipality->legal_name }}. {{ $school->name }}.</p>
             </div>
         </div>
         <div class="folha-corpo">
@@ -86,6 +88,7 @@
             </div>
             <p class="boletim-rodape">Documento de acompanhamento escolar, emitido em {{ today()->format('d/m/Y') }}. Uso interno e da família.</p>
         </div>
+        <div class="folha-corpo so-impressao"><x-documento.rodape :municipality="$municipality" :school="$school" /></div>
     </section>
 
     <script src="{{ asset('js/boletim-imprimir.js') }}" defer></script>

@@ -1,5 +1,6 @@
 @extends('layouts.municipal')
 
+@section('timbre-proprio', '1')
 @section('title', 'Ata de resultados finais - '.$class->name)
 @section('body-class', 'pagina-ata-final')
 
@@ -39,8 +40,9 @@
     </div>
 
     <section class="folha ata-folha" aria-labelledby="titulo-ata">
+        <div class="folha-corpo so-impressao"><x-documento.timbre :municipality="$municipality" :school-name="$school->name" :school-inep="$school->inep_code" /></div>
         <div class="folha-cabecalho">
-            <div><span class="contexto">{{ $municipality->legal_name }}</span>
+            <div><span class="contexto so-tela">{{ $municipality->legal_name }}</span>
                 <h2 id="titulo-ata">Ata de resultados finais - {{ $class->schoolYear->year }}</h2>
                 <p><strong>Escola:</strong> {{ $school->name }}.
                     <strong>Turma:</strong> {{ $class->name }}.
@@ -104,6 +106,7 @@
             </div>
             <p class="texto-ajuda">Documento interno emitido em {{ today()->format('d/m/Y') }}. A responsabilidade pela decisão e pelas assinaturas cabe à escola.</p>
         </div>
+        <div class="folha-corpo so-impressao"><x-documento.rodape :municipality="$municipality" :school="$school" /></div>
     </section>
 
     <script defer src="{{ asset('js/boletim-imprimir.js') }}"></script>

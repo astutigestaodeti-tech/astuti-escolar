@@ -382,6 +382,7 @@ class SchoolAbsenceAlertsTest extends TwoMunicipalityTestCase
         });
 
         $this->get($this->url())->assertOk()->assertSee('Nenhum aluno em alerta');
-        $this->assertLessThanOrEqual(10, count($queries), 'A consulta de mil alunos deve ter quantidade fixa de queries.');
+        // +1 fixa: o timbre oficial de impressão (dados da Prefeitura) é lido uma vez por página.
+        $this->assertLessThanOrEqual(11, count($queries), 'A consulta de mil alunos deve ter quantidade fixa de queries.');
     }
 }

@@ -9,6 +9,7 @@
     <link rel="preload" href="{{ asset('fonts/atkinson-hyperlegible-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ asset('fonts/source-serif-4-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('css/astuti.css') }}?v={{ filemtime(public_path('css/astuti.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/documento-oficial.css') }}?v={{ filemtime(public_path('css/documento-oficial.css')) }}">
     @stack('head')
 </head>
 <body class="@yield('body-class')">
@@ -30,6 +31,7 @@
     $iniciaisUsuario = mb_strtoupper(collect(preg_split('/\s+/u', trim((string) ($usuario?->name ?? ''))) ?: [])->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode(''));
     $painelAtivo = request()->routeIs('network.panel.*');
     $relatorioSecretariaAtivo = request()->routeIs('secretariat.monthly.*');
+    $dadosPrefeituraAtivo = request()->routeIs('institution.*');
     $censoAtivo = request()->routeIs('census.readiness.*');
     $integralAtivo = request()->routeIs('integral.*');
     $alfabetizacaoAtiva = request()->routeIs('literacy.*') || request()->routeIs('school.literacy.*');
@@ -46,7 +48,7 @@
         'waitlist.create', 'waitlist.show' => route('waitlist.index', $parametrosMunicipio),
         'waitlist.enroll.form' => route('waitlist.show', [...$parametrosMunicipio, 'pedido' => request()->route('pedido')]),
         'network.panel.index' => route('schools.index', $parametrosMunicipio),
-        'secretariat.monthly.index' => route('network.panel.index', $parametrosMunicipio),
+        'secretariat.monthly.index', 'institution.edit' => route('network.panel.index', $parametrosMunicipio),
         'literacy.network', 'literacy.settings' => route('network.panel.index', $parametrosMunicipio),
         'school.literacy.panel' => route('schools.show', $parametrosEscola),
         'school.literacy.classroom', 'school.literacy.save' => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
@@ -129,6 +131,9 @@
                 <a class="menu-item {{ $alimentacaoAtiva ? 'ativo' : '' }}" href="{{ route('meals.menu', $parametrosMunicipio) }}" @if ($alimentacaoAtiva) aria-current="page" @endif>
                     <x-icon name="turmas" /><span>Alimentação escolar</span>
                 </a>
+                <a class="menu-item {{ $dadosPrefeituraAtivo ? 'ativo' : '' }}" href="{{ route('institution.edit', $parametrosMunicipio) }}" @if ($dadosPrefeituraAtivo) aria-current="page" @endif>
+                    <x-icon name="escola" /><span>Dados da Prefeitura</span>
+                </a>
             @endcan
             <a class="menu-item {{ $escolasAtivo ? 'ativo' : '' }}" href="{{ route('schools.index', ['municipio' => $municipality->slug]) }}" @if ($escolasAtivo) aria-current="page" @endif>
                 <x-icon name="escola" />
@@ -180,7 +185,17 @@
                 <x-voltar-anterior :fallback="$voltarFallback" :municipio="$municipality->slug" />
             @endunless
 
+            {{-- Qualquer tela impressa sai com o timbre oficial (brasão, Prefeitura e Secretaria).
+                 Documentos com timbre próprio declaram @section('timbre-proprio'). --}}
+            @unless (View::hasSection('timbre-proprio'))
+                <div class="so-impressao timbre-impressao"><x-documento.timbre :municipality="$municipality" /></div>
+            @endunless
+
             @yield('content')
+
+            @unless (View::hasSection('timbre-proprio'))
+                <div class="so-impressao timbre-impressao-rodape"><x-documento.rodape :municipality="$municipality" :aviso="false" /></div>
+            @endunless
 
             <footer class="rodape"><span>© {{ date('Y') }} Astuti Gestão Escolar</span><span>As permissões são conferidas a cada acesso.</span></footer>
             @php($versao = \App\Support\SystemInfo::version())
