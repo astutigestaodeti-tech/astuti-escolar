@@ -12,6 +12,7 @@ use App\Http\Controllers\ClassYearEndController;
 use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
+use App\Http\Controllers\EducacensoReturnController;
 use App\Http\Controllers\EnrollmentDeclarationController;
 use App\Http\Controllers\EnrollmentMovementController;
 use App\Http\Controllers\EnrollmentRenewalController;
@@ -181,6 +182,11 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
     Route::post('/conferencia-do-censo/parametros', [CensusReadinessController::class, 'updateParameters'])
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.readiness.parameters');
+    Route::get('/conferencia-do-censo/retorno', [EducacensoReturnController::class, 'create'])->name('census.return.create');
+    Route::post('/conferencia-do-censo/retorno/conferir', [EducacensoReturnController::class, 'preview'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.return.preview');
+    Route::post('/conferencia-do-censo/retorno', [EducacensoReturnController::class, 'store'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.return.store');
     // Alimentação escolar: cardápio na rede, registro na escola, PNAE agregado.
     Route::get('/alimentacao/cardapio', [SchoolMealsController::class, 'menu'])->name('meals.menu');
     Route::post('/alimentacao/cardapio', [SchoolMealsController::class, 'saveMenu'])

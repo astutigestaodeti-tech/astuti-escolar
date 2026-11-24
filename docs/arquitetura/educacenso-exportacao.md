@@ -163,6 +163,16 @@ O leiaute de cada ano é um **arquivo de dados**, não código.
   
   A gravação é auditada, confirmando nome e nascimento antes de vincular.
 
+  **Entregue (fase 6):** tela "Retorno do Educacenso" na Conferência do Censo, só para a gestão municipal, com segundo fator recente.
+  - Lê o `.txt` (ou o `.zip` com um `.txt`) no leiaute do ano, com ou sem pipe final, em ISO-8859-1 ou UTF-8. Linha com número de campos diferente do leiaute anula o arquivo inteiro.
+  - Casa as escolas pelo código Inep, as turmas pelo código próprio (`census_code`) e as pessoas pelo código próprio do campo 3 (`CodigoCenso::dePessoa`), entre os alunos com matrícula na escola e os servidores da escola.
+  - Pessoa só é vinculada quando nome e data de nascimento do arquivo conferem com o cadastro. Matrícula só quando o aluno conferiu.
+  - Primeiro mostra o que será gravado: novo, já gravado, conflito, divergente ou não encontrado. Grava só depois da confirmação.
+  - Código já gravado nunca é trocado: diferente vira conflito. Aluno, turma e matrícula não repetem código na rede. O mesmo ID de servidor pode aparecer em duas escolas, porque o cadastro do servidor é por escola.
+  - Tabela `inep_identifiers` (migration 000058). O arquivo não é guardado: entre a conferência e a confirmação, a sessão guarda só os códigos e os identificadores internos.
+  - Auditoria `educacenso_return.imported`: soma SHA-256 do arquivo, ano e quantidades, sem nomes nem códigos.
+  - Próximo passo: o campo 4 dos registros 30, 40, 50 e 60 passa a sair desta tabela na montagem do arquivo.
+
 ## 6. O que o Astuti já tem e o que falta
 
 Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de cadastro.
@@ -331,7 +341,7 @@ Cada fase é um PR com testes. Nada vai para produção sem as regras da fase co
 | 3 | Servidores para o Censo: dados pessoais, formação (tabelas de cursos e IES), gestor, função e componentes por turma | ChatGPT, revisão Claude |
 | 4 | Alunos para o Censo: filiação, municípios em código, transtornos, recursos, transporte, hospital/domicílio (**entregue**: telas "Dados do Censo", educação especial ampliada e "Transporte no Censo"; montadores `Registro30Aluno` e `Registro60`, tela "Alunos no Censo" e coluna na Conferência do Censo) | Claude (dados sensíveis) |
 | 5 | Regras condicionais, aba Educacenso na Conferência e gerador do arquivo ISO-8859-1 (o validador genérico já está pronto) | Claude; o gerador só após a resposta do Inep (seção 4.2) |
-| 6 | Retorno: importação dos códigos Inep do arquivo de exportação | Claude |
+| 6 | Retorno: importação dos códigos Inep do arquivo de exportação (**entregue**: tela "Retorno do Educacenso", tabela `inep_identifiers`) | Claude |
 | 7 | Situação do Aluno 2026, assim que o Inep publicar o leiaute da 2ª etapa | Claude |
 
 As fases 1 a 4 já melhoram a Conferência do Censo, porque cada dado novo vira pendência visível, antes mesmo de o gerador existir.

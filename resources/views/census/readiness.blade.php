@@ -26,7 +26,10 @@
             <h1>Conferência do Censo</h1>
             <p>O que corrigir antes de enviar o Censo Escolar, para a rede não receber menos do Fundeb, da merenda e do transporte.</p>
         </div>
-        <span class="marcador">Referência {{ config('censo.year_reference') }}</span>
+        <div class="botoes-titulo">
+            <a class="botao secundario" href="{{ route('census.return.create', ['municipio' => $municipality->slug]) }}">Retorno do Educacenso</a>
+            <span class="marcador">Referência {{ config('censo.year_reference') }}</span>
+        </div>
     </div>
 
     <section class="folha" aria-labelledby="titulo-censo-resumo">

@@ -3,6 +3,7 @@
 namespace App\Models\Tenant;
 
 use App\Educacenso\CodigoCenso;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** Dados de uma turma para o Censo Escolar (registro 20 do Educacenso). */
 class SchoolClassCensus extends TenantModel
@@ -32,6 +33,11 @@ class SchoolClassCensus extends TenantModel
         'complementary_activities', 'differentiated_location', 'special_class',
         'organization', 'alternance', 'curricular_areas', 'bilingual_deaf', 'updated_by',
     ];
+
+    public function schoolClass(): BelongsTo
+    {
+        return $this->belongsTo(SchoolClass::class)->withTrashed();
+    }
 
     protected function casts(): array
     {
