@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Attendance\SchoolAbsenceAlerts;
 use App\Audit\AuditTrail;
+use App\Educacenso\ConferenciaDeServidores;
 use App\Educacenso\Leiaute;
 use App\Educacenso\OpcoesDeCampo;
 use App\Educacenso\Registro40;
@@ -25,6 +27,17 @@ use Illuminate\Validation\ValidationException;
 
 class StaffLinkCensusController extends Controller
 {
+    public function index(Request $request, string $municipio, string $escola, ConferenciaDeServidores $conferencia): Response
+    {
+        [$municipality, $school] = $this->school($request, $escola);
+        $year = app(SchoolAbsenceAlerts::class)->currentYear();
+
+        return response()->view('census.staff-list', [
+            'municipality' => $municipality, 'school' => $school, 'year' => $year,
+            'rows' => $conferencia->para(collect([$school]), $year)->get($school->id, []),
+        ])->header('Cache-Control', 'private, no-store');
+    }
+
     public function manager(Request $request, string $municipio, string $escola, string $servidor): RedirectResponse
     {
         [$municipality, $school] = $this->school($request, $escola);
