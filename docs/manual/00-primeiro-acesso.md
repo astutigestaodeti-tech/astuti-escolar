@@ -20,6 +20,8 @@ Acesse o endereço do Astuti informado pela Prefeitura. A página inicial é **E
 
 ## Dúvidas comuns
 
+**Por que algumas telas pedem o segundo fator só para abrir?** Ficha de saúde, educação especial e restrições alimentares são dados sensíveis de crianças. Sem o segundo fator ativo, a ficha do aluno mostra apenas os alertas graves de saúde, que protegem a criança.
+
 **Por que preciso do segundo fator para gravar?** Para confirmar sua identidade e proteger os dados escolares de alterações indevidas, mesmo que alguém descubra sua senha. A confirmação de entrada vale até 12 horas durante o uso; ações delicadas pedem novo código se a confirmação tiver mais de 15 minutos.
 
 **Não consigo gerar o código.** Confira o horário automático do celular e se a conta Astuti cadastrada no autenticador é a atual. Use um código de recuperação ainda válido ou procure a administração por canal seguro.
