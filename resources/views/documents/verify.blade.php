@@ -22,7 +22,7 @@
             @elseif ($info !== null)
                 <p class="verificacao-situacao {{ $info['status'] === 'Documento válido' ? 'verificacao-valida' : 'verificacao-invalida' }}" role="status">{{ $info['status'] }}</p>
                 <dl class="verificacao-dados">
-                    <div><dt>Tipo</dt><dd>{{ $info['kind'] === 'school_transcript' ? 'Histórico escolar' : 'Declaração de matrícula' }}</dd></div>
+                    <div><dt>Tipo</dt><dd>{{ match ($info['kind']) { 'school_transcript' => 'Histórico escolar', 'active_search_referral' => 'Documento escolar de acesso restrito', default => 'Declaração de matrícula' } }}</dd></div>
                     @if ($info['kind'] === 'enrollment_declaration')
                         <div><dt>Aluno</dt><dd>{{ $info['student'] }}</dd></div>
                     @endif

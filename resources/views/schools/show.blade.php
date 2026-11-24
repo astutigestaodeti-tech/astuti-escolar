@@ -124,6 +124,14 @@
                 @endif
                 <a class="botao secundario" style="margin-top:12px" href="{{ route('school.pendencies.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Ver o que falta completar <x-icon name="seta" :size="16" /></a>
             </section>
+            <section class="folha cartao" aria-labelledby="titulo-busca-ativa">
+                <div class="folha-corpo">
+                    <span class="acao-icone"><x-icon name="indicadores" /></span>
+                    <h2 id="titulo-busca-ativa">Busca ativa</h2>
+                    <p>Acompanhe alertas de risco de abandono, contatos com famílias e encaminhamentos.</p>
+                    <a class="botao secundario" href="{{ route('school.active-search.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Abrir busca ativa</a>
+                </div>
+            </section>
             <section class="folha cartao alerta-faltas-resumo" aria-labelledby="titulo-alerta-faltas">
                 <span class="acao-icone"><x-icon name="info" /></span>
                 <h2 id="titulo-alerta-faltas">Alerta de faltas</h2>
