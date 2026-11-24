@@ -44,9 +44,9 @@ O resultado mostra cada item como **OK**, **ATENCAO** ou **FALHA** e pode ser co
 
 ## Backup
 
-- [ ] Backup diário do `platform` e do `tenant`, criptografado e copiado para **fora** da VPS.
-- [ ] Ensaio de restauração em banco separado feito e registrado (data, tamanho, tempo, contagens conferidas) antes da entrega e a cada trimestre.
-- [ ] Senha da criptografia do backup guardada em cofre, fora da VPS.
+- [ ] Backup diário do `platform` e do `tenant`, criptografado e copiado para **fora** da VPS (`backup.sh --agendar`, ver [`vps-backup.md`](vps-backup.md)).
+- [ ] Ensaio de restauração em banco separado feito e registrado (data, tamanho, tempo, contagens conferidas) antes da entrega e a cada trimestre (`ensaiar-restauracao.sh`).
+- [ ] Chave privada da criptografia do backup guardada em cofre, fora da VPS; na VPS só a chave pública.
 
 ## Monitoramento
 
