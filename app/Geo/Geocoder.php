@@ -93,8 +93,8 @@ class Geocoder
             return $this->locate($m['street'], $number, $m['district'] ?? null, $m['city'], strtoupper($m['state']), null);
         }
 
-        // Formato do próprio cadastro: "Rua X 240, Bairro, Cidade/UF".
-        if (preg_match('/^(?<street>[^,]+?)(?:\s+(?<number>\d+[A-Za-z]?))?(?:,\s*(?<district>[^,\/]+))?,\s*(?<city>[^,\/]+?)\s*\/\s*(?<state>[A-Za-z]{2})$/u', $text, $m) === 1) {
+        // Formato do próprio cadastro: "Rua X 240, Bairro, Cidade/UF" ou "..., Cidade, UF".
+        if (preg_match('/^(?<street>[^,]+?)(?:\s+(?<number>\d+[A-Za-z]?))?(?:,\s*(?<district>[^,\/]+))?,\s*(?<city>[^,\/]+?)\s*[\/,]\s*(?<state>[A-Za-z]{2})$/u', $text, $m) === 1) {
             return $this->locate($m['street'], ($m['number'] ?? '') !== '' ? $m['number'] : null, ($m['district'] ?? '') !== '' ? $m['district'] : null, $m['city'], strtoupper($m['state']), null);
         }
 

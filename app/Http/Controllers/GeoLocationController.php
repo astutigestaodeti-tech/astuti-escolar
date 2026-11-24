@@ -23,7 +23,7 @@ class GeoLocationController extends Controller
     {
         [$municipality, $school] = $this->school($request, $escola);
         $student = $this->student($school, $aluno);
-        $suggestion = $this->suggestion($request, $geocoder, $student->latitude === null ? $student : null);
+        $suggestion = $this->suggestion($request, $geocoder, $student);
 
         return view('geo.edit', [
             'municipality' => $municipality,
@@ -52,7 +52,7 @@ class GeoLocationController extends Controller
     {
         [$municipality, $school] = $this->school($request, $escola);
         // Sem ponto salvo, o endereço cadastrado já posiciona o marcador.
-        $suggestion = $this->suggestion($request, $geocoder, $school->latitude === null ? $school : null);
+        $suggestion = $this->suggestion($request, $geocoder, $school);
 
         return view('geo.edit', [
             'municipality' => $municipality,
@@ -159,8 +159,10 @@ class GeoLocationController extends Controller
      *
      * @return array{lat: float, lon: float, found: bool, query: string}|null
      */
-    private function suggestion(Request $request, Geocoder $geocoder, Student|School|null $fromAddress): ?array
+    private function suggestion(Request $request, Geocoder $geocoder, Student|School $subject): ?array
     {
+        // Sem ponto salvo, a primeira sugestão vem do endereço do cadastro.
+        $fromAddress = $subject->latitude === null ? $subject : null;
         $query = trim((string) $request->query('procurar', ''));
         if ($query !== '') {
             // Coordenadas ou link do Google Maps vão direto para o ponto, sem procurar endereço.
@@ -173,17 +175,25 @@ class GeoLocationController extends Controller
                 return ['lat' => 0.0, 'lon' => 0.0, 'found' => false, 'query' => mb_substr($query, 0, 200), 'link' => true];
             }
             $query = mb_substr($query, 0, 200);
-            $point = $geocoder->search($query);
+            // O endereço do próprio cadastro é procurado campo a campo, que acerta mais.
+            $point = $subject->address_city !== null && $query === $this->registeredText($subject)
+                ? $geocoder->locate($subject->address_street, $subject->address_number, $subject->address_district, $subject->address_city, $subject->address_state, $subject->postal_code)
+                : $geocoder->search($query);
 
             return $point === null ? ['lat' => 0.0, 'lon' => 0.0, 'found' => false, 'query' => $query] : [...$point, 'found' => true, 'query' => $query];
         }
         if ($fromAddress !== null && $fromAddress->address_city !== null) {
             $point = $geocoder->locate($fromAddress->address_street, $fromAddress->address_number, $fromAddress->address_district, $fromAddress->address_city, $fromAddress->address_state, $fromAddress->postal_code);
 
-            return $point === null ? null : [...$point, 'found' => true, 'query' => $fromAddress instanceof School ? $fromAddress->addressLine() : $this->addressText($fromAddress)];
+            return $point === null ? null : [...$point, 'found' => true, 'query' => $this->registeredText($fromAddress)];
         }
 
         return null;
+    }
+
+    private function registeredText(Student|School $subject): string
+    {
+        return $subject instanceof School ? $subject->addressLine() : $this->addressText($subject);
     }
 
     private function store(Request $request, Student|School $subject): void
@@ -217,7 +227,8 @@ class GeoLocationController extends Controller
     {
         return implode(', ', array_filter([
             trim(implode(' ', array_filter([$student->address_street, $student->address_number]))) ?: null,
-            $student->address_district, $student->address_city, $student->address_state, $student->postal_code,
+            $student->address_district, $student->address_city, $student->address_state,
+            preg_replace('/^(\d{5})(\d{3})$/', '$1-$2', (string) $student->postal_code) ?: null,
         ]));
     }
 }
