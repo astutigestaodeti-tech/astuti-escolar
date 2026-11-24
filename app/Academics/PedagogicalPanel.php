@@ -11,7 +11,6 @@ use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolClassCensus;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\StudentEnrollment;
-use Illuminate\Support\Collection;
 
 final class PedagogicalPanel
 {

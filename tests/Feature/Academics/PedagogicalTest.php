@@ -15,7 +15,6 @@ use App\Models\Tenant\CurricularComponent;
 use App\Models\Tenant\GradeEntry;
 use App\Models\Tenant\LiteracyAssessment;
 use App\Models\Tenant\MultiprofessionalRequest;
-use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolClassCensus;
 use App\Models\Tenant\SchoolYear;
@@ -39,7 +38,8 @@ class PedagogicalTest extends TwoMunicipalityTestCase
         $this->travelTo(Carbon::parse('2026-04-15 10:00:00'));
         $this->ids = $this->tenant(function (): array {
             $year = SchoolYear::query()->create(['id' => Str::uuid()->toString(), 'year' => 2026, 'start_date' => '2026-02-02', 'end_date' => '2026-12-18', 'status' => 'active']);
-            $period = AcademicPeriod::query()->create(['id' => Str::uuid()->toString(), 'school_year_id' => $year->id, 'kind' => 'bimestre', 'number' => 1, 'starts_on' => '2026-02-02', 'ends_on' => '2026-04-30']);
+            // O ano letivo já nasce com quatro bimestres (gatilho do banco).
+            $period = AcademicPeriod::query()->where('school_year_id', $year->id)->where('number', 1)->firstOrFail();
             [$class, $enrollments] = $this->createClass($year->id, 1);
             $teacher = StaffMember::query()->create(['id' => Str::uuid()->toString(), 'school_id' => self::ESCOLA_A1, 'role' => 'teacher', 'status' => 'active', 'full_name' => 'Docente Fictício', 'institutional_email' => 'docente-council@example.invalid']);
             ClassTeacherAssignment::query()->create(['id' => Str::uuid()->toString(), 'staff_member_id' => $teacher->id, 'school_class_id' => $class->id, 'starts_on' => '2026-02-02', 'is_main' => true]);
