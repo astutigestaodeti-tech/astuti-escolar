@@ -27,6 +27,7 @@ use App\Http\Controllers\SchoolCalendarController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolEnrollmentController;
+use App\Http\Controllers\SchoolMealsController;
 use App\Http\Controllers\SchoolMonthlyAttendanceReportController;
 use App\Http\Controllers\SchoolPendenciesController;
 use App\Http\Controllers\SchoolStaffController;
@@ -108,6 +109,26 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
     Route::post('/conferencia-do-censo/parametros', [CensusReadinessController::class, 'updateParameters'])
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.readiness.parameters');
+    // Alimentação escolar: cardápio na rede, registro na escola, PNAE agregado.
+    Route::get('/alimentacao/cardapio', [SchoolMealsController::class, 'menu'])->name('meals.menu');
+    Route::post('/alimentacao/cardapio', [SchoolMealsController::class, 'saveMenu'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('meals.menu.save');
+    Route::post('/alimentacao/cardapio/copiar', [SchoolMealsController::class, 'copyMenu'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('meals.menu.copy');
+    Route::get('/alimentacao/relatorio', [SchoolMealsController::class, 'report'])->name('meals.report');
+    Route::get('/escolas/{escola}/alimentacao', [SchoolMealsController::class, 'school'])
+        ->whereUuid('escola')->name('school.meals.index');
+    Route::post('/escolas/{escola}/alimentacao', [SchoolMealsController::class, 'saveServing'])
+        ->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.meals.save');
+    Route::get('/escolas/{escola}/alimentacao/cardapio', [SchoolMealsController::class, 'schoolMenu'])
+        ->whereUuid('escola')->name('school.meals.menu');
+    Route::get('/escolas/{escola}/alimentacao/cozinha', [SchoolMealsController::class, 'kitchen'])
+        ->whereUuid('escola')->name('school.meals.kitchen');
+    Route::get('/escolas/{escola}/alimentacao/restricoes', [SchoolMealsController::class, 'allergies'])
+        ->whereUuid('escola')->name('school.meals.allergies');
+    Route::get('/escolas/{escola}/alimentacao/relatorio', [SchoolMealsController::class, 'schoolReport'])
+        ->whereUuid('escola')->name('school.meals.report');
     // Tempo integral: rede pela gestao, escola propria pela direcao/secretaria.
     Route::get('/tempo-integral', [FullTimeEducationController::class, 'index'])->name('integral.index');
     Route::get('/escolas/{escola}/tempo-integral', [FullTimeEducationController::class, 'school'])
