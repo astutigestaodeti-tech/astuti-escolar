@@ -5,8 +5,8 @@
 
 @php
     $params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $class->id];
-    $statusNames = ['aprovado' => 'Aprovado', 'retido' => 'Retido', 'cursando' => 'Cursando'];
-    $totals = ['aprovado' => 0, 'retido' => 0, 'cursando' => 0, 'pendente' => 0, 'transferido' => 0, 'abandono' => 0, 'outros' => 0];
+    $statusNames = ['aprovado' => 'Aprovado', 'acompanhado' => 'Aprovado com acompanhamento', 'retido' => 'Retido', 'cursando' => 'Cursando'];
+    $totals = ['aprovado' => 0, 'acompanhado' => 0, 'retido' => 0, 'cursando' => 0, 'pendente' => 0, 'transferido' => 0, 'abandono' => 0, 'outros' => 0];
     foreach ($data['records'] as $row) {
         if ($row['exitLabel']) {
             $bucket = in_array($row['enrollment']->status, ['transferred', 'left_network'], true) ? 'transferido' : ($row['enrollment']->status === 'abandoned' ? 'abandono' : 'outros');
@@ -90,6 +90,7 @@
             <p class="ata-totais">
                 <strong>Totais:</strong>
                 aprovados {{ $totals['aprovado'] }};
+                aprovados com acompanhamento {{ $totals['acompanhado'] }};
                 retidos {{ $totals['retido'] }};
                 cursando {{ $totals['cursando'] }};
                 pendentes {{ $totals['pendente'] }};

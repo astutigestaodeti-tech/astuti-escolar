@@ -37,6 +37,9 @@
             @endif
             @if (str_contains(\Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii($class->stage)), 'fundamental'))
                 <a class="botao secundario" href="{{ route('school.classes.grades.index', $parametrosTurma) }}">Notas por período</a>
+                @if (\App\Academics\Literacy::grade($class) !== null && app(\App\Academics\GradeAccess::class)->canWrite(auth()->user(), $municipality, $school, $class))
+                    <a class="botao secundario" href="{{ route('school.literacy.classroom', $parametrosTurma) }}">Sondagem de alfabetização</a>
+                @endif
                 @if ($canManage)
                     <a class="botao secundario" href="{{ route('school.classes.year-end.index', $parametrosTurma) }}">Fechamento do ano</a>
                 @endif

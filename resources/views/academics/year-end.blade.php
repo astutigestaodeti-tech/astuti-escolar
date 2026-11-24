@@ -5,7 +5,7 @@
 
 @php
     $params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $class->id];
-    $statusNames = ['aprovado' => 'Aprovado', 'retido' => 'Retido', 'cursando' => 'Cursando'];
+    $statusNames = ['aprovado' => 'Aprovado', 'acompanhado' => 'Aprovado com acompanhamento', 'retido' => 'Retido', 'cursando' => 'Cursando'];
     $closure = $data['closure'];
 @endphp
 
@@ -59,6 +59,7 @@
                 @endunless
             </p>
             <p class="texto-ajuda">Média de referência: {{ number_format($data['minimum'], 1, ',', '.') }}. Frequência mínima: {{ number_format($data['attendanceMinimum'], 1, ',', '.') }}%. Dados insuficientes geram sugestão "Cursando", não aprovação.</p>
+            @if ($data['noRetention'])<p class="texto-ajuda">Ciclo sem retenção: a sugestão Retido é substituída por Aprovado com acompanhamento. As decisões confirmadas são preservadas.</p>@endif
             @if ($canConfirm && ! $closure->closed_at)
                 <form method="POST" action="{{ route('school.classes.year-end.confirm', $params) }}" class="fechamento-acoes">
                     @csrf
@@ -128,6 +129,7 @@
                                             <label for="resultado-{{ $enrollment->id }}">Decisão
                                                 <select id="resultado-{{ $enrollment->id }}" name="result" required>
                                                     @foreach ($statusNames as $code => $label)
+                                                        @continue($code === 'acompanhado' && ! $data['noRetention'] && $confirmed?->result !== 'acompanhado')
                                                         <option value="{{ $code }}" @selected(($confirmed?->result ?? $row['suggestion']) === $code)>{{ $label }}</option>
                                                     @endforeach
                                                 </select>

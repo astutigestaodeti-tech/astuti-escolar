@@ -85,8 +85,10 @@ class YearEndResults
         $minGrade = max(0, min(10, (float) config('academics.minimum_grade', 6)));
         $minAttendance = max(0, min(100, (float) config('academics.minimum_attendance', 75)));
 
+        $noRetention = app(Literacy::class)->noRetention($class);
+
         $records = $enrollments->map(function (StudentEnrollment $enrollment) use (
-            $byEnrollment, $components, $marks, $minGrade, $minAttendance, $confirmed
+            $byEnrollment, $components, $marks, $minGrade, $minAttendance, $confirmed, $noRetention
         ): array {
             $entries = $byEnrollment->get($enrollment->id, collect())->groupBy('curricular_component_id');
             $averages = [];
@@ -123,7 +125,10 @@ class YearEndResults
                 $suggestion = null;
                 $reasons = ['Situação da matrícula preservada: '.self::EXIT_LABELS[$enrollment->status]];
             } elseif ($reasons !== []) {
-                $suggestion = 'retido';
+                $suggestion = $noRetention ? 'acompanhado' : 'retido';
+                if ($noRetention) {
+                    $reasons[] = 'Ciclo de alfabetização sem retenção: sugere-se aprovação com acompanhamento pedagógico';
+                }
             } elseif ($pending !== [] || $frequency === null) {
                 $suggestion = 'cursando';
                 if ($pending !== []) {
@@ -157,6 +162,7 @@ class YearEndResults
             'records' => $records,
             'closure' => $closure,
             'minimum' => $minGrade,
+            'noRetention' => $noRetention,
             'attendanceMinimum' => $minAttendance,
             'allPeriodsClosed' => $periodCount === ($periods->first()?->kind === 'trimestre' ? 3 : 4)
                 && $periods->every(fn (AcademicPeriod $period): bool => $period->closed_at !== null),

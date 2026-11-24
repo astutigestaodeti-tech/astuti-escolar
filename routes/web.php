@@ -19,6 +19,7 @@ use App\Http\Controllers\GeoLocationController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdentificationPhotoController;
+use App\Http\Controllers\LiteracyController;
 use App\Http\Controllers\NetworkPanelController;
 use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\PublicDocumentVerificationController;
@@ -108,6 +109,16 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
     // Busca ativa: ficha restrita, alertas de turma e documento verificável.
+    Route::get('/alfabetizacao', [LiteracyController::class, 'network'])->name('literacy.network');
+    Route::post('/alfabetizacao/politica', [LiteracyController::class, 'settings'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('literacy.settings');
+    Route::get('/escolas/{escola}/alfabetizacao', [LiteracyController::class, 'school'])
+        ->whereUuid('escola')->name('school.literacy.panel');
+    Route::get('/escolas/{escola}/turmas/{turma}/alfabetizacao', [LiteracyController::class, 'classroom'])
+        ->whereUuid('escola')->whereUuid('turma')->name('school.literacy.classroom');
+    Route::post('/escolas/{escola}/turmas/{turma}/alfabetizacao', [LiteracyController::class, 'save'])
+        ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.literacy.save');
+
     Route::get('/busca-ativa', [ActiveSearchController::class, 'network'])->name('active-search.network');
     Route::post('/busca-ativa/parametros', [ActiveSearchController::class, 'saveParameters'])
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('active-search.parameters');
