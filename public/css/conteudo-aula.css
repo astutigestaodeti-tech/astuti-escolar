@@ -1,0 +1,16 @@
+/* Diário: formulários e relatório responsivos. */
+.aula-painel{margin-top:16px;min-width:0}
+.aula-campos{display:grid;gap:12px;min-width:0;overflow-wrap:anywhere}
+.aula-campos label{display:grid;gap:6px;min-width:0}
+.aula-campos .entrada{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.aula-campos button{justify-self:start;white-space:normal}
+.aula-filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:end;min-width:0}
+.aula-filtros label{flex:1 1 180px;min-width:0}
+.aula-registros{padding-left:20px}
+.aula-leitura dd,.aula-texto{white-space:pre-wrap;overflow-wrap:anywhere}
+.aula-relatorio-item{border-top:1px solid var(--linha);padding:12px 0;min-width:0;overflow-wrap:anywhere}
+@media print{
+    .impressao-conteudos .aula-relatorio-acoes{display:none!important}
+    .impressao-conteudos .aula-relatorio{border:0;box-shadow:none}
+    .impressao-conteudos .aula-relatorio-item{break-inside:avoid}
+}
