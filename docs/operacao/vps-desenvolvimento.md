@@ -49,3 +49,13 @@ A lista completa, com os itens que dependem de conferência humana (backup exter
 - **`reload` do Nginx falha com `bind() failed (98)`** depois de trocar o endereço de escuta: rode `nginx -t` e depois `systemctl restart nginx`.
 - **Token do Cloudflare Tunnel:** o painel mostra o token mascarado. Copie sempre pelo botão de copiar. Se o token aparecer em chat ou relatório, use "Rotacionar token" e reinstale o serviço com `cloudflared service uninstall` e o novo `service install`.
 - **O GitHub ficou inalcançável por um dos endereços:** use o contorno só comando a comando, nunca gravado em configuração, e abra um chamado no provedor.
+
+## Remover as fotos dos alunos (ambiente fictício)
+
+Para trocar as fotos dos alunos, remova primeiro as atuais. O comando sem `--confirmar` só lista; com a confirmação, limpa a foto de cada aluno ativo pela mesma via da ficha (com autoria na auditoria) e apaga os arquivos que ficaram sem cadastro na pasta de fotos de alunos. Fotos de responsáveis e autorizados não são tocadas; aluno arquivado mantém o histórico.
+
+```
+cd /srv/astuti-escolar
+php artisan astuti:alunos-remover-fotos
+php artisan astuti:alunos-remover-fotos --confirmar=REMOVER-FOTOS-DOS-ALUNOS --responsavel=demo.monte-sereno@astuti.invalid
+```
