@@ -1,0 +1,20 @@
+Anexo 7 - Tipo de turma x Tipo de mediação didático-pedagógica x Etapa
+Tipo de mediação didático-pedagógica,Tipo de turma,Etapas agregadas,Etapas de ensino habilitadas
+Presencial,Atividade complementar,-,-
+Presencial,Atendimento educacional especializado (AEE),-,-
+Presencial,Curricular (etapa de ensino),Ensino Médio,NÃO SE APLICA
+,,Educação Infantil,"1, 2, 3"
+,,Ensino Fundamental de 9 anos,"14, 15, 16, 17, 18, 19, 20, 21, 41"
+,,Multi e correção de fluxo,"22, 23, 56"
+,,Ensino Médio,"25, 26, 27, 28, 29"
+,,Ensino Médio - Normal/ Magistério,"35, 36, 37, 38"
+,,"Educação de Jovens e Adultos (ensino fundamental, ensino médio e integrada)","69, 70, 72, 71, 74, 73, 67"
+,,Curso Técnico e Qualificação Profissional (Curso FIC),"39, 40, 64, 68, 75"
+Presencial,Curricular (etapa de ensino) com Atividade complementar,Ensino Fundamental de 9 anos,"14, 15, 16, 17, 18, 19, 20, 21, 41"
+,,Multi e correção de fluxo,"22, 23"
+,,Ensino Médio,"25, 26, 27, 28, 29"
+,,Ensino Médio - Normal/ Magistério,"35, 36, 37, 38"
+Semipresencial,Curricular (etapa de ensino),Educação de Jovens e Adultos (EJA),"69, 70, 71, 72"
+EAD,Curricular (etapa de ensino),Ensino Médio,NÃO SE APLICA SEM FGB
+,,Educação de Jovens e Adultos (EJA),"71, 74, 67"
+,,Curso Técnico e Qualificação Profissional (Curso FIC),"39, 40, 64, 68, 75"

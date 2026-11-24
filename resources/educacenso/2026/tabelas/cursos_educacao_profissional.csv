@@ -1,0 +1,231 @@
+Eixo Técnologico,Código do Curso,Nome do Curso  (Catálogo Nacional de Cursos Técnicos),Carga Horária Mínima (hs)
+1000. Ambiente e saúde,1001,Agente Comunitário de Saúde,1200
+,1002,Análises clínicas,1200
+,1004,Citopatologia,1200
+,1005,Controle Ambiental,1200
+,1006,Enfermagem,1200
+,1007,Equipamentos Biomédicos,1200
+,1008,Estética,1200
+,1009,Farmácia,1200
+,1010,Gerência em Saúde,1200
+,1011,Hemoterapia,1200
+,1012,Saúde Bucal,1200
+,1013,Imagem Pessoal,800
+,1014,Imobilizações Ortopédicas,1200
+,1015,Massoterapia,1200
+,1016,Meio Ambiente,1200
+,1017,Meteorologia,1000
+,1018,Nutrição e Dietética,1200
+,1019,Óptica,1200
+,1020,Órteses e Próteses,1200
+,1021,Podologia,1200
+,1022,Prótese Dentária,1200
+,1023,Radiologia,1200
+,1024,Dependência química,1200
+,1025,Reciclagem,1200
+,1026,Registros e Informações em Saúde,1200
+,1028,Vigilância em Saúde,1200
+,1029,Cuidados de Idosos,800
+,1030,Necropsia,1200
+,1031,Optometria,1200
+,1032,Terapias Holísticas,1200
+,1033,Veterinária,1000
+,1999,Outros - Eixo Ambiente e Saúde,800
+2000. Desenvolvimento educacional e social,2029,Alimentação Escolar,1200
+,2030,Biblioteconomia,800
+,2031,Infraestrutura escolar,1200
+,2032,Multimeios Didáticos,1200
+,2033,Desenvolvimento Comunitário,800
+,2034,Secretaria Escolar,800
+,2035,Brinquedoteca,800
+,2036,Produção de materiais didáticos bilíngues em Libras/Língua Portuguesa,1200
+,2037,Tradução e Interpretação de Libras,1200
+,2038,Treinamento e Instrução de Cães-Guias,1200
+,2039,Laboratório de Ciências da Natureza,800
+,2040,Arquivo,1200
+,2999,Outros - Eixo Desenvolvimento educacional e social,800
+3000. Controle e processos industriais,3036,Automação Industrial,1200
+,3037,Eletroeletrônica,1200
+,3038,Eletromecânica,1200
+,3039,Eletrônica,1200
+,3040,Eletrotécnica,1200
+,3041,Manutenção Automotiva,1200
+,3042,Manutenção de Máquinas Navais,1200
+,3043,Mecânica,1200
+,3044,Mecatrônica,1200
+,3045,Metalurgia,1200
+,3048,Refrigeração e Climatização,1200
+,3049,Sistemas a Gás,1200
+,3050,Manutenção Aeronáutica em Aviônicos,1200
+,3051,Manutenção Aeronáutica em Célula,1200
+,3052,Manutenção Aeronáutica em Grupo Motopropulsor,1200
+,3053,Manutenção de Máquinas Pesadas,1200
+,3054,Manutenção de Sistemas Metroferroviários,1200
+,3055,Mecânica de Precisão,1200
+,3056,Metrologia,1200
+,3057,Processamento da Madeira,1200
+,3058,Sistemas de Energia Renovável,1200
+,3059,Soldagem,1200
+,3060,Manutenção de Máquinas Industriais,1200
+,3061,Ferramentaria,1200
+,3062,Fundição,1200
+,3063,Instrumentação Industrial,1200
+,3064,Fabricação Mecânica,1200
+,3999,Outros - Eixo Controle e Processos Industriais,800
+4000. Gestão e negócios,4050,Administração,800
+,4051,Comércio,800
+,4052,Comércio Exterior,800
+,4053,Contabilidade,800
+,4054,Cooperativismo,800
+,4055,Finanças,800
+,4056,Logística,800
+,4057,Marketing,800
+,4058,Qualidade,800
+,4059,Recursos Humanos,800
+,4060,Secretariado,800
+,4061,Seguros,800
+,4062,Condomínio,800
+,4063,Serviços Públicos,800
+,4064,Transações Imobiliárias,800
+,4065,Vendas,800
+,4066,Serviços Jurídicos,800
+,4999,Outros - Eixo Gestão e Negócios,800
+"5000. Turismo, hospitalidade e lazer",5066,Agenciamento de Viagem,800
+,5067,Gastronomia,800
+,5068,Eventos,800
+,5069,Guia de Turismo,800
+,5070,Hospedagem,800
+,5071,Lazer,800
+,5072,Serviços de Restaurante e Bar,800
+,5999,"Outros - Eixo Turismo, hospitalidade e Lazer",800
+6000. Informação e comunicação,6073,Informática,1200
+,6074,Informática para Internet,1000
+,6075,Manutenção e Suporte em Informática,1000
+,6076,Programação de Jogos Digitais,1000
+,6077,Redes de Computadores,1000
+,6080,Telecomunicações,1200
+,6081,Computação Gráfica,1000
+,6082,Desenvolvimento de Sistemas,1200
+,6999,Outros - Eixo Informação e Comunicação,800
+7000. Infraestrutura,7081,Aeroportuário,1000
+,7082,Agrimensura,1200
+,7083,Carpintaria,1200
+,7084,Desenho de Construção Civil,1200
+,7085,Edificações,1200
+,7086,Estradas,1200
+,7087,Geodésia e Cartografia,1200
+,7088,Geoprocessamento,1200
+,7089,Hidrologia,1200
+,7091,Portos,1000
+,7092,Saneamento,1200
+,7093,Trânsito,1000
+,7094,Transporte Aquaviário,1000
+,7095,Transporte de Cargas,1000
+,7097,Transporte Metroferroviário,1200
+,7098,Transporte Rodoviário,1000
+,7999,Outros - Eixo Infra-Estrutura,800
+8000. Militar,8099,Comunicações Aeronáuticas,1200
+,8100,Controle de Tráfego Aéreo,1200
+,8101,Desenho Militar,1200
+,8102,Eletricidade e Instrumentos Aeronáuticos,1200
+,8103,Equipamentos de Voo,1200
+,8104,Estrutura e Pintura de Aeronaves,1200
+,8105,Fotointeligência,1200
+,8106,Guarda e Segurança,1200
+,8107,Hidrografia,1200
+,8108,Informações Aeronáuticas,1200
+,8109,Manobras e Equipamentos de Convés,1200
+,8110,Material Bélico,1200
+,8111,Mergulho,1200
+,8112,Operação de Radar,1200
+,8113,Operação de Sonar,1200
+,8114,Operações de Engenharia Militar,1200
+,8115,Preparação Física e Desportiva Militar,1200
+,8116,Sensores de Aviação,1200
+,8117,Sinais Navais,1200
+,8118,Sinalização Náutica,1200
+,8119,Suprimento,1200
+,8126,Comunicações Navais,1200
+,8130,Mecânica de Aeronaves,1200
+,8133,Bombeiro Aeronáutico,1200
+,8999,Outros - Eixo Militar,800
+9000. Produção alimentícia,9120,Alimentos,1200
+,9121,Agroindústria,1000
+,9123,Cervejaria,1200
+,9124,Confeitaria,800
+,9125,Panificação,800
+,9127,Viticultura e Enologia,1200
+,9999,Outros - Eixo Produção Alimentícia,800
+10000. Produção cultural e design,10128,Artes Circenses,1200
+,10129,Teatro,1000
+,10130,Artes Visuais,1200
+,10131,Artesanato,800
+,10132,Canto,1000
+,10133,Composição e Arranjo,1200
+,10134,Design Gráfico,1000
+,10135,Conservação e Restauro,1200
+,10136,Dança,1200
+,10137,Design de Calçados,800
+,10138,Design de Embalagens,800
+,10139,Design de Interiores,1200
+,10140,Design de Jóias,800
+,10141,Design de Móveis,800
+,10143,Fabricação de Instrumentos Musicais,800
+,10144,Instrumento Musical,1200
+,10145,Modelagem do Vestuário,800
+,10146,Multimídia,800
+,10147,Paisagismo,1000
+,10148,Processos Fotográficos,800
+,10149,Produção de Áudio e Vídeo,1200
+,10150,Produção de Moda,800
+,10151,Publicidade,800
+,10152,Rádio e Televisão,1000
+,10153,Regência,100
+,10154,Cenografia,800
+,10155,Museologia,1200
+,10157,Figurino Cênico,800
+,10158,Design de Moda,800
+,10159,Estilismo e Coordenação de Moda,800
+,10160,Produção Cultural,800
+,10999,Outros - Eixo Produção Cultural e Design,800
+11000. Produção industrial,11154,Açúcar e Álcool,1200
+,11155,Biocombustíveis,1200
+,11156,Calçados,1200
+,11157,Celulose e Papel,1200
+,11158,Cerâmica,1200
+,11159,Construção Naval,1200
+,11160,Curtimento,1200
+,11161,Fabricação Mecânica,1200
+,11164,Joalheria,1200
+,11165,Móveis,1200
+,11166,Petróleo e Gás,1200
+,11167,Plásticos,1200
+,11169,Têxtil,1200
+,11170,Vestuário,1200
+,11171,Processos Gráficos,1200
+,11173,Biotecnologia,1200
+,11174,Petroquímica,1200
+,11175,Química,1200
+,11176,Planejamento e Controle da Produção,800
+,11177,Vidros,1200
+,11178,Processamento da Madeira,1200
+,11999,Outros - Eixo Produção Industrial,800
+12000. Recursos naturais,12171,Agricultura,1200
+,12172,Agroecologia,1200
+,12173,Agronegócio,1200
+,12174,Agropecuária,1200
+,12175,Aquicultura,1000
+,12176,Cafeicultura,1200
+,12178,Florestas,1200
+,12179,Fruticultura,1200
+,12180,Geologia,1200
+,12181,Mineração,1200
+,12182,Pesca,1000
+,12184,Recursos Pesqueiros,1000
+,12185,Zootecnia,1200
+,12188,Apicultura,1200
+,12999,Outros - Eixo Recursos Naturais,800
+13000. Segurança,13181,Defesa Civil,800
+,13182,Segurança do Trabalho,1200
+,13183,Prevenção e Combate a Incêndios,1000
+,13999,Outros - Eixo Segurança,800

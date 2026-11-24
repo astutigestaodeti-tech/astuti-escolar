@@ -1,0 +1,280 @@
+Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira
+Diretoria de Estatísticas Educacionais
+Coordenação-Geral do Censo Escolar da Educação Básica
+Coordenação de Verificação de Dados e Sistemas Informatizados
+Censo Escolar 2026
+Tabela de regras de áreas do conhecimento
+Etapa/ Série,Áreas que DEVEM ser habilitadas para preenchimento,Áreas que NÃO DEVEM ser habilitadas para preenchimento (desabilitadas e ocultas)
+1 Educação infantil – creche (0 a 3 anos),Nenhuma,Todas
+2 Educação infantil – pré-escola (4 e 5 anos)
+3 Educação infantil - unificada (0 a 5 anos)
+,3 - Matemática,1 - Química
+14 Ensino fundamental de 9 anos – 1º ano,5 - Ciências,2 - Física
+15 Ensino fundamental de 9 anos – 2º ano,6 - Língua /Literatura Portuguesa,4 - Biologia
+16 Ensino fundamental de 9 anos – 3º ano,7 - Língua /Literatura estrangeira - Inglês,17 - Áreas do conhecimento profissionalizantes
+17 Ensino fundamental de 9 anos – 4º ano,8 - Língua /Literatura estrangeira - Espanhol,25 - Áreas do conhecimento pedagógicas
+18 Ensino fundamental de 9 anos – 5º ano,9 - Língua /Literatura estrangeira - outra,29 - Sociologia
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)",33 - Projeto de vida
+,11 - Educação Física,32 - Estágio Curricular Supervisionado
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,28 - Estudos Sociais
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,99 - Outras áreas do conhecimento
+69 EJA - Ensino fundamental - anos iniciais (1º segmento),3 - Matemática,1 - Química
+,5 - Ciências,2 - Física
+,6 - Língua /Literatura Portuguesa,4 - Biologia
+,7 - Língua /Literatura estrangeira - Inglês,17 - Áreas do conhecimento profissionalizantes
+,8 - Língua /Literatura estrangeira - Espanhol,25 - Áreas do conhecimento pedagógicas
+,9 - Língua /Literatura estrangeira - outra,29 - Sociologia
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)",33 - Projeto de vida
+,11 - Educação Física,32 - Estágio Curricular Supervisionado
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,28 - Estudos Sociais
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,99 - Outras áreas do conhecimento
+,1 - Química,17 - Áreas do conhecimento profissionalizantes
+19 Ensino fundamental de 9 anos – 6º ano,2 - Física,25 - Áreas do conhecimento pedagógicas
+20 Ensino fundamental de 9 anos – 7º ano,3 - Matemática,28 - Estudos Sociais
+21 Ensino fundamental de 9 anos – 8º ano,4 - Biologia,32 - Estágio Curricular Supervisionado
+41 Ensino fundamental de 9 anos – 9º ano,5 - Ciências,33 - Projeto de vida
+,6 - Língua /Literatura Portuguesa
+,7 - Língua /Literatura estrangeira - Inglês
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,99 - Outras áreas do conhecimento
+,1 - Química,17 - Áreas do conhecimento profissionalizantes
+23 Ensino fundamental de 9 anos – correção de Fluxo,2 - Física,25 - Áreas do conhecimento pedagógicas
+22 Ensino fundamental de 9 anos – multi,3 - Matemática,32 - Estágio Curricular Supervisionado
+56 Educação infantil e ensino fundamental multietapa,4 - Biologia,33 - Projeto de vida
+,5 - Ciências
+,6 - Língua /Literatura Portuguesa
+,7 - Língua /Literatura estrangeira - Inglês
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,28 - Estudos Sociais
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,99 - Outras áreas do conhecimento
+70 - EJA - Ensino fundamental - anos finais (2º segmento),1 - Química,17 - Áreas do conhecimento profissionalizantes
+,2 - Física,25 - Áreas do conhecimento pedagógicas
+,3 - Matemática,28 - Estudos Sociais
+,4 - Biologia,32 - Estágio Curricular Supervisionado
+,5 - Ciências,33 - Projeto de vida
+,6 - Língua /Literatura Portuguesa
+,7 - Língua /Literatura estrangeira - Inglês
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,99 - Outras áreas do conhecimento
+72 - EJA - Ensino fundamental  - anos iniciais e anos finais (EJA Multietapas),1 - Química,17 - Áreas do conhecimento profissionalizantes
+,2 - Física,25 - Áreas do conhecimento pedagógicas
+,3 - Matemática,32 - Estágio Curricular Supervisionado
+,4 - Biologia,33 - Projeto de vida
+,5 - Ciências
+,6 - Língua /Literatura Portuguesa
+,7 - Língua /Literatura estrangeira - Inglês
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,28 - Estudos Sociais
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,99 - Outras áreas do conhecimento
+73 - Curso FIC integrado na modalidade EJA - nível fundamental,1 - Química,25 - Áreas do conhecimento pedagógicas
+,2 - Física,33 - Projeto de vida
+,3 - Matemática
+,4 - Biologia
+,5 - Ciências
+,6 - Língua /Literatura Portuguesa
+,7 - Língua /Literatura estrangeira - Inglês
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,28 - Estudos Sociais
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,32 - Estágio Curricular Supervisionado
+,99 - Outras áreas do conhecimento
+,17 - Áreas do conhecimento profissionalizantes
+25 - Ensino médio – 1ª série,1 - Química,5 - Ciências
+26 - Ensino médio – 2ª série,2 - Física,17 - Áreas do conhecimento profissionalizantes
+27 - Ensino médio – 3ª série,3 - Matemática,25 - Áreas do conhecimento pedagógicas
+28 - Ensino médio – 4ª série,4 - Biologia,28 - Estudos Sociais
+29 - Ensino médio – não seriada,6 - Língua /Literatura Portuguesa,32 - Estágio Curricular Supervisionado
+,7 - Língua /Literatura estrangeira - Inglês
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,33 - Projeto de vida
+,99 - Outras áreas do conhecimento
+71 - EJA - Ensino médio (3º segmento),1 - Química,5 - Ciências
+,2 - Física,17 - Áreas do conhecimento profissionalizantes
+,3 - Matemática,25 - Áreas do conhecimento pedagógicas
+,4 - Biologia,28 - Estudos Sociais
+,6 - Língua /Literatura Portuguesa,33 - Projeto de vida
+,7 - Língua /Literatura estrangeira - Inglês,32 - Estágio Curricular Supervisionado
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,99 - Outras áreas do conhecimento
+74 - Curso técnico integrado na modalidade EJA (EJA integrada à educação profissional de nível médio),1 - Química,5 - Ciências
+67 - Curso FIC integrado na modalidade EJA  - nível médio,2 - Física,25 - Áreas do conhecimento pedagógicas
+,3 - Matemática,28 - Estudos Sociais
+,4 - Biologia,33 - Projeto de vida
+,6 - Língua /Literatura Portuguesa
+,7 - Língua /Literatura estrangeira - Inglês
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,17 - Áreas do conhecimento profissionalizantes
+,23 - Libras
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como Segunda Língua
+,32 - Estágio Curricular Supervisionado
+,99 - Outras áreas do conhecimento
+35 - Ensino médio – normal/magistério 1ª série,1 - Química,17 - Áreas do conhecimento profissionalizantes
+36 - Ensino médio – normal/magistério 2ª série,2 - Física,28 - Estudos Sociais
+37 - Ensino médio – normal/magistério 3ª série,3 - Matemática
+38 - Ensino médio – normal/magistério 4ª série,4 - Biologia
+,5 - Ciências
+,6 - Língua /Literatura Portuguesa
+,7 - Língua /Literatura estrangeira - Inglês
+,8 - Língua /Literatura estrangeira - Espanhol
+,9 - Língua /Literatura estrangeira - outra
+,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,11 - Educação Física
+,12 - História
+,13 - Geografia
+,14 - Filosofia
+,16 - Informática/Computação
+,23 - Libras
+,25 - Áreas do conhecimento pedagógicas
+,26 - Ensino Religioso
+,27 - Língua Indígena
+,29 - Sociologia
+,30 - Língua/Literatura estrangeira - Francês
+,31 - Língua Portuguesa como segunda língua
+,32 - Estágio curricular cupervisionado
+,33 - Projeto de vida
+,99 - Outras áreas do conhecimento
+39 - Curso técnico concomitante,17 - Áreas do conhecimento profissionalizantes,1 - Química
+40 - Curso técnico subsequente,32 - Estágio Curricular Supervisionado,2 - Física
+64 - Curso técnico misto,,3 - Matemática
+68 - Qualificação profissional (Curso FIC) - concomitante,,4 - Biologia
+75 - Qualificação profissional (Curso FIC) - não vinculada,,5 - Ciências
+,,6 - Língua /Literatura Portuguesa
+,,7 - Língua /Literatura estrangeira - Inglês
+,,8 - Língua /Literatura estrangeira - Espanhol
+,,9 - Língua /Literatura estrangeira - outra
+,,"10 - Artes (Educação Artística, Teatro, Dança, Música, Artes Plásticas e outras)"
+,,11 - Educação Física
+,,12 - História
+,,13 - Geografia
+,,14 - Filosofia
+,,16 - Informática/Computação
+,,23 - Libras
+,,25 - Áreas do conhecimento pedagógicas
+,,26 - Ensino Religioso
+,,27 - Língua Indígena
+,,28 - Estudos Sociais
+,,29 - Sociologia
+,,30 - Língua/Literatura estrangeira - Francês
+,,31 - Língua Portuguesa como Segunda Língua
+,,33 - Projeto de vida
+,,99 - Outras áreas do conhecimento
+Fonte: MEC/Inep/DEED
