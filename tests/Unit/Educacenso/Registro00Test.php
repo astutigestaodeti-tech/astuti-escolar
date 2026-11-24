@@ -32,7 +32,11 @@ class Registro00Test extends TestCase
 
     private function ano(): SchoolYear
     {
-        return new SchoolYear(['year' => 2026, 'start_date' => '2026-02-02', 'end_date' => '2026-12-18']);
+        $ano = new SchoolYear;
+        $ano->setDateFormat('Y-m-d H:i:s');
+        $ano->fill(['year' => 2026, 'start_date' => '2026-02-02', 'end_date' => '2026-12-18']);
+
+        return $ano;
     }
 
     private function recusas(Registro00 $registro): array
@@ -59,7 +63,7 @@ class Registro00Test extends TestCase
     public function test_monta_os_53_campos_sem_inventar_dados_fora_do_escopo(): void
     {
         $registro = Registro00::para($this->escola(), $this->censo([
-            'email' => 'escola@example.invalid',
+            'email' => 'escola@example.org',
         ]), $this->ano(), 2026);
 
         $this->assertSame(range(1, 53), array_keys($registro->valores));
