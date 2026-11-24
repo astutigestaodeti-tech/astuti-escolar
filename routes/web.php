@@ -81,7 +81,7 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
 Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
     // Lista de espera: somente gestão municipal e unidades autorizadas. Sem acesso público.
     Route::get('/lista-de-espera', [WaitlistController::class, 'index'])->name('waitlist.index');
-    Route::get('/lista-de-espera/novo', [WaitlistController::class, 'create'])->name('waitlist.create');
+    Route::get('/lista-de-espera/novo', [WaitlistController::class, 'create'])->middleware(RequireConfirmedTwoFactor::class)->name('waitlist.create');
     Route::post('/lista-de-espera', [WaitlistController::class, 'store'])
         ->middleware(RequireConfirmedTwoFactor::class)->name('waitlist.store');
     Route::get('/lista-de-espera/cep/{cep}', [WaitlistController::class, 'postalLookup'])
@@ -166,7 +166,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas/{escola}/alimentacao/cozinha', [SchoolMealsController::class, 'kitchen'])
         ->whereUuid('escola')->name('school.meals.kitchen');
     Route::get('/escolas/{escola}/alimentacao/restricoes', [SchoolMealsController::class, 'allergies'])
-        ->whereUuid('escola')->name('school.meals.allergies');
+        ->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.meals.allergies');
     Route::get('/escolas/{escola}/alimentacao/relatorio', [SchoolMealsController::class, 'schoolReport'])
         ->whereUuid('escola')->name('school.meals.report');
     // Tempo integral: rede pela gestao, escola propria pela direcao/secretaria.
@@ -204,9 +204,9 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/calendario/feriados-nacionais', [SchoolCalendarController::class, 'addNationalHolidays'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.calendar.national-holidays');
     Route::delete('/escolas/{escola}/calendario/{dia}', [SchoolCalendarController::class, 'destroy'])->whereUuid('escola')->whereUuid('dia')->middleware(RequireConfirmedTwoFactor::class)->name('school.calendar.destroy');
     Route::get('/escolas/{escola}/servidores', [SchoolStaffController::class, 'index'])->whereUuid('escola')->name('school.staff.index');
-    Route::get('/escolas/{escola}/servidores/novo', [SchoolStaffController::class, 'create'])->whereUuid('escola')->name('school.staff.create');
+    Route::get('/escolas/{escola}/servidores/novo', [SchoolStaffController::class, 'create'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.create');
     Route::post('/escolas/{escola}/servidores', [SchoolStaffController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.store');
-    Route::get('/escolas/{escola}/servidores/{servidor}/editar', [SchoolStaffController::class, 'edit'])->whereUuid('escola')->whereUuid('servidor')->name('school.staff.edit');
+    Route::get('/escolas/{escola}/servidores/{servidor}/editar', [SchoolStaffController::class, 'edit'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.edit');
     Route::put('/escolas/{escola}/servidores/{servidor}', [SchoolStaffController::class, 'update'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.update');
     Route::get('/escolas/{escola}/servidores/{servidor}/arquivar', [SchoolStaffController::class, 'removeForm'])->whereUuid('escola')->whereUuid('servidor')->name('school.staff.remove.form');
     Route::delete('/escolas/{escola}/servidores/{servidor}', [SchoolStaffController::class, 'destroy'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.staff.destroy');
@@ -258,10 +258,10 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->name('school.classes.attendance.correct');
     Route::get('/escolas/{escola}/transporte/rotas', [SchoolTransportRoutesController::class, 'index'])->whereUuid('escola')->name('school.transport.routes.index');
     Route::get('/escolas/{escola}/matriculas', [SchoolEnrollmentController::class, 'index'])->whereUuid('escola')->name('school.enrollments.index');
-    Route::get('/escolas/{escola}/importacoes/transporte', [ConfirmedTransportImportController::class, 'index'])->whereUuid('escola')->name('school.imports.transport.index');
+    Route::get('/escolas/{escola}/importacoes/transporte', [ConfirmedTransportImportController::class, 'index'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.imports.transport.index');
     Route::post('/escolas/{escola}/importacoes/transporte/previa', [ConfirmedTransportImportController::class, 'preview'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:6,1'])->name('school.imports.transport.preview');
     Route::post('/escolas/{escola}/importacoes/transporte/confirmar', [ConfirmedTransportImportController::class, 'confirm'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.imports.transport.confirm');
-    Route::get('/escolas/{escola}/importacoes/alunos', [ConfirmedStudentImportController::class, 'index'])->whereUuid('escola')->name('school.imports.students.index');
+    Route::get('/escolas/{escola}/importacoes/alunos', [ConfirmedStudentImportController::class, 'index'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.imports.students.index');
     Route::post('/escolas/{escola}/importacoes/alunos/previa', [ConfirmedStudentImportController::class, 'preview'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:6,1'])->name('school.imports.students.preview');
     Route::post('/escolas/{escola}/importacoes/alunos/confirmar', [ConfirmedStudentImportController::class, 'confirm'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.imports.students.confirm');
     Route::get('/escolas/{escola}/alunos', [SchoolStudentController::class, 'index'])->whereUuid('escola')->name('school.students.index');
@@ -270,7 +270,7 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
 
     // Emissão, impressão e revogação ficam restritas à gestão da escola.
     Route::get('/escolas/{escola}/alunos/{aluno}/declaracoes/nova', [EnrollmentDeclarationController::class, 'create'])
-        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.declarations.create');
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.declarations.create');
     Route::post('/escolas/{escola}/alunos/{aluno}/declaracoes', [EnrollmentDeclarationController::class, 'store'])
         ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.declarations.store');
     Route::get('/escolas/{escola}/alunos/{aluno}/declaracoes/{documento}', [EnrollmentDeclarationController::class, 'show'])
@@ -303,11 +303,11 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
 
     // Responsáveis: cadastro municipal, vínculo por aluno e gravação protegida pelo segundo fator.
     Route::get('/escolas/{escola}/alunos/{aluno}/responsaveis/novo', [GuardianController::class, 'create'])
-        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.guardians.create');
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.guardians.create');
     Route::post('/escolas/{escola}/alunos/{aluno}/responsaveis', [GuardianController::class, 'store'])
         ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.guardians.store');
     Route::get('/escolas/{escola}/alunos/{aluno}/responsaveis/{vinculo}/editar', [GuardianController::class, 'edit'])
-        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->name('school.students.guardians.edit');
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.guardians.edit');
     Route::put('/escolas/{escola}/alunos/{aluno}/responsaveis/{vinculo}', [GuardianController::class, 'update'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('vinculo')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.guardians.update');
 
@@ -332,12 +332,12 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('aluno')->name('school.students.report-card.show');
     // Educação especial e AEE (Censo): mesmo acesso da ficha de saúde.
     Route::get('/escolas/{escola}/alunos/{aluno}/educacao-especial', [StudentSpecialEducationController::class, 'edit'])
-        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.special-education.edit');
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.special-education.edit');
     Route::post('/escolas/{escola}/alunos/{aluno}/educacao-especial', [StudentSpecialEducationController::class, 'update'])
         ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
         ->name('school.students.special-education.update');
     Route::get('/escolas/{escola}/alunos/{aluno}/saude', [StudentHealthController::class, 'edit'])
-        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.health.edit');
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.health.edit');
     Route::post('/escolas/{escola}/alunos/{aluno}/saude', [StudentHealthController::class, 'updateProfile'])
         ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.health.update');
     Route::post('/escolas/{escola}/alunos/{aluno}/saude/alertas', [StudentHealthController::class, 'storeAlert'])
@@ -356,11 +356,11 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
 
     // Pessoas adicionais para retirada: responsáveis já autorizados por vínculo familiar.
     Route::get('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/nova', [StudentPickupAuthorizationController::class, 'create'])
-        ->whereUuid('escola')->whereUuid('aluno')->name('school.students.pickups.create');
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.pickups.create');
     Route::post('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas', [StudentPickupAuthorizationController::class, 'store'])
         ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.pickups.store');
     Route::get('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/{autorizacao}/editar', [StudentPickupAuthorizationController::class, 'edit'])
-        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('autorizacao')->name('school.students.pickups.edit');
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('autorizacao')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.pickups.edit');
     Route::put('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/{autorizacao}', [StudentPickupAuthorizationController::class, 'update'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('autorizacao')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.pickups.update');
     Route::get('/escolas/{escola}/alunos/{aluno}/pessoas-autorizadas/{autorizacao}/remover', [StudentPickupAuthorizationController::class, 'removeForm'])
@@ -369,19 +369,19 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('autorizacao')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.students.pickups.remove');
 
     // Gravação: permissão de gestão na escola (no controlador) e segundo fator confirmado.
-    Route::get('/escolas/{escola}/alunos/novo', [StudentRecordController::class, 'create'])->whereUuid('escola')->name('school.students.create');
+    Route::get('/escolas/{escola}/alunos/novo', [StudentRecordController::class, 'create'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.create');
     Route::post('/escolas/{escola}/alunos', [StudentRecordController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.store');
-    Route::get('/escolas/{escola}/alunos/{aluno}/editar', [StudentRecordController::class, 'edit'])->whereUuid('escola')->whereUuid('aluno')->name('school.students.edit');
+    Route::get('/escolas/{escola}/alunos/{aluno}/editar', [StudentRecordController::class, 'edit'])->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.edit');
     Route::put('/escolas/{escola}/alunos/{aluno}', [StudentRecordController::class, 'update'])->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class)->name('school.students.update');
 
     // Movimentações são confirmadas em GET e gravadas somente com segundo fator.
     // A exclusão de cadastro é ação delicada: pede o código digitado nos últimos 15 minutos.
     Route::get('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/transferir', [EnrollmentMovementController::class, 'transferForm'])
-        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->name('school.enrollments.transfer.form');
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class)->name('school.enrollments.transfer.form');
     Route::post('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/transferir', [EnrollmentMovementController::class, 'transfer'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class)->name('school.enrollments.transfer');
     Route::get('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/encerrar', [EnrollmentMovementController::class, 'endForm'])
-        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->name('school.enrollments.end.form');
+        ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class)->name('school.enrollments.end.form');
     Route::post('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/encerrar', [EnrollmentMovementController::class, 'end'])
         ->whereUuid('escola')->whereUuid('aluno')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class)->name('school.enrollments.end');
     Route::get('/escolas/{escola}/alunos/{aluno}/matriculas/{matricula}/excluir-cadastro', [EnrollmentMovementController::class, 'deleteForm'])

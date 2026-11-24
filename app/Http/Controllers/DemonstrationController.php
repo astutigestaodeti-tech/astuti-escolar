@@ -7,9 +7,15 @@ use Illuminate\View\View;
 
 class DemonstrationController extends Controller
 {
+    public static function enabled(): bool
+    {
+        return app()->environment('testing') || (app()->environment('local') && (bool) config('app.demonstracao'));
+    }
+
     public function index(Request $request): View
     {
-        abort_unless(app()->environment('local', 'testing'), 404);
+        // Protótipo visual antigo: só no notebook (ASTUTI_DEMONSTRACAO=1). Nunca na VPS publicada.
+        abort_unless(self::enabled(), 404);
 
         $screens = [
             'painel' => 'Visão geral',

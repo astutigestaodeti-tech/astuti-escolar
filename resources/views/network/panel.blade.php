@@ -35,6 +35,8 @@
                 <div><dt>Alunos ativos</dt><dd>{{ $totals['students'] }}</dd></div>
                 <div><dt>Turmas</dt><dd>{{ $totals['classes'] }}</dd></div>
                 <div><dt>Alertas de faltas</dt><dd>{{ $totals['alerts'] }}</dd></div>
+                <div><dt>Sem responsável</dt><dd>{{ $totals['without_guardian'] }}</dd></div>
+                <div><dt>Possíveis cadastros repetidos</dt><dd>{{ $totals['repeated'] }}</dd></div>
                 <div><dt>Cadastros com pendência</dt><dd>{{ $totals['pendencies'] }}</dd></div>
                 <div><dt>Usuários do transporte</dt><dd>{{ $totals['transport'] }}</dd></div>
                 <div><dt>Transporte sem rota</dt><dd>{{ $totals['without_route'] }}</dd></div>

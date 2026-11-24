@@ -149,4 +149,27 @@ class StudentHealthTest extends TwoMunicipalityTestCase
         $this->post($this->url('/alertas', self::ESCOLA_A2), ['kind' => 'allergy', 'severity' => 'attention', 'alert_text' => 'Tentativa de outra escola'])->assertForbidden();
         $this->assertSame(2, $this->inMunicipality(fn (): int => StudentHealthAlert::query()->count()));
     }
+
+    public function test_sem_segundo_fator_a_gestao_ve_so_alertas_graves_e_nao_abre_saude_nem_deficiencia(): void
+    {
+        $this->user('school_director', [self::ESCOLA_A1]);
+        $this->post($this->url('/alertas'), ['kind' => 'allergy', 'severity' => 'critical', 'alert_text' => 'Alergia grave a amendoim', 'care_instructions' => 'Chamar o SAMU (192) e a família.']);
+        $this->post($this->url('/alertas'), ['kind' => 'care', 'severity' => 'attention', 'alert_text' => 'Usa óculos para leitura']);
+
+        // Mesma direção, agora numa conta sem segundo fator.
+        $semFator = $this->criarUsuario('direcao-sem-fator@example.invalid');
+        $this->vincular($semFator, $this->municipioA, 'school_director', [self::ESCOLA_A1]);
+        $this->actingAs($semFator);
+
+        $this->get($this->ficha())->assertOk()
+            ->assertSee('Alergia grave a amendoim')
+            ->assertDontSee('Usa óculos para leitura')
+            ->assertDontSee('Editar ficha de saúde')
+            ->assertDontSee('Editar educação especial')
+            ->assertSee('Ativar o segundo fator');
+        foreach (['/saude', '/educacao-especial', '/responsaveis/novo', '/pessoas-autorizadas/nova', '/declaracoes/nova'] as $tela) {
+            $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->student.$tela)->assertRedirect(route('two-factor.challenge'));
+        }
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alimentacao/restricoes')->assertRedirect(route('two-factor.challenge'));
+    }
 }

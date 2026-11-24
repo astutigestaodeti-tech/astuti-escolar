@@ -47,6 +47,18 @@ class DemonstrationScreenTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_demonstracao_antiga_fica_fora_da_vps_sem_a_opcao_do_notebook(): void
+    {
+        app()->detectEnvironment(fn () => 'local');
+        config()->set('app.demonstracao', false);
+        $this->get('/demonstracao')->assertNotFound();
+        $this->get('/login')->assertDontSee('Ver a demonstração de Monte Sereno');
+
+        config()->set('app.demonstracao', true);
+        $this->get('/demonstracao')->assertOk();
+        $this->get('/login')->assertSee('Ver a demonstração de Monte Sereno');
+    }
+
     public function test_demo_is_unavailable_when_running_in_production(): void
     {
         $originalEnvironment = app()->environment();

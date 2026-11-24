@@ -10,6 +10,9 @@
         @endif
     </div>
 
+    @if ($healthLocked ?? false)
+        <p class="nota-segundo-fator"><x-icon name="escudo" :size="16" /><span>A ficha completa de saúde e a educação especial são dados sensíveis e só aparecem com o segundo fator ativo. <a href="{{ route('two-factor.settings') }}">Ativar o segundo fator</a></span></p>
+    @endif
     @if ($healthAlerts->isEmpty())
         <p class="texto-suave">{{ $canManageHealth ? 'Nenhum alerta de saúde informado.' : 'Nenhum alerta grave informado.' }}</p>
     @else

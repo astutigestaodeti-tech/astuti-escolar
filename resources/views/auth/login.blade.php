@@ -45,7 +45,7 @@
             </form>
 
             <p class="acesso-rodape">Acesso restrito a servidores autorizados. Esqueceu a senha? Procure a Secretaria Municipal de Educação.</p>
-            @if (app()->environment('local'))
+            @if (\App\Http\Controllers\DemonstrationController::enabled() && ! app()->environment('testing'))
                 <p class="acesso-rodape"><a href="{{ route('demo') }}">Ver a demonstração de Monte Sereno</a></p>
             @endif
         </div>
