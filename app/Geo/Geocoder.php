@@ -60,6 +60,15 @@ class Geocoder
             return [...$point, 'precision' => 'rua'];
         }
 
+        // A rua não está no mapa (comum em cidades pequenas): mostra o bairro
+        // ou a cidade, e a pessoa arrasta o marcador até o lugar certo.
+        if ($district !== null && ($point = $this->query(['q' => implode(', ', array_filter([$district, $city, $state, 'Brasil']))])) !== null) {
+            return [...$point, 'precision' => 'bairro'];
+        }
+        if (($point = $this->query(array_filter(['city' => $city, 'state' => $state, 'country' => 'Brasil']))) !== null) {
+            return [...$point, 'precision' => 'cidade'];
+        }
+
         return null;
     }
 
@@ -82,6 +91,11 @@ class Geocoder
             $number = preg_match('/^\d/', $m['number']) === 1 ? $m['number'] : null;
 
             return $this->locate($m['street'], $number, $m['district'] ?? null, $m['city'], strtoupper($m['state']), null);
+        }
+
+        // Formato do próprio cadastro: "Rua X 240, Bairro, Cidade/UF".
+        if (preg_match('/^(?<street>[^,]+?)(?:\s+(?<number>\d+[A-Za-z]?))?(?:,\s*(?<district>[^,\/]+))?,\s*(?<city>[^,\/]+?)\s*\/\s*(?<state>[A-Za-z]{2})$/u', $text, $m) === 1) {
+            return $this->locate($m['street'], ($m['number'] ?? '') !== '' ? $m['number'] : null, ($m['district'] ?? '') !== '' ? $m['district'] : null, $m['city'], strtoupper($m['state']), null);
         }
 
         $expanded = $this->expand($text);

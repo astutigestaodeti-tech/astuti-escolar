@@ -22,6 +22,7 @@
         $origem = $suggestion && $suggestion['found'] ? ($suggestion['source'] ?? 'endereco') : ($subject->geo_source ?? 'mapa');
         $porCoordenada = $suggestion && $suggestion['found'] && ($suggestion['source'] ?? null) === 'mapa';
         $soRua = $suggestion && $suggestion['found'] && ($suggestion['precision'] ?? null) === 'rua';
+        $aproximado = $suggestion && $suggestion['found'] && in_array($suggestion['precision'] ?? null, ['bairro', 'cidade'], true);
     @endphp
     <div class="folha-titulo">
         <div>
@@ -36,6 +37,8 @@
     @endif
     @if ($suggestion && ! $suggestion['found'] && ($suggestion['link'] ?? false))
         <div class="status-erro" role="status"><x-icon name="info" :size="18" /> Não consegui ler o ponto deste link do Google Maps. No Google Maps, clique com o botão direito no local, clique nos números que aparecem no alto (eles são copiados) e cole aqui.</div>
+    @elseif ($aproximado)
+        <div class="status-aviso" role="status"><x-icon name="info" :size="18" /> A rua ainda não está no mapa do OpenStreetMap, então mostrei {{ $suggestion['precision'] === 'bairro' ? 'o bairro' : 'a cidade' }}. Arraste o marcador até a {{ $kind === 'aluno' ? 'casa' : 'escola' }}{{ $kind === 'escola' ? ', ou use "Abrir Google Maps" e cole aqui os números do local,' : '' }} e salve.</div>
     @elseif ($suggestion && ! $suggestion['found'])
         <div class="status-erro" role="status"><x-icon name="info" :size="18" /> Não encontrei "{{ $suggestion['query'] }}" no mapa. Tente só a rua e a cidade, cole as coordenadas do Google Maps ou clique direto no mapa.</div>
     @endif
@@ -131,7 +134,7 @@
             <input type="hidden" name="latitude" id="latitude" value="{{ $ponto['lat'] ?? '' }}">
             <input type="hidden" name="longitude" id="longitude" value="{{ $ponto['lon'] ?? '' }}">
             <input type="hidden" name="geo_source" id="geo_source" value="{{ $origem }}">
-            <p class="texto-ajuda" id="geo-situacao">{{ $porCoordenada ? 'Coordenadas reconhecidas. Confira o ponto no mapa e salve.' : ($soRua ? 'Encontrei a rua, mas o mapa não tem o número exato. Arraste o marcador até a porta da '.($kind === 'aluno' ? 'casa' : 'escola').' e salve.' : ($ponto ? 'Ponto marcado. Ajuste se precisar e salve.' : 'Nenhum ponto marcado ainda.')) }}</p>
+            <p class="texto-ajuda" id="geo-situacao">{{ $porCoordenada ? 'Coordenadas reconhecidas. Confira o ponto no mapa e salve.' : ($aproximado ? 'Ponto aproximado. Arraste o marcador até o local exato e salve.' : ($soRua ? 'Encontrei a rua, mas o mapa não tem o número exato. Arraste o marcador até a porta da '.($kind === 'aluno' ? 'casa' : 'escola').' e salve.' : ($ponto ? 'Ponto marcado. Ajuste se precisar e salve.' : 'Nenhum ponto marcado ainda.'))) }}</p>
             <div class="formulario-acoes">
                 <button class="botao" type="submit">{{ $kind === 'escola' ? 'Salvar endereço e localização' : 'Salvar localização' }}</button>
                 <a class="botao secundario" href="{{ $backUrl }}">Cancelar</a>

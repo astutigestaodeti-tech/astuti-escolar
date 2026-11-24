@@ -293,4 +293,28 @@ class GeoLocationTest extends TwoMunicipalityTestCase
         $this->user('teacher', [self::ESCOLA_A1]);
         $this->getJson($url.'?lat=-23.3&lon=-46.2')->assertForbidden();
     }
+
+    public function test_endereco_do_cadastro_sem_a_rua_no_mapa_mostra_a_cidade_para_arrastar(): void
+    {
+        Http::fake(function ($request) {
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+            // Só a busca pela cidade encontra: a rua e o bairro não estão no mapa.
+            $cityOnly = ($query['city'] ?? null) === 'Santa Isabel' && ! isset($query['street']) && ! isset($query['q']);
+
+            return Http::response($cityOnly ? [['lat' => '-23.317000', 'lon' => '-46.224000']] : []);
+        });
+        $this->user('school_director', [self::ESCOLA_A1]);
+
+        $this->get($this->base().'/localizacao?procurar='.urlencode('Rua Fernandes Cardoso 240, 13 de Maio, Santa Isabel/SP, 07500-000'))
+            ->assertOk()
+            ->assertSee('mostrei a cidade')
+            ->assertSee('data-lat="-23.317"', false);
+
+        // O formato do cadastro ("Cidade/UF") foi lido em campos: rua com número e cidade separados.
+        Http::assertSent(function ($request): bool {
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+
+            return ($query['street'] ?? null) === '240 Rua Fernandes Cardoso' && ($query['state'] ?? null) === 'SP';
+        });
+    }
 }
