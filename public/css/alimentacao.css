@@ -1,0 +1,25 @@
+/* Alimentação escolar: recuos de cartão e impressão A4. */
+.pagina-alimentacao .alimentacao-form{display:flex;flex-wrap:wrap;align-items:end;gap:14px;margin:8px 0 16px}
+.pagina-alimentacao .alimentacao-form label{display:grid;gap:7px;flex:1 1 190px;min-width:0;font-weight:650}
+.pagina-alimentacao .alimentacao-form .alimentacao-largo{flex-basis:100%}
+.pagina-alimentacao .alimentacao-form .entrada{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.pagina-alimentacao .alimentacao-form button{margin-bottom:0}
+.pagina-alimentacao .alimentacao-links{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:14px 0 4px}
+.pagina-alimentacao .alimentacao-rolagem{overflow-x:auto;max-width:100%}
+.pagina-alimentacao .alimentacao-tabela{min-width:680px;width:100%;table-layout:auto}
+.pagina-alimentacao .alimentacao-tabela th,.pagina-alimentacao .alimentacao-tabela td{vertical-align:top;white-space:normal;word-break:normal;overflow-wrap:normal;hyphens:none;min-width:90px}
+.pagina-alimentacao .alimentacao-tabela small{display:block;font-weight:400}
+.pagina-alimentacao .alimentacao-indicadores{display:flex;flex-wrap:wrap;gap:14px;margin:4px 0 16px}
+.pagina-alimentacao .alimentacao-indicadores>div{flex:1 1 140px;border:1px solid var(--borda,#d8dce2);border-radius:9px;padding:13px;min-width:0}
+.pagina-alimentacao .alimentacao-indicadores dt{font-size:.86rem;line-height:1.4}
+.pagina-alimentacao .alimentacao-indicadores dd{font-size:1.3rem;font-weight:700;margin:6px 0 0}
+@media(max-width:600px){.pagina-alimentacao .alimentacao-form button{width:100%}}
+@media print{
+@page{size:A4 landscape;margin:12mm}
+.pagina-alimentacao .lateral,.pagina-alimentacao .topo,.pagina-alimentacao .rodape,.pagina-alimentacao .rodape-versao,.pagina-alimentacao .voltar,.pagina-alimentacao form,.pagina-alimentacao .alimentacao-links,.pagina-alimentacao .botao{display:none!important}
+.pagina-alimentacao .app,.pagina-alimentacao .area,.pagina-alimentacao .conteudo{display:block!important;width:100%!important;margin:0!important;padding:0!important;max-width:none!important}
+.pagina-alimentacao .folha{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;margin-bottom:12mm}
+.pagina-alimentacao .alimentacao-rolagem{overflow:visible}
+.pagina-alimentacao .alimentacao-tabela{min-width:0;font-size:9pt}
+.pagina-alimentacao .alimentacao-tabela th,.pagina-alimentacao .alimentacao-tabela td{padding:6px;min-width:0}
+}
