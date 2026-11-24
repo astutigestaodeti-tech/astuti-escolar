@@ -13,6 +13,7 @@ use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
 use App\Http\Controllers\EnrollmentDeclarationController;
 use App\Http\Controllers\EnrollmentMovementController;
+use App\Http\Controllers\EnrollmentRenewalController;
 use App\Http\Controllers\EquityVaarController;
 use App\Http\Controllers\FullTimeEducationController;
 use App\Http\Controllers\GeoLocationController;
@@ -250,6 +251,11 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
         ->name('school.classes.grades.correct');
     // Fechamento final, sempre com confirmação humana da escola.
+    Route::get('/escolas/{escola}/turmas/{turma}/renovacao', [EnrollmentRenewalController::class, 'index'])
+        ->whereUuid('escola')->whereUuid('turma')->name('school.classes.renewal.index');
+    Route::post('/escolas/{escola}/turmas/{turma}/renovacao', [EnrollmentRenewalController::class, 'store'])
+        ->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
+        ->name('school.classes.renewal.store');
     Route::get('/escolas/{escola}/turmas/{turma}/resultado-final', [ClassYearEndController::class, 'index'])
         ->whereUuid('escola')->whereUuid('turma')->name('school.classes.year-end.index');
     Route::post('/escolas/{escola}/turmas/{turma}/resultado-final/confirmar', [ClassYearEndController::class, 'confirm'])

@@ -28,7 +28,12 @@
             <h1>Fechamento do ano letivo</h1>
             <p>{{ $school->name }}. Turma {{ $class->name }}, {{ $class->schoolYear->year }}.</p>
         </div>
-        <a class="botao secundario" href="{{ route('school.classes.year-end.minutes', $params) }}">Visualizar ata de resultados finais</a>
+        <div class="acoes-titulo">
+            <a class="botao secundario" href="{{ route('school.classes.year-end.minutes', $params) }}">Visualizar ata de resultados finais</a>
+            @if ($closure->closed_at)
+                <a class="botao secundario" href="{{ route('school.classes.renewal.index', $params) }}">Renovar matrículas para {{ $class->schoolYear->year + 1 }}</a>
+            @endif
+        </div>
     </div>
 
     @if (session('status'))
