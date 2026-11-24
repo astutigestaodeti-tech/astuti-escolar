@@ -31,6 +31,7 @@ use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolMealMenu;
 use App\Models\Tenant\SchoolMealServing;
 use App\Models\Tenant\SchoolYear;
+use App\Models\Tenant\StaffCensus;
 use App\Models\Tenant\StaffMember;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentCensus;
@@ -80,6 +81,7 @@ class AuditTrail
         // Educação especial: só quais campos mudaram, nunca os valores.
         StudentSpecialEducation::class => ['student_id', 'changed_fields'],
         StudentCensus::class => ['student_id', 'changed_fields'],
+        StaffCensus::class => ['staff_member_id', 'changed_fields'],
         SchoolCensus::class => ['school_id', 'changed_fields'],
         StudentPriorSchoolYear::class => ['id', 'student_id', 'school_year', 'school_stage', 'result', 'attendance_percent', 'grades_changed', 'deleted_at', 'deleted_by'],
         IssuedDocument::class => ['id', 'student_id', 'school_id', 'enrollment_id', 'issued_by', 'issued_at', 'verification_code', 'revoked_at', 'revoked_by', 'revoke_reason'],

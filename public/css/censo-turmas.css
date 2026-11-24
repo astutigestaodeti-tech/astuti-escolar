@@ -34,3 +34,7 @@
 }
 .pagina-censo-turmas form > .folha + .folha{margin-top:20px}
 .pagina-censo-turmas .formulario-grade + .censo-opcoes{margin-top:20px}
+.pagina-censo-turmas .censo-linha + .censo-linha{margin-top:16px}
+.pagina-censo-turmas .censo-complementacao{border:0;margin:22px 0 0;padding:0;min-width:0}
+.pagina-censo-turmas .censo-complementacao legend{padding:0;margin-bottom:8px}
+@media (min-width:900px){.pagina-censo-turmas .censo-tres{grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)}.pagina-censo-turmas .censo-tres.iguais{grid-template-columns:repeat(3,minmax(0,1fr))}}

@@ -40,6 +40,12 @@ final class Tabelas
     /** @var array<string, list<string>>|null */
     private ?array $recursos = null;
 
+    /** @var array<string, array{codigo: string, nome: string, grau: string, area: string}>|null */
+    private ?array $cursos = null;
+
+    /** @var array<int, array{codigo: int, nome: string, municipio: int|null, ativa: bool}>|null */
+    private ?array $ies = null;
+
     /** @param  array<string, mixed>  $dados */
     private function __construct(public readonly int $ano, private readonly array $dados)
     {
@@ -264,6 +270,69 @@ final class Tabelas
         }
 
         return $this->recursos;
+    }
+
+    /**
+     * Cursos de formação superior (campos 58, 61 e 64 do registro 30), com o
+     * código alfanumérico do Inep (ex.: 0113P011).
+     *
+     * @return array<string, array{codigo: string, nome: string, grau: string, area: string}>
+     */
+    public function cursosSuperiores(): array
+    {
+        if ($this->cursos === null) {
+            $this->cursos = [];
+            $handle = fopen(resource_path("educacenso/{$this->ano}/tabelas/cursos_formacao_superior.csv"), 'r');
+            while (($linha = fgetcsv($handle, escape: '')) !== false) {
+                $codigo = strtoupper(trim($linha[6] ?? ''));
+                if (preg_match('/^\d{4}[A-Z]\d{2,3}$/', $codigo) === 1) {
+                    $this->cursos[$codigo] = ['codigo' => $codigo, 'nome' => trim($linha[7] ?? ''), 'grau' => trim($linha[8] ?? ''), 'area' => trim($linha[1] ?? '')];
+                }
+            }
+            fclose($handle);
+        }
+
+        return $this->cursos;
+    }
+
+    /** Instituição de educação superior pelo código (campos 60, 63 e 66). */
+    public function ies(int $codigo): ?array
+    {
+        if ($this->ies === null) {
+            $this->ies = [];
+            foreach ($this->linhasComCodigo('ies.csv') as $linha) {
+                $this->ies[(int) $linha[0]] = [
+                    'codigo' => (int) $linha[0],
+                    'nome' => trim($linha[1] ?? ''),
+                    'municipio' => preg_match('/^\d{7}$/', trim($linha[4] ?? '')) === 1 ? (int) $linha[4] : null,
+                    'ativa' => Texto::normalizar(trim($linha[2] ?? '')) === 'ATIVA',
+                ];
+            }
+        }
+
+        return $this->ies[$codigo] ?? null;
+    }
+
+    /** @return array<int, string> código => área do conhecimento ou componente curricular */
+    public function areasDoConhecimento(): array
+    {
+        $saida = [];
+        foreach ($this->linhasComCodigo('areas_conhecimento.csv') as $linha) {
+            $saida[(int) $linha[0]] = trim($linha[1] ?? '');
+        }
+
+        return $saida;
+    }
+
+    /** @return array<int, string> código => área geral da pós-graduação */
+    public function areasDePosGraduacao(): array
+    {
+        $saida = [];
+        foreach ($this->linhasComCodigo('areas_pos_graduacao.csv') as $linha) {
+            $saida[(int) $linha[0]] = trim($linha[1] ?? '');
+        }
+
+        return $saida;
     }
 
     /** Nome normalizado usado para comparar rótulos das tabelas com os do leiaute. */

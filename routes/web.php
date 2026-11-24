@@ -43,6 +43,7 @@ use App\Http\Controllers\SchoolStaffController;
 use App\Http\Controllers\SchoolStudentController;
 use App\Http\Controllers\SchoolTranscriptController;
 use App\Http\Controllers\SchoolTransportRoutesController;
+use App\Http\Controllers\StaffCensusController;
 use App\Http\Controllers\StudentCensusController;
 use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentHealthController;
@@ -237,6 +238,8 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::post('/escolas/{escola}/servidores', [SchoolStaffController::class, 'store'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.store');
     Route::get('/escolas/{escola}/servidores/{servidor}/editar', [SchoolStaffController::class, 'edit'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.edit');
     Route::put('/escolas/{escola}/servidores/{servidor}', [SchoolStaffController::class, 'update'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.update');
+    Route::get('/escolas/{escola}/servidores/{servidor}/censo', [StaffCensusController::class, 'edit'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.census.edit');
+    Route::put('/escolas/{escola}/servidores/{servidor}/censo', [StaffCensusController::class, 'update'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class)->name('school.staff.census.update');
     Route::get('/escolas/{escola}/servidores/{servidor}/arquivar', [SchoolStaffController::class, 'removeForm'])->whereUuid('escola')->whereUuid('servidor')->name('school.staff.remove.form');
     Route::delete('/escolas/{escola}/servidores/{servidor}', [SchoolStaffController::class, 'destroy'])->whereUuid('escola')->whereUuid('servidor')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.staff.destroy');
     Route::get('/escolas/{escola}/turmas', [SchoolClassController::class, 'index'])->whereUuid('escola')->name('school.classes.index');
