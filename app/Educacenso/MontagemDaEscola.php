@@ -92,19 +92,7 @@ final class MontagemDaEscola
     {
         // Regras gerais 25-27 e 30.17.2 são conferidas sobre os vínculos reais
         // pela montagem, em vez de repetir a conferência preliminar.
-        $pendencias = array_values(array_filter($registro->pendencias, function (Pendencia $p) use ($tipo): bool {
-            if ($tipo === '20' && $p->campo === null && (str_starts_with($p->mensagem, 'Há outra turma nesta escola') || str_starts_with($p->mensagem, 'A turma não tem aluno matriculado') || str_starts_with($p->mensagem, 'A turma não tem professor vinculado'))) {
-                return false;
-            }
-            if ($tipo === '30' && $p->campo === 17 && str_starts_with($p->mensagem, 'Aluno em classe especial ou AEE')) {
-                return false;
-            }
-            if ($tipo === '50' && ! $p->recusa() && str_starts_with($p->mensagem, 'A função 4 exige')) {
-                return false;
-            }
-
-            return true;
-        }));
+        $pendencias = array_values(array_filter($registro->pendencias, fn (Pendencia $p): bool => ! in_array($p->regra, ['25', '26', '27', '30.17.2', '50.7.8'], true)));
 
         return ['registro' => $tipo, 'valores' => $registro->valores, 'pendencias' => $pendencias, 'origem' => $origem];
     }
