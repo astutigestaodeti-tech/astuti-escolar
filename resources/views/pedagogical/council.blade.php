@@ -107,6 +107,7 @@
         @if ($director && $council)
             <section class="folha pedagogico-secao">
                 <div class="folha-corpo">
+                    <p class="texto-ajuda">Concluir ou reabrir exige segundo fator confirmado nos últimos 15 minutos. <a href="{{ route('two-factor.challenge') }}">Confirmar novamente</a>, se necessário.</p>
                     <form method="POST" action="{{ route('pedagogical.council.transition', $params) }}" class="pedagogico-campos">
                         @csrf
                         <input type="hidden" name="periodo" value="{{ $period->id }}">
