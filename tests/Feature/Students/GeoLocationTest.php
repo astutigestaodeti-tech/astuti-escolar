@@ -243,7 +243,8 @@ class GeoLocationTest extends TwoMunicipalityTestCase
         $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1;
 
         $this->get($base.'/localizacao')->assertOk()
-            ->assertSee('Endereço da escola')->assertSee('Preencher pelo mapa')->assertSee('Salvar endereço e localização');
+            ->assertSee('Endereço da escola')->assertSee('Preencher pelo mapa')->assertSee('Salvar endereço e localização')
+            ->assertSee('Abrir Google Maps')->assertSee('https://www.google.com/maps/search/?api=1&amp;query=', false);
 
         // Só o endereço, sem ponto: volta ao mapa já procurando o endereço salvo.
         $this->post($base.'/localizacao', [
@@ -259,6 +260,10 @@ class GeoLocationTest extends TwoMunicipalityTestCase
         ])->assertRedirect($base);
 
         $this->get($base)->assertOk()->assertSee('Rua das Flores Fictícia 100, Centro, Monte Sereno/SP, 07500-000');
+        // Com o ponto salvo, o Google Maps abre nas coordenadas da escola.
+        $this->get($base.'/localizacao')->assertOk()->assertSee('query=-23.300000%2C-46.200000', false);
+        // A casa do aluno não é enviada ao Google: o botão só existe na tela da escola.
+        $this->get($this->base().'/alunos/'.$this->student.'/localizacao')->assertOk()->assertDontSee('Abrir Google Maps');
         $this->inMunicipality(function (): void {
             $school = School::query()->findOrFail(self::ESCOLA_A1);
             $this->assertSame('07500-000', $school->postal_code);

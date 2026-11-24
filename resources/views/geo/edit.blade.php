@@ -111,8 +111,15 @@
                 <input id="procurar" type="search" name="procurar" maxlength="2000" value="{{ $suggestion['query'] ?? $addressText }}" placeholder="Endereço, coordenadas ou link do Google Maps" aria-describedby="procurar-dica">
             </div>
             <button class="botao secundario" type="submit"><x-icon name="busca" :size="16" /> Procurar no mapa</button>
+            @if ($kind === 'escola')
+                @php
+                    $googleConsulta = $ponto ? sprintf('%.6F,%.6F', $ponto['lat'], $ponto['lon']) : ($school->addressLine() !== '' ? $school->addressLine() : trim($school->name.' '.($school->address_city ?? $municipality->name)));
+                @endphp
+                <a class="botao secundario" id="abrir-google-maps" target="_blank" rel="noopener noreferrer"
+                   href="https://www.google.com/maps/search/?api=1&amp;query={{ rawurlencode($googleConsulta) }}">Abrir Google Maps</a>
+            @endif
         </form>
-        <p class="texto-ajuda geo-dica" id="procurar-dica">Do Google Maps: clique com o botão direito no local e clique nos números do alto (por exemplo, -23.31234, -46.12345); eles são copiados. Cole aqui e clique em Procurar. Também vale colar o link de "Compartilhar".</p>
+        <p class="texto-ajuda geo-dica" id="procurar-dica">{{ $kind === 'escola' ? '"Abrir Google Maps" abre o mesmo local numa nova aba. ' : '' }}No Google Maps, clique com o botão direito no local e clique nos números do alto (por exemplo, -23.31234, -46.12345); eles são copiados. Cole aqui e clique em Procurar. Também vale colar o link de "Compartilhar".</p>
 
         <div id="mapa-localizacao" class="geo-mapa" role="application" aria-label="Mapa para marcar a localização"
              data-tiles="{{ config('geo.tiles_url') }}" data-atribuicao="{{ config('geo.tiles_attribution') }}"
