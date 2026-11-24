@@ -10,7 +10,10 @@
 .aula-leitura dd,.aula-texto{white-space:pre-wrap;overflow-wrap:anywhere}
 .aula-relatorio-item{border-top:1px solid var(--linha);padding:12px 0;min-width:0;overflow-wrap:anywhere}
 @media print{
-    .impressao-conteudos .aula-relatorio-acoes{display:none!important}
+    .impressao-conteudos .aula-relatorio-acoes,.impressao-conteudos .rodape,.impressao-conteudos .rodape-versao{display:none!important}
+    .impressao-conteudos .conteudo{padding:0;max-width:none}
+    .impressao-conteudos .aula-relatorio .folha-corpo{padding:0}
+    .impressao-conteudos .aula-relatorio .folha-cabecalho{padding:0}
     .impressao-conteudos .aula-relatorio{border:0;box-shadow:none}
     .impressao-conteudos .aula-relatorio-item{break-inside:avoid}
 }
