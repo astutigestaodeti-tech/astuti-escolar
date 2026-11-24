@@ -7,8 +7,12 @@ use App\Audit\AuditTrail;
 use App\Census\CensusReadiness;
 use App\Educacenso\ConferenciaDeAlunos;
 use App\Educacenso\ConferenciaDeTurmas;
+use App\Educacenso\Registro00;
+use App\Educacenso\Tabelas;
 use App\Models\Tenant\CensusParameter;
 use App\Models\Tenant\School;
+use App\Models\Tenant\SchoolCensus;
+use App\Models\Tenant\SchoolYear;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -43,18 +47,26 @@ class CensusReadinessController extends Controller
 
         // Turmas no formato do Educacenso (registro 20), por escola.
         $year = app(SchoolAbsenceAlerts::class)->currentYear();
-        $escolas = School::query()->where('status', 'active')->get(['id', 'name', 'inep_code']);
-        $classes = $year === null ? collect() : $turmas->para($escolas, $year)
+        $schools = School::query()->where('status', 'active')->get();
+        $classes = $year === null ? collect() : $turmas->para($schools, $year)
             ->map(fn (array $linhas): array => [
                 'total' => count($linhas),
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['registro']->pronto())),
             ]);
         // Alunos no formato do Educacenso (registros 30 e 60), por escola.
-        $students = $year === null ? collect() : $alunos->para($escolas, $year)
+        $students = $year === null ? collect() : $alunos->para($schools, $year)
             ->map(fn (array $linhas): array => [
                 'total' => count($linhas),
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['r30']->pronto() && $linha['r60']->pronto())),
             ]);
+
+        // Registro 00: ano correspondente ao leiaute, sem consultas por escola.
+        $ano = Tabelas::anoMaisRecente();
+        $anoLetivo = SchoolYear::query()->where('year', $ano)->first();
+        $dadosEscolas = SchoolCensus::query()->whereIn('school_id', $schools->pluck('id'))->get()->keyBy('school_id');
+        $schoolReadiness = $schools->mapWithKeys(fn (School $school): array => [
+            $school->id => Registro00::para($school, $dadosEscolas->get($school->id), $anoLetivo, $ano)->pronto(),
+        ]);
 
         // A auditoria guarda apenas que houve a consulta, sem dados pessoais.
         app(AuditTrail::class)->record('tenant', 'census.readiness.viewed');
@@ -65,6 +77,7 @@ class CensusReadinessController extends Controller
             'list' => $list->take(self::LIMIT),
             'classes' => $classes,
             'students' => $students,
+            'schoolReadiness' => $schoolReadiness,
             'listTotal' => $list->count(),
             'limit' => self::LIMIT,
             'filters' => ['escola' => $validated['escola'] ?? null, 'aviso' => $validated['aviso'] ?? null],

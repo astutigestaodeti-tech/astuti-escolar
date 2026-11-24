@@ -157,6 +157,7 @@
                         <th scope="col" class="numero">Com algo a corrigir</th>
                         <th scope="col" class="numero">Turmas prontas para o Educacenso</th>
                         <th scope="col" class="numero">Alunos prontos para o Educacenso</th>
+                        <th scope="col">Escola pronta para o Educacenso</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -185,6 +186,9 @@
                                     $alunosEscola = $students->get($linha['school']->id, ['total' => 0, 'ready' => 0]);
                                 @endphp
                                 <a href="{{ route('school.census.students.index', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}" @if ($alunosEscola['ready'] < $alunosEscola['total']) class="censo-atencao" @endif>{{ $alunosEscola['ready'] }} de {{ $alunosEscola['total'] }}</a>
+                            </td>
+                            <td>
+                                <a href="{{ route('school.census.school.edit', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}" @if (! $schoolReadiness->get($linha['school']->id, false)) class="censo-atencao" @endif>{{ $schoolReadiness->get($linha['school']->id, false) ? 'Sim' : 'Não - conferir' }}</a>
                             </td>
                         </tr>
                     @endforeach
