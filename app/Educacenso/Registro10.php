@@ -90,7 +90,8 @@ final class Registro10
         }
         $this->conferirGrupos();
         $this->conferirRegras();
-        $this->aviso(null, 'A conferência integral ainda deve verificar os demais registros obrigatórios da escola em atividade (regra geral 19) e a compatibilidade dos locais de funcionamento das turmas (registro 20, campo 21, regras 2 a 4).');
+        $this->aviso(null, 'A montagem da escola confere os demais registros obrigatórios (regra geral 19).', '19');
+        $this->aviso(null, 'A conferência integral ainda deve verificar a compatibilidade dos locais de funcionamento das turmas (registro 20, campo 21, regras 2 a 4).');
     }
 
     private function conferirGrupos(): void
@@ -253,8 +254,8 @@ final class Registro10
         $this->pendencias[] = new Pendencia('10', $campo, $mensagem);
     }
 
-    private function aviso(?int $campo, string $mensagem): void
+    private function aviso(?int $campo, string $mensagem, ?string $regra = null): void
     {
-        $this->pendencias[] = new Pendencia('10', $campo, $mensagem, Pendencia::AVISO);
+        $this->pendencias[] = new Pendencia('10', $campo, $mensagem, Pendencia::AVISO, $regra);
     }
 }

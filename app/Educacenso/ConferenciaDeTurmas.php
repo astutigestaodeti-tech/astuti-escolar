@@ -72,7 +72,7 @@ final class ConferenciaDeTurmas
             if (count($indices) > 1) {
                 foreach ($indices as $i) {
                     $linhas[$i]['registro']->pendencias[] = new Pendencia('20', null,
-                        'Há outra turma nesta escola com o mesmo nome, horários, tipo e etapa: o Educacenso recusa turmas iguais.');
+                        'Há outra turma nesta escola com o mesmo nome, horários, tipo e etapa: o Educacenso recusa turmas iguais.', regra: '25');
                 }
             }
         }

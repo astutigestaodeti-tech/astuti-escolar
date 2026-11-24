@@ -1,0 +1,7 @@
+/* Conferência lógica do Educacenso, sem apresentar os valores pessoais. */
+.pagina-educacenso-escola .educacenso-contagens{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,110px),1fr));gap:12px;margin:0}
+.pagina-educacenso-escola .educacenso-contagens div{min-width:0;border:1px solid var(--linha);border-radius:var(--raio-controle);padding:12px}
+.pagina-educacenso-escola .educacenso-contagens dd{margin:4px 0 0;font-size:22px;font-weight:700}
+.pagina-educacenso-escola .educacenso-pendencias{list-style:none;margin:0;padding:0;overflow-wrap:anywhere}
+.pagina-educacenso-escola .educacenso-pendencias li+li{border-top:1px solid var(--linha);margin-top:12px;padding-top:12px}
+.pagina-educacenso-escola .educacenso-pendencias p{margin:4px 0}

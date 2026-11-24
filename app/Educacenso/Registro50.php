@@ -107,7 +107,7 @@ final class Registro50
         // Campos 3 a 5 e campo 7, regra 7 (turma só com intérpretes ou tutores): dependem do arquivo
         // inteiro e são conferidos na geração, não em cada vínculo.
         if ($funcao === 4) {
-            $registro->aviso(7, 'A função 4 exige aluno ou outro profissional com surdez, deficiência auditiva ou surdocegueira na turma.');
+            $registro->aviso(7, 'A função 4 exige aluno ou outro profissional com surdez, deficiência auditiva ou surdocegueira na turma.', '50.7.8');
         }
         if (in_array($censo?->operating_status, [2, 3], true)) {
             $registro->aviso(7, 'O registro 50 não é enviado para escola paralisada ou extinta (regra geral 18).');
@@ -132,8 +132,8 @@ final class Registro50
         $this->pendencias[] = new Pendencia('50', $campo, $mensagem);
     }
 
-    private function aviso(int $campo, string $mensagem): void
+    private function aviso(int $campo, string $mensagem, ?string $regra = null): void
     {
-        $this->pendencias[] = new Pendencia('50', $campo, $mensagem, Pendencia::AVISO);
+        $this->pendencias[] = new Pendencia('50', $campo, $mensagem, Pendencia::AVISO, $regra);
     }
 }
