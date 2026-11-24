@@ -27,6 +27,7 @@ use App\Models\Tenant\IntegralPactTarget;
 use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\LiteracyAssessment;
 use App\Models\Tenant\LiteracyCycleSetting;
+use App\Models\Tenant\PresenceRegistration;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCalendarDay;
 use App\Models\Tenant\SchoolCensus;
@@ -109,6 +110,7 @@ class AuditTrail
         WaitlistRequest::class => ['id', 'status', 'stage', 'intake_year', 'requested_at', 'cpf', 'guardian_phone', 'priority_criteria', 'status_reason', 'deleted_at', 'student_id', 'enrollment_id', 'school_id', 'school_class_id'],
         'enrollment_renewal' => ['source_class_id', 'destination_year_id', 'enrollment_ids', 'renewed_count', 'skipped_count'],
         'student_import_receipt' => ['id', 'school_id', 'school_year_id', 'student_count', 'ignored_count', 'address_completed_count'],
+        PresenceRegistration::class => ['id', 'school_id', 'school_year_id', 'student_id', 'period'],
         'educacenso_return' => ['file_sha256', 'census_year', 'schools', 'linked', 'skipped', 'students', 'staff', 'classes', 'enrollments', 'conflicts', 'mismatches', 'not_found'],
         'transport_import_receipt' => ['id', 'school_id', 'school_year_id', 'row_count', 'changed_count'],
         Municipality::class => ['status'],

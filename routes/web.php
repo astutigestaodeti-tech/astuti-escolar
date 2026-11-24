@@ -48,6 +48,7 @@ use App\Http\Controllers\SchoolStaffController;
 use App\Http\Controllers\SchoolStudentController;
 use App\Http\Controllers\SchoolTranscriptController;
 use App\Http\Controllers\SchoolTransportRoutesController;
+use App\Http\Controllers\SistemaPresencaController;
 use App\Http\Controllers\StaffCensusController;
 use App\Http\Controllers\StaffLinkCensusController;
 use App\Http\Controllers\StudentCensusController;
@@ -183,6 +184,10 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('matricula')->whereUuid('documento')
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.active-search.revoke');
     Route::get('/escolas/{escola}/educacenso', [EducacensoSchoolController::class, 'show'])->whereUuid('escola')->name('census.educacenso.school');
+    Route::get('/sistema-presenca', [SistemaPresencaController::class, 'network'])->name('presence.network');
+    Route::get('/escolas/{escola}/sistema-presenca', [SistemaPresencaController::class, 'school'])->whereUuid('escola')->name('school.presence.index');
+    Route::post('/escolas/{escola}/sistema-presenca', [SistemaPresencaController::class, 'mark'])->whereUuid('escola')
+        ->middleware(RequireConfirmedTwoFactor::class)->name('school.presence.mark');
     Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
     Route::post('/conferencia-do-censo/parametros', [CensusReadinessController::class, 'updateParameters'])
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.readiness.parameters');

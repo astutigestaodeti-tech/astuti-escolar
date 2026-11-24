@@ -1,0 +1,7 @@
+.pagina-presenca .busca-matriculas .filtro-ano{flex:0 1 300px}
+.pagina-presenca .nota{margin-bottom:16px}
+.pagina-presenca .presenca-lista td{vertical-align:top}
+.pagina-presenca .presenca-abaixo td:first-child{box-shadow:inset 3px 0 0 var(--alerta,#b42318)}
+.pagina-presenca .presenca-lancado{display:block;font-size:13px;color:var(--tinta-2);margin-bottom:6px}
+.pagina-presenca .presenca-lista form{margin:0}
+@media (max-width:640px){.pagina-presenca .busca-matriculas .filtro-ano,.pagina-presenca .busca-matriculas .campo{flex:0 0 auto}}

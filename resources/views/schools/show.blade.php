@@ -161,6 +161,14 @@
                     <a class="botao secundario" href="{{ route('school.active-search.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Abrir busca ativa</a>
                 </div>
             </section>
+            <section class="folha cartao" aria-labelledby="titulo-sistema-presenca">
+                <div class="folha-corpo">
+                    <span class="acao-icone"><x-icon name="indicadores" /></span>
+                    <h2 id="titulo-sistema-presenca">Sistema Presença</h2>
+                    <p>Frequência de cada mês do período do Bolsa Família, para lançar no sistema do MEC.</p>
+                    <a class="botao secundario" href="{{ route('school.presence.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Abrir Sistema Presença</a>
+                </div>
+            </section>
             <section class="folha cartao alerta-faltas-resumo" aria-labelledby="titulo-alerta-faltas">
                 <span class="acao-icone"><x-icon name="info" /></span>
                 <h2 id="titulo-alerta-faltas">Alerta de faltas</h2>
