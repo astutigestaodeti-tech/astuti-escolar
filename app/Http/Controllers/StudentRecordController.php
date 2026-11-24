@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Academics\RenewalStage;
 use App\Address\BrazilianStates;
+use App\Audit\AuditTrail;
 use App\Models\Platform\Municipality;
+use App\Models\Tenant\ClassYearClosure;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
@@ -22,6 +25,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -141,6 +145,7 @@ class StudentRecordController extends Controller
             ...self::ADDRESS_RULES,
             ...$this->censusRules(),
             'school_class_id' => ['nullable', 'uuid'],
+            'inep_stage_code' => ['nullable', 'integer', Rule::in(array_keys(RenewalStage::INEP))],
             'school_year_id' => ['required', 'uuid'],
             'started_at' => ['nullable', 'date_format:Y-m-d'],
             'confirmar_duplicidade' => ['nullable', 'boolean'],
@@ -182,6 +187,10 @@ class StudentRecordController extends Controller
                 if ($this->sameSchoolJustNow($data['full_name'], $data['birth_date'] ?? null, $school->id, $year->id)) {
                     throw ValidationException::withMessages(['full_name' => 'Este aluno acabou de ser cadastrado nesta escola (o formulário foi enviado duas vezes). Abra a lista de alunos para conferir.']);
                 }
+                $code = $this->validatedStageCode($data['school_class_id'] ?? null, $data['inep_stage_code'] ?? null, $school, $year->id);
+                if ($code !== null && ClassYearClosure::query()->whereKey($data['school_class_id'])->lockForUpdate()->first()?->closed_at !== null) {
+                    throw ValidationException::withMessages(['inep_stage_code' => 'A turma está fechada. Selecione uma turma aberta.']);
+                }
                 $student = Student::query()->create([
                     'id' => (string) Str::uuid(),
                     'full_name' => $data['full_name'],
@@ -198,15 +207,19 @@ class StudentRecordController extends Controller
                     'residence_zone' => $data['residence_zone'] ?? null,
                 ]);
 
-                StudentEnrollment::query()->create([
+                $enrollment = StudentEnrollment::query()->create([
                     'id' => (string) Str::uuid(),
                     'student_id' => $student->id,
                     'school_id' => $school->id,
                     'school_year_id' => $year->id,
                     'school_class_id' => $data['school_class_id'] ?? null,
+                    'inep_stage_code' => $code,
                     'status' => 'active',
                     'started_at' => $data['started_at'] ?? null,
                 ]);
+                if ($code !== null) {
+                    app(AuditTrail::class)->record('tenant', 'enrollment.inep_stage.changed', StudentEnrollment::class, $enrollment->id, null, $enrollment->only(['id', 'school_id', 'school_year_id', 'school_class_id']));
+                }
 
                 return $student;
             });
@@ -269,8 +282,9 @@ class StudentRecordController extends Controller
             ...self::ADDRESS_RULES,
             ...$this->censusRules(),
             'school_class_id' => ['nullable', 'uuid'],
-            'enrollment_id' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'uuid'],
-            'versao_matricula' => [$request->exists('school_class_id') ? 'required' : 'nullable', 'string', 'max:40'],
+            'inep_stage_code' => ['nullable', 'integer', Rule::in(array_keys(RenewalStage::INEP))],
+            'enrollment_id' => [($request->exists('school_class_id') || $request->exists('inep_stage_code')) ? 'required' : 'nullable', 'uuid'],
+            'versao_matricula' => [($request->exists('school_class_id') || $request->exists('inep_stage_code')) ? 'required' : 'nullable', 'string', 'max:40'],
             'versao' => ['required', 'string', 'max:40'],
         ], self::VALIDATION_MESSAGES, self::VALIDATION_ATTRIBUTES);
 
@@ -296,7 +310,7 @@ class StudentRecordController extends Controller
                         'versao' => 'Este cadastro foi alterado por outra pessoa enquanto você editava. Abra a ficha de novo e repita a alteração.',
                     ]);
                 }
-                if ($request->exists('school_class_id')
+                if (($request->exists('school_class_id') || $request->exists('inep_stage_code'))
                     && (string) $enrollment->row_token !== $data['versao_matricula']) {
                     throw ValidationException::withMessages([
                         'versao_matricula' => 'Esta matrícula foi alterada por outra pessoa. Abra a ficha de novo antes de escolher uma turma.',
@@ -325,6 +339,19 @@ class StudentRecordController extends Controller
                 if ($request->exists('school_class_id')) {
                     $enrollment->fill(['school_class_id' => $data['school_class_id'] ?? null]);
                 }
+                if ($request->exists('inep_stage_code') || $enrollment->isDirty('school_class_id')) {
+                    $submittedCode = isset($data['inep_stage_code']) ? (int) $data['inep_stage_code'] : null;
+                    $code = $enrollment->isDirty('school_class_id') || $submittedCode !== $enrollment->inep_stage_code
+                        ? $this->validatedStageCode($enrollment->school_class_id, $submittedCode, $school, $enrollment->school_year_id)
+                        : $enrollment->inep_stage_code;
+                    if ($code !== $enrollment->inep_stage_code) {
+                        if (ClassYearClosure::query()->whereIn('school_class_id', array_filter([$enrollment->getOriginal('school_class_id'), $enrollment->school_class_id]))->orderBy('school_class_id')->lockForUpdate()->get()->whereNotNull('closed_at')->isNotEmpty()) {
+                            throw ValidationException::withMessages(['inep_stage_code' => 'Reabra o ano da turma antes de alterar a etapa individual.']);
+                        }
+                        $enrollment->inep_stage_code = $code;
+                    }
+                }
+                $stageDirty = $enrollment->isDirty('inep_stage_code');
                 $classDirty = $enrollment->isDirty();
 
                 if ($studentDirty) {
@@ -332,6 +359,9 @@ class StudentRecordController extends Controller
                 }
                 if ($classDirty) {
                     $enrollment->save();
+                }
+                if ($stageDirty) {
+                    app(AuditTrail::class)->record('tenant', 'enrollment.inep_stage.changed', StudentEnrollment::class, $enrollment->id, null, $enrollment->only(['id', 'school_id', 'school_year_id', 'school_class_id']));
                 }
 
                 return $studentDirty || $classDirty;
@@ -408,6 +438,25 @@ class StudentRecordController extends Controller
                 'school_class_id' => 'Escolha uma turma ativa ou planejada desta escola e do mesmo ano letivo.',
             ]);
         }
+    }
+
+    /** Campo do registro 60 do Censo; só se aplica a turma multisseriada. */
+    private function validatedStageCode(?string $classId, mixed $value, School $school, string $yearId): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+        $class = SchoolClass::query()->where('school_id', $school->id)->where('school_year_id', $yearId)
+            ->whereKey($classId)->lockForUpdate()->first();
+        $code = (int) $value;
+        if ($class === null || ! RenewalStage::isMulti($class) || ! RenewalStage::supported($class)) {
+            throw ValidationException::withMessages(['inep_stage_code' => 'Informe etapa individual somente em turma multisseriada.']);
+        }
+        if (! RenewalStage::allowsCode($class, $code)) {
+            throw ValidationException::withMessages(['inep_stage_code' => 'A etapa individual não pertence às etapas atendidas pela turma.']);
+        }
+
+        return $code;
     }
 
     private function assertRaAvailable(?string $ra, ?string $exceptStudentId = null): void

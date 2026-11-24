@@ -40,6 +40,8 @@
                 @if (\App\Academics\Literacy::grade($class) !== null && app(\App\Academics\GradeAccess::class)->canWrite(auth()->user(), $municipality, $school, $class))
                     <a class="botao secundario" href="{{ route('school.literacy.classroom', $parametrosTurma) }}">Sondagem de alfabetização</a>
                 @endif
+            @endif
+            @if (app(\App\Academics\GradeAccess::class)->isElementary($class) || \App\Academics\RenewalStage::supported($class))
                 @if ($canManage)
                     <a class="botao secundario" href="{{ route('school.classes.year-end.index', $parametrosTurma) }}">Fechamento do ano</a>
                 @endif
@@ -240,8 +242,12 @@
                     </thead>
                     <tbody>
                         @foreach ($roster as $entry)
-                            @php($student = $entry['student'])
-                            @php($contact = $entry['primaryContact'])
+                            @php
+                                $student = $entry['student'];
+                            @endphp
+                            @php
+                                $contact = $entry['primaryContact'];
+                            @endphp
                             <tr>
                                 <td><strong>{{ $student->full_name }}</strong></td>
                                 <td class="numero">{{ $student->birth_date?->format('d/m/Y') ?? 'Não informada' }}</td>

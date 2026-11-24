@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Academics\GradeAccess;
 use App\Academics\Literacy;
+use App\Academics\RenewalStage;
 use App\Academics\YearEndResults;
 use App\Audit\AuditTrail;
 use App\Models\Tenant\ClassYearClosure;
@@ -64,7 +65,7 @@ class ClassYearEndController extends Controller
         $data = $request->validate([
             'all' => ['nullable', 'boolean'],
             'enrollment' => ['required_unless:all,1', 'nullable', 'uuid'],
-            'result' => ['required_unless:all,1', 'nullable', Rule::in(Literacy::grade($class) === null ? self::OPTIONS : [...self::OPTIONS, 'acompanhado'])],
+            'result' => ['required_unless:all,1', 'nullable', Rule::in(RenewalStage::isInfant($class) ? ['aprovado', 'cursando'] : (Literacy::grade($class) === null ? self::OPTIONS : [...self::OPTIONS, 'acompanhado']))],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
         $all = (string) ($data['all'] ?? '') === '1';
@@ -101,6 +102,9 @@ class ClassYearEndController extends Controller
 
                 $suggestion = $row['suggestion'];
                 $decision = $all ? $suggestion : $data['result'];
+                if ($row['infant'] && ! in_array($decision, ['aprovado', 'cursando'], true)) {
+                    throw ValidationException::withMessages(['result' => 'Na educação infantil não há retenção nem avaliação com finalidade de promoção.']);
+                }
                 // Reenviar a decisão já confirmada não a reclassifica após uma mudança de política.
                 if ($existing !== null && $existing->result === $decision && $existing->suggested_result !== $suggestion) {
                     continue;
@@ -224,7 +228,7 @@ class ClassYearEndController extends Controller
         Gate::authorize('view', [$school, $municipality]);
         $class = SchoolClass::query()->where('school_id', $school->id)->where('status', 'active')
             ->with('schoolYear')->findOrFail($classId);
-        abort_unless($access->isElementary($class), 404);
+        abort_unless($access->isElementary($class) || RenewalStage::isInfant($class) || (RenewalStage::isMulti($class) && RenewalStage::supported($class)), 404);
 
         return [$municipality, $school, $class];
     }

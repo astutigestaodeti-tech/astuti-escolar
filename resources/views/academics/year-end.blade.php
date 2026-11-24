@@ -7,6 +7,9 @@
     $params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $class->id];
     $statusNames = ['aprovado' => 'Aprovado', 'acompanhado' => 'Aprovado com acompanhamento', 'retido' => 'Retido', 'cursando' => 'Cursando'];
     $closure = $data['closure'];
+    if ($data['infant']) {
+        $statusNames['aprovado'] = 'Continuidade confirmada';
+    }
 @endphp
 
 @push('head')
@@ -24,7 +27,7 @@
 @section('content')
     <div class="folha-titulo">
         <div>
-            <span class="contexto">Ensino Fundamental</span>
+            <span class="contexto">{{ $data['infant'] ? 'Educação infantil' : 'Ensino Fundamental' }}</span>
             <h1>Fechamento do ano letivo</h1>
             <p>{{ $school->name }}. Turma {{ $class->name }}, {{ $class->schoolYear->year }}.</p>
         </div>
@@ -63,7 +66,11 @@
                     <span>Todos os períodos precisam ser fechados antes de encerrar a turma.</span>
                 @endunless
             </p>
+            @if ($data['infant'])
+                <p class="texto-ajuda">Na educação infantil, a continuidade é confirmada pela escola, sem notas para aprovação ou retenção.</p>
+            @else
             <p class="texto-ajuda">Média de referência: {{ number_format($data['minimum'], 1, ',', '.') }}. Frequência mínima: {{ number_format($data['attendanceMinimum'], 1, ',', '.') }}%. Dados insuficientes geram sugestão "Cursando", não aprovação.</p>
+            @endif
             @if ($data['noRetention'])<p class="texto-ajuda">Ciclo sem retenção: a sugestão Retido é substituída por Aprovado com acompanhamento. As decisões confirmadas são preservadas.</p>@endif
             @if ($canConfirm && ! $closure->closed_at)
                 <form method="POST" action="{{ route('school.classes.year-end.confirm', $params) }}" class="fechamento-acoes">
@@ -81,7 +88,7 @@
                 <thead><tr>
                     <th scope="col">Aluno</th>
                     <th scope="col">Situação da matrícula</th>
-                    <th scope="col">Médias por componente</th>
+                    <th scope="col">{{ $data['infant'] ? 'Avaliação' : 'Médias por componente' }}</th>
                     <th scope="col">Frequência</th>
                     <th scope="col">Sugestão e justificativa</th>
                     <th scope="col">Resultado confirmado</th>
@@ -97,6 +104,9 @@
                             <th scope="row">{{ $enrollment->student->full_name }}</th>
                             <td class="fechamento-situacao">{{ $row['exitLabel'] ?? 'Ativa' }}</td>
                             <td>
+                                @if ($row['infant'])
+                                    <span>Sem finalidade de promoção</span>
+                                @else
                                 <ul class="fechamento-medias">
                                     @foreach ($data['components'] as $component)
                                         <li><span>{{ $component->name }}</span>
@@ -104,6 +114,7 @@
                                         </li>
                                     @endforeach
                                 </ul>
+                                @endif
                             </td>
                             <td class="numero">{{ $row['frequency'] === null ? '-' : number_format($row['frequency'], 1, ',', '.').'%' }}</td>
                             <td>
@@ -111,7 +122,7 @@
                                     <strong>{{ $row['exitLabel'] }}</strong>
                                     <small>Preservada a situação da matrícula, sem cálculo de resultado final.</small>
                                 @else
-                                    <strong>{{ $statusNames[$row['suggestion']] }}</strong>
+                                    <strong>{{ $row['infant'] && $row['suggestion'] === 'aprovado' ? 'Continuidade a confirmar' : $statusNames[$row['suggestion']] }}</strong>
                                     <small>{{ $row['reason'] }}</small>
                                 @endif
                             </td>
@@ -119,7 +130,7 @@
                                 @if ($row['exitLabel'])
                                     {{ $row['exitLabel'] }}
                                 @elseif ($confirmed)
-                                    <strong>{{ $statusNames[$confirmed->result] }}</strong>
+                                    <strong>{{ $row['infant'] && $confirmed->result === 'aprovado' ? 'Continuidade confirmada' : $statusNames[$confirmed->result] }}</strong>
                                     <small>Confirmado em {{ $confirmed->confirmed_at->format('d/m/Y H:i') }}</small>
                                 @else
                                     <span class="etiqueta conferir">Pendente</span>
@@ -134,8 +145,9 @@
                                             <label for="resultado-{{ $enrollment->id }}">Decisão
                                                 <select id="resultado-{{ $enrollment->id }}" name="result" required>
                                                     @foreach ($statusNames as $code => $label)
+                                                        @continue($row['infant'] && ! in_array($code, ['aprovado', 'cursando'], true))
                                                         @continue($code === 'acompanhado' && ! $data['noRetention'] && $confirmed?->result !== 'acompanhado')
-                                                        <option value="{{ $code }}" @selected(($confirmed?->result ?? $row['suggestion']) === $code)>{{ $label }}</option>
+                                                        <option value="{{ $code }}" @selected(($confirmed?->result ?? $row['suggestion']) === $code)>{{ $row['infant'] && $code === 'aprovado' ? 'Continuidade confirmada' : $label }}</option>
                                                     @endforeach
                                                 </select>
                                             </label>
