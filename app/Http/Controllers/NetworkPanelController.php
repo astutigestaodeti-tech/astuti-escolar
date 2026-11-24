@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Attendance\ActiveSearchAlerts;
 use App\Attendance\SchoolAbsenceAlerts;
 use App\Audit\AuditTrail;
+use App\Auth\WaitlistAccess;
 use App\Calendar\SchoolCalendar;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\StudentEnrollment;
+use App\Schools\TodayAtSchool;
 use App\Students\RegistrationPendencies;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -19,9 +22,9 @@ use Illuminate\Validation\Rule;
 /**
  * Painel agregado da rede, exclusivo para o gestor municipal.
  *
- * Custo previsível por escola: 1 consulta de matrículas, 1 de turmas, 1 de
- * transporte, 1 de pendências, 1 de calendário e até 3 de alertas de faltas.
- * O número de consultas não cresce com a quantidade de alunos.
+ * Custo previsível por escola: indicadores existentes e Hoje na escola em
+ * lotes; o resumo de cadastro é compartilhado entre os dois. O número de
+ * consultas não cresce com a quantidade de alunos ou turmas.
  */
 class NetworkPanelController extends Controller
 {
@@ -31,7 +34,7 @@ class NetworkPanelController extends Controller
         SchoolAbsenceAlerts $alerts,
         RegistrationPendencies $pendencies,
         SchoolCalendar $calendar,
-    ): View {
+    ): Response {
         $municipality = $request->attributes->get('astuti.municipality');
         Gate::authorize('viewNetworkPanel', [School::class, $municipality]);
 
@@ -40,9 +43,11 @@ class NetworkPanelController extends Controller
         ]);
         $order = $validated['ordenar'] ?? 'alertas';
         $year = $alerts->currentYear();
+        $todayYear = app(ActiveSearchAlerts::class)->year();
+        $offering = app(WaitlistAccess::class)->offeringSchoolIds();
 
         $schools = School::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'latitude', 'longitude']);
-        $rows = $schools->map(function (School $school) use ($year, $alerts, $pendencies, $calendar): array {
+        $rows = $schools->map(function (School $school) use ($year, $alerts, $pendencies, $calendar, $todayYear, $offering): array {
             $activeStudents = StudentEnrollment::query()
                 ->where('school_id', $school->id)->where('status', 'active')
                 ->whereHas('student', fn (Builder $query) => $query->whereNull('deleted_at'))
@@ -65,12 +70,14 @@ class NetworkPanelController extends Controller
 
             return [
                 'school' => $school,
+                'today' => app(TodayAtSchool::class)->forSchool($school, $todayYear, today(), null, $pending,
+                    in_array($school->id, $offering, true), true),
                 'students' => $activeStudents,
                 'classes' => $classes,
                 'alerts' => $alerts->alertCount($school, $year, today()),
                 'pendencies' => $pending['withPendencies'],
-                // Urgentes: sem contato com a família ou possível cadastro repetido.
-                'urgent' => $pending['byType']['responsavel'] + $pending['byType']['repetido'],
+                // Urgentes: sem responsável, possível cadastro repetido ou sem turma.
+                'urgent' => $pending['byType']['responsavel'] + $pending['byType']['repetido'] + $pending['byType']['turma'],
                 'repeated' => $pending['byType']['repetido'],
                 'without_guardian' => $pending['byType']['responsavel'],
                 'transport' => (int) ($transport?->usuarios ?? 0),
@@ -110,12 +117,12 @@ class NetworkPanelController extends Controller
         // A auditoria guarda apenas que houve consulta ao painel, sem dados pessoais.
         app(AuditTrail::class)->record('tenant', 'network.panel.viewed');
 
-        return view('network.panel', [
+        return response()->view('network.panel', [
             'municipality' => $municipality,
             'rows' => $rows,
             'totals' => $totals,
             'year' => $year,
             'order' => $order,
-        ]);
+        ])->header('Cache-Control', 'private, no-store');
     }
 }

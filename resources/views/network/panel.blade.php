@@ -46,6 +46,28 @@
         </div>
     </section>
 
+    <section class="folha" aria-labelledby="titulo-hoje-rede">
+        <div class="folha-cabecalho"><div><h2 id="titulo-hoje-rede">Hoje na escola - resumo da rede</h2><p>Prioridades por unidade. Contagens da equipe em grupos pequenos são protegidas.</p></div></div>
+        <div class="folha-corpo">
+            @forelse ($rows as $row)
+                <div class="hoje-rede-unidade">
+                    <h3><a href="{{ route('schools.show', ['municipio' => $municipality->slug, 'escola' => $row['school']->id]) }}#hoje-na-escola">{{ $row['school']->name }}</a></h3>
+                    @if ($row['today'] === [])
+                        <p>Tudo em dia</p>
+                    @else
+                        <ul class="hoje-lista">
+                            @foreach ($row['today'] as $type => $item)
+                                <li><strong>{{ $item['count'] ?? 'Protegido' }}</strong> - <a href="{{ route('schools.show', ['municipio' => $municipality->slug, 'escola' => $row['school']->id]) }}#hoje-na-escola-{{ $type }}">{{ \App\Schools\TodayAtSchool::LABELS[$type] }}</a></li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @empty
+                <p>Nenhuma escola ativa.</p>
+            @endforelse
+        </div>
+    </section>
+
     <section class="folha painel-rede-unidades" aria-labelledby="titulo-unidades-rede">
         <div class="folha-cabecalho">
             <div><h2 id="titulo-unidades-rede">Escolas da rede</h2><p>Os números abrem os detalhes da escola correspondente.</p></div>

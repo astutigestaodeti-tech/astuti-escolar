@@ -8,6 +8,8 @@ use App\Models\Tenant\MultiprofessionalReferral;
 use App\Models\Tenant\MultiprofessionalRequest;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolYear;
+use App\Models\Tenant\StudentEnrollment;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -62,6 +64,36 @@ class TeamIndicators
             'areas' => $this->distribution($opened, 'area', MultiprofessionalRequest::AREAS),
             'destinations' => $this->distribution($destinations, 'destination', MultiprofessionalReferral::DESTINATIONS),
         ];
+    }
+
+    /**
+     * Sinais administrativos, sem carregar a devolutiva nem motivo.
+     * Não existe confirmação de leitura: "nova" significa os últimos sete dias.
+     */
+    public function schoolActionQuery(School $school, Carbon $day, string $type): Builder
+    {
+        $active = StudentEnrollment::query()->where('school_id', $school->id)->where('status', 'active')
+            ->whereNull('ended_at')->whereHas('student', fn ($query) => $query->whereNull('deleted_at'))->select('id');
+        $query = MultiprofessionalRequest::query()->where('school_id', $school->id)->whereIn('enrollment_id', $active);
+
+        return match ($type) {
+            'guidance' => $query->whereBetween('guidance_at', [$day->copy()->subDays(6)->startOfDay(), $day->copy()->endOfDay()->min(now())]),
+            'waiting' => $query->where('status', '!=', 'closed')->where('opened_at', '<', $day->copy()->endOfDay()->min(now())->subDays(15))
+                ->whereDoesntHave('attendances'),
+        };
+    }
+
+    public function schoolActions(School $school, Carbon $day, bool $network = false): array
+    {
+        $result = [];
+        foreach (['guidance', 'waiting'] as $type) {
+            $query = $this->schoolActionQuery($school, $day, $type);
+            $row = $query->selectRaw('count(*) as total, count(distinct student_id) as students')->first();
+            $count = (int) $row->total;
+            $result[$type] = $network && $count > 0 && (int) $row->students < EquityReadiness::MIN_GROUP ? null : $count;
+        }
+
+        return $result;
     }
 
     private function count(Collection $rows): ?int

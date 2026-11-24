@@ -929,3 +929,12 @@ select.entrada{cursor:pointer}
 .servidores-tabela .servidor-contato{display:block}
 .servidores-tabela .servidor-contato+.servidor-contato{margin-top:3px}
 .servidores-tabela .servidor-acoes a+a{margin-left:14px}
+
+/* Hoje na escola: lista de prioridades e atalhos, sem dados nominais. */
+.hoje-escola{margin-bottom:20px}
+.hoje-lista{margin:0;padding-inline-start:1.4rem;overflow-wrap:anywhere}
+.hoje-lista>li+li{margin-top:12px}
+.hoje-lista details{margin-top:4px}
+.hoje-lista summary{cursor:pointer}
+.hoje-rede-unidade+.hoje-rede-unidade{margin-top:18px;padding-top:12px;border-top:1px solid var(--pauta)}
+.hoje-rede-unidade h3{margin:0 0 8px}

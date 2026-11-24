@@ -17,10 +17,11 @@ use App\Models\Tenant\StudentHealthProfile;
 use App\Models\Tenant\StudentPickupAuthorization;
 use App\Models\Tenant\StudentSpecialEducation;
 use App\Multiprofessional\TeamAccess;
+use App\Multiprofessional\TeamIndicators;
 use App\Security\TwoFactorSession;
 use App\Students\StudentSearch;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -36,7 +37,7 @@ class SchoolStudentController extends Controller
         'adaptado' => ['status' => null, 'label' => 'Veículo adaptado'],
     ];
 
-    public function index(Request $request, string $municipio, string $escola): View
+    public function index(Request $request, string $municipio, string $escola): Response|RedirectResponse
     {
         $municipality = $request->attributes->get('astuti.municipality');
         $school = School::query()->where('status', 'active')->findOrFail($escola);
@@ -44,6 +45,7 @@ class SchoolStudentController extends Controller
 
         $validated = $request->validate([
             'busca' => ['nullable', 'string', 'max:120'],
+            'equipe' => ['nullable', 'in:guidance,waiting'],
             'transporte' => ['nullable', 'in:'.implode(',', array_keys(self::TRANSPORT_FILTERS))],
         ]);
         $search = trim((string) ($validated['busca'] ?? ''));
@@ -53,6 +55,20 @@ class SchoolStudentController extends Controller
             $enrollments->where('school_id', $school->id)->where('status', 'active');
         };
         $query = Student::query()->whereHas('enrollments', $activeHere);
+        $teamFilter = $validated['equipe'] ?? null;
+        if ($teamFilter !== null) {
+            abort_unless(app(TeamAccess::class)->isDirector($request->user(), $municipality, $school), 403);
+            if (! app(TwoFactorSession::class)->isVerified($request, $request->user())) {
+                return redirect()->guest(route('two-factor.challenge'));
+            }
+            $query->whereIn('students.id', app(TeamIndicators::class)->schoolActionQuery($school, today(), $teamFilter)->select('student_id'));
+            app(AuditTrail::class)->record('tenant', 'multiprofessional.school_actions.viewed', School::class, $school->id);
+            $students = $query->orderBy('full_name')->orderBy('students.id')
+                ->paginate(25, ['students.id', 'students.full_name'])->withQueryString();
+
+            return response()->view('students.team-actions', compact('municipality', 'school', 'students', 'teamFilter'))
+                ->header('Cache-Control', 'private, no-store');
+        }
 
         if ($search !== '') {
             StudentSearch::apply($query, $search);
@@ -90,7 +106,8 @@ class SchoolStudentController extends Controller
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $transportFilters = self::TRANSPORT_FILTERS;
 
-        return view('students.index', compact('municipality', 'school', 'students', 'search', 'canManage', 'transport', 'transportCounts', 'transportFilters'));
+        return response()->view('students.index', compact('municipality', 'school', 'students', 'search', 'canManage', 'transport', 'transportCounts', 'transportFilters'))
+            ->header('Cache-Control', 'private, no-store');
     }
 
     public function show(Request $request, string $municipio, string $escola, string $aluno): Response
