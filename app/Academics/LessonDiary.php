@@ -98,16 +98,16 @@ final class LessonDiary
             if (! $new && ! $record->isDirty(['content', 'activity', 'bncc_codes'])) {
                 return $record;
             }
-            $changed = array_keys($record->getDirty());
             $record->fill([
                 'updated_by' => $actor, 'correction_reason' => $data['motivo'] ?? null,
                 'version' => $record->version + 1, 'operation_id' => null,
             ]);
+            $changed = array_keys($record->getDirty());
             $record->save();
             app(AuditTrail::class)->record('tenant', $new ? 'lesson_record.created' : 'lesson_record.updated',
                 LessonRecord::class, $record->id, $before, [
                     'version' => $record->version,
-                    'changed_fields' => implode(',', array_unique([...$changed, 'updated_by', 'correction_reason', 'version', 'operation_id'])),
+                    'changed_fields' => implode(',', $changed),
                 ]);
 
             return $record;
