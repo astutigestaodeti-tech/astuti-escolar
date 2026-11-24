@@ -26,8 +26,18 @@ class EducacensoSchoolController extends Controller
             $origem = $item['origem'];
             $url = match ($origem['tipo']) {
                 'infraestrutura' => route('school.census.infrastructure.edit', $parametros),
-                'turma' => route('school.census.classes.edit', [...$parametros, 'turma' => $origem['id']]),
-                'aluno' => route('school.students.census.edit', [...$parametros, 'aluno' => $origem['id']]),
+                'turma' => in_array($item['regra'], ['26', '27', '50.7.7'], true)
+                    ? route('school.classes.show', [...$parametros, 'turma' => $origem['id']])
+                    : route('school.census.classes.edit', [...$parametros, 'turma' => $origem['id']]),
+                'lista_turmas' => route('school.census.classes.index', $parametros),
+                'lista_alunos' => route('school.census.students.index', $parametros),
+                'lista_servidores' => route('school.census.staff.index', $parametros),
+                'aluno' => match (true) {
+                    $p->registro === '30' && $p->campo !== null && $p->campo >= 17 && $p->campo <= 49,
+                    $p->registro === '60' && $p->campo !== null && $p->campo >= 10 && $p->campo <= 20 => route('school.students.special-education.edit', [...$parametros, 'aluno' => $origem['id']]),
+                    $p->registro === '60' && $p->campo === 5 => route('school.students.show', [...$parametros, 'aluno' => $origem['id']]),
+                    default => route('school.students.census.edit', [...$parametros, 'aluno' => $origem['id']]),
+                },
                 'servidor' => route('school.staff.census.edit', [...$parametros, 'servidor' => $origem['id']]),
                 'atribuicao' => route('school.classes.teachers.census.edit', [...$parametros, 'turma' => $origem['turma'], 'atribuicao' => $origem['id']]),
                 default => route('school.census.school.edit', $parametros),
