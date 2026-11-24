@@ -90,6 +90,7 @@ final class Registro10
         }
         $this->conferirGrupos();
         $this->conferirRegras();
+        $this->aviso(null, 'A conferência integral ainda deve verificar os demais registros obrigatórios da escola em atividade (regra geral 19) e a compatibilidade dos locais de funcionamento das turmas (registro 20, campo 21, regras 2 a 4).');
     }
 
     private function conferirGrupos(): void
