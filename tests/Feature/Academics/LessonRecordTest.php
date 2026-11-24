@@ -149,6 +149,32 @@ class LessonRecordTest extends TwoMunicipalityTestCase
         $this->get($this->base().'/conteudos-ministrados')->assertOk()->assertSee('Leitura e interpretação de texto fictício');
     }
 
+    public function test_operacao_uuid_unica_e_componente_nao_duplicado_no_banco(): void
+    {
+        $this->tenant(function (): void {
+            $uuid = Str::uuid()->toString();
+            $attributes = [
+                'id' => Str::uuid()->toString(), 'school_class_id' => $this->ids['class'],
+                'lesson_date' => '2026-02-16', 'curricular_component_id' => $this->ids['component'],
+                'content' => 'Conteúdo fictício', 'bncc_codes' => [],
+                'recorded_by' => $this->auditFixtureUser->id, 'updated_by' => $this->auditFixtureUser->id,
+                'version' => 1, 'operation_id' => $uuid,
+            ];
+            LessonRecord::query()->create($attributes);
+            foreach ([
+                ['operation_id' => null],
+                ['lesson_date' => '2026-02-15'],
+            ] as $changes) {
+                try {
+                    LessonRecord::query()->create(array_replace($attributes, $changes, ['id' => Str::uuid()->toString()]));
+                    $this->fail('O banco deve rejeitar a duplicidade de chave.');
+                } catch (QueryException $e) {
+                    $this->assertSame('23505', $e->getCode());
+                }
+            }
+        });
+    }
+
     public function test_unicidade_relatorio_em_lote_e_painel(): void
     {
         $this->login('school_director', [self::ESCOLA_A1]);
