@@ -43,40 +43,9 @@ return new class extends Migration
         $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_phone_ddd_chk CHECK (phone_ddd IS NULL OR phone_ddd ~ '^[0-9]{2}$')");
         $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_phone_chk CHECK (phone IS NULL OR phone ~ '^[0-9]{8,9}$')");
         $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_phone_other_chk CHECK (phone_other IS NULL OR phone_other ~ '^[0-9]{8,9}$')");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_regional_body_code_chk CHECK (regional_body_code IS NULL OR regional_body_code ~ '^[A-Z0-9]{1,5})");
+        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_regional_body_code_chk CHECK (regional_body_code IS NULL OR regional_body_code ~ '^[A-Z0-9]{1,5}$')");
         $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_host_school_code_chk CHECK (host_school_code IS NULL OR host_school_code ~ '^[0-9]{8}$')");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_ies_code_chk CHECK (ies_code IS NULL OR ies_code ~ '^[0-9]{1,9})");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_email_chk CHECK (email IS NULL OR email ~ '^[A-Za-z0-9_.@]+$')");
-    }
-
-    public function down(): void
-    {
-        Schema::connection('tenant')->dropIfExists('school_census');
-    }
-};
-)");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_host_school_code_chk CHECK (host_school_code IS NULL OR host_school_code ~ '^[0-9]{8}$')");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_ies_code_chk CHECK (ies_code IS NULL OR ies_code ~ '^[0-9]{9}$')");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_email_chk CHECK (email IS NULL OR email ~ '^[A-Za-z0-9_.@]+$')");
-    }
-
-    public function down(): void
-    {
-        Schema::connection('tenant')->dropIfExists('school_census');
-    }
-};
-)");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_email_chk CHECK (email IS NULL OR email ~ '^[A-Za-z0-9_.@]+$')");
-    }
-
-    public function down(): void
-    {
-        Schema::connection('tenant')->dropIfExists('school_census');
-    }
-};
-)");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_host_school_code_chk CHECK (host_school_code IS NULL OR host_school_code ~ '^[0-9]{8}$')");
-        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_ies_code_chk CHECK (ies_code IS NULL OR ies_code ~ '^[0-9]{9}$')");
+        $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_ies_code_chk CHECK (ies_code IS NULL OR ies_code ~ '^[0-9]{1,9}$')");
         $db->statement("ALTER TABLE school_census ADD CONSTRAINT school_census_email_chk CHECK (email IS NULL OR email ~ '^[A-Za-z0-9_.@]+$')");
     }
 
