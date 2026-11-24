@@ -22,9 +22,9 @@
 .historico-arquivar{border-top:1px solid var(--linha);margin-top:16px;padding-top:14px;display:flex;flex-direction:column;gap:10px}
 .historico-documento{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:12px 0;border-bottom:1px solid var(--linha)}
 .historico-documento small{display:block;margin-top:4px}
-.historico-cabecalho{display:flex;gap:18px;justify-content:space-between;flex-wrap:wrap}
-.historico-cabecalho p{margin:3px 0}
-.historico-cabecalho h2{font-size:20px;margin:0 0 7px}
+.historico-titulo-doc{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 14px}
+.historico-titulo-doc h2{font-size:20px;margin:0}
+.historico-titulo-doc p{margin:0;color:var(--tinta-2)}
 .historico-identificacao{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px;border-block:1px solid var(--linha);padding:12px 0}
 .historico-identificacao dt{font-size:12px;color:var(--tinta-2)}
 .historico-identificacao dd{font-weight:700;margin:4px 0 0;overflow-wrap:normal}

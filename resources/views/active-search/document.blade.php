@@ -1,4 +1,5 @@
 @extends('layouts.municipal')
+@section('timbre-proprio', '1')
 @section('title', 'Encaminhamento ao Conselho Tutelar')
 @section('body-class', 'impressao-declaracao pagina-busca-ativa')
 @push('head')
@@ -16,7 +17,8 @@
     @if(session('status'))<div class="status-sucesso declaracao-acoes" role="status">{{ session('status') }}</div>@endif
     <section class="folha declaracao-papel">
         <div class="folha-corpo">
-            <header class="declaracao-cabecalho"><div><strong>{{ $document->snapshot_municipality_name }}</strong><p>Secretaria Municipal de Educação</p><p>{{ $document->snapshot_school_name }}</p></div></header>
+            <x-documento.timbre :municipality="$municipality" :municipality-name="$document->snapshot_municipality_name"
+                :school-name="$document->snapshot_school_name" :school-inep="$school->inep_code" />
             <h2 class="declaracao-titulo">Encaminhamento ao Conselho Tutelar</h2>
             @if($document->revoked_at)<p class="declaracao-revogada">DOCUMENTO REVOGADO - sem validade</p>@endif
             <p>Documento de acesso restrito, para avaliação e providências de proteção da frequência escolar. Estudante: <strong>{{ $document->snapshot_student_name }}</strong>. Ano letivo: {{ $document->snapshot_school_year }}. Turma: {{ $document->snapshot_class_name ?? 'Não informada' }}.</p>
@@ -30,6 +32,7 @@
             <p class="declaracao-data">{{ $document->issued_at->format('d/m/Y') }}.</p>
             <div class="declaracao-assinatura"><span>Assinatura da direção</span></div>
             <footer class="declaracao-rodape"><div class="declaracao-verificacao"><strong>Verificação de autenticidade</strong><p>Código: {{ $document->verification_code }}</p><p>Endereço: <span class="declaracao-url">{{ $verificationUrl }}</span></p></div><div class="declaracao-qr">{!! $qrSvg !!}</div></footer>
+            <x-documento.rodape :municipality="$municipality" :school="$school" />
         </div>
     </section>
     @unless($document->revoked_at)

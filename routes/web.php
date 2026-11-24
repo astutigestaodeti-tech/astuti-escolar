@@ -19,6 +19,7 @@ use App\Http\Controllers\GeoLocationController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdentificationPhotoController;
+use App\Http\Controllers\InstitutionProfileController;
 use App\Http\Controllers\LiteracyController;
 use App\Http\Controllers\MonthlySecretariatReportController;
 use App\Http\Controllers\NetworkPanelController;
@@ -110,6 +111,10 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
     Route::get('/relatorio-mensal-secretaria', [MonthlySecretariatReportController::class, 'index'])->name('secretariat.monthly.index');
+    // Dados da Prefeitura: timbre e rodapé de todos os documentos emitidos.
+    Route::get('/dados-da-prefeitura', [InstitutionProfileController::class, 'edit'])->name('institution.edit');
+    Route::post('/dados-da-prefeitura', [InstitutionProfileController::class, 'update'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('institution.update');
     // Busca ativa: ficha restrita, alertas de turma e documento verificável.
     Route::get('/alfabetizacao', [LiteracyController::class, 'network'])->name('literacy.network');
     Route::post('/alfabetizacao/politica', [LiteracyController::class, 'settings'])

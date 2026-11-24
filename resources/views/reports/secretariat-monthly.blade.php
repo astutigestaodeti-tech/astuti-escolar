@@ -1,5 +1,6 @@
 @extends('layouts.municipal')
 
+@section('timbre-proprio', '1')
 @section('title', 'Relatório mensal da Secretaria')
 @section('body-class', 'pagina-relatorio-secretaria')
 
@@ -13,8 +14,7 @@
     $cents = fn ($value) => $value === null ? 'Não informado' : $money($value / 100);
     $percent = fn ($value) => $value === null ? 'Sem dados' : number_format($value, 1, ',', '.').'%';
     $monthLabel = $month->locale('pt_BR')->isoFormat('MMMM [de] YYYY');
-    $brasao = 'images/brasao-'.$municipality->slug.'.webp';
-    $temBrasao = preg_match('/\A[a-z0-9-]+\z/', (string) $municipality->slug) === 1 && is_file(public_path($brasao));
+    $perfil = \App\Models\Tenant\InstitutionProfile::current();
 @endphp
 
 @section('content')
@@ -39,10 +39,7 @@
         <article class="secretaria-papel" aria-label="Relatório institucional">
             <header class="folha secretaria-capa">
                 <div class="folha-corpo">
-                    <div class="secretaria-cabecalho">
-                        @if ($temBrasao)<img src="{{ asset($brasao) }}" alt="Brasão municipal" width="70" height="70">@endif
-                        <div><strong>{{ $municipality->legal_name }}</strong><p>Secretaria Municipal de Educação</p></div>
-                    </div>
+                    <x-documento.timbre :municipality="$municipality" :perfil="$perfil" />
                     <h2>Relatório mensal de gestão educacional</h2>
                     <p><strong>Competência:</strong> {{ ucfirst($monthLabel) }} | Ano letivo {{ $year->year }}</p>
                     <p>Emitido em {{ now()->format('d/m/Y H:i') }}. Documento institucional para acompanhamento da rede municipal.</p>
@@ -205,7 +202,11 @@
             </section>
 
             <footer class="folha secretaria-assinatura">
-                <div class="folha-corpo"><div class="secretaria-linha-assinatura"></div><p>Secretaria Municipal de Educação</p><p class="texto-ajuda">Astuti Gestão Escolar | Relatório institucional agregado</p></div>
+                <div class="folha-corpo"><div class="secretaria-linha-assinatura"></div>
+                    @if ($perfil->secretary_name)<p><strong>{{ $perfil->secretary_name }}</strong></p>@endif
+                    <p>{{ $perfil->secretary_title ?: $perfil->department_name }}</p>
+                    <x-documento.rodape :municipality="$municipality" :perfil="$perfil" />
+                </div>
             </footer>
         </article>
         <script defer src="{{ asset('js/boletim-imprimir.js') }}"></script>

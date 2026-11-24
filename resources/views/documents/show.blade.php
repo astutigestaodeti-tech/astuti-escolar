@@ -1,6 +1,7 @@
 @extends('layouts.municipal')
 
 @section('body-class', 'impressao-declaracao')
+@section('timbre-proprio', '1')
 @section('title', 'Declaração de matrícula')
 
 @section('content')
@@ -22,17 +23,8 @@
     <section class="folha declaracao-papel" aria-labelledby="titulo-declaracao-papel">
         <div class="folha-cabecalho declaracao-cabecalho-tela"><h2 id="titulo-declaracao-papel">Via para impressão</h2></div>
         <div class="folha-corpo">
-            <header class="declaracao-cabecalho">
-                @php
-                    $brasao = 'images/brasao-'.$municipality->slug.'.webp';
-                    $temBrasao = preg_match('/\A[a-z0-9-]+\z/', (string) $municipality->slug) === 1 && is_file(public_path($brasao));
-                @endphp
-                @if ($temBrasao)<img src="{{ asset($brasao) }}" alt="Brasão municipal" width="76" height="76">@endif
-                <div><strong>{{ $document->snapshot_municipality_name }}</strong>
-                    <p>Secretaria Municipal de Educação</p>
-                    <p>{{ $document->snapshot_school_name }}</p>
-                </div>
-            </header>
+            <x-documento.timbre :municipality="$municipality" :municipality-name="$document->snapshot_municipality_name"
+                :school-name="$document->snapshot_school_name" :school-inep="$school->inep_code" />
 
             <h2 class="declaracao-titulo">Declaração de matrícula</h2>
             @if ($document->revoked_at)<p class="declaracao-revogada" role="alert">DOCUMENTO REVOGADO - sem validade</p>@endif
@@ -52,6 +44,7 @@
                 </div>
                 <div class="declaracao-qr">{!! $qrSvg !!}</div>
             </footer>
+            <x-documento.rodape :municipality="$municipality" :school="$school" />
         </div>
     </section>
 

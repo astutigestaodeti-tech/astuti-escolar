@@ -1,5 +1,6 @@
 @extends('layouts.municipal')
 
+@section('timbre-proprio', '1')
 @section('title', 'Histórico escolar emitido')
 @section('body-class', 'pagina-historico-emitido')
 
@@ -28,15 +29,10 @@
 
     <section class="folha historico-papel" aria-labelledby="titulo-historico-impresso">
         <div class="folha-corpo">
-            <header class="historico-cabecalho">
-                <div><strong>{{ $header['municipality'] }}</strong>
-                    <p>Secretaria Municipal de Educação</p>
-                    <p>{{ $header['issuer_school'] }}</p>
-                    @if ($header['issuer_inep'])<p>INEP da escola: {{ $header['issuer_inep'] }}</p>@endif
-                </div>
-                <div><h2 id="titulo-historico-impresso">Histórico escolar - Ensino Fundamental</h2>
-                    <p>Emissão: {{ $document->issued_at->format('d/m/Y') }}</p></div>
-            </header>
+            <x-documento.timbre :municipality="$municipality" :municipality-name="$header['municipality']"
+                :school-name="$header['issuer_school']" :school-inep="$header['issuer_inep']" />
+            <div class="historico-titulo-doc"><h2 id="titulo-historico-impresso">Histórico escolar - Ensino Fundamental</h2>
+                <p>Emissão: {{ $document->issued_at->format('d/m/Y') }}</p></div>
             @if ($document->revoked_at)
                 <p class="historico-revogado" role="alert">DOCUMENTO REVOGADO - SEM VALIDADE</p>
             @endif
@@ -101,6 +97,7 @@
                 </div>
                 <div class="historico-qr">{!! $qrSvg !!}</div>
             </footer>
+            <x-documento.rodape :municipality="$municipality" :school="$school" />
         </div>
     </section>
 

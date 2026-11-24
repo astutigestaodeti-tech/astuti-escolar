@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Audit\AuditActor;
 use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
+use App\Models\Tenant\InstitutionProfile;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
@@ -180,6 +181,7 @@ class PrepareMonteSerenoDemo extends Command
                             $this->archiveLegacySchools($demoActorId);
                         }
                         $this->createSyntheticSchoolRecords();
+                        $this->createInstitutionProfile($demoActorId);
                     });
                 });
             });
@@ -319,6 +321,36 @@ class PrepareMonteSerenoDemo extends Command
         foreach (School::query()->whereIn('id', self::LEGACY_SCHOOL_IDS)->orderBy('id')->get() as $school) {
             $school->deleteWithReason(self::LEGACY_REASON, $actorId);
         }
+    }
+
+    /**
+     * Timbre fictício de Monte Sereno: CNPJ com dígitos válidos mas inventado, telefone que não
+     * existe (prefixo 0000) e domínio .invalid. Só cria se ainda não houver: não apaga o que a
+     * pessoa digitar na tela "Dados da Prefeitura".
+     */
+    private function createInstitutionProfile(string $actorId): void
+    {
+        if (InstitutionProfile::query()->whereKey(1)->exists()) {
+            return;
+        }
+        InstitutionProfile::query()->create([
+            'id' => 1,
+            'department_name' => 'Secretaria Municipal de Educação',
+            'cnpj' => '99999999000191',
+            'phone' => '1100000000',
+            'email' => 'educacao@monte-sereno.invalid',
+            'website' => 'https://www.monte-sereno.invalid',
+            'postal_code' => '00000-000',
+            'address_street' => 'Praça da Matriz',
+            'address_number' => '100',
+            'address_complement' => 'Paço Municipal, 2º andar',
+            'address_district' => 'Centro',
+            'address_city' => 'Monte Sereno',
+            'address_state' => 'SP',
+            'secretary_name' => 'Helena Duarte Fictícia',
+            'secretary_title' => 'Secretária Municipal de Educação',
+            'updated_by' => $actorId,
+        ]);
     }
 
     private function createSyntheticSchoolRecords(): void
