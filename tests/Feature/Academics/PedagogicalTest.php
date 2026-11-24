@@ -137,6 +137,9 @@ class PedagogicalTest extends TwoMunicipalityTestCase
         $this->post($this->url(), ['periodo' => $this->ids['period'], 'students' => [$this->ids['enrollment'] => ['opinion' => 'Parecer fictício']]])->assertRedirect();
         $this->post($this->url().'/situacao', ['periodo' => $this->ids['period'], 'acao' => 'complete'])->assertForbidden();
 
+        $this->login('teacher', [self::ESCOLA_A2]);
+        $this->get($this->url())->assertForbidden();
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/gestao-pedagogica?nominal=1')->assertForbidden();
         $this->login('school_director', [self::ESCOLA_A2]);
         $this->get($this->url())->assertForbidden();
         $this->login('school_director', [self::ESCOLA_A1], false);
