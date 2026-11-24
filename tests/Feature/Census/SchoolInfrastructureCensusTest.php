@@ -60,7 +60,9 @@ class SchoolInfrastructureCensusTest extends TwoMunicipalityTestCase
         $this->get($this->url())->assertOk()->assertHeader('Cache-Control', 'no-store, private')
             ->assertSee('Copiar do ano anterior')
             ->assertSee('Local de funcionamento da escola')
-            ->assertSee('A escola desenvolve ações na área de educação ambiental?');
+            ->assertSee('A escola desenvolve ações na área de educação ambiental?')
+            ->assertSee('id="campo-91" name="answers[91]" type="number"', false)
+            ->assertSee('id="campo-187"', false);
         $this->assertSame(1, $this->tenant(fn () => SchoolInfrastructureCensus::query()->count()));
 
         $answers = array_replace(InfrastructureCensusFixture::valid(), [91 => '5']);
