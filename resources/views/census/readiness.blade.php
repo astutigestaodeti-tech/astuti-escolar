@@ -145,7 +145,7 @@
 
     <section class="folha censo-secao" aria-labelledby="titulo-censo-escolas">
         <div class="folha-cabecalho">
-            <div><h2 id="titulo-censo-escolas">Por escola</h2><p>O número de matrículas com algo a corrigir abre a lista da escola.</p></div>
+            <div><h2 id="titulo-censo-escolas">Por escola</h2><p>O número de matrículas com algo a corrigir abre a lista da escola. As turmas prontas seguem o formato do Educacenso (leiaute oficial do Inep).</p></div>
         </div>
         <div class="rolagem censo-rolagem">
             <table class="tabela censo-tabela">
@@ -155,6 +155,7 @@
                         <th scope="col">Código INEP</th>
                         <th scope="col" class="numero">Matrículas ativas</th>
                         <th scope="col" class="numero">Com algo a corrigir</th>
+                        <th scope="col" class="numero">Turmas prontas para o Educacenso</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -171,6 +172,12 @@
                             <td class="numero">{{ $linha['enrollments'] }}</td>
                             <td class="numero">
                                 <a href="{{ route('census.readiness.index', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}#titulo-censo-lista" @if ($linha['with_warnings'] > 0) class="censo-atencao" @endif>{{ $linha['with_warnings'] }}</a>
+                            </td>
+                            <td class="numero">
+                                @php
+                                    $turmasEscola = $classes->get($linha['school']->id, ['total' => 0, 'ready' => 0]);
+                                @endphp
+                                <a href="{{ route('school.census.classes.index', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}" @if ($turmasEscola['ready'] < $turmasEscola['total']) class="censo-atencao" @endif>{{ $turmasEscola['ready'] }} de {{ $turmasEscola['total'] }}</a>
                             </td>
                         </tr>
                     @endforeach

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Attendance\SchoolAbsenceAlerts;
 use App\Audit\AuditTrail;
 use App\Census\CensusReadiness;
+use App\Educacenso\ConferenciaDeTurmas;
 use App\Models\Tenant\CensusParameter;
 use App\Models\Tenant\School;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +24,7 @@ class CensusReadinessController extends Controller
 {
     private const LIMIT = 300;
 
-    public function index(Request $request, string $municipio, CensusReadiness $readiness): Response
+    public function index(Request $request, string $municipio, CensusReadiness $readiness, ConferenciaDeTurmas $turmas): Response
     {
         $municipality = $request->attributes->get('astuti.municipality');
         Gate::authorize('viewNetworkPanel', [School::class, $municipality]);
@@ -38,6 +40,14 @@ class CensusReadinessController extends Controller
             ->when($validated['aviso'] ?? null, fn ($rows, string $type) => $rows->filter(fn (array $item): bool => in_array($type, $item['warnings'], true)))
             ->values();
 
+        // Turmas no formato do Educacenso (registro 20), por escola.
+        $year = app(SchoolAbsenceAlerts::class)->currentYear();
+        $classes = $year === null ? collect() : $turmas->para(School::query()->where('status', 'active')->get(['id', 'name', 'inep_code']), $year)
+            ->map(fn (array $linhas): array => [
+                'total' => count($linhas),
+                'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['registro']->pronto())),
+            ]);
+
         // A auditoria guarda apenas que houve a consulta, sem dados pessoais.
         app(AuditTrail::class)->record('tenant', 'census.readiness.viewed');
 
@@ -45,6 +55,7 @@ class CensusReadinessController extends Controller
             'municipality' => $municipality,
             'data' => $data,
             'list' => $list->take(self::LIMIT),
+            'classes' => $classes,
             'listTotal' => $list->count(),
             'limit' => self::LIMIT,
             'filters' => ['escola' => $validated['escola'] ?? null, 'aviso' => $validated['aviso'] ?? null],

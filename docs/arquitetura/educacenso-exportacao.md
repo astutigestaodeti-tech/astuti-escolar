@@ -120,7 +120,8 @@ São 745 regras de campo (677 conferidas na validação do arquivo e 63 no proce
 3. **E-mail (divergência interna).** A regra de e-mail do Inep aceita hífen no domínio (`@monte-sereno.gov.br`), mas a coluna de caracteres permitidos (`A-Z 0-9 _ . @`) não. Por enquanto vale a mais restritiva, e um e-mail com hífen vira pendência.
 4. **Código da turma (divergência interna, resolvida).** O registro 20, campo 3, diz tamanho 20 **fixo**, mas a regra diz "até 20 caracteres". O Astuti vai gerar códigos com exatamente 20 caracteres, o que atende às duas leituras.
 5. **Espaço em campos de texto (omissão, resolvida por evidência oficial).** A coluna de caracteres permitidos não lista o espaço, mas as regras exigem "mais de uma palavra" no nome, e o exemplo oficial usa "JOAO DA SILVA". O espaço é aceito em nomes, endereços e nomes de turma, nunca em códigos.
-6. **Outras inconsistências já registradas (resolvidas pela regra mais restritiva):**
+6. **Forma de organização em turma sem etapa (ambiguidade).** A regra 1 do campo 28 do registro 20 diz "deve ser 1 a 5 quando [Etapa] não for 1, 2 e 3, senão deve ser nulo". Lida ao pé da letra, uma turma de AEE ou de atividade complementar, que não tem etapa, também precisaria informar a forma de organização. O Anexo 6, que define as formas por etapa, não tem linha para turma sem etapa, e a regra de grupo dos campos 39 a 65 trata a etapa nula como "não informa". O Astuti envia nulo nesse caso. Vale incluir na consulta ao Inep.
+7. **Outras inconsistências já registradas (resolvidas pela regra mais restritiva):**
    - registro 00, campo 11 (até 10 caracteres);
    - nome do campo 21 do registro 60;
    - numeração do Anexo 2;
@@ -285,7 +286,7 @@ Cada fase é um PR com testes. Nada vai para produção sem as regras da fase co
 |---|---|---|
 | 0 | Leiaute 2026 extraído e protegido por teste, planejamento (este PR) | Claude |
 | 1 | Dados de Censo da escola (00) e questionário de infraestrutura (10) gerado do leiaute, com cópia do ano anterior | ChatGPT (tela), revisão Claude |
-| 2 | Turma para o Censo: etapa Inep confirmada, horários por dia, tipo, componentes, turmas de AEE e atividade complementar | Claude |
+| 2 | Turma para o Censo: etapa Inep confirmada, horários por dia, tipo, componentes, turmas de AEE e atividade complementar (**entregue**: tela "Turmas no Censo", preenchimento em lote, registro 20 com as regras condicionais e coluna na Conferência do Censo) | Claude |
 | 3 | Servidores para o Censo: dados pessoais, formação (tabelas de cursos e IES), gestor, função e componentes por turma | ChatGPT, revisão Claude |
 | 4 | Alunos para o Censo: filiação, municípios em código, transtornos, recursos, transporte, hospital/domicílio | Claude (dados sensíveis) |
 | 5 | Regras condicionais, aba Educacenso na Conferência e gerador do arquivo ISO-8859-1 (o validador genérico já está pronto) | Claude; o gerador só após a resposta do Inep (seção 4.2) |
