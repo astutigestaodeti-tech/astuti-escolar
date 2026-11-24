@@ -34,3 +34,4 @@
 .pagina-censo .censo-parametros .entrada{font:inherit;font-weight:400}
 .pagina-censo .erro-campo{color:#a3261b;margin:0 0 8px}
 .pagina-censo .censo-adicional th,.pagina-censo .censo-adicional td{border-top:1px solid var(--pauta)}
+.pagina-censo .botoes-titulo{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
