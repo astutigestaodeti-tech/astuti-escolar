@@ -13,6 +13,8 @@ use App\Models\Tenant\AttendanceMark;
 use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\CensusParameter;
+use App\Models\Tenant\ClassCouncil;
+use App\Models\Tenant\ClassCouncilStudent;
 use App\Models\Tenant\ClassTeacherAssignment;
 use App\Models\Tenant\ClassTeacherAssignmentCensus;
 use App\Models\Tenant\ClassYearClosure;
@@ -71,6 +73,8 @@ class AuditTrail
         IntegralPactTarget::class => ['id', 'school_year_id', 'stage', 'target_enrollments', 'updated_by'],
         VaarCondition::class => ['id', 'reference_year', 'condition_number', 'status', 'responsible', 'updated_by', 'has_evidence'],
         CensusParameter::class => ['id', 'reference_year', 'vaaf_base', 'source_note', 'updated_by'],
+        ClassCouncil::class => ['status', 'changed_fields'],
+        ClassCouncilStudent::class => ['changed_fields'],
         ClassYearClosure::class => ['school_class_id', 'closed_at', 'closed_by', 'close_reason', 'reopened_at', 'reopened_by', 'reopen_reason'],
         StudentFinalResult::class => ['id', 'school_class_id', 'student_enrollment_id', 'suggested_result', 'result', 'override_reason', 'confirmed_by', 'confirmed_at'],
         AcademicPeriod::class => ['id', 'school_year_id', 'kind', 'number', 'starts_on', 'ends_on', 'closed_at', 'closed_by', 'close_reason'],
