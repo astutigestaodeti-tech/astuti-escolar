@@ -39,8 +39,8 @@ final class RegrasDaEscola
                 }
             }
         }
-        if (count($tipos['00'] ?? []) !== 1 || count($tipos['10'] ?? []) > 1) {
-            $adicionar('20', $escola, null, 'Deve haver um único registro 00 e no máximo um registro 10 por escola.');
+        if (count($tipos['00'] ?? []) !== 1 || count($tipos['10'] ?? []) > 1 || ($ativa && count($tipos['10'] ?? []) !== 1)) {
+            $adicionar('20', $escola, null, 'Deve haver um único registro 00 e um registro 10 por escola em atividade.');
         }
         if (count($tipos['40'] ?? []) > 3) {
             $adicionar('21', $escola, null, 'A escola tem mais de três vínculos de gestor.');
@@ -58,18 +58,21 @@ final class RegrasDaEscola
             $v = $linha['valores'];
             $chave = $this->pessoa($linha);
             $pessoas[$chave] = $linha;
-            foreach ([3 => &$codigos, 5 => &$cpfs] as $campo => &$indice) {
+            foreach ([3, 5] as $campo) {
                 $valor = $v[$campo] ?? null;
                 if ($valor === null || $valor === '') {
                     continue;
                 }
-                if (isset($indice[$valor])) {
+                if (($campo === 3 && isset($codigos[$valor])) || ($campo === 5 && isset($cpfs[$valor]))) {
                     $adicionar($campo === 3 ? '30.3' : '30.CPF', $linha, $campo, $campo === 3
                         ? 'Código próprio de pessoa repetido nesta escola.' : 'CPF repetido em cadastros de pessoa desta escola.');
                 }
-                $indice[$valor] = $linha;
+                if ($campo === 3) {
+                    $codigos[$valor] = true;
+                } else {
+                    $cpfs[$valor] = true;
+                }
             }
-            unset($indice);
         }
 
         $turmas = [];
@@ -145,7 +148,9 @@ final class RegrasDaEscola
                         $incerto = true;
                     }
                 }
-                if (! $atende && ! $incerto) {
+                if (! $atende && $incerto) {
+                    $saida[] = ['regra' => '50.7.8', 'origem' => $profissional['origem'], 'pendencia' => new Pendencia('50', 7, 'Dados de outros vínculos insuficientes para conferir a função 4.', Pendencia::AVISO)];
+                } elseif (! $atende) {
                     $adicionar('50.7.8', $profissional, 7, 'A função 4 exige vínculo compatível na turma. Confira os cadastros do Censo.');
                 }
             }
