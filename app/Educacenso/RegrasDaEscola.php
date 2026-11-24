@@ -35,7 +35,14 @@ final class RegrasDaEscola
         if ($ativa) {
             foreach (['00', '10', '20', '30', '40', '50', '60'] as $tipo) {
                 if (empty($tipos[$tipo])) {
-                    $adicionar('19', $escola, null, "Escola em atividade precisa de pelo menos um registro {$tipo}.");
+                    $origem = match ($tipo) {
+                        '10' => 'infraestrutura',
+                        '20' => 'lista_turmas',
+                        '30', '40', '50' => 'lista_servidores',
+                        '60' => 'lista_alunos',
+                        default => 'escola',
+                    };
+                    $adicionar('19', [...$escola, 'origem' => [...$escola['origem'], 'tipo' => $origem]], null, "Escola em atividade precisa de pelo menos um registro {$tipo}.");
                 }
             }
         }
@@ -43,10 +50,10 @@ final class RegrasDaEscola
             $adicionar('20', $escola, null, 'Deve haver um único registro 00 e um registro 10 por escola em atividade.');
         }
         if (count($tipos['40'] ?? []) > 3) {
-            $adicionar('21', $escola, null, 'A escola tem mais de três vínculos de gestor.');
+            $adicionar('21', [...$escola, 'origem' => [...$escola['origem'], 'tipo' => 'lista_servidores']], null, 'A escola tem mais de três vínculos de gestor.');
         }
         if (count($tipos['20'] ?? []) > 1500) {
-            $adicionar('24', $escola, null, 'A escola ultrapassa o limite de 1.500 turmas.');
+            $adicionar('24', [...$escola, 'origem' => [...$escola['origem'], 'tipo' => 'lista_turmas']], null, 'A escola ultrapassa o limite de 1.500 turmas.');
         }
 
         // Código próprio e CPF únicos no 30. A identidade local é o cadastro,
@@ -158,7 +165,7 @@ final class RegrasDaEscola
             if (($linha['valores'][14] ?? null) === '5' || ($linha['valores'][22] ?? null) === '1') {
                 foreach ($alunos as $aluno) {
                     $p = $pessoas[$this->pessoa($aluno)] ?? null;
-                    if ($p !== null && ($p['valores'][17] ?? null) === '0') {
+                    if ($p !== null && ($p['valores'][17] ?? null) !== '1') {
                         $adicionar('30.17.2', $p, 17, 'Dados do campo 17 incompatíveis com o tipo de turma do vínculo.');
                     }
                 }
