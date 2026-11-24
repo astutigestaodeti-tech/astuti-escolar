@@ -156,6 +156,7 @@
                         <th scope="col" class="numero">Matrículas ativas</th>
                         <th scope="col" class="numero">Com algo a corrigir</th>
                         <th scope="col" class="numero">Turmas prontas para o Educacenso</th>
+                        <th scope="col">Escola pronta para o Educacenso</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -178,6 +179,9 @@
                                     $turmasEscola = $classes->get($linha['school']->id, ['total' => 0, 'ready' => 0]);
                                 @endphp
                                 <a href="{{ route('school.census.classes.index', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}" @if ($turmasEscola['ready'] < $turmasEscola['total']) class="censo-atencao" @endif>{{ $turmasEscola['ready'] }} de {{ $turmasEscola['total'] }}</a>
+                            </td>
+                            <td>
+                                <a href="{{ route('school.census.school.edit', ['municipio' => $municipality->slug, 'escola' => $linha['school']->id]) }}" @if (! $schoolReadiness->get($linha['school']->id, false)) class="censo-atencao" @endif>{{ $schoolReadiness->get($linha['school']->id, false) ? 'Sim' : 'Não - conferir' }}</a>
                             </td>
                         </tr>
                     @endforeach
