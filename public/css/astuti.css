@@ -932,9 +932,24 @@ select.entrada{cursor:pointer}
 
 /* Hoje na escola: lista de prioridades e atalhos, sem dados nominais. */
 .hoje-escola{margin-bottom:20px}
-.hoje-lista{margin:0;padding-inline-start:1.4rem;overflow-wrap:anywhere}
-.hoje-lista>li+li{margin-top:12px}
-.hoje-lista details{margin-top:4px}
-.hoje-lista summary{cursor:pointer}
+.hoje-lista{list-style:none;margin:0;padding:0;overflow-wrap:anywhere}
+.hoje-item{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:14px;padding:11px 0;border-top:1px solid var(--pauta-suave)}
+.hoje-item:first-child{border-top:0;padding-top:0}
+.hoje-item:last-child{padding-bottom:0}
+.hoje-numero{font-family:var(--serifa);font-size:24px;font-weight:600;line-height:1;color:var(--tinta);text-align:right}
+.hoje-item:first-child .hoje-numero{color:var(--margem)}
+.hoje-numero.hoje-protegido{font-family:var(--texto);font-size:12.5px;font-weight:700;color:var(--tinta-3)}
+.hoje-texto{color:var(--tinta-2)}
+.hoje-acoes{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:flex-end;font-weight:700}
+.hoje-acoes details{text-align:right}
+.hoje-acoes details[open] a{display:block;margin-top:6px;font-weight:400}
+.hoje-acoes summary{cursor:pointer;color:var(--caneta)}
+.hoje-em-dia{display:flex;align-items:center;gap:8px;margin:0;color:var(--verde)}
 .hoje-rede-unidade+.hoje-rede-unidade{margin-top:18px;padding-top:12px;border-top:1px solid var(--pauta)}
 .hoje-rede-unidade h3{margin:0 0 8px}
+@media (max-width:640px){
+    .hoje-item{grid-template-columns:44px minmax(0,1fr);gap:4px 12px}
+    .hoje-numero{font-size:20px;grid-row:span 2;align-self:start}
+    .hoje-acoes{justify-content:flex-start}
+    .hoje-acoes details{text-align:left}
+}

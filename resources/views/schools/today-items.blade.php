@@ -7,20 +7,31 @@
     </div>
     <div class="folha-corpo">
         @if ($items === [])
-            <p><strong>Tudo em dia</strong></p>
+            <p class="hoje-em-dia"><x-icon name="conferir" :size="18" /> <strong>Tudo em dia</strong></p>
         @else
             <ol class="hoje-lista">
                 @foreach ($items as $type => $item)
-                    <li id="{{ $sectionId }}-{{ $type }}">
-                        <strong>{{ $item['count'] ?? 'Protegido' }}</strong> - {{ \App\Schools\TodayAtSchool::LABELS[$type] }}
-                        @if (count($item['links']) > 1)<details><summary>Ver atalhos</summary>@endif
-                        @foreach ($item['links'] as $link)
-                            @php
-                                $linkParams = in_array($link['route'], ['team.indicators', 'waitlist.index'], true) ? ['municipio' => $municipality->slug] : $params;
-                            @endphp
-                            <div><a href="{{ route($link['route'], [...$linkParams, ...$link['params']]) }}">{{ $link['label'] }}</a></div>
-                        @endforeach
-                        @if (count($item['links']) > 1)</details>@endif
+                    <li class="hoje-item" id="{{ $sectionId }}-{{ $type }}">
+                        @if ($item['count'] === null)
+                            <span class="hoje-numero hoje-protegido" title="Grupo pequeno demais para mostrar a quantidade">Protegido</span>
+                        @else
+                            <span class="hoje-numero">{{ $item['count'] }}</span>
+                        @endif
+                        <span class="hoje-texto">{{ \App\Schools\TodayAtSchool::LABELS[$type] }}</span>
+                        <span class="hoje-acoes">
+                            @if (count($item['links']) > 1)
+                                <details><summary>{{ count($item['links']) }} atalhos</summary>
+                            @endif
+                            @foreach ($item['links'] as $link)
+                                @php
+                                    $linkParams = in_array($link['route'], ['team.indicators', 'waitlist.index'], true) ? ['municipio' => $municipality->slug] : $params;
+                                @endphp
+                                <a href="{{ route($link['route'], [...$linkParams, ...$link['params']]) }}">{{ $link['label'] }}</a>
+                            @endforeach
+                            @if (count($item['links']) > 1)
+                                </details>
+                            @endif
+                        </span>
                     </li>
                 @endforeach
             </ol>
