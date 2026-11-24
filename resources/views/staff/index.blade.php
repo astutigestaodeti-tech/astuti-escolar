@@ -62,6 +62,7 @@
                                 @if ($canManage)
                                     <td class="servidor-acoes">
                                         <a href="{{ route('school.staff.edit', [...$params, 'servidor' => $member->id]) }}">Editar</a>
+                                        <a href="{{ route('school.staff.census.edit', [...$params, 'servidor' => $member->id]) }}">Censo</a>
                                         <a href="{{ route('school.staff.remove.form', [...$params, 'servidor' => $member->id]) }}">Arquivar</a>
                                     </td>
                                 @endif

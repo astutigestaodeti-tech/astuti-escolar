@@ -242,6 +242,14 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - pós-graduações (70 a 88);
   - formação continuada (89 a 109);
   - e-mail do gestor (110).
+- **Entregue (tela "Dados do Censo" do servidor, tabela `staff_census`, registro 30 pelo `Registro30Servidor`):**
+  - CPF (válido e único na escola), nascimento com idade do Anexo 3 (gestor 18 a 95, em sala 14 a 95), filiação, sexo, cor/raça, povo indígena, nacionalidade, país e município de nascimento conferidos nas tabelas;
+  - deficiência (17 a 28), com a mesma restrição de dado de saúde dos alunos: só na tela de edição, auditoria só com nomes de campos;
+  - escolaridade (56, 57), até 3 cursos superiores com código do curso, ano e IES (58 a 66, Tabela de Cursos de Formação Superior e Tabela de IES; o código 9999999 "instituição não cadastrada" é aceito, como na tabela);
+  - complementação pedagógica (67 a 69, sem 32 e 99), até 6 pós-graduações (70 a 87), "não tem pós-graduação" (88) e formação continuada (89 a 109, nula quando não informada);
+  - e-mail do gestor (110) vem do e-mail institucional do cadastro do servidor;
+  - pelo Anexo 2, transtornos, recursos de prova e certidão (29 a 50) são só de aluno e vão nulos; a residência (51 a 55) é opcional fora do registro 60 e não é coletada.
+  - Leitura literal a confirmar: o campo 13 exige povo indígena com cor/raça indígena, embora o Anexo 2 não marque o campo para gestor e profissional. O Astuti segue a regra do campo.
 - **Novo (40):** cargo (diretor ou outro), critério de acesso ao cargo e situação funcional.
 - **Novo (50):**
   - **função na turma** (1 a 9, conforme a turma);
