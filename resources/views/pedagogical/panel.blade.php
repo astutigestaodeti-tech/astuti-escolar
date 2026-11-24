@@ -53,7 +53,7 @@
                 </div>
                 <div class="rolagem">
                     <table class="tabela">
-                        <thead><tr><th scope="col">Turma</th><th scope="col">Período</th><th scope="col">Conselho</th><th scope="col">Previstas</th><th scope="col">Dadas</th><th scope="col">Situação</th><th scope="col">Distorção</th></tr></thead>
+                        <thead><tr><th scope="col">Turma</th><th scope="col">Período</th><th scope="col">Conselho</th><th scope="col">Previstas</th><th scope="col">Dadas</th><th scope="col">Com conteúdo registrado</th><th scope="col">Situação</th><th scope="col">Distorção</th></tr></thead>
                         <tbody>
                             @foreach ($unit['classes'] as $row)
                                 @forelse ($row['periods'] as $p)
@@ -64,11 +64,12 @@
                                             @if (! $municipal && $school)<a href="{{ route('pedagogical.council.index', ['municipio' => $municipality->slug, 'escola' => $school->id, 'turma' => $row['class']->id, 'periodo' => $p['period']->id]) }}">Abrir</a>@endif
                                         </td>
                                         <td>{{ $p['previstas'] }}</td><td>{{ $p['dadas'] }} @if ($p['fora_calendario']) ({{ $p['fora_calendario'] }} fora do calendário) @endif</td>
+                                        <td>{{ $p['com_conteudo'] }}</td>
                                         <td>{{ ucfirst($p['situacao']) }} @if ($p['faltantes']) ({{ $p['faltantes'] }} dias sem chamada) @endif</td>
                                         <td>{{ $row['distorted'] }} de {{ $row['eligible'] }} @if ($row['suggested']) (etapa a confirmar) @endif</td>
                                     </tr>
                                 @empty
-                                    <tr><th scope="row">{{ $row['class']->name }}</th><td colspan="5">Sem períodos cadastrados</td><td>{{ $row['distorted'] }} de {{ $row['eligible'] }} @if ($row['suggested']) (etapa a confirmar) @endif</td></tr>
+                                    <tr><th scope="row">{{ $row['class']->name }}</th><td colspan="6">Sem períodos cadastrados</td><td>{{ $row['distorted'] }} de {{ $row['eligible'] }} @if ($row['suggested']) (etapa a confirmar) @endif</td></tr>
                                 @endforelse
                             @endforeach
                         </tbody>
@@ -87,7 +88,7 @@
                 @endif
             </section>
         @endforeach
-        <p class="texto-ajuda">Aulas dadas são sessões de frequência, não horas-aula. Hoje ainda pode receber chamada; dias vencidos sem sessão geram atraso.</p>
+        <p class="texto-ajuda">Aulas dadas são sessões de frequência, não horas-aula. Com conteúdo registrado conta datas distintas do período, mesmo sem chamada. Hoje ainda pode receber chamada; dias vencidos sem sessão geram atraso.</p>
     @else
         <section class="folha pedagogico-secao"><div class="folha-corpo"><p>Cadastre um ano letivo para consultar os indicadores.</p></div></section>
     @endif
