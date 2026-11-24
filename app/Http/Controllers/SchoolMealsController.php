@@ -8,6 +8,7 @@ use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolMealMenu;
 use App\Models\Tenant\SchoolMealServing;
 use App\Models\Tenant\SchoolYear;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -169,9 +170,10 @@ class SchoolMealsController extends Controller
             ->where('school_year_id', $year->id)->whereDate('meal_date', $date->toDateString())
             ->orderBy('stage')->orderBy('meal_type')->get() : collect();
         $allergies = $validDate ? $meals->allergies($school, $year)['counts'] : [];
+        $registrants = User::query()->whereIn('id', $entries->pluck('confirmed_by')->unique())->pluck('name', 'id');
 
         return response()->view('meals.school', compact(
-            'municipality', 'school', 'date', 'year', 'validDate', 'suggested', 'entries', 'allergies',
+            'municipality', 'school', 'date', 'year', 'validDate', 'suggested', 'entries', 'allergies', 'registrants',
         ))->header('Cache-Control', 'no-store, private');
     }
 
@@ -193,7 +195,7 @@ class SchoolMealsController extends Controller
         // Fotografia da sugestão naquele momento, não um número presumido.
         $suggestion = $meals->suggested($school, $year, $date->toDateString());
         DB::connection('tenant')->transaction(function () use ($school, $year, $date, $data, $suggestion, $request): void {
-            School::query()->whereKey($school->id)->lockForUpdate()->firstOrFail();
+            School::query()->whereKey($school->id)->where('status', 'active')->lockForUpdate()->firstOrFail();
             $item = SchoolMealServing::query()->where('school_id', $school->id)
                 ->where('school_year_id', $year->id)->whereDate('meal_date', $date->toDateString())
                 ->where('stage', $data['etapa'])->where('meal_type', $data['refeicao'])

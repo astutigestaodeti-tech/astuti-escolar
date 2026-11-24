@@ -54,7 +54,7 @@
 <tbody>@forelse($entries as $row)
 <tr><td>{{ $stages[$row->stage] ?? $row->stage }}</td><td>{{ $types[$row->meal_type] ?? $row->meal_type }}</td>
 <td class="numero">{{ $row->quantity }}</td><td class="numero">{{ $row->suggested_present ?? 'Sem chamada' }}</td>
-<td>{{ $row->confirmed_at?->format('d/m/Y H:i') }}</td><td>{{ $row->confirmed_by }}</td></tr>
+<td>{{ $row->confirmed_at?->format('d/m/Y H:i') }}</td><td>{{ $registrants[$row->confirmed_by] ?? 'Usuário não disponível' }}</td></tr>
 @empty<tr><td colspan="6">Ainda não há refeições confirmadas nesta data.</td></tr>@endforelse</tbody></table></div></section>
 <section class="folha"><div class="folha-cabecalho"><div><h2>Alertas de restrição alimentar</h2><p>Somente contagem por tipo, sem identificação dos alunos.</p></div></div>
 <div class="rolagem alimentacao-rolagem"><table class="tabela alimentacao-tabela"><thead><tr><th>Tipo</th><th>Alunos</th></tr></thead><tbody>
