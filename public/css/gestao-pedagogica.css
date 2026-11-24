@@ -1,0 +1,11 @@
+/* Gestão pedagógica: formulários e indicadores sem rolagem horizontal da página. */
+.pagina-gestao-pedagogica .pedagogico-secao{margin-top:16px;min-width:0}
+.pagina-gestao-pedagogica .pedagogico-filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.pagina-gestao-pedagogica .pedagogico-filtros label{display:grid;gap:6px;min-width:0}
+.pagina-gestao-pedagogica .pedagogico-campos{display:grid;gap:12px;min-width:0}
+.pagina-gestao-pedagogica .pedagogico-campos label{display:grid;gap:6px;min-width:0;overflow-wrap:anywhere}
+.pagina-gestao-pedagogica .pedagogico-campos .entrada{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.pagina-gestao-pedagogica .pedagogico-campos button{justify-self:start;white-space:normal}
+.pagina-gestao-pedagogica .pedagogico-aluno{border-bottom:1px solid var(--linha);padding:12px 0;margin-bottom:12px;overflow-wrap:anywhere}
+.pagina-gestao-pedagogica .pedagogico-notas{display:flex;flex-wrap:wrap;gap:8px 20px;padding-left:20px}
+.pagina-gestao-pedagogica .rolagem{max-width:100%;overflow-x:auto}
