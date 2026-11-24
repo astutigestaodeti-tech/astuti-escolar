@@ -57,6 +57,14 @@
         @endcan
 
         @can('manageStudents', [$school, $municipality])
+            <section class="folha cartao" aria-labelledby="titulo-alimentacao-escola">
+                <div class="folha-corpo">
+                    <span class="acao-icone"><x-icon name="turmas" /></span>
+                    <h2 id="titulo-alimentacao-escola">Alimentação escolar</h2>
+                    <p>Cardápio da rede, registro diário das refeições e relatório para o PNAE.</p>
+                    <a class="botao secundario" href="{{ route('school.meals.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar refeições</a>
+                </div>
+            </section>
             <section class="folha cartao" aria-labelledby="titulo-integral-escola">
                 <span class="acao-icone"><x-icon name="turmas" /></span>
                 <h2 id="titulo-integral-escola">Tempo integral</h2>

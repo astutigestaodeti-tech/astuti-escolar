@@ -69,6 +69,25 @@ class SchoolPolicy
         return $this->access->mayManageSchool($user, $municipality, $school->id);
     }
 
+    /**
+     * Lista nominal de alergias: apenas direção e secretaria escolar com escopo
+     * nesta unidade. Gestão municipal pode ver apenas as contagens do quadro.
+     */
+    public function viewMealAllergyNames(User $user, School $school, Municipality $municipality): bool
+    {
+        if ($user->status !== 'active' || $municipality->status !== 'active') {
+            return false;
+        }
+
+        return DB::connection('platform')->table('memberships as membership')
+            ->join('school_scopes as scope', 'scope.membership_id', '=', 'membership.id')
+            ->where('membership.user_id', $user->id)
+            ->where('membership.municipality_id', $municipality->id)
+            ->where('membership.status', 'active')
+            ->whereIn('membership.role', ['school_director', 'school_secretary'])
+            ->where('scope.school_id', $school->id)->exists();
+    }
+
     public function deleteEnrollment(User $user, School $school, Municipality $municipality): bool
     {
         return $this->access->mayDeleteEnrollment($user, $municipality, $school->id);

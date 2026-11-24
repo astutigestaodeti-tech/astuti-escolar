@@ -21,6 +21,8 @@ use App\Models\Tenant\IntegralPactTarget;
 use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCalendarDay;
+use App\Models\Tenant\SchoolMealMenu;
+use App\Models\Tenant\SchoolMealServing;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\StaffMember;
@@ -46,6 +48,8 @@ class AuditTrail
 {
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
+        SchoolMealMenu::class => ['id', 'school_year_id', 'week_start', 'weekday', 'stage', 'meal_type', 'description', 'updated_by'],
+        SchoolMealServing::class => ['id', 'school_id', 'school_year_id', 'meal_date', 'stage', 'meal_type', 'quantity', 'suggested_present', 'confirmed_by', 'confirmed_at'],
         IntegralFundebExpense::class => ['id', 'school_year_id', 'description', 'amount_cents', 'created_by', 'has_evidence'],
         IntegralFundebFinance::class => ['id', 'school_year_id', 'revenue_cents', 'updated_by'],
         IntegralPactTarget::class => ['id', 'school_year_id', 'stage', 'target_enrollments', 'updated_by'],

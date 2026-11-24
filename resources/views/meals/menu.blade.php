@@ -33,6 +33,7 @@
 </form>
 @if($week)
 <div class="alimentacao-links">
+@if($canEdit)<a class="botao secundario" href="{{ route('meals.report', $params) }}">Relatório mensal PNAE</a>@endif
 @if($weeks[0]->startOfWeek()->greaterThanOrEqualTo($year->start_date->copy()->startOfWeek()))
 <a class="botao secundario" href="{{ $base.'?'.http_build_query(['ano' => $year->year, 'semana' => $weeks[0]->toDateString()]) }}">Semana anterior</a>
 @endif
