@@ -60,8 +60,8 @@ final class Registro40
         if ($dependencia === 4 && $vinculo?->employment_status !== null) {
             $registro->recusa(7, 'Situação funcional deve ficar vazia na escola privada.');
         }
-        // Campos 3 e 4 e regras gerais 21: conferência do conjunto de registros.
-        $registro->aviso(3, 'Conferir a correspondência com o registro 30, a unicidade do gestor e o limite de três gestores por escola no arquivo.');
+        // Campos 3 e 4 e regra geral 21 (correspondência com o 30, gestor único e limite por escola)
+        // valem para o arquivo inteiro: conferidos na geração, não por servidor.
 
         return $registro;
     }
@@ -73,6 +73,12 @@ final class Registro40
 
     private function recusa(int $campo, string $mensagem): void
     {
+        // Uma recusa por campo: a primeira explica onde corrigir.
+        foreach ($this->pendencias as $pendencia) {
+            if ($pendencia->campo === $campo && $pendencia->recusa()) {
+                return;
+            }
+        }
         $this->pendencias[] = new Pendencia('40', $campo, $mensagem);
     }
 

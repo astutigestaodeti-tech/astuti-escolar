@@ -104,9 +104,8 @@ final class Registro50
         if ((! $funcaoComRegime || $dep === 4) && $v[8] !== null) {
             $registro->recusa(8, 'Situação funcional não se aplica a esta função ou dependência.');
         }
-        // Campos 3 a 5 e campo 7, regras 7 e 8: dependem de outros vínculos.
-        $registro->aviso(3, 'Conferir correspondência com o registro 30 e ausência de vínculo simultâneo como aluno nesta turma.');
-        $registro->aviso(7, 'Conferir se a turma não tem somente intérpretes de Libras ou tutores EAD.');
+        // Campos 3 a 5 e campo 7, regra 7 (turma só com intérpretes ou tutores): dependem do arquivo
+        // inteiro e são conferidos na geração, não em cada vínculo.
         if ($funcao === 4) {
             $registro->aviso(7, 'A função 4 exige aluno ou outro profissional com surdez, deficiência auditiva ou surdocegueira na turma.');
         }
@@ -124,6 +123,12 @@ final class Registro50
 
     private function recusa(int $campo, string $mensagem): void
     {
+        // Uma recusa por campo: a primeira explica onde corrigir.
+        foreach ($this->pendencias as $pendencia) {
+            if ($pendencia->campo === $campo && $pendencia->recusa()) {
+                return;
+            }
+        }
         $this->pendencias[] = new Pendencia('50', $campo, $mensagem);
     }
 

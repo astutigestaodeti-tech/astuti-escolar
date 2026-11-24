@@ -4,7 +4,6 @@ namespace App\Educacenso;
 
 use App\Models\Tenant\ClassTeacherAssignment;
 use App\Models\Tenant\ClassTeacherAssignmentCensus;
-use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCensus;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolClassCensus;
