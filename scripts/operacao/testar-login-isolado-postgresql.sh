@@ -291,6 +291,24 @@ if [[ -n "${ASTUTI_CRIAR_ADMIN:-}" ]]; then
 fi
 unset ASTUTI_CRIAR_ADMIN
 
+# Opcional: arquiva os cadastros de alunos repetidos SOMENTE na copia 55436
+# (so as copias sem registros proprios; motivo e autoria na auditoria).
+# Uso: ASTUTI_REMOVER_REPETIDOS=1 bash scripts/operacao/atualizar-notebook.sh
+if [[ "${ASTUTI_REMOVER_REPETIDOS:-}" == 1 ]]; then
+    printf '===== ALUNOS REPETIDOS, APENAS NO ENSAIO 55436 =====\n'
+    php -r '
+        require "vendor/autoload.php";
+        $app = require "bootstrap/app.php";
+        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        $dados = \Illuminate\Support\Facades\DB::connection("platform")->selectOne(
+            "SELECT current_database() AS banco, current_user AS usuario, inet_server_port() AS porta"
+        );
+        exit($dados->banco === "astuti_platform_dev" && $dados->usuario === "astuti_ensaio" && (int) $dados->porta === 55436 ? 0 : 1);
+    ' || erro 'a conexao efetiva nao e a copia isolada 55436; nada foi arquivado.'
+    php artisan astuti:alunos-repetidos --confirmar=REMOVER-REPETIDOS --responsavel="$email" || erro 'falha ao arquivar os repetidos; nada mais foi alterado.'
+fi
+unset ASTUTI_REMOVER_REPETIDOS
+
 printf '\n===== TESTE DA INTERFACE REAL, APENAS NO CLUSTER ISOLADO =====\n'
 printf 'Endereco: http://127.0.0.1:8002/login\n'
 printf 'E-mail: %s\n' "$email"
