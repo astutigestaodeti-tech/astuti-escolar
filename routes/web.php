@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcademicConfigController;
+use App\Http\Controllers\ActiveSearchController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\CensusReadinessController;
@@ -106,6 +107,24 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)
         ->name('academic.periods.close');
     Route::get('/painel-da-rede', [NetworkPanelController::class, 'index'])->name('network.panel.index');
+    // Busca ativa: ficha restrita, alertas de turma e documento verificável.
+    Route::get('/busca-ativa', [ActiveSearchController::class, 'network'])->name('active-search.network');
+    Route::post('/busca-ativa/parametros', [ActiveSearchController::class, 'saveParameters'])
+        ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('active-search.parameters');
+    Route::get('/escolas/{escola}/busca-ativa', [ActiveSearchController::class, 'school'])
+        ->whereUuid('escola')->name('school.active-search.index');
+    Route::get('/escolas/{escola}/turmas/{turma}/busca-ativa', [ActiveSearchController::class, 'classAlerts'])
+        ->whereUuid('escola')->whereUuid('turma')->name('school.active-search.class');
+    Route::get('/escolas/{escola}/busca-ativa/{matricula}', [ActiveSearchController::class, 'detail'])
+        ->whereUuid('escola')->whereUuid('matricula')->name('school.active-search.detail');
+    Route::post('/escolas/{escola}/busca-ativa/{matricula}', [ActiveSearchController::class, 'saveCase'])
+        ->whereUuid('escola')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.active-search.save');
+    Route::post('/escolas/{escola}/busca-ativa/{matricula}/contatos', [ActiveSearchController::class, 'contact'])
+        ->whereUuid('escola')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.active-search.contact');
+    Route::post('/escolas/{escola}/busca-ativa/{matricula}/encaminhamento', [ActiveSearchController::class, 'issue'])
+        ->whereUuid('escola')->whereUuid('matricula')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.active-search.issue');
+    Route::get('/escolas/{escola}/busca-ativa/{matricula}/documentos/{documento}', [ActiveSearchController::class, 'document'])
+        ->whereUuid('escola')->whereUuid('matricula')->whereUuid('documento')->name('school.active-search.document');
     Route::get('/conferencia-do-censo', [CensusReadinessController::class, 'index'])->name('census.readiness.index');
     Route::post('/conferencia-do-censo/parametros', [CensusReadinessController::class, 'updateParameters'])
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('census.readiness.parameters');

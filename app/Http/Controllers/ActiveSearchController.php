@@ -136,13 +136,16 @@ class ActiveSearchController extends Controller
     {
         [$municipality, $school] = $this->managedSchool($request, $escola);
         $input = $request->validate([
-            'situacao' => ['required', Rule::in(['open', 'returned', 'closed'])],
+            'situacao' => ['required', Rule::in(['open', 'returned', 'referred', 'closed'])],
             'motivo' => ['nullable', Rule::in(array_keys(ActiveSearchCase::REASONS))],
         ]);
         DB::connection('tenant')->transaction(function () use ($school, $matricula, $input, $request): void {
             $entry = $this->enrollment($school, $matricula, true);
             $case = ActiveSearchCase::query()->where('enrollment_id', $entry->id)->where('school_id', $school->id)->lockForUpdate()->first();
             abort_unless($case !== null || $entry->status === 'active', 404);
+            if ($input['situacao'] === 'referred' && $case?->status !== 'referred') {
+                throw ValidationException::withMessages(['situacao' => 'Emita o documento para registrar o encaminhamento.']);
+            }
             if ($case === null && $input['situacao'] !== 'open') {
                 throw ValidationException::withMessages(['situacao' => 'Abra o caso antes de mudar sua situação.']);
             }

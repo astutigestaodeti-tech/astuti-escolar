@@ -6,6 +6,9 @@ use App\Models\Platform\Membership;
 use App\Models\Platform\Municipality;
 use App\Models\Platform\PlatformAuditLog;
 use App\Models\Tenant\AcademicPeriod;
+use App\Models\Tenant\ActiveSearchCase;
+use App\Models\Tenant\ActiveSearchContact;
+use App\Models\Tenant\ActiveSearchParameter;
 use App\Models\Tenant\AttendanceMark;
 use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\AuditLog;
@@ -48,6 +51,9 @@ class AuditTrail
 {
     /** Nada fora desta lista chega ao JSON de auditoria. */
     private const ALLOWED_FIELDS = [
+        ActiveSearchParameter::class => ['school_year_id', 'consecutive_days', 'monthly_percentage', 'updated_by'],
+        ActiveSearchCase::class => ['id', 'status', 'opened_at', 'returned_at', 'updated_by'],
+        ActiveSearchContact::class => ['id', 'active_search_case_id', 'contact_date', 'recorded_by'],
         SchoolMealMenu::class => ['id', 'school_year_id', 'week_start', 'weekday', 'stage', 'meal_type', 'description', 'updated_by'],
         SchoolMealServing::class => ['id', 'school_id', 'school_year_id', 'meal_date', 'stage', 'meal_type', 'quantity', 'suggested_present', 'confirmed_by', 'confirmed_at'],
         IntegralFundebExpense::class => ['id', 'school_year_id', 'description', 'amount_cents', 'created_by', 'has_evidence'],
