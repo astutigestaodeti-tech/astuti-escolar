@@ -37,6 +37,7 @@
     $integralAtivo = request()->routeIs('integral.*');
     $alfabetizacaoAtiva = request()->routeIs('literacy.*') || request()->routeIs('school.literacy.*');
     $buscaAtivaAtivo = request()->routeIs('active-search.*') || request()->routeIs('school.active-search.*');
+    $presencaAtivo = request()->routeIs('presence.*') || request()->routeIs('school.presence.*');
     $alimentacaoAtiva = request()->routeIs('meals.*') || request()->routeIs('school.meals.*');
     $equidadeAtiva = request()->routeIs('equity.vaar.*');
     $listaEsperaAtiva = request()->routeIs('waitlist.*');
@@ -57,6 +58,8 @@
         'school.literacy.panel' => route('schools.show', $parametrosEscola),
         'school.literacy.classroom', 'school.literacy.save' => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'active-search.network', 'active-search.parameters' => route('network.panel.index', $parametrosMunicipio),
+        'presence.network' => route('network.panel.index', $parametrosMunicipio),
+        'school.presence.index' => route('schools.show', $parametrosEscola),
         'school.active-search.index', 'school.active-search.detail', 'school.active-search.save', 'school.active-search.contact', 'school.active-search.issue', 'school.active-search.document', 'school.active-search.revoke' => route('schools.show', $parametrosEscola),
         'school.active-search.class' => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'census.readiness.index', 'equity.vaar.index', 'integral.index', 'meals.menu', 'meals.report' => route('network.panel.index', $parametrosMunicipio),
@@ -133,6 +136,9 @@
                 </a>
                 <a class="menu-item {{ $buscaAtivaAtivo ? 'ativo' : '' }}" href="{{ route('active-search.network', $parametrosMunicipio) }}" @if ($buscaAtivaAtivo) aria-current="page" @endif>
                     <x-icon name="indicadores" /><span>Busca ativa</span>
+                </a>
+                <a class="menu-item {{ $presencaAtivo ? 'ativo' : '' }}" href="{{ route('presence.network', $parametrosMunicipio) }}" @if ($presencaAtivo) aria-current="page" @endif>
+                    <x-icon name="indicadores" /><span>Sistema Presença</span>
                 </a>
                 <a class="menu-item {{ $alimentacaoAtiva ? 'ativo' : '' }}" href="{{ route('meals.menu', $parametrosMunicipio) }}" @if ($alimentacaoAtiva) aria-current="page" @endif>
                     <x-icon name="turmas" /><span>Alimentação escolar</span>
