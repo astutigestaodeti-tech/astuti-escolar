@@ -16,7 +16,7 @@ Os arquivos foram baixados pela VPS de desenvolvimento, contornando um erro de c
 
 | Conferência | Resultado |
 |---|---|
-| Nova cópia pela internet | **Não foi possível.** O servidor de downloads do Inep também abriu com erro no Chrome do Jefferson, e o Inep não publica somas SHA-256 desses arquivos. |
+| Nova cópia pela internet | **Confirmada em 24/11/2026.** O servidor do Inep não envia o certificado intermediário, por isso a conexão falha com verificação ligada. A nova cópia foi baixada **com a verificação de certificado ativa**: o intermediário indicado no próprio certificado do servidor (RNP ICPEdu GR46 OV TLS CA 2025, emitido pela raiz GlobalSign Root R46, já confiável no sistema) foi buscado e acrescentado à cadeia. O leiaute e o RAR baixados têm exatamente as somas SHA-256 abaixo; o servidor informa última modificação em 09/07/2026 para os dois. |
 | Integridade do RAR | Os 22 arquivos extraídos têm o CRC-32 igual ao registrado no próprio RAR. O tamanho físico confere, sem truncamento. Uma das ferramentas (unar) falhou em 3 arquivos por limitação dela; o bsdtar extraiu os 22 sem erro. |
 | Conteúdo ativo | Nenhuma macro, nenhum vínculo externo e nenhum objeto embutido na planilha do leiaute (só configurações de impressão). |
 | Metadados internos | Criador "inep"; última edição em 01/07/2026 por servidor da equipe do Censo, o mesmo editor final das 21 tabelas, todas datadas de maio a junho de 2026. |
@@ -25,7 +25,9 @@ Os arquivos foram baixados pela VPS de desenvolvimento, contornando um erro de c
 | PDF de instruções | Sem formulário nem JavaScript. Gerado pelo Word em 03/08/2026; o próprio texto diz "publicada on-line em junho de 2026", o que indica revisão posterior sem mudar o ano. A equipe técnica listada inclui os mesmos servidores que aparecem como editores da planilha e das tabelas. Os contatos são do domínio inep.gov.br. Os parágrafos centrais têm o mesmo texto da versão de 2025 publicada pelo Inep. |
 | Implementação independente | O i-Educar, sistema de gestão escolar de código aberto usado por redes municipais, foi atualizado entre maio e junho de 2026 para o Censo 2026. Ele usa a data de referência 27/05/2026 e implementa exatamente as novidades desta planilha: o campo 56 do registro 10 (laboratório de robótica, V3), o registro 30 com 110 campos e o campo 9 do registro 60 (carga horária integralizada, V5). Foi só consultado: nenhum código dele foi copiado, porque a licença é GPL. |
 
-**Conclusão:** não há sinal de adulteração. Os três materiais são coerentes entre si, com fontes públicas e com uma implementação independente feita por terceiros a partir dos arquivos oficiais. **Risco residual muito baixo.** A prova definitiva continua pendente porque o Inep não publica somas e o servidor deles está com o certificado inválido. Quando o certificado for corrigido, baixar de novo e comparar com as somas abaixo:
+**Conclusão:** autenticidade confirmada. A cópia em uso é idêntica, byte a byte, à publicada hoje em download.inep.gov.br, obtida por conexão com certificado verificado. O PDF de instruções não foi baixado de novo; para ele valem as conferências da tabela.
+
+**Versão do leiaute:** é a V5. A aba "atualizações da versão" registra de v1 a V5, e o arquivo publicado hoje é o mesmo. Um fornecedor (Qualidata, notas de 05/10/2026) cita uma "v6", mas o Inep não publicou nenhum arquivo com essa versão no endereço oficial até 24/11/2026. Se aparecer, comparar campo a campo antes de usar.
 
 | Arquivo | SHA-256 |
 |---|---|
