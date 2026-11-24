@@ -45,6 +45,9 @@ class LessonRecordController extends Controller
             'data' => $date->lte(today()) ? $date->toDateString() : today()->toDateString(),
             'componente_aula' => $component ?? 'polivalente'];
         $return = fn () => redirect()->route('school.classes.attendance.index', $params);
+        if (! $diary->dateAllowed($class, $date)) {
+            return $return()->withErrors(['data' => 'Escolha uma data dentro do ano letivo, até hoje.'], 'lesson');
+        }
         $requiresReason = $permissions['director'] || $date->lt(today());
         if ($requiresReason && mb_strlen(trim($data['motivo'] ?? '')) < 10) {
             return $return()->withErrors(['motivo' => 'Informe o motivo, de 10 a 500 caracteres.'], 'lesson');
