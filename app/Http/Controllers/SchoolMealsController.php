@@ -191,7 +191,11 @@ class SchoolMealsController extends Controller
         if ($date->isAfter(CarbonImmutable::today())) {
             throw ValidationException::withMessages(['data' => 'Não é permitido registrar refeições futuras.']);
         }
-        $year = SchoolYear::query()->where('year', $date->year)->firstOrFail(['id', 'year', 'start_date', 'end_date']);
+        $year = SchoolYear::query()->where('year', $date->year)
+            ->first(['id', 'year', 'start_date', 'end_date']);
+        if ($year === null) {
+            throw ValidationException::withMessages(['data' => 'Não existe ano letivo cadastrado para a data.']);
+        }
         $this->assertWithinYear($year, $date);
         // Fotografia da sugestão naquele momento, não um número presumido.
         $suggestion = $meals->suggested($school, $year, $date->toDateString());

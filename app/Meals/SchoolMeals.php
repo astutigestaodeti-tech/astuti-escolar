@@ -11,6 +11,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentHealthAlert;
+use App\Models\Tenant\StudentSpecialEducation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -165,6 +166,9 @@ class SchoolMeals
             ->when($schoolId, fn ($q) => $q->where('school_id', $schoolId))
             ->with('student')->get();
         $schools = School::query()->where('status', 'active')->get(['id'])->pluck('id')->flip();
+        $aee = StudentSpecialEducation::query()
+            ->whereIn('student_id', $enrollments->pluck('student_id')->unique())
+            ->where('aee_status', 'participa')->pluck('student_id')->flip();
         $daily = 0.0;
         $unknown = 0;
         $seen = [];
@@ -193,6 +197,9 @@ class SchoolMeals
                 continue;
             }
             $daily += (float) config('censo.categories.'.$category.'.pnae', 0);
+            if ($aee->has($entry->student_id)) {
+                $daily += (float) config('censo.pnae_aee', 0.78);
+            }
         }
 
         return ['daily' => round($daily, 2),
