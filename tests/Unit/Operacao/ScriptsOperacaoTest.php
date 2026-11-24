@@ -126,6 +126,37 @@ class ScriptsOperacaoTest extends TestCase
         }
     }
 
+    public function test_ajuste_de_desempenho_confere_antes_de_aplicar_e_nao_toca_em_dados(): void
+    {
+        $script = dirname(__DIR__, 3).'/scripts/operacao/vps/ajustar-desempenho.sh';
+        $fonte = (string) file_get_contents($script);
+
+        exec('bash '.escapeshellarg($script).' --confirmar=SIM 2>&1', $ignorado, $codigoErrado);
+        $this->assertSame(2, $codigoErrado, 'confirmacao diferente da exata e recusada');
+        $this->assertStringContainsString('--confirmar=AJUSTAR-DESEMPENHO) modo=aplicar', $fonte);
+        $this->assertStringContainsString('--desfazer=AJUSTAR-DESEMPENHO) modo=desfazer', $fonte);
+        // Testa a configuracao do PHP e confere o valor efetivo antes de recarregar.
+        $this->assertLessThan(strpos($fonte, 'systemctl reload "$servico_fpm"'."\n    printf '  PHP-FPM recarregado"), strpos($fonte, 'if ! "$php_fpm" -t; then'));
+        $this->assertStringContainsString('pm\\.max_children = ${filhos}', $fonte);
+        // So arquivos proprios: nada de editar www.conf, postgresql.conf, .env ou dados.
+        foreach (['sed -i', 'www.conf"', '>>/etc', 'ALTER SYSTEM', 'migrate', 'DROP ', 'rm -rf', '.env', 'ufw', 'sshd'] as $proibido) {
+            $this->assertStringNotContainsString($proibido, $fonte, $proibido);
+        }
+    }
+
+    public function test_teste_de_carga_so_le_e_recusa_producao(): void
+    {
+        $script = dirname(__DIR__, 3).'/scripts/operacao/vps/teste-de-carga.py';
+        exec('python3 -m py_compile '.escapeshellarg($script).' 2>&1', $saida, $codigo);
+        $this->assertSame(0, $codigo, implode("\n", $saida));
+        $fonte = (string) file_get_contents($script);
+        $this->assertStringContainsString('valores.get("APP_ENV") == "production"', $fonte);
+        $this->assertStringContainsString('getpass.getpass', $fonte, 'senha digitada, nunca em argumento');
+        $this->assertStringNotContainsString('--senha', $fonte);
+        // Durante a carga so ha GET: o unico POST e o do login (e do codigo do segundo fator).
+        $this->assertSame(2, preg_match_all('/sessao\.pedir\([^)\n]*\{"/', $fonte));
+    }
+
     public function test_preparar_base_nao_mexe_em_ssh_nem_firewall(): void
     {
         $fonte = file_get_contents(dirname(__DIR__, 3).'/scripts/operacao/vps/preparar-base.sh');
