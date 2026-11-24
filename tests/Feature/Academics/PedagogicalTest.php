@@ -14,6 +14,7 @@ use App\Models\Tenant\ClassTeacherAssignment;
 use App\Models\Tenant\CurricularComponent;
 use App\Models\Tenant\GradeEntry;
 use App\Models\Tenant\LiteracyAssessment;
+use App\Models\Tenant\MultiprofessionalRequest;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolClassCensus;
@@ -42,7 +43,7 @@ class PedagogicalTest extends TwoMunicipalityTestCase
             [$class, $enrollments] = $this->createClass($year->id, 1);
             $teacher = StaffMember::query()->create(['id' => Str::uuid()->toString(), 'school_id' => self::ESCOLA_A1, 'role' => 'teacher', 'status' => 'active', 'full_name' => 'Docente Fictício', 'institutional_email' => 'docente-council@example.invalid']);
             ClassTeacherAssignment::query()->create(['id' => Str::uuid()->toString(), 'staff_member_id' => $teacher->id, 'school_class_id' => $class->id, 'starts_on' => '2026-02-02', 'is_main' => true]);
-            $component = CurricularComponent::query()->create(['id' => Str::uuid()->toString(), 'code' => 'CPTEST', 'name' => 'Componente Fictício', 'active' => true, 'display_order' => 1]);
+            $component = CurricularComponent::query()->create(['id' => Str::uuid()->toString(), 'code' => 'CP'.Str::upper(Str::random(8)), 'name' => 'Componente Fictício', 'active' => true, 'display_order' => 1]);
             $entry = $enrollments[0];
             GradeEntry::query()->create(['id' => Str::uuid()->toString(), 'student_enrollment_id' => $entry->id, 'school_class_id' => $class->id, 'academic_period_id' => $period->id, 'curricular_component_id' => $component->id, 'grade' => 8.5, 'recorded_by' => $this->auditFixtureUser->id, 'updated_by' => $this->auditFixtureUser->id]);
             $session = AttendanceSession::query()->create(['id' => Str::uuid()->toString(), 'school_class_id' => $class->id, 'attendance_date' => '2026-02-03', 'recorded_by' => $this->auditFixtureUser->id, 'recorded_at' => now()]);
@@ -118,7 +119,7 @@ class PedagogicalTest extends TwoMunicipalityTestCase
             $log = AuditLog::query()->where('action', 'pedagogical.council.student.updated')->sole();
             $this->assertArrayHasKey('changed_fields', $log->after);
             $this->assertStringNotContainsString('Parecer fictício reservado', json_encode($log->after));
-            $this->assertSame(0, \App\Models\Tenant\MultiprofessionalRequest::query()->count());
+            $this->assertSame(0, MultiprofessionalRequest::query()->count());
         });
         $this->login('municipal_manager');
         $this->get('/m/municipio-a/gestao-pedagogica')->assertOk()->assertDontSee('Aluno Fictício 1 1')->assertDontSee('Parecer fictício reservado');
