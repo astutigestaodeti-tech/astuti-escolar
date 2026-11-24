@@ -19,7 +19,10 @@ return new class extends Migration
             $table->unique(['school_id', 'census_year']);
         });
 
-        DB::connection('tenant')->statement("ALTER TABLE school_infrastructure_census ADD CONSTRAINT school_infrastructure_census_answers_chk CHECK (jsonb_typeof(answers) = 'object')");
+        $db = DB::connection('tenant');
+        $db->statement("ALTER TABLE school_infrastructure_census ADD CONSTRAINT school_infrastructure_census_answers_chk CHECK (jsonb_typeof(answers) = 'object')");
+        $campos = implode(', ', array_map(fn (int $campo): string => "'{$campo}'", range(3, 187)));
+        $db->statement("ALTER TABLE school_infrastructure_census ADD CONSTRAINT school_infrastructure_census_fields_chk CHECK (answers - ARRAY[{$campos}]::text[] = '{}'::jsonb)");
     }
 
     public function down(): void
