@@ -19,6 +19,18 @@ final class Tabelas
     /** @var array<int, array{codigo: int, nome: string, area: string, subarea: string}>|null */
     private ?array $atividades = null;
 
+    /** @var array<int, array{codigo: int, nome: string, uf: string}>|null */
+    private ?array $municipios = null;
+
+    /** @var array<string, int>|null chave "UF|NOME NORMALIZADO" => código */
+    private ?array $municipiosPorNome = null;
+
+    /** @var array<int, string>|null */
+    private ?array $paises = null;
+
+    /** @var array<int, string>|null */
+    private ?array $povos = null;
+
     /** @param  array<string, mixed>  $dados */
     private function __construct(public readonly int $ano, private readonly array $dados)
     {
@@ -131,4 +143,115 @@ final class Tabelas
 
         return $this->atividades;
     }
+
+    /** @return array{codigo: int, nome: string, uf: string}|null */
+    public function municipio(int $codigo): ?array
+    {
+        $this->carregarMunicipios();
+
+        return $this->municipios[$codigo] ?? null;
+    }
+
+    /**
+     * Código do município pelo nome e pela sigla da UF, sem distinguir
+     * maiúsculas, acentos ou apóstrofos. Nome ambíguo ou inexistente: null.
+     */
+    public function municipioPorNome(?string $nome, ?string $uf): ?int
+    {
+        if ($nome === null || $uf === null || trim($nome) === '' || trim($uf) === '') {
+            return null;
+        }
+        $this->carregarMunicipios();
+
+        return $this->municipiosPorNome[strtoupper(trim($uf)).'|'.self::chaveDeNome($nome)] ?? null;
+    }
+
+    /** @return array<int, string> código => nome do país */
+    public function paises(): array
+    {
+        if ($this->paises === null) {
+            $this->paises = [];
+            foreach ($this->linhasComCodigo('paises.csv') as $linha) {
+                $this->paises[(int) $linha[0]] = trim($linha[1]);
+            }
+            uasort($this->paises, fn (string $a, string $b): int => strcmp(self::chaveDeNome($a), self::chaveDeNome($b)));
+        }
+
+        return $this->paises;
+    }
+
+    /** @return array<int, string> código => nome do povo indígena */
+    public function povosIndigenas(): array
+    {
+        if ($this->povos === null) {
+            $this->povos = [];
+            foreach ($this->linhasComCodigo('povos_indigenas.csv') as $linha) {
+                $this->povos[(int) $linha[0]] = trim($linha[1]);
+            }
+        }
+
+        return $this->povos;
+    }
+
+    private function carregarMunicipios(): void
+    {
+        if ($this->municipios !== null) {
+            return;
+        }
+        $siglas = self::SIGLAS_UF;
+        $this->municipios = $this->municipiosPorNome = [];
+        $repetidos = [];
+        foreach ($this->linhasComCodigo('municipios.csv', 2) as $linha) {
+            $uf = $siglas[(int) $linha[0]] ?? null;
+            if ($uf === null) {
+                continue;
+            }
+            $codigo = (int) $linha[2];
+            $this->municipios[$codigo] = ['codigo' => $codigo, 'nome' => trim($linha[3]), 'uf' => $uf];
+            $chave = $uf.'|'.self::chaveDeNome($linha[3]);
+            if (isset($this->municipiosPorNome[$chave])) {
+                $repetidos[$chave] = true;
+            }
+            $this->municipiosPorNome[$chave] = $codigo;
+        }
+        foreach (array_keys($repetidos) as $chave) {
+            unset($this->municipiosPorNome[$chave]);
+        }
+    }
+
+    /**
+     * Linhas de dados de uma tabela auxiliar: as que têm código numérico na
+     * coluna indicada (o cabeçalho institucional do Inep fica de fora).
+     *
+     * @return iterable<int, list<string>>
+     */
+    private function linhasComCodigo(string $arquivo, int $colunaDoCodigo = 0): iterable
+    {
+        $handle = fopen(resource_path("educacenso/{$this->ano}/tabelas/{$arquivo}"), 'r');
+        try {
+            while (($linha = fgetcsv($handle, escape: '')) !== false) {
+                if (isset($linha[$colunaDoCodigo]) && preg_match('/^\d+$/', trim($linha[$colunaDoCodigo])) === 1) {
+                    yield $linha;
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    private static function chaveDeNome(string $nome): string
+    {
+        $texto = (string) Texto::normalizar(str_replace(["'", '`', '´', '’', '-'], ' ', $nome));
+
+        return (string) preg_replace('/\s+/', ' ', trim($texto));
+    }
+
+    /** Código IBGE da UF => sigla. */
+    public const SIGLAS_UF = [
+        11 => 'RO', 12 => 'AC', 13 => 'AM', 14 => 'RR', 15 => 'PA', 16 => 'AP', 17 => 'TO',
+        21 => 'MA', 22 => 'PI', 23 => 'CE', 24 => 'RN', 25 => 'PB', 26 => 'PE', 27 => 'AL', 28 => 'SE', 29 => 'BA',
+        31 => 'MG', 32 => 'ES', 33 => 'RJ', 35 => 'SP',
+        41 => 'PR', 42 => 'SC', 43 => 'RS',
+        50 => 'MS', 51 => 'MT', 52 => 'GO', 53 => 'DF',
+    ];
 }

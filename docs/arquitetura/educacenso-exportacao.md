@@ -261,13 +261,14 @@ Legenda: **tem**, já existe e só precisa de conversão; **novo**, precisa de c
   - deficiência, TEA e altas habilidades;
   - recursos de prova (parte);
   - situação no transporte e rota.
+- **Entregue (tela "Dados do Censo" na ficha do aluno, tabela `student_census`):**
+  - **filiação 1 e 2** como dado próprio (campos 8 a 10). O responsável cadastrado como mãe ou pai é só sugestão: filiação é dado de registro civil. Nome informado sozinho, para aluno sem CPF, segue a regra 1 dos campos 9 e 10;
+  - município de nascimento em código, só para nacionalidade brasileira (campo 16), achado na Tabela de Municípios pelo nome e UF, sem distinguir acentos; a tela mostra antes de gravar se o nome está na tabela;
+  - país de nacionalidade (campo 15): 76 para brasileira e naturalizada; outro país da tabela para estrangeiro;
+  - país e município de residência em código (campos 51 e 53);
+  - localização diferenciada da residência (campo 55), recusando assentamento com zona urbana;
+  - povo indígena (campo 13), só com cor/raça indígena.
 - **Novo:**
-  - **filiação 1 e 2** como dado próprio (campos 8 a 10). O responsável cadastrado como mãe ou pai é só sugestão: filiação é dado de registro civil;
-  - município de nascimento em código (hoje cidade e UF em texto: busca na tabela com confirmação);
-  - país de nacionalidade para estrangeiro;
-  - município de residência em código;
-  - localização diferenciada da residência;
-  - povo indígena (se cor/raça indígena);
   - deficiência múltipla (26);
   - **transtornos que impactam a aprendizagem** (29 a 35, dado de saúde novo);
   - recursos de prova faltantes: CD com áudio, prova de Língua Portuguesa como segunda língua, prova em vídeo em Libras, material em Braille, "nenhum";

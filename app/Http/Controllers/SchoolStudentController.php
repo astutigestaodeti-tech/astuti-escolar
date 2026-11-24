@@ -9,6 +9,7 @@ use App\Models\Tenant\IssuedDocument;
 use App\Models\Tenant\MultiprofessionalRequest;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
+use App\Models\Tenant\StudentCensus;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentExit;
 use App\Models\Tenant\StudentGuardian;
@@ -181,6 +182,7 @@ class SchoolStudentController extends Controller
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $canDeleteEnrollment = Gate::allows('deleteEnrollment', [$school, $municipality]);
+        $studentCensus = $canManage ? StudentCensus::query()->find($student->id) : null;
         $declarations = $canManage ? IssuedDocument::query()->whereIn('kind', array_keys(IssuedDocument::DECLARATIONS))->where('school_id', $school->id)
             ->where('student_id', $student->id)->orderByDesc('issued_at')->get() : collect();
 
@@ -199,6 +201,6 @@ class SchoolStudentController extends Controller
             $distanciaRuas !== null ? 'pelas ruas' : 'em linha reta',
         );
 
-        return response()->view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthLocked', 'healthAlerts', 'healthProfile', 'specialEducation', 'declarations', 'teamPanels', 'teamVerified'))->header('Cache-Control', 'private, no-store');
+        return response()->view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthLocked', 'healthAlerts', 'healthProfile', 'specialEducation', 'studentCensus', 'declarations', 'teamPanels', 'teamVerified'))->header('Cache-Control', 'private, no-store');
     }
 }
