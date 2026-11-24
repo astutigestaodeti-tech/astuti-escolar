@@ -6,6 +6,7 @@ use App\Attendance\SchoolAbsenceAlerts;
 use App\Audit\AuditTrail;
 use App\Census\CensusReadiness;
 use App\Educacenso\ConferenciaDeAlunos;
+use App\Educacenso\ConferenciaDeServidores;
 use App\Educacenso\ConferenciaDeTurmas;
 use App\Educacenso\Registro00;
 use App\Educacenso\Registro10;
@@ -31,7 +32,7 @@ class CensusReadinessController extends Controller
 {
     private const LIMIT = 300;
 
-    public function index(Request $request, string $municipio, CensusReadiness $readiness, ConferenciaDeTurmas $turmas, ConferenciaDeAlunos $alunos): Response
+    public function index(Request $request, string $municipio, CensusReadiness $readiness, ConferenciaDeTurmas $turmas, ConferenciaDeAlunos $alunos, ConferenciaDeServidores $servidores): Response
     {
         $municipality = $request->attributes->get('astuti.municipality');
         Gate::authorize('viewNetworkPanel', [School::class, $municipality]);
@@ -62,6 +63,11 @@ class CensusReadinessController extends Controller
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['r30']->pronto() && $linha['r60']->pronto())),
             ]);
 
+        $staff = $servidores->para($schools, $year)->map(fn (array $linhas): array => [
+            'total' => count($linhas),
+            'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['pronto'])),
+        ]);
+
         // Registros 00 e 10: ano correspondente ao leiaute, sem consultas por escola.
         $ano = Tabelas::anoMaisRecente();
         $anoLetivo = SchoolYear::query()->where('year', $ano)->first();
@@ -81,6 +87,7 @@ class CensusReadinessController extends Controller
             'list' => $list->take(self::LIMIT),
             'classes' => $classes,
             'students' => $students,
+            'staff' => $staff,
             'schoolReadiness' => $schoolReadiness,
             'listTotal' => $list->count(),
             'limit' => self::LIMIT,
