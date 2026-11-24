@@ -119,6 +119,9 @@
                 <a class="menu-item {{ $censoAtivo ? 'ativo' : '' }}" href="{{ route('census.readiness.index', $parametrosMunicipio) }}" @if ($censoAtivo) aria-current="page" @endif>
                     <x-icon name="conferir" /><span>Conferência do Censo</span>
                 </a>
+                <a class="menu-item {{ request()->routeIs('pedagogical.*') ? 'ativo' : '' }}" href="{{ route('pedagogical.network', $parametrosMunicipio) }}" @if (request()->routeIs('pedagogical.*')) aria-current="page" @endif>
+                    <x-icon name="indicadores" /><span>Gestão pedagógica</span>
+                </a>
                 <a class="menu-item {{ $equidadeAtiva ? 'ativo' : '' }}" href="{{ route('equity.vaar.index', $parametrosMunicipio) }}" @if ($equidadeAtiva) aria-current="page" @endif>
                     <x-icon name="indicadores" /><span>Equidade e VAAR</span>
                 </a>
