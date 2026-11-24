@@ -53,6 +53,17 @@
             <a class="botao secundario" style="margin-top:12px" href="{{ route('school.classes.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar turmas desta escola <x-icon name="seta" :size="16" /></a>
         </section>
 
+        @if (Gate::allows('viewNetworkPanel', [\App\Models\Tenant\School::class, $municipality]) || app(\App\Academics\PedagogicalAccess::class)->directs(auth()->user(), $municipality, $school))
+            <section class="folha cartao" aria-labelledby="titulo-gestao-pedagogica">
+                <div class="folha-corpo">
+                    <span class="acao-icone"><x-icon name="indicadores" /></span>
+                    <h2 id="titulo-gestao-pedagogica">Gestão pedagógica</h2>
+                    <p>Conselhos de classe, distorção idade-série e aulas previstas e dadas.</p>
+                    <a class="botao secundario" href="{{ route('pedagogical.school', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Consultar gestão pedagógica</a>
+                </div>
+            </section>
+        @endif
+
         @can('viewEquity', [$school, $municipality])
             <section class="folha cartao" aria-labelledby="titulo-equidade-escola">
                 <div class="folha-corpo">

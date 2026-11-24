@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Academics\GradeAccess;
 use App\Audit\AuditTrail;
 use App\Models\Tenant\AcademicPeriod;
+use App\Models\Tenant\ClassCouncil;
 use App\Models\Tenant\CurricularComponent;
 use App\Models\Tenant\GradeEntry;
 use App\Models\Tenant\SchoolYear;
@@ -108,6 +109,13 @@ class AcademicConfigController extends Controller
             $changeType = $old->count() !== $count || $old->contains(
                 fn (AcademicPeriod $period): bool => $period->kind !== $data['kind']
             );
+            if (ClassCouncil::query()->whereIn('academic_period_id', $old->pluck('id'))->exists()) {
+                $changedDates = $old->contains(fn (AcademicPeriod $p): bool => $p->starts_on->toDateString() !== ($data['periods'][$p->number]['starts_on'] ?? null)
+                    || $p->ends_on->toDateString() !== ($data['periods'][$p->number]['ends_on'] ?? null));
+                if ($changeType || $changedDates) {
+                    throw ValidationException::withMessages(['periods' => 'Já existem conselhos vinculados. As datas e o formato dos períodos devem ser preservados.']);
+                }
+            }
             if ($changeType && GradeEntry::query()->whereIn('academic_period_id', $old->pluck('id'))->exists()) {
                 throw ValidationException::withMessages([
                     'kind' => 'Já existem notas vinculadas. Não é possível trocar bimestres por trimestres ou alterar a quantidade.',

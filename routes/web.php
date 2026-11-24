@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\CensusReadinessController;
 use App\Http\Controllers\ClassCensusController;
+use App\Http\Controllers\ClassCouncilController;
 use App\Http\Controllers\ClassGradesController;
 use App\Http\Controllers\ClassTeacherAssignmentController;
 use App\Http\Controllers\ClassYearEndController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\MonthlySecretariatReportController;
 use App\Http\Controllers\MultiprofessionalController;
 use App\Http\Controllers\MultiprofessionalIndicatorsController;
 use App\Http\Controllers\NetworkPanelController;
+use App\Http\Controllers\PedagogicalPanelController;
 use App\Http\Controllers\PostalCodeLookupController;
 use App\Http\Controllers\PublicDocumentVerificationController;
 use App\Http\Controllers\SchoolAbsenceAlertsController;
@@ -230,6 +232,11 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
         ->whereUuid('escola')->whereUuid('turma')
         ->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('integral.hours.update');
     // Equidade: totais anonimizados para a rede e para a direcao de cada escola.
+    Route::get('/gestao-pedagogica', [PedagogicalPanelController::class, 'network'])->name('pedagogical.network');
+    Route::get('/escolas/{escola}/gestao-pedagogica', [PedagogicalPanelController::class, 'school'])->whereUuid('escola')->middleware(RequireConfirmedTwoFactor::class)->name('pedagogical.school');
+    Route::get('/escolas/{escola}/turmas/{turma}/conselho-de-classe', [ClassCouncilController::class, 'index'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('pedagogical.council.index');
+    Route::post('/escolas/{escola}/turmas/{turma}/conselho-de-classe', [ClassCouncilController::class, 'save'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('pedagogical.council.save');
+    Route::post('/escolas/{escola}/turmas/{turma}/conselho-de-classe/situacao', [ClassCouncilController::class, 'transition'])->whereUuid('escola')->whereUuid('turma')->middleware(RequireConfirmedTwoFactor::class)->name('pedagogical.council.transition');
     Route::get('/equidade-vaar', [EquityVaarController::class, 'index'])->name('equity.vaar.index');
     Route::get('/escolas/{escola}/equidade-vaar', [EquityVaarController::class, 'school'])
         ->whereUuid('escola')->name('equity.vaar.school');

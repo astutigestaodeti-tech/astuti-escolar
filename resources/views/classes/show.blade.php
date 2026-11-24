@@ -32,6 +32,9 @@
             <span class="marcador"><x-icon name="turmas" :size="16" /> {{ $occupied }} {{ $occupied === 1 ? 'aluno' : 'alunos' }}</span>
             <a class="botao" href="{{ route('school.classes.attendance.index', $parametrosTurma) }}">{{ $todaySessionExists ? 'Corrigir chamada de hoje' : 'Fazer chamada de hoje' }}</a>
             <a class="botao secundario" href="{{ route('school.classes.attendance.monthly', $parametrosTurma) }}">Relatório do mês</a>
+            @if (! app(\App\Academics\GradeAccess::class)->isMunicipalManager(auth()->user(), $municipality) && (app(\App\Academics\PedagogicalAccess::class)->directs(auth()->user(), $municipality, $school) || app(\App\Academics\GradeAccess::class)->isAssignedTeacher(auth()->user(), $municipality, $school, $class)))
+                <a class="botao secundario" href="{{ route('pedagogical.council.index', $parametrosTurma) }}">Conselho de classe</a>
+            @endif
             @if($canManage || app(\App\Academics\GradeAccess::class)->isAssignedTeacher(auth()->user(), $municipality, $school, $class))
                 <a class="botao secundario" href="{{ route('school.active-search.class', $parametrosTurma) }}">Alertas da turma</a>
             @endif

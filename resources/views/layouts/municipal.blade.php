@@ -62,11 +62,13 @@
         'school.presence.index' => route('schools.show', $parametrosEscola),
         'school.active-search.index', 'school.active-search.detail', 'school.active-search.save', 'school.active-search.contact', 'school.active-search.issue', 'school.active-search.document', 'school.active-search.revoke' => route('schools.show', $parametrosEscola),
         'school.active-search.class' => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
-        'census.readiness.index', 'equity.vaar.index', 'integral.index', 'meals.menu', 'meals.report' => route('network.panel.index', $parametrosMunicipio),
+        'pedagogical.network', 'census.readiness.index', 'equity.vaar.index', 'integral.index', 'meals.menu', 'meals.report' => route('network.panel.index', $parametrosMunicipio),
         'meals.menu.save', 'meals.menu.copy' => route('meals.menu', $parametrosMunicipio),
         'school.meals.index', 'school.meals.save', 'school.meals.menu', 'school.meals.kitchen', 'school.meals.allergies', 'school.meals.report' => route('schools.show', $parametrosEscola),
         'integral.school', 'integral.hours.update' => route('schools.show', $parametrosEscola),
         'integral.target', 'integral.revenue', 'integral.expense.store', 'integral.expense.evidence' => route('integral.index', $parametrosMunicipio),
+        'pedagogical.school' => route('schools.show', $parametrosEscola),
+        'pedagogical.council.index', 'pedagogical.council.save', 'pedagogical.council.transition' => route('school.classes.show', [...$parametrosEscola, 'turma' => request()->route('turma')]),
         'equity.vaar.school' => route('schools.show', $parametrosEscola),
         'equity.vaar.condition', 'equity.vaar.evidence' => route('equity.vaar.index', $parametrosMunicipio),
         'academic.components.index', 'academic.periods.index' => route('schools.index', $parametrosMunicipio),
@@ -121,6 +123,9 @@
                 </a>
                 <a class="menu-item {{ $censoAtivo ? 'ativo' : '' }}" href="{{ route('census.readiness.index', $parametrosMunicipio) }}" @if ($censoAtivo) aria-current="page" @endif>
                     <x-icon name="conferir" /><span>Conferência do Censo</span>
+                </a>
+                <a class="menu-item {{ request()->routeIs('pedagogical.*') ? 'ativo' : '' }}" href="{{ route('pedagogical.network', $parametrosMunicipio) }}" @if (request()->routeIs('pedagogical.*')) aria-current="page" @endif>
+                    <x-icon name="indicadores" /><span>Gestão pedagógica</span>
                 </a>
                 <a class="menu-item {{ $equidadeAtiva ? 'ativo' : '' }}" href="{{ route('equity.vaar.index', $parametrosMunicipio) }}" @if ($equidadeAtiva) aria-current="page" @endif>
                     <x-icon name="indicadores" /><span>Equidade e VAAR</span>
