@@ -23,7 +23,7 @@
         <div class="folha-corpo">
             <form method="GET" class="pedagogico-filtros">
                 <label>Ano letivo <select name="ano" class="entrada">@foreach ($years as $y)<option value="{{ $y->id }}" @selected($year?->id === $y->id)>{{ $y->year }}</option>@endforeach</select></label>
-                @if ($school)<label><input type="checkbox" name="nominal" value="1" @checked($nominal)> Mostrar lista nominal de distorção</label>@endif
+                @if ($school && Gate::allows('viewEquity', [$school, $municipality]))<label><input type="checkbox" name="nominal" value="1" @checked($nominal)> Mostrar lista nominal de distorção</label>@endif
                 <button class="botao secundario">Consultar</button>
             </form>
         </div>
