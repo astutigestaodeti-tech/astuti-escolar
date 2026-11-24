@@ -57,6 +57,7 @@ main() {
         verificar_acesso
     fi
     verificar_projeto "$projeto"
+    verificar_backup
 
     printf '\nResumo: %d OK, %d ATENCAO, %d FALHA\n' "$n_ok" "$n_atencao" "$n_falha"
     if [[ "$n_falha" -gt 0 ]]; then
@@ -337,6 +338,25 @@ verificar_projeto() {
     fi
 
     atencao 'Backup externo e ensaio de restauracao nao sao conferidos automaticamente' 'confira no docs/operacao/vps-checklist-seguranca.md.'
+}
+
+
+verificar_backup() {
+    secao 'Backup'
+    local marca=/var/backups/astuti/ULTIMO-BACKUP-OK idade_h
+    if ! eh_root; then
+        info 'Backup: rode com sudo para conferir.'
+        return 0
+    fi
+    if [[ -f /etc/cron.d/astuti-backup ]]; then ok 'Backup diario agendado'; else atencao 'Backup nao agendado' 'sudo bash scripts/operacao/vps/backup.sh --agendar=AGENDAR-BACKUP --manter=14 --criptografar=...'; fi
+    if [[ -f /etc/cron.d/astuti-backup ]] && grep -q -- '--criptografar=' /etc/cron.d/astuti-backup; then ok 'Backup criptografado'; else atencao 'Backup sem criptografia' 'use --criptografar com a chave publica (docs/operacao/vps-backup.md).'; fi
+    if [[ ! -f "$marca" ]]; then
+        atencao 'Nenhum backup concluido neste servidor' 'sudo bash scripts/operacao/vps/backup.sh --confirmar=FAZER-BACKUP'
+        return 0
+    fi
+    idade_h=$(( ( $(date +%s) - $(stat -c %Y "$marca") ) / 3600 ))
+    if (( idade_h <= 26 )); then ok "Ultimo backup ha ${idade_h} h"; else falha "Ultimo backup ha ${idade_h} h" 'veja /var/log/astuti-backup.log.'; fi
+    if find /var/backups/astuti -mindepth 1 -maxdepth 1 -name '*.incompleto' 2>/dev/null | grep -q .; then atencao 'Ha backup incompleto' 'veja /var/log/astuti-backup.log.'; fi
 }
 
 main "$@"

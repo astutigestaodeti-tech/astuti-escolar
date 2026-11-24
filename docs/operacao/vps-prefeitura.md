@@ -83,6 +83,8 @@ O navegador reduz as fotos de identificacao antes do envio (lado maior de 960 px
 
 ## Backup e ensaio de restauração
 
+Procedimento e scripts: [`vps-backup.md`](vps-backup.md) (`backup.sh` cifrado e agendado, `ensaiar-restauracao.sh` em bancos novos).
+
 - Guardar dumps **separados** de `platform` e `tenant`, mais arquivos privados, com criptografia e cópias externas a esse VPS. Nunca guardar só no mesmo volume.
 - Usar `pg_dump -Fc` pela conta de backup; conferir códigos de saída e manifestos sem incluir senhas; guardar com retenção definida em contrato.
 - Periodicamente restaurar **em VPS de teste isolado** usando `pg_restore`, conferir contagens, relacionamentos, hashes e acesso por papel. Uma cópia nunca verificada não equivale a backup operacional.

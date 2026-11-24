@@ -177,4 +177,53 @@ class ScriptsOperacaoTest extends TestCase
         $this->assertStringContainsString('SEGUNDA sessao SSH', $fonte);
         $this->assertStringNotContainsString('sshd_config"', $fonte, 'nao edita o sshd_config original');
     }
+
+    public function test_backup_confere_antes_de_dar_como_pronto_e_so_apaga_backups_proprios(): void
+    {
+        $script = dirname(__DIR__, 3).'/scripts/operacao/vps/backup.sh';
+        $fonte = (string) file_get_contents($script);
+
+        exec('bash '.escapeshellarg($script).' --confirmar=SIM 2>&1', $ignorado, $codigo);
+        $this->assertSame(2, $codigo, 'confirmacao diferente da exata e recusada');
+        exec('bash '.escapeshellarg($script).' --manter=2 2>&1', $ignorado, $codigo);
+        $this->assertSame(1, $codigo, 'retencao menor que 3 e recusada');
+
+        $this->assertStringContainsString('--confirmar=FAZER-BACKUP) modo=backup', $fonte);
+        $this->assertStringContainsString('printf \'SIMULACAO: nada sera alterado.\n\'', $fonte);
+        // Cada copia e conferida antes de o backup ser marcado como pronto.
+        $this->assertLessThan(strpos($fonte, 'ULTIMO-BACKUP-OK'), strpos($fonte, 'pg_restore --list'));
+        $this->assertLessThan(strpos($fonte, 'ULTIMO-BACKUP-OK'), strpos($fonte, 'sha256sum --quiet -c SHA256SUMS'));
+        $this->assertStringContainsString('.incompleto', $fonte);
+        // A retencao so apaga pastas criadas por este script.
+        $this->assertSame(1, substr_count($fonte, 'rm -rf'));
+        $this->assertLessThan(strpos($fonte, 'rm -rf'), strpos($fonte, "grep -qx 'astuti-backup 1'"));
+        $this->assertStringContainsString('(( n > manter )) || continue', $fonte);
+        // Chave privada nunca na VPS; .env nunca vai no backup.
+        $this->assertStringContainsString('AGE-SECRET-KEY', $fonte);
+        foreach (['"$raiz/.env"', 'DROP ', 'dropdb', 'migrate', 'pg_dumpall', 'psql -c', 'ufw ', 'sshd'] as $proibido) {
+            $this->assertStringNotContainsString($proibido, $fonte, $proibido);
+        }
+    }
+
+    public function test_ensaio_de_restauracao_so_usa_bancos_novos_e_so_apaga_os_que_criou(): void
+    {
+        $script = dirname(__DIR__, 3).'/scripts/operacao/vps/ensaiar-restauracao.sh';
+        $fonte = (string) file_get_contents($script);
+
+        exec('bash '.escapeshellarg($script).' --confirmar=SIM 2>&1', $ignorado, $codigo);
+        $this->assertSame(2, $codigo);
+
+        $this->assertStringContainsString('--confirmar=ENSAIAR-RESTAURACAO) real=1', $fonte);
+        $this->assertStringContainsString('alvo="astuti_ensaio_${sufixo}_${i}"', $fonte);
+        $this->assertStringContainsString("CREATE DATABASE \${alvo} TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR'", $fonte);
+        $this->assertStringContainsString('pg_restore --no-owner --no-acl --exit-on-error -d "$alvo"', $fonte);
+        // Integridade antes de restaurar; apagar so bancos de ensaio desta execucao.
+        $this->assertLessThan(strpos($fonte, 'CREATE DATABASE'), strpos($fonte, 'sha256sum --quiet -c SHA256SUMS'));
+        $this->assertSame(1, substr_count($fonte, 'dropdb'));
+        $this->assertLessThan(strpos($fonte, 'dropdb'), strpos($fonte, '[[ "$alvo" =~ ^astuti_ensaio_[0-9]+_[0-9]+$ ]] || continue'));
+        $this->assertStringContainsString('for alvo in "${CRIADOS[@]}"', $fonte);
+        foreach (['DROP ', 'migrate', '.env', 'pg_restore --create', 'pg_restore -C'] as $proibido) {
+            $this->assertStringNotContainsString($proibido, $fonte, $proibido);
+        }
+    }
 }
