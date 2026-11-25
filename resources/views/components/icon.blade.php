@@ -18,6 +18,7 @@
         'primeiro' => '<path d="M5 5v14"/><path d="m16 6-6 6 6 6"/>',
         'ultimo' => '<path d="M19 5v14"/><path d="m8 6 6 6-6 6"/>',
         'lista' => '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h1M3 12h1M3 18h1"/>',
+        'imprimir' => '<path d="M6 8V3h12v5M6 17H4a2 2 0 0 1-2-2v-4a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/><path d="M18 11h1"/>',
         'adicionar' => '<path d="M12 5v14M5 12h14"/>',
         'voltar' => '<path d="m14.5 6-6 6 6 6"/>',
         'info' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><circle cx="12" cy="7.9" r=".6" fill="currentColor"/>',

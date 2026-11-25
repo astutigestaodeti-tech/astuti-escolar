@@ -88,7 +88,7 @@
         'school.students.show', 'school.students.create' => route('school.students.index', $parametrosEscola),
         'school.students.declarations.create', 'school.students.declarations.store', 'school.students.declarations.show', 'school.students.declarations.revoke'
             => route('school.enrollments.index', $parametrosEscola),
-        'school.students.edit', 'school.students.report-card.show',
+        'school.students.edit', 'school.students.report-card.show', 'school.students.print.configure', 'school.students.print.preview',
         'school.students.guardians.unlink.form', 'school.students.guardians.unlink',
         'school.students.pickups.create', 'school.students.pickups.store', 'school.students.pickups.edit', 'school.students.pickups.update',
         'school.students.pickups.remove.form', 'school.students.pickups.remove',
