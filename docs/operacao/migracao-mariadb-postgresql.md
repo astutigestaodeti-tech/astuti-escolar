@@ -6,6 +6,9 @@
 
 ## Validação no GitHub Actions
 
+**Atualização de 24/11/2026:** a integração histórica foi separada em `.github/workflows/migracao-mariadb-manual.yml` (somente `workflow_dispatch`), sem mudanças no job de transferência ou na ferramenta. Após integrar esse workflow à branch padrão, um colaborador autorizado pode abrir Actions > Migração histórica MariaDB (manual) > Run workflow, selecionar a branch e executar o ensaio descartável. O job não integra mais a rotina de PRs; os checks obrigatórios PHP/interface e PostgreSQL continuam protegendo `main`. A execução manual deve ser validada antes de reutilizar a ferramenta. Os resultados abaixo são históricos.
+
+
 O job **Integração MariaDB para PostgreSQL** roda a suíte de transferência duas vezes nos mesmos serviços efêmeros MariaDB 11.8 e PostgreSQL 17. Cada rodada usa bases distintas com sufixo `_test` e dados gerados para Monte Sereno v2. No [run do PR #5](https://github.com/astutigestaodeti-tech/astuti-escolar/actions/runs/44869962312), passaram 22 testes e 228 asserções em cada rodada. A suíte geral passou duas vezes, com 165 testes e 606 asserções por rodada. Pint, build Vite e os quatro testes de interface também passaram.
 
 A integração confirmou que a origem sintética fica intacta, a cópia preserva as linhas e os hashes e as referências de auditoria e escopo escolar são válidas. O teste de falha antes do commit confirmou o rollback nos dois destinos. O teste entre commits confirmou o estado parcial, a recusa de nova tentativa no mesmo par e a retomada em outro par descartável.
