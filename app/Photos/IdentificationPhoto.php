@@ -8,13 +8,17 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Foto de identificação: recorta quadrado, reduz para 480 px e grava de
+ * Foto de identificação: preserva a imagem integral em 360 × 480 px e grava de
  * novo como JPEG. Regravar descarta metadados escondidos (como GPS) e
  * qualquer conteúdo que não seja imagem. O arquivo fica no disco privado.
  */
 final class IdentificationPhoto
 {
-    public const SIZE = 480;
+    public const WIDTH = 360;
+
+    public const HEIGHT = 480;
+
+    public const SIZE = self::HEIGHT;
 
     public const DISK = 'local';
 
@@ -43,20 +47,25 @@ final class IdentificationPhoto
             throw ValidationException::withMessages(['foto' => 'A foto está muito pequena. Use uma imagem com pelo menos 120 pixels de largura e altura.']);
         }
 
-        // Recorte quadrado central, onde normalmente está o rosto.
-        $side = min($width, $height);
-        $square = imagecreatetruecolor(self::SIZE, self::SIZE);
-        imagefill($square, 0, 0, imagecolorallocate($square, 255, 255, 255));
-        imagecopyresampled($square, $image, 0, 0, intdiv($width - $side, 2), intdiv($height - $side, 2), self::SIZE, self::SIZE, $side, $side);
+        // Encaixe proporcional: nenhum pixel de origem é eliminado por recorte.
+        // Formato 3:4 vertical, com preenchimento branco sem cortar a origem.
+        $scale = min(self::WIDTH / $width, self::HEIGHT / $height);
+        $targetWidth = max(1, (int) round($width * $scale));
+        $targetHeight = max(1, (int) round($height * $scale));
+        $canvas = imagecreatetruecolor(self::WIDTH, self::HEIGHT);
+        imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
+        imagecopyresampled($canvas, $image, intdiv(self::WIDTH - $targetWidth, 2), intdiv(self::HEIGHT - $targetHeight, 2), 0, 0, $targetWidth, $targetHeight, $width, $height);
         imagedestroy($image);
 
         ob_start();
-        imagejpeg($square, null, 82);
+        imagejpeg($canvas, null, 82);
         $jpeg = (string) ob_get_clean();
-        imagedestroy($square);
+        imagedestroy($canvas);
 
         $path = 'fotos/'.$folder.'/'.Str::uuid().'.jpg';
-        Storage::disk(self::DISK)->put($path, $jpeg);
+        if ($jpeg === '' || ! Storage::disk(self::DISK)->put($path, $jpeg)) {
+            throw ValidationException::withMessages(['foto' => 'Não foi possível armazenar a foto. A foto anterior foi preservada. Tente novamente.']);
+        }
 
         return $path;
     }

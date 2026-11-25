@@ -83,7 +83,7 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
         return UploadedFile::fake()->createWithContent('foto.jpg', $jpeg);
     }
 
-    public function test_secretaria_envia_foto_do_aluno_que_vira_quadrada_sem_metadados_e_fica_privada(): void
+    public function test_secretaria_envia_foto_do_aluno_que_vira_tres_por_quatro_sem_metadados_e_fica_privada(): void
     {
         $this->user('school_secretary', [self::ESCOLA_A1]);
 
@@ -95,7 +95,7 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
         $this->assertNotNull($updatedAt);
 
         $saved = Storage::disk('local')->get($path);
-        $this->assertSame([480, 480], array_slice(getimagesizefromstring($saved), 0, 2));
+        $this->assertSame([360, 480], array_slice(getimagesizefromstring($saved), 0, 2));
         $this->assertStringNotContainsString('GPS-FICTICIO-SEGREDO', $saved);
 
         $this->get($this->url('aluno', $this->student))
