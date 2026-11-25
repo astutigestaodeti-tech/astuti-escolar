@@ -28,7 +28,7 @@
             @if (in_array('foto', $groups, true))
                 <div class="ficha-print-foto">
                     @if ($student->photo_path)
-                        <img src="{{ route('school.photos.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'tipo' => 'aluno', 'id' => $student->id]) }}" alt="Foto de identificação do aluno" width="113" height="113">
+                        <img src="{{ route('school.photos.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'tipo' => 'aluno', 'id' => $student->id]) }}" alt="Foto de identificação do aluno" width="113" height="151">
                     @else
                         <span>Sem foto</span>
                     @endif
