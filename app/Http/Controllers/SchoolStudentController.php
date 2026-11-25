@@ -20,7 +20,8 @@ use App\Models\Tenant\StudentSpecialEducation;
 use App\Multiprofessional\TeamAccess;
 use App\Multiprofessional\TeamIndicators;
 use App\Security\TwoFactorSession;
-use App\Students\StudentSearch;
+use App\Students\StudentNavigation;
+use App\Students\StudentSelection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,13 +31,7 @@ use Illuminate\Support\Facades\Gate;
 class SchoolStudentController extends Controller
 {
     /** Filtro da lista => situação gravada pela importação do transporte (null = sem informação). */
-    public const TRANSPORT_FILTERS = [
-        'usa' => ['status' => 'active', 'label' => 'Usa transporte'],
-        'nao_solicitado' => ['status' => 'not_requested', 'label' => 'Não solicitado'],
-        'cancelado' => ['status' => 'cancelled', 'label' => 'Cancelado'],
-        'sem_informacao' => ['status' => null, 'label' => 'Sem informação'],
-        'adaptado' => ['status' => null, 'label' => 'Veículo adaptado'],
-    ];
+    public const TRANSPORT_FILTERS = StudentSelection::TRANSPORT_FILTERS;
 
     public function index(Request $request, string $municipio, string $escola): Response|RedirectResponse
     {
@@ -53,9 +48,9 @@ class SchoolStudentController extends Controller
         $transport = (string) ($validated['transporte'] ?? '');
 
         $activeHere = function ($enrollments) use ($school): void {
-            $enrollments->where('school_id', $school->id)->where('status', 'active');
+            StudentSelection::activeHere($enrollments, $school);
         };
-        $query = Student::query()->whereHas('enrollments', $activeHere);
+        $query = StudentSelection::query($school);
         $teamFilter = $validated['equipe'] ?? null;
         if ($teamFilter !== null) {
             abort_unless(app(TeamAccess::class)->isDirector($request->user(), $municipality, $school), 403);
@@ -71,9 +66,7 @@ class SchoolStudentController extends Controller
                 ->header('Cache-Control', 'private, no-store');
         }
 
-        if ($search !== '') {
-            StudentSearch::apply($query, $search);
-        }
+        $query = StudentSelection::query($school, $search);
 
         // Contagem por situação do transporte, sempre sobre a busca atual.
         $transportCounts = (clone $query)->join('student_enrollments as transporte_matricula', function ($join) use ($school): void {
@@ -87,22 +80,8 @@ class SchoolStudentController extends Controller
             $enrollments->where('transport_adapted_vehicle', true);
         })->count();
 
-        if ($transport !== '') {
-            $status = self::TRANSPORT_FILTERS[$transport]['status'];
-            $query->whereHas('enrollments', function (Builder $enrollments) use ($activeHere, $status, $transport): void {
-                $activeHere($enrollments);
-                if ($status === null && $transport === 'adaptado') {
-                    $enrollments->where('transport_adapted_vehicle', true);
-                } elseif ($status === null) {
-                    $enrollments->whereNull('transport_status');
-                } else {
-                    $enrollments->where('transport_status', $status);
-                }
-            });
-        }
-
-        $students = $query->with(['enrollments' => $activeHere])
-            ->orderBy('full_name')->orderBy('students.id')->paginate(25)->withQueryString();
+        StudentSelection::filterTransport($query, $school, $transport);
+        $students = StudentSelection::ordered($query)->with(['enrollments' => $activeHere])->paginate(25)->withQueryString();
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $transportFilters = self::TRANSPORT_FILTERS;
@@ -120,6 +99,27 @@ class SchoolStudentController extends Controller
         $student = Student::query()->whereHas('enrollments', function (Builder $enrollments) use ($school): void {
             $enrollments->where('school_id', $school->id)->where('status', 'active');
         })->findOrFail($aluno);
+
+        $filters = $request->validate([
+            'busca' => ['nullable', 'string', 'max:120'],
+            'transporte' => ['nullable', 'in:'.implode(',', array_keys(self::TRANSPORT_FILTERS))],
+            'page' => ['nullable', 'integer', 'min:1', 'max:2147483647'],
+        ]);
+        $search = trim((string) ($filters['busca'] ?? ''));
+        $transport = (string) ($filters['transporte'] ?? '');
+        $selection = StudentSelection::query($school, $search);
+        StudentSelection::filterTransport($selection, $school, $transport);
+        $navigation = app(StudentNavigation::class)->forSelection($selection, $student);
+        $listFilters = array_filter(['busca' => $search, 'transporte' => $transport], fn ($value) => $value !== '');
+        $listParams = ['municipio' => $municipality->slug, 'escola' => $school->id, ...$listFilters];
+        $page = $navigation['position'] !== null ? intdiv($navigation['position'] - 1, 25) + 1 : (int) ($filters['page'] ?? 1);
+        $studentListUrl = route('school.students.index', [...$listParams, ...($page > 1 ? ['page' => $page] : [])]);
+        $studentSearchUrl = route('school.students.index', $listParams).'#busca-aluno';
+        $studentNavigationLinks = [];
+        foreach (['first', 'previous', 'next', 'last'] as $key) {
+            $studentNavigationLinks[$key] = $navigation[$key] === null ? null : route('school.students.show', [...$listParams, 'aluno' => $navigation[$key]]);
+        }
+        $studentSelectionLabel = $listFilters === [] ? 'Alunos ativos desta escola' : 'Alunos ativos desta escola, com filtros da lista';
 
         $enrollments = $student->enrollments()
             ->where('school_id', $school->id)
@@ -201,6 +201,6 @@ class SchoolStudentController extends Controller
             $distanciaRuas !== null ? 'pelas ruas' : 'em linha reta',
         );
 
-        return response()->view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthLocked', 'healthAlerts', 'healthProfile', 'specialEducation', 'studentCensus', 'declarations', 'teamPanels', 'teamVerified'))->header('Cache-Control', 'private, no-store');
+        return response()->view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthLocked', 'healthAlerts', 'healthProfile', 'specialEducation', 'studentCensus', 'declarations', 'teamPanels', 'teamVerified', 'navigation', 'studentNavigationLinks', 'studentListUrl', 'studentSearchUrl', 'studentSelectionLabel'))->header('Cache-Control', 'private, no-store');
     }
 }
