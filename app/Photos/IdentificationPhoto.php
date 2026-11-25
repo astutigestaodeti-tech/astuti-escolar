@@ -20,11 +20,16 @@ final class IdentificationPhoto
 
     public function store(UploadedFile $file, string $folder): string
     {
+        return $this->storeContents((string) file_get_contents($file->getRealPath()), $folder);
+    }
+
+    /** Mesmo tratamento de store(), a partir dos bytes da imagem (ex.: lidos de um .zip). */
+    public function storeContents(string $contents, string $folder): string
+    {
         if (! function_exists('imagecreatefromstring')) {
             throw ValidationException::withMessages(['foto' => 'O servidor ainda não está preparado para fotos (falta a extensão GD do PHP). Avise o suporte.']);
         }
 
-        $contents = (string) file_get_contents($file->getRealPath());
         $image = @imagecreatefromstring($contents);
         if ($image === false) {
             throw ValidationException::withMessages(['foto' => 'Não consegui abrir esta imagem. Envie uma foto JPG, PNG ou WebP.']);

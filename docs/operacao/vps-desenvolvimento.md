@@ -59,3 +59,13 @@ cd /srv/astuti-escolar
 php artisan astuti:alunos-remover-fotos
 php artisan astuti:alunos-remover-fotos --confirmar=REMOVER-FOTOS-DOS-ALUNOS --responsavel=demo.monte-sereno@astuti.invalid
 ```
+
+## Colocar fotos fictícias nos alunos (ambiente fictício)
+
+As fotos fictícias ficam fora do repositório (que é público). Copie o .zip para a VPS e rode o comando. Sem `--confirmar`, ele só mostra quantos alunos sem foto receberão uma e quantas fotos faltam, por menino ou menina e típica ou atípica. Foto de criança atípica só vai para aluno com educação especial cadastrada, de preferência com a mesma condição. Quem já tem foto não muda.
+
+```
+cd /srv/astuti-escolar
+php artisan astuti:demo-fotos-alunos /tmp/fotos-ficticias-alunos.zip
+php artisan astuti:demo-fotos-alunos /tmp/fotos-ficticias-alunos.zip --confirmar=COLOCAR-FOTOS-FICTICIAS --responsavel=demo.monte-sereno@astuti.invalid
+```
