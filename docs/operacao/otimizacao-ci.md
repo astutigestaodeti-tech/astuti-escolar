@@ -27,7 +27,9 @@ A operação oficial é exclusivamente PostgreSQL 17+, conforme vps-prefeitura.m
 
 A consulta da branch main em 24/11/2026 confirmou três checks obrigatórios, inclusive Integração MariaDB para PostgreSQL. O conector não possui acesso administrativo para consultar os detalhes da proteção. Não remover nem simular o check obrigatório, nem alterar regras de proteção sem autorização específica.
 
-Após confirmar que os ambientes antigos não dependem mais dessa ferramenta, preparar workflow manual para a migração histórica, validar a execução manual e combinar com o administrador a retirada apenas do check legado da proteção. Manter os checks PHP e PostgreSQL obrigatórios. Não apagar a origem ou backups.
+Atualização de 24/11/2026: o administrador confirmou a retirada do check legado, e a consulta da branch main confirmou que ela segue protegida pelos dois checks PHP e PostgreSQL. O job legado foi transferido integralmente para `.github/workflows/migracao-mariadb-manual.yml`, acionado apenas por workflow_dispatch. A rotina de PRs mantém os dois jobs obrigatórios sem alteração. O comando, os testes, os dados sintéticos e a documentação histórica foram preservados. Nenhum banco ou backup foi apagado.
+
+A execução manual pode ser iniciada por um colaborador autorizado em Actions > Migração histórica MariaDB (manual) > Run workflow, após o workflow existir na branch padrão. Conferir a execução manual antes de usar a ferramenta histórica novamente. Não foi verificado o estado de todos os ambientes antigos, portanto não desinstalar nem excluir suas bases por esta alteração.
 
 ## Etapas posteriores
 
