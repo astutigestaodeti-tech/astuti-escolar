@@ -20,7 +20,17 @@ class SchoolAbsenceAlerts
 
     public function currentYear(): ?SchoolYear
     {
-        return SchoolYear::query()->where('status', '!=', 'completed')->orderByDesc('year')->first();
+        $today = today()->toDateString();
+
+        // Um ano futuro preparado pela rede não pode ocultar o ano em curso.
+        // Entre anos, preserva o último não concluído; se só houver anos
+        // futuros, apresenta o próximo, sem alterar seu estado.
+        return SchoolYear::query()
+            ->where('status', '!=', 'completed')
+            ->orderByRaw('CASE WHEN start_date <= ? AND end_date >= ? THEN 0 WHEN start_date <= ? THEN 1 ELSE 2 END', [$today, $today, $today])
+            ->orderByRaw('CASE WHEN start_date > ? THEN year END ASC', [$today])
+            ->orderByDesc('year')
+            ->first();
     }
 
     private function activeEnrollments(School $school, SchoolYear $year): Builder
