@@ -115,4 +115,11 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    // Somente na VPS fictícia, opt-in privado, expirável e por IP individual.
+    'development_admin' => [
+        'enabled' => env('DEV_ADMIN_PASSWORD_ONLY', false),
+        'ip' => env('DEV_ADMIN_ALLOWED_IP', ''),
+        'expires_at' => env('DEV_ADMIN_EXPIRES_AT', ''),
+    ],
+
 ];
