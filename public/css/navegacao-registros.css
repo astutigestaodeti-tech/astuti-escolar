@@ -20,6 +20,8 @@
 .registro-nav-verde:hover{background:#194e2d;color:#fff}
 .registro-nav-ambar{background:#8b580b;color:#fff;border-color:#a36a11}
 .registro-nav-ambar:hover{background:#80510b;color:#fff}
+.registro-nav-roxo{background:#6941a5;color:#fff;border-color:#6941a5}
+.registro-nav-roxo:hover{background:#523184;color:#fff}
 .registro-nav-inativo{background:#e7ebf0;color:#59677a;border-color:#cfd7e2;cursor:default}
 .registro-nav-botao:focus-visible,.registro-nav-pesquisa input:focus-visible{outline:3px solid #245aab;outline-offset:2px}
 @media(max-width:1100px){.registro-nav-acoes{justify-content:flex-start}.registro-nav-pesquisa{flex:1 1 300px}}
