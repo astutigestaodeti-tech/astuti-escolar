@@ -36,7 +36,7 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
         $response = $this->get($base.'/'.$first.'?busca=ficticia')->assertOk()
             ->assertViewHas('navigation', fn ($nav) => $nav['position'] === 1 && $nav['total'] === 2
                 && $nav['first'] === null && $nav['previous'] === null && $nav['next'] === $last && $nav['last'] === $last)
-            ->assertSee('1 de 2')->assertSee('Novo aluno')->assertSee('Editar dados')->assertDontSee($outside);
+            ->assertSee('1 de 2')->assertSee('id="registro-nav-busca"', false)->assertSee('type="search"', false)->assertSee('Pesquisar')->assertSee('Novo aluno')->assertSee('Editar dados')->assertDontSee($outside);
         $this->assertStringContainsString('busca=ficticia', $response->viewData('studentListUrl'));
 
         $this->get($base.'/'.$last.'?busca=ficticia')->assertOk()
@@ -106,6 +106,8 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
         $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos';
         $response = $this->actingAs($user)->get($base.'/'.$first.'?busca=Serra&transporte=usa')->assertOk()
             ->assertViewHas('navigation', fn ($nav) => $nav['total'] === 2 && $nav['next'] === $last);
+        $response->assertSee('name="transporte" value="usa"', false)->assertSee('name="busca" value="Serra"', false);
+        $this->assertSame(['transporte' => 'usa'], $response->viewData('studentSearchFilters'));
         $this->assertStringContainsString('transporte=usa', $response->viewData('studentNavigationLinks')['next']);
         $this->assertStringContainsString('busca=Serra', $response->viewData('studentListUrl'));
     }
