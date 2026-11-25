@@ -143,6 +143,9 @@ jobs:
       - name: Compilar interface
         run: npm run build
 
+      - name: Ensaiar troca e recuperacao HTTP do Laravel
+        run: python3 -B scripts/deploy/laravel_http_lab.py
+
       - name: Verificar identidade visual
         run: npm run test:ui
 
