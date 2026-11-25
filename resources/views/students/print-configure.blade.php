@@ -14,6 +14,9 @@
         <div><span class="contexto">Documento administrativo restrito</span><h1>Imprimir ficha do aluno</h1><p>{{ $student->full_name }} | {{ $school->name }}</p></div>
         <a class="botao secundario" href="{{ route('school.students.show', $params) }}">Voltar à ficha</a>
     </div>
+    @if (session('print_notice'))
+        <div class="nota" role="status"><x-icon name="info" /><div>{{ session('print_notice') }}</div></div>
+    @endif
     <section class="folha ficha-print-config" aria-labelledby="ficha-print-selecao">
         <div class="folha-cabecalho"><div><h2 id="ficha-print-selecao">Selecione as informações</h2><p>Nome e RA identificam o documento. Marque somente o necessário para a finalidade administrativa.</p></div></div>
         <form method="POST" action="{{ route('school.students.print.preview', $params) }}" class="ficha-print-form">
