@@ -76,7 +76,7 @@ class StudentRegistrationPrintTest extends TwoMunicipalityTestCase
         $log = app(TenantContext::class)->runFor($this->municipioA, fn () => AuditLog::query()->where('action', 'student.registration_print.generated')->sole());
         $this->assertSame($this->student, $log->auditable_id);
         $this->assertSame(auth()->id(), $log->user_id);
-        $this->assertSame(['printed_groups' => 'foto,endereco,emergencia,retirada,matricula', 'print_purpose' => null], $log->after);
+        $this->assertEquals(['printed_groups' => 'foto,endereco,emergencia,retirada,matricula', 'print_purpose' => null], $log->after);
         $this->assertStringNotContainsString('Rua Sintética', json_encode($log->after, JSON_UNESCAPED_UNICODE));
 
         $this->post($this->url(), ['grupos' => ['matricula']])->assertOk()
@@ -91,7 +91,7 @@ class StudentRegistrationPrintTest extends TwoMunicipalityTestCase
             ->assertOk()->assertSee('Alerta sintético grave')->assertSee('Cuidado sintético')->assertSee('Baixa visão')
             ->assertSee('Frequenta o AEE')->assertDontSee('Alerta sintético não grave')->assertDontSee('Rua Sintética de Teste');
         $log = app(TenantContext::class)->runFor($this->municipioA, fn () => AuditLog::query()->where('action', 'student.registration_print.generated')->sole());
-        $this->assertSame(['printed_groups' => 'saude,educacao_especial', 'print_purpose' => 'seguranca_escolar'], $log->after);
+        $this->assertEquals(['printed_groups' => 'saude,educacao_especial', 'print_purpose' => 'seguranca_escolar'], $log->after);
     }
 
     public function test_rejeita_grupos_invalidos_e_nao_amplia_acesso(): void
