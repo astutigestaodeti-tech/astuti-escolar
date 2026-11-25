@@ -27,7 +27,7 @@
 .pagina-ata-final .ata-assinaturas{display:flex;justify-content:space-around;gap:28px;text-align:center;margin:42px 0 12px}
 .pagina-ata-final .ata-assinaturas>div{flex:1;max-width:270px}
 .pagina-ata-final .ata-linha{border-bottom:1px solid #111;margin-bottom:9px;height:20px}
-@page{size:A4 landscape;margin:10mm}
+@page{size:A4 landscape;margin:30mm 20mm 20mm 30mm}
 @media print{
     .pagina-ata-final{background:#fff!important;color:#000!important}
     .pagina-ata-final .lateral,.pagina-ata-final .topo,.pagina-ata-final .folha-titulo,
