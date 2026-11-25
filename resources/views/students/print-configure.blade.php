@@ -6,6 +6,7 @@
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/navegacao-registros.css') }}?v={{ filemtime(public_path('css/navegacao-registros.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/ficha-impressao.css') }}?v={{ filemtime(public_path('css/ficha-impressao.css')) }}">
+    <script defer src="{{ asset('js/ficha-impressao.js') }}?v={{ filemtime(public_path('js/ficha-impressao.js')) }}"></script>
 @endpush
 
 @section('content')
@@ -21,12 +22,15 @@
         <div class="folha-cabecalho"><div><h2 id="ficha-print-selecao">Selecione as informações</h2><p>Nome e RA identificam o documento. Marque somente o necessário para a finalidade administrativa.</p></div></div>
         <form method="POST" action="{{ route('school.students.print.preview', $params) }}" class="ficha-print-form">
             @csrf
+            @isset($selectionError)
+                <div class="ficha-print-erro" role="alert">{{ $selectionError }}</div>
+            @endisset
             <fieldset class="ficha-print-fieldset">
                 <legend>Informações cadastrais</legend>
                 <div class="ficha-print-opcoes">
                     @foreach (\App\Http\Controllers\StudentRegistrationPrintController::GROUPS as $key => $label)
                         @continue(in_array($key, \App\Http\Controllers\StudentRegistrationPrintController::SENSITIVE, true))
-                        <label class="ficha-print-opcao"><input type="checkbox" name="grupos[]" value="{{ $key }}" checked> <span>{{ $label }}</span></label>
+                        <label class="ficha-print-opcao"><input type="checkbox" name="grupos[]" value="{{ $key }}" @checked(! isset($selectedGroups) || in_array($key, $selectedGroups, true))> <span>{{ $label }}</span></label>
                     @endforeach
                 </div>
             </fieldset>
@@ -36,16 +40,17 @@
                     <p>Inclua apenas se indispensáveis à finalidade indicada. Não são incluídos laudos ou registros técnicos da equipe multiprofissional.</p>
                     <div class="ficha-print-opcoes">
                         @foreach (\App\Http\Controllers\StudentRegistrationPrintController::SENSITIVE as $key)
-                            <label class="ficha-print-opcao"><input type="checkbox" name="grupos[]" value="{{ $key }}"> <span>{{ \App\Http\Controllers\StudentRegistrationPrintController::GROUPS[$key] }}</span></label>
+                            <label class="ficha-print-opcao"><input type="checkbox" name="grupos[]" value="{{ $key }}" data-print-sensitive @checked(in_array($key, $selectedGroups ?? [], true))> <span>{{ \App\Http\Controllers\StudentRegistrationPrintController::GROUPS[$key] }}</span></label>
                         @endforeach
                     </div>
-                    <label class="ficha-print-finalidade" for="ficha-print-finalidade">Finalidade, se incluir dados sensíveis</label>
-                    <select class="entrada" id="ficha-print-finalidade" name="finalidade">
-                        <option value="">Selecione, se necessário</option>
+                    <label class="ficha-print-finalidade" for="ficha-print-finalidade">Finalidade (obrigatória ao selecionar informações sensíveis)</label>
+                    <select class="entrada" id="ficha-print-finalidade" name="finalidade" aria-describedby="ficha-print-finalidade-ajuda">
+                        <option value="">Selecione a finalidade</option>
                         @foreach (\App\Http\Controllers\StudentRegistrationPrintController::PURPOSES as $key => $label)
-                            <option value="{{ $key }}">{{ $label }}</option>
+                            <option value="{{ $key }}" @selected(($selectedPurpose ?? null) === $key)>{{ $label }}</option>
                         @endforeach
                     </select>
+                    <p id="ficha-print-finalidade-ajuda">Escolha a finalidade antes de visualizar a ficha com informações sensíveis.</p>
                 </fieldset>
             @endif
             <div class="nota"><x-icon name="escudo" /><div><strong>Uso administrativo restrito</strong><p>A geração da prévia é registrada na auditoria. Guarde o papel ou PDF com acesso restrito. Não compartilhe por canais não autorizados.</p></div></div>
