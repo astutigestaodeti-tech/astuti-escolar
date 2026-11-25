@@ -35,3 +35,9 @@ test('ficha compacta mantém margens, conteúdo visível e fonte legível na imp
     assert.match(print, /body\.impressao-ficha-aluno \.ficha-print-papel\{[^}]*overflow:visible/);
     assert.doesNotMatch(print, /(?:line-clamp\s*:|text-overflow\s*:|zoom\s*:|transform\s*:\s*scale)/);
 });
+
+test('fundo da página impressa da ficha é branco inclusive abaixo do rodapé', () => {
+    const printRules = print.slice(print.indexOf('@media print{'));
+    assert.match(printRules, /:root:has\(body\.impressao-ficha-aluno\)\{background:#fff\}/);
+    assert.match(printRules, /body\.impressao-ficha-aluno\{[^}]*background:#fff/);
+});
