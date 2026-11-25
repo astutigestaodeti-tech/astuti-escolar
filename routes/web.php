@@ -57,6 +57,7 @@ use App\Http\Controllers\StudentExitController;
 use App\Http\Controllers\StudentHealthController;
 use App\Http\Controllers\StudentPickupAuthorizationController;
 use App\Http\Controllers\StudentRecordController;
+use App\Http\Controllers\StudentRegistrationPrintController;
 use App\Http\Controllers\StudentReportCardController;
 use App\Http\Controllers\StudentsCensusController;
 use App\Http\Controllers\StudentSpecialEducationController;
@@ -349,6 +350,10 @@ Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::clas
     Route::get('/escolas/{escola}/alunos', [SchoolStudentController::class, 'index'])->whereUuid('escola')->name('school.students.index');
     Route::get('/escolas/{escola}/alunos/cep/{cep}', [PostalCodeLookupController::class, 'show'])->whereUuid('escola')->middleware([RequireConfirmedTwoFactor::class, 'throttle:20,1'])->name('school.students.postal.lookup');
     Route::get('/escolas/{escola}/alunos/{aluno}', [SchoolStudentController::class, 'show'])->whereUuid('escola')->whereUuid('aluno')->name('school.students.show');
+    Route::get('/escolas/{escola}/alunos/{aluno}/imprimir', [StudentRegistrationPrintController::class, 'configure'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.students.print.configure');
+    Route::post('/escolas/{escola}/alunos/{aluno}/imprimir', [StudentRegistrationPrintController::class, 'preview'])
+        ->whereUuid('escola')->whereUuid('aluno')->middleware(RequireConfirmedTwoFactor::class.':'.RequireConfirmedTwoFactor::RECENT)->name('school.students.print.preview');
 
     // Emissão, impressão e revogação ficam restritas à gestão da escola.
     Route::get('/escolas/{escola}/alunos/{aluno}/declaracoes/nova', [EnrollmentDeclarationController::class, 'create'])
