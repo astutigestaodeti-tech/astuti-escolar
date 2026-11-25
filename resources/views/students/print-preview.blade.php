@@ -28,7 +28,7 @@
             @if (in_array('foto', $groups, true))
                 <div class="ficha-print-foto">
                     @if ($student->photo_path)
-                        <img src="{{ route('school.photos.show', [...$params, 'tipo' => 'aluno', 'id' => $student->id, 'aluno' => null]) }}" alt="Foto de identificação do aluno" width="113" height="151">
+                        <img src="{{ route('school.photos.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'tipo' => 'aluno', 'id' => $student->id]) }}" alt="Foto de identificação do aluno" width="113" height="151">
                     @else
                         <span>Sem foto</span>
                     @endif
@@ -113,7 +113,6 @@
                         <p>Situação: {{ ['active' => 'Usa transporte', 'not_requested' => 'Não solicitado', 'cancelled' => 'Cancelado'][$entry->transport_status ?? ''] ?? 'Sem informação' }}</p>
                         @if ($entry->transport_status === 'active')
                             <p>Linha: {{ $entry->transport_route ?? 'Não informada' }} | Ponto: {{ $entry->transport_stop ?? 'Não informado' }}</p>
-                            @if ($entry->transport_adapted_vehicle)<p>Veículo adaptado</p>@endif
                         @endif
                     </div>
                 @empty <p>Sem informação de transporte.</p> @endforelse
