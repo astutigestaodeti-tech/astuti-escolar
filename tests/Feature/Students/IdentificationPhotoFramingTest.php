@@ -14,28 +14,28 @@ class IdentificationPhotoFramingTest extends TestCase
     {
         Storage::fake('local');
 
-        foreach ([[600, 900, 320, 480], [900, 600, 480, 320], [600, 600, 480, 480]] as [$width, $height, $targetWidth, $targetHeight]) {
+        foreach ([[600, 900, 320, 480], [900, 600, 360, 240], [600, 600, 360, 360], [600, 800, 360, 480]] as [$width, $height, $targetWidth, $targetHeight]) {
             $path = (new IdentificationPhoto)->storeContents($this->markedImage($width, $height), 'municipio-ficticio/alunos');
             $image = imagecreatefromstring(Storage::disk('local')->get($path));
-            $this->assertSame(480, imagesx($image));
+            $this->assertSame(360, imagesx($image));
             $this->assertSame(480, imagesy($image));
 
-            $x = intdiv(480 - $targetWidth, 2);
+            $x = intdiv(360 - $targetWidth, 2);
             $y = intdiv(480 - $targetHeight, 2);
 
-            $this->assertColor($image, 240, $y + 8, [220, 30, 30]);
-            $this->assertColor($image, 240, $y + $targetHeight - 9, [30, 30, 220]);
+            $this->assertColor($image, 180, $y + 8, [220, 30, 30]);
+            $this->assertColor($image, 180, $y + $targetHeight - 9, [30, 30, 220]);
             $this->assertColor($image, $x + 8, 240, [30, 180, 30]);
             $this->assertColor($image, $x + $targetWidth - 9, 240, [220, 180, 30]);
-            $this->assertColor($image, 240, 240, [100, 100, 100]);
+            $this->assertColor($image, 180, 240, [100, 100, 100]);
 
             if ($x > 0) {
                 $this->assertColor($image, 4, 240, [255, 255, 255]);
-                $this->assertColor($image, 475, 240, [255, 255, 255]);
+                $this->assertColor($image, 355, 240, [255, 255, 255]);
             }
             if ($y > 0) {
-                $this->assertColor($image, 240, 4, [255, 255, 255]);
-                $this->assertColor($image, 240, 475, [255, 255, 255]);
+                $this->assertColor($image, 180, 4, [255, 255, 255]);
+                $this->assertColor($image, 180, 475, [255, 255, 255]);
             }
             imagedestroy($image);
         }
@@ -61,11 +61,11 @@ class IdentificationPhotoFramingTest extends TestCase
 
         $path = (new IdentificationPhoto)->storeContents($jpeg, 'municipio-ficticio/alunos');
         $image = imagecreatefromstring(Storage::disk('local')->get($path));
-        $this->assertColor($image, 240, 88, [30, 180, 30]);
-        $this->assertColor($image, 240, 391, [220, 180, 30]);
+        $this->assertColor($image, 180, 128, [30, 180, 30]);
+        $this->assertColor($image, 180, 351, [220, 180, 30]);
         $this->assertColor($image, 8, 240, [30, 30, 220]);
-        $this->assertColor($image, 471, 240, [220, 30, 30]);
-        $this->assertColor($image, 240, 4, [255, 255, 255]);
+        $this->assertColor($image, 351, 240, [220, 30, 30]);
+        $this->assertColor($image, 180, 4, [255, 255, 255]);
         imagedestroy($image);
     }
 
