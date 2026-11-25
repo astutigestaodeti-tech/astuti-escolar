@@ -29,6 +29,7 @@
                 @if ($canManage)
                     <a class="registro-nav-botao registro-nav-verde" href="{{ route('school.students.create', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="adicionar" :size="16" /> Novo aluno</a>
                     <a class="registro-nav-botao registro-nav-ambar" href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}"><x-icon name="ficha" :size="16" /> Editar dados</a>
+                    <a class="registro-nav-botao registro-nav-roxo" href="{{ route('school.students.print.configure', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}"><x-icon name="imprimir" :size="16" /> Imprimir ficha</a>
                 @endif
                 <a class="registro-nav-botao registro-nav-neutro" href="{{ $studentListUrl }}" aria-label="Voltar à lista" title="Voltar à lista"><x-icon name="lista" :size="16" /> Lista</a>
             </div>
