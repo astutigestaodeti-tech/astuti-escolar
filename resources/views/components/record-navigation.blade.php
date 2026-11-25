@@ -1,4 +1,4 @@
-@props(['links', 'position', 'total', 'selectionLabel', 'listUrl', 'searchUrl', 'searchValue' => '', 'searchFilters' => [], 'searchPlaceholder' => 'Nome ou número do cadastro'])
+@props(['links', 'position', 'total', 'selectionLabel', 'searchUrl', 'searchValue' => '', 'searchFilters' => [], 'searchPlaceholder' => 'Nome ou número do cadastro'])
 
 <div class="registro-nav">
     <form class="registro-nav-pesquisa" action="{{ $searchUrl }}" method="GET" role="search" aria-label="Pesquisar cadastro">
@@ -29,8 +29,4 @@
         @endforeach
     </nav>
 
-    <div class="registro-nav-acoes" role="group" aria-label="Ações do cadastro">
-        {{ $slot }}
-        <a class="registro-nav-botao registro-nav-neutro" href="{{ $listUrl }}" aria-label="Voltar à lista" title="Voltar à lista"><x-icon name="lista" :size="16" /> Lista</a>
-    </div>
 </div>
