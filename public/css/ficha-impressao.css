@@ -34,8 +34,8 @@
 @media print{
     body.ficha-print-configuracao .app{display:none!important}
     body.impressao-ficha-aluno{page:ficha-cadastral;background:#fff;color:#111;font:10pt Arial,sans-serif}
-    body.impressao-ficha-aluno .lateral,body.impressao-ficha-aluno .topo,body.impressao-ficha-aluno .ficha-print-acoes,body.impressao-ficha-aluno .rodape,body.impressao-ficha-aluno .rodape-versao,body.impressao-ficha-aluno .voltar,body.impressao-ficha-aluno .aviso-demo{display:none!important}
-    body.impressao-ficha-aluno .app,body.impressao-ficha-aluno .area{display:block}
+    body.impressao-ficha-aluno .pular,body.impressao-ficha-aluno .lateral,body.impressao-ficha-aluno .topo,body.impressao-ficha-aluno .ficha-print-acoes,body.impressao-ficha-aluno .rodape,body.impressao-ficha-aluno .rodape-versao,body.impressao-ficha-aluno .voltar,body.impressao-ficha-aluno .aviso-demo{display:none!important}
+    body.impressao-ficha-aluno .app,body.impressao-ficha-aluno .area{display:block;height:auto;min-height:0;overflow:visible}
     body.impressao-ficha-aluno .conteudo{padding:0;margin:0;max-width:none}
     body.impressao-ficha-aluno .ficha-print-papel{display:block;padding:0;margin:0;width:100%;max-width:none;border:0;border-radius:0;box-shadow:none;overflow:visible;color:#111}
     .ficha-print-identidade{flex-wrap:nowrap;break-inside:avoid}
