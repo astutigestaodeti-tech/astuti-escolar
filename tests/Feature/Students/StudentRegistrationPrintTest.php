@@ -124,6 +124,11 @@ class StudentRegistrationPrintTest extends TwoMunicipalityTestCase
         $this->travel(16)->minutes();
         try {
             $this->postJson($this->url(), ['grupos' => ['saude'], 'finalidade' => 'seguranca_escolar'])->assertForbidden();
+            $this->post($this->url(), ['grupos' => ['saude'], 'finalidade' => 'seguranca_escolar'])
+                ->assertRedirect($this->url())
+                ->assertSessionHas('print_notice')
+                ->assertSessionMissing('astuti.two_factor.pending_input');
+            $this->get($this->url())->assertRedirect(route('two-factor.challenge'));
             $this->assertSame(0, app(TenantContext::class)->runFor($this->municipioA, fn () => AuditLog::query()->where('action', 'student.registration_print.generated')->count()));
         } finally {
             $this->travelBack();
