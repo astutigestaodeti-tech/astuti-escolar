@@ -40,7 +40,7 @@
                     <p>Inclua apenas se indispensáveis à finalidade indicada. Não são incluídos laudos ou registros técnicos da equipe multiprofissional.</p>
                     <div class="ficha-print-opcoes">
                         @foreach (\App\Http\Controllers\StudentRegistrationPrintController::SENSITIVE as $key)
-                            <label class="ficha-print-opcao"><input type="checkbox" name="grupos[]" value="{{ $key }}" data-print-sensitive @checked(in_array($key, $selectedGroups ?? [], true))> <span>{{ \App\Http\Controllers\StudentRegistrationPrintController::GROUPS[$key] }}</span></label>
+                            <label class="ficha-print-opcao"><input type="checkbox" name="grupos[]" value="{{ $key }}" @checked(in_array($key, $selectedGroups ?? [], true)) data-print-sensitive> <span>{{ \App\Http\Controllers\StudentRegistrationPrintController::GROUPS[$key] }}</span></label>
                         @endforeach
                     </div>
                     <label class="ficha-print-finalidade" for="ficha-print-finalidade">Finalidade (obrigatória ao selecionar informações sensíveis)</label>
