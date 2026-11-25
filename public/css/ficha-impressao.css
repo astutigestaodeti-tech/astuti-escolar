@@ -17,7 +17,7 @@
 .ficha-print-titulo{text-align:center;font-size:22px;margin:18px 0 5px}
 .ficha-print-restrito{text-align:center;font-weight:700;font-size:12px;border:1px solid #c5ced9;padding:7px;margin:0 0 14px;color:#34465c}
 .ficha-print-identidade{display:flex;align-items:flex-start;gap:16px;margin-bottom:14px}
-.ficha-print-foto{flex:none;width:30mm;height:40mm;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:1px solid #c5ced9;background:#fff;overflow:hidden}
+.ficha-print-foto{flex:none;width:30mm;height:40mm;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:0;outline:1px solid #c5ced9;background:#fff;overflow:hidden}
 .ficha-print-foto img{width:100%;height:100%;object-fit:contain}
 .ficha-print-identidade-dados{flex:1;min-width:0}
 .ficha-print-identidade-dados>strong{font-size:18px}
@@ -43,5 +43,29 @@
     .ficha-print-identidade{flex-wrap:nowrap;break-inside:avoid}
     .ficha-print-identidade-dados{flex-basis:auto}
     .ficha-print-dados{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .ficha-print-grupo h3{break-after:avoid}
+    /* Uma face A4 na rotina: área útil 160 × 247 mm, sem alterar margens ou foto.
+       Registros extensos podem continuar em outra página: nunca cortar dados. */
+    body.impressao-ficha-aluno .ficha-print-papel{font:9.5pt/1.15 Arial,sans-serif}
+    .ficha-print-papel .doc-timbre{gap:3mm;padding:0 0 1.5mm;margin:0 0 2mm;border-bottom-width:1px;box-shadow:none}
+    .ficha-print-papel .doc-timbre-brasao{width:13mm;height:13mm}
+    .ficha-print-papel .doc-timbre-texto{gap:.4mm}
+    .ficha-print-papel .doc-timbre-ente{font:700 12pt/1.1 Arial,sans-serif}
+    .ficha-print-papel .doc-timbre-orgao,.ficha-print-papel .doc-timbre-unidade{font-size:9pt;line-height:1.15}
+    .ficha-print-papel .doc-timbre-inep{display:inline;margin-left:2mm;padding-left:2mm;border-left:1px solid #c5ced9}
+    .ficha-print-titulo{font:700 12pt/1.15 Arial,sans-serif;margin:0 0 1mm}
+    .ficha-print-restrito{font-size:8pt;line-height:1.15;padding:1mm;margin:0 0 2mm}
+    .ficha-print-identidade{gap:3mm;margin-bottom:2mm}
+    .ficha-print-identidade-dados>strong{font-size:11pt}
+    .ficha-print-identidade-dados>p{margin:.5mm 0}
+    .ficha-print-dados{grid-template-columns:repeat(3,minmax(0,1fr));gap:1mm 2.5mm;margin:1mm 0 0}
+    .ficha-print-identidade .ficha-print-dados{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .ficha-print-dados>div{padding-bottom:.6mm}
+    .ficha-print-dados dt{font-size:8pt;line-height:1.1}
+    .ficha-print-dados dd{font-size:9.5pt;line-height:1.15}
+    .ficha-print-grupo{margin:0 0 1.8mm}
+    .ficha-print-grupo h3{font-size:10pt;line-height:1.15;padding:.6mm 0;margin:0 0 .8mm;break-after:avoid}
+    .ficha-print-item{margin:0 0 .8mm}
+    .ficha-print-item p,.ficha-print-grupo>p,.ficha-print-rodape p{margin:.35mm 0}
+    .ficha-print-nota{font-size:8pt;line-height:1.15}
+    .ficha-print-rodape{padding-top:1mm;font-size:8pt;line-height:1.15}
 }

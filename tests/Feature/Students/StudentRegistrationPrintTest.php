@@ -105,6 +105,23 @@ class StudentRegistrationPrintTest extends TwoMunicipalityTestCase
         $this->assertEquals(['printed_groups' => 'saude,educacao_especial', 'print_purpose' => 'seguranca_escolar'], $log->after);
     }
 
+    public function test_ficha_compacta_reune_grupos_sem_expor_campos_nao_selecionados(): void
+    {
+        $this->signIn();
+        $this->post($this->url(), ['grupos' => ['responsaveis']])->assertOk()
+            ->assertSee('Responsável Fictício')->assertDontSee('Telefone:')->assertDontSee('Contatos para emergência');
+        $this->post($this->url(), ['grupos' => ['emergencia']])->assertOk()
+            ->assertSee('Responsável Fictício')->assertSee('Telefone:')->assertDontSee('Pais e responsáveis cadastrados');
+        $combined = $this->post($this->url(), ['grupos' => ['responsaveis', 'emergencia', 'matricula', 'transporte']])->assertOk()
+            ->assertSee('Telefone:')->assertSee('Turma:')->assertSee('Transporte:');
+        $this->assertSame(1, substr_count($combined->getContent(), 'Responsável Fictício'));
+        $this->assertSame(1, substr_count($combined->getContent(), 'Ano letivo 2027'));
+        $this->post($this->url(), ['grupos' => ['matricula']])->assertOk()
+            ->assertSee('Turma:')->assertDontSee('Transporte:');
+        $this->post($this->url(), ['grupos' => ['transporte']])->assertOk()
+            ->assertSee('Transporte:')->assertDontSee('Turma:');
+    }
+
     public function test_rejeita_grupos_invalidos_e_nao_amplia_acesso(): void
     {
         $this->signIn();

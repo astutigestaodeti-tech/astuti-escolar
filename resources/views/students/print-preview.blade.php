@@ -12,7 +12,7 @@
 @section('content')
     @php($params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id])
     <div class="folha-titulo ficha-print-acoes">
-        <div><span class="contexto">Prévia A4</span><h1>Ficha cadastral do aluno</h1><p>Confira os dados antes de imprimir ou salvar em PDF.</p></div>
+        <div><span class="contexto">Prévia A4</span><h1>Ficha cadastral do aluno</h1><p>Confira os dados antes de imprimir ou salvar em PDF. O modelo é compacto para uma face A4. Se houver mais de uma página na prévia do navegador, ajuste a seleção de grupos; nenhuma informação é cortada automaticamente.</p></div>
         <div class="ficha-print-botoes">
             <a class="registro-nav-botao registro-nav-neutro" href="{{ route('school.students.print.configure', $params) }}">Alterar seleção</a>
             <a class="registro-nav-botao registro-nav-neutro" href="{{ route('school.students.show', $params) }}">Voltar à ficha</a>
@@ -62,60 +62,40 @@
                 </dl>
             </section>
         @endif
-        @if (in_array('responsaveis', $groups, true))
+        @if (in_array('responsaveis', $groups, true) || in_array('emergencia', $groups, true))
             <section class="ficha-print-grupo">
-                <h3>Pais e responsáveis cadastrados</h3>
+                <h3>@if (in_array('responsaveis', $groups, true)) Pais e responsáveis cadastrados @endif @if (in_array('responsaveis', $groups, true) && in_array('emergencia', $groups, true)) | @endif @if (in_array('emergencia', $groups, true)) Contatos para emergência @endif</h3>
                 @forelse ($guardians as $link)
                     <div class="ficha-print-item">
-                        <strong>{{ $link->guardian->full_name }}</strong>
-                        <p>{{ \App\Http\Controllers\GuardianController::RELATIONSHIPS[$link->relationship] ?? 'Outro vínculo' }}@if ($link->is_legal_guardian) | Responsável legal @endif @if ($link->is_primary_contact) | Contato principal @endif</p>
+                        <p><strong>{{ $link->guardian->full_name }}</strong>@if ($link->is_primary_contact) | Contato principal @endif @if (in_array('responsaveis', $groups, true)) | {{ \App\Http\Controllers\GuardianController::RELATIONSHIPS[$link->relationship] ?? 'Outro vínculo' }}@if ($link->is_legal_guardian) | Responsável legal @endif @endif</p>
+                        @if (in_array('emergencia', $groups, true))
+                            <p>Telefone: {{ \App\Models\Tenant\Guardian::formatPhone($link->guardian->phone) ?? 'Não informado' }}@if ($link->guardian->phone_secondary) | Alternativo: {{ \App\Models\Tenant\Guardian::formatPhone($link->guardian->phone_secondary) }}@endif @if ($link->guardian->work_phone) | Trabalho: {{ \App\Models\Tenant\Guardian::formatPhone($link->guardian->work_phone) }}@endif</p>
+                        @endif
                     </div>
                 @empty <p>Nenhum responsável cadastrado.</p> @endforelse
-            </section>
-        @endif
-        @if (in_array('emergencia', $groups, true))
-            <section class="ficha-print-grupo">
-                <h3>Contatos para emergência</h3>
-                <p class="ficha-print-nota">Telefones cadastrados dos responsáveis, não uma lista independente de contatos de emergência.</p>
-                @forelse ($guardians as $link)
-                    <div class="ficha-print-item">
-                        <strong>{{ $link->guardian->full_name }} @if ($link->is_primary_contact) (principal) @endif</strong>
-                        <p>Telefone: {{ \App\Models\Tenant\Guardian::formatPhone($link->guardian->phone) ?? 'Não informado' }}</p>
-                        @if ($link->guardian->phone_secondary)<p>Alternativo: {{ \App\Models\Tenant\Guardian::formatPhone($link->guardian->phone_secondary) }}</p>@endif
-                        @if ($link->guardian->work_phone)<p>Trabalho: {{ \App\Models\Tenant\Guardian::formatPhone($link->guardian->work_phone) }}</p>@endif
-                    </div>
-                @empty <p>Nenhum contato cadastrado.</p> @endforelse
+                @if (in_array('emergencia', $groups, true))<p class="ficha-print-nota">Telefones dos responsáveis cadastrados; não constituem lista independente de emergência.</p>@endif
             </section>
         @endif
         @if (in_array('retirada', $groups, true))
             <section class="ficha-print-grupo">
                 <h3>Pessoas autorizadas para retirada (vigentes)</h3>
                 @forelse ($pickups as $pickup)
-                    <div class="ficha-print-item"><strong>{{ $pickup->full_name }}</strong><p>{{ $pickup->relationship ?? 'Vínculo não informado' }} | Telefone: {{ $pickup->formatted_phone ?: 'Não informado' }} | Validade: {{ $pickup->expires_at?->format('d/m/Y') ?? 'Sem vencimento informado' }}</p></div>
+                    <div class="ficha-print-item"><p><strong>{{ $pickup->full_name }}</strong> | {{ $pickup->relationship ?? 'Vínculo não informado' }} | Telefone: {{ $pickup->formatted_phone ?: 'Não informado' }} | Validade: {{ $pickup->expires_at?->format('d/m/Y') ?? 'Sem vencimento informado' }}</p></div>
                 @empty <p>Nenhuma autorização adicional vigente cadastrada.</p> @endforelse
                 <p class="ficha-print-nota">Conferir a autorização no sistema antes de liberar a saída.</p>
             </section>
         @endif
-        @if (in_array('matricula', $groups, true))
+        @if (in_array('matricula', $groups, true) || in_array('transporte', $groups, true))
             <section class="ficha-print-grupo">
-                <h3>Matrículas ativas nesta escola</h3>
-                @forelse ($enrollments as $entry)
-                    <div class="ficha-print-item"><strong>Ano letivo {{ $entry->schoolYear?->year ?? 'Não informado' }}</strong><p>Turma: {{ $entry->schoolClass?->name ?? 'Sem turma' }} | Etapa: {{ $entry->schoolClass?->stage ?? 'Não informada' }} | Turno: {{ $entry->schoolClass?->shift ?? 'Não informado' }}</p><p>Início: {{ $entry->started_at?->format('d/m/Y') ?? 'Não informado' }}</p></div>
-                @empty <p>Nenhuma matrícula ativa encontrada.</p> @endforelse
-            </section>
-        @endif
-        @if (in_array('transporte', $groups, true))
-            <section class="ficha-print-grupo">
-                <h3>Transporte escolar</h3>
+                <h3>@if (in_array('matricula', $groups, true)) Matrículas ativas nesta escola @endif @if (in_array('matricula', $groups, true) && in_array('transporte', $groups, true)) | @endif @if (in_array('transporte', $groups, true)) Transporte escolar @endif</h3>
                 @forelse ($enrollments as $entry)
                     <div class="ficha-print-item">
-                        <strong>Ano letivo {{ $entry->schoolYear?->year ?? 'Não informado' }}</strong>
-                        <p>Situação: {{ ['active' => 'Usa transporte', 'not_requested' => 'Não solicitado', 'cancelled' => 'Cancelado'][$entry->transport_status ?? ''] ?? 'Sem informação' }}</p>
-                        @if ($entry->transport_status === 'active')
-                            <p>Linha: {{ $entry->transport_route ?? 'Não informada' }} | Ponto: {{ $entry->transport_stop ?? 'Não informado' }}</p>
+                        <p><strong>Ano letivo {{ $entry->schoolYear?->year ?? 'Não informado' }}</strong>@if (in_array('matricula', $groups, true)) | Turma: {{ $entry->schoolClass?->name ?? 'Sem turma' }} | Etapa: {{ $entry->schoolClass?->stage ?? 'Não informada' }} | Turno: {{ $entry->schoolClass?->shift ?? 'Não informado' }} | Início: {{ $entry->started_at?->format('d/m/Y') ?? 'Não informado' }}@endif</p>
+                        @if (in_array('transporte', $groups, true))
+                            <p>Transporte: {{ ['active' => 'Usa transporte', 'not_requested' => 'Não solicitado', 'cancelled' => 'Cancelado'][$entry->transport_status ?? ''] ?? 'Sem informação' }}@if ($entry->transport_status === 'active') | Linha: {{ $entry->transport_route ?? 'Não informada' }} | Ponto: {{ $entry->transport_stop ?? 'Não informado' }}@endif</p>
                         @endif
                     </div>
-                @empty <p>Sem informação de transporte.</p> @endforelse
+                @empty <p>Nenhuma matrícula ativa encontrada.</p> @endforelse
             </section>
         @endif
         @if ($purpose)
