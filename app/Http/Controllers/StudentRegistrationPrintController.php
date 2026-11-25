@@ -56,7 +56,7 @@ class StudentRegistrationPrintController extends Controller
             ->header('Cache-Control', 'private, no-store');
     }
 
-    public function preview(Request $request, string $municipio, string $escola, string $aluno): Response
+    public function preview(Request $request, string $municipio, string $escola, string $aluno): Response|RedirectResponse
     {
         [$municipality, $school, $student] = $this->authorizedRecord($request, $escola, $aluno);
         $twoFactor = app(TwoFactorSession::class);
