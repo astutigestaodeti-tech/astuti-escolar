@@ -608,7 +608,8 @@ select.entrada{cursor:pointer}
 .foto-id-pequena .foto-id-imagem,.foto-id-pequena .foto-id-vazia{width:33px;height:44px;font-size:15px}
 .foto-id-media .foto-id-imagem,.foto-id-media .foto-id-vazia{width:54px;height:72px;font-size:22px}
 .foto-id-grande .foto-id-imagem,.foto-id-grande .foto-id-vazia{width:90px;height:120px;font-size:34px;border-radius:6px}
-.foto-id .foto-id-imagem{border-radius:0;object-position:center;background:#fff;box-sizing:border-box}
+/* Contorno externo: a borda não pode reduzir a área útil 3:4 da foto. */
+.foto-id .foto-id-imagem{border-radius:0;object-position:center;background:#fff;box-sizing:border-box;border:0;outline:1px solid var(--pauta)}
 .foto-id-vazia{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--tinta-3)}
 .foto-id-aviso{font-size:12px;color:#7a4d00;background:#fff4dc;border-radius:999px;padding:2px 8px;text-align:center}
 .foto-id-acoes{font-size:13px;text-align:center}
