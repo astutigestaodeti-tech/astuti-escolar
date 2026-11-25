@@ -114,7 +114,9 @@ class SchoolStudentController extends Controller
         $listParams = ['municipio' => $municipality->slug, 'escola' => $school->id, ...$listFilters];
         $page = $navigation['position'] !== null ? intdiv($navigation['position'] - 1, 25) + 1 : (int) ($filters['page'] ?? 1);
         $studentListUrl = route('school.students.index', [...$listParams, ...($page > 1 ? ['page' => $page] : [])]);
-        $studentSearchUrl = route('school.students.index', $listParams).'#busca-aluno';
+        $studentSearchUrl = route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]);
+        $studentSearchValue = $search;
+        $studentSearchFilters = $transport === '' ? [] : ['transporte' => $transport];
         $studentNavigationLinks = [];
         foreach (['first', 'previous', 'next', 'last'] as $key) {
             $studentNavigationLinks[$key] = $navigation[$key] === null ? null : route('school.students.show', [...$listParams, 'aluno' => $navigation[$key]]);
@@ -201,6 +203,6 @@ class SchoolStudentController extends Controller
             $distanciaRuas !== null ? 'pelas ruas' : 'em linha reta',
         );
 
-        return response()->view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthLocked', 'healthAlerts', 'healthProfile', 'specialEducation', 'studentCensus', 'declarations', 'teamPanels', 'teamVerified', 'navigation', 'studentNavigationLinks', 'studentListUrl', 'studentSearchUrl', 'studentSelectionLabel'))->header('Cache-Control', 'private, no-store');
+        return response()->view('students.show', compact('municipality', 'school', 'student', 'enrollments', 'canManage', 'canDeleteEnrollment', 'guardianLinks', 'pickupAuthorizations', 'distanciaEscola', 'distanciaRuas', 'avisoTransporte', 'lastExit', 'canManageHealth', 'healthLocked', 'healthAlerts', 'healthProfile', 'specialEducation', 'studentCensus', 'declarations', 'teamPanels', 'teamVerified', 'navigation', 'studentNavigationLinks', 'studentListUrl', 'studentSearchUrl', 'studentSearchValue', 'studentSearchFilters', 'studentSelectionLabel'))->header('Cache-Control', 'private, no-store');
     }
 }
