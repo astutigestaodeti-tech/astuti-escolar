@@ -7,6 +7,7 @@ use App\Models\Platform\PlatformAuditLog;
 use App\Security\DevelopmentAdminAccess;
 use App\Security\Totp;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
 class TwoFactorSchoolWriteTest extends TwoMunicipalityTestCase
@@ -36,30 +37,39 @@ class TwoFactorSchoolWriteTest extends TwoMunicipalityTestCase
             'expires_at' => (string) now()->addHour()->getTimestamp(),
         ]);
         $this->withServerVariables(['REMOTE_ADDR' => '8.8.4.4', 'HTTPS' => 'on']);
+        // Ao simular APP_ENV=local, a verificação CSRF não é ignorada pelo Laravel.
+        // Enviar um token válido em cada POST, inclusive após o logout.
+        $post = function (string $path, array $data = []) {
+            $token = Str::random(40);
+
+            return $this->withSession(['_token' => $token])
+                ->post('https://localhost'.$path, ['_token' => $token] + $data);
+        };
         try {
-            $this->actingAs($user)->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
-            $this->post('https://localhost/logout')->assertRedirect('/login');
-            $this->post('https://localhost/login', ['email' => 'admin', 'password' => 'SenhaForteDeTeste123!'])
+            $this->actingAs($user);
+            $post('/_teste/escrita-escolar')->assertForbidden();
+            $post('/logout')->assertRedirect('/login');
+            $post('/login', ['email' => 'admin', 'password' => 'SenhaForteDeTeste123!'])
                 ->assertRedirect('/')->assertSessionHas(DevelopmentAdminAccess::SESSION_KEY)
                 ->assertSessionMissing('astuti.two_factor');
             $this->assertTrue(PlatformAuditLog::query()->where('user_id', $user->id)->where('action', 'auth.login_dev_password_only')->exists());
-            $this->post('https://localhost/_teste/escrita-escolar')->assertOk();
-            $this->post('https://localhost/_teste/escrita-recente')->assertOk();
-            $this->post('https://localhost/seguranca/segundo-fator/desativar', ['password' => 'SenhaForteDeTeste123!'])->assertForbidden();
+            $post('/_teste/escrita-escolar')->assertOk();
+            $post('/_teste/escrita-recente')->assertOk();
+            $post('/seguranca/segundo-fator/desativar', ['password' => 'SenhaForteDeTeste123!'])->assertForbidden();
             $this->assertNotNull($user->fresh()->two_factor_confirmed_at);
-            $this->withServerVariables(['REMOTE_ADDR' => '8.8.8.8', 'HTTPS' => 'on'])
-                ->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+            $this->withServerVariables(['REMOTE_ADDR' => '8.8.8.8', 'HTTPS' => 'on']);
+            $post('/_teste/escrita-escolar')->assertForbidden();
             $this->withServerVariables(['REMOTE_ADDR' => '8.8.4.4', 'HTTPS' => 'on']);
             config()->set('auth.development_admin.enabled', false);
-            $this->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+            $post('/_teste/escrita-escolar')->assertForbidden();
             config()->set('auth.development_admin.enabled', true);
             app()->detectEnvironment(fn () => 'production');
             config()->set('app.env', 'production');
-            $this->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+            $post('/_teste/escrita-escolar')->assertForbidden();
             app()->detectEnvironment(fn () => 'local');
             config()->set('app.env', 'local');
             $this->travel(61)->minutes();
-            $this->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+            $post('/_teste/escrita-escolar')->assertForbidden();
         } finally {
             $this->travelBack();
             app()->detectEnvironment(fn () => 'testing');
