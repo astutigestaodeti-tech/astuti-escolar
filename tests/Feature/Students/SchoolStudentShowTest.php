@@ -14,6 +14,83 @@ use Tests\Support\TwoMunicipalityTestCase;
 
 class SchoolStudentShowTest extends TwoMunicipalityTestCase
 {
+    public function test_navegacao_respeita_filtros_ordem_e_limites_da_escola(): void
+    {
+        $user = $this->criarUsuario('navegacao@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $first = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Ana Fictícia');
+        $last = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Zélia Fictícia');
+        $other = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Bruno Exemplo');
+        $outside = $this->matricularAluno($this->municipioA, self::ESCOLA_A2, 'Beatriz Fictícia');
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Célia Fictícia', 'completed');
+        $this->matricularAluno($this->municipioB, self::ESCOLA_B1, 'Dora Fictícia');
+        $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos';
+
+        $this->actingAs($user)->get($base.'?busca=ficticia')
+            ->assertOk()->assertSee($base.'/'.$first.'?busca=ficticia', false);
+
+        $response = $this->get($base.'/'.$first.'?busca=ficticia')->assertOk()
+            ->assertViewHas('navigation', fn ($nav) => $nav['position'] === 1 && $nav['total'] === 2
+                && $nav['first'] === null && $nav['previous'] === null && $nav['next'] === $last && $nav['last'] === $last)
+            ->assertSee('1 de 2')->assertSee('Novo aluno')->assertSee('Editar dados')->assertDontSee($outside);
+        $this->assertStringContainsString('busca=ficticia', $response->viewData('studentListUrl'));
+
+        $this->get($base.'/'.$last.'?busca=ficticia')->assertOk()
+            ->assertViewHas('navigation', fn ($nav) => $nav['position'] === 2 && $nav['first'] === $first
+                && $nav['previous'] === $first && $nav['next'] === null && $nav['last'] === null);
+        $this->get($base.'/'.$other.'?busca=ficticia')->assertOk()
+            ->assertViewHas('navigation', fn ($nav) => $nav['position'] === null && $nav['first'] === null && $nav['next'] === null)
+            ->assertSee('Fora da seleção');
+        $this->get($base.'/'.$first.'?busca=inexistente')->assertOk()
+            ->assertViewHas('navigation', fn ($nav) => $nav['total'] === 0 && $nav['position'] === null);
+        $this->get($base.'/'.$first.'?busca=Ana')->assertOk()
+            ->assertViewHas('navigation', fn ($nav) => $nav['total'] === 1 && $nav['position'] === 1 && $nav['next'] === null);
+        $this->get($base.'/'.$first)->assertOk()->assertViewHas('navigation', fn ($nav) => $nav['total'] === 3);
+        $this->getJson($base.'/'.$first.'?transporte=invalido')->assertUnprocessable();
+        $this->getJson($base.'/'.$first.'?busca[]=Ana')->assertUnprocessable();
+        $this->get($base.'/'.$outside)->assertNotFound();
+        $this->get('/m/municipio-b/escolas/'.self::ESCOLA_B1.'/alunos/'.$first)->assertForbidden();
+    }
+
+    public function test_navegacao_desempata_homonimos_e_ultrapassa_paginacao(): void
+    {
+        $user = $this->criarUsuario('navegacao-paginas@example.invalid');
+        $this->vincular($user, $this->municipioA, 'teacher', [self::ESCOLA_A1]);
+        // 26 nomes iguais: a chave UUID desempata sem carregar toda a lista na ficha.
+        $ids = [];
+        foreach (range(1, 26) as $n) {
+            $ids[] = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluno Homônimo');
+        }
+        sort($ids);
+        $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos';
+        $this->actingAs($user)->get($base.'/'.$ids[24])->assertOk()
+            ->assertViewHas('navigation', fn ($nav) => $nav['position'] === 25 && $nav['total'] === 26 && $nav['next'] === $ids[25]
+                && $nav['previous'] === $ids[23])
+            ->assertDontSee('Novo aluno')->assertDontSee('Editar dados')->assertDontSee($ids[5]);
+        $response = $this->get($base.'/'.$ids[25])->assertOk()
+            ->assertViewHas('navigation', fn ($nav) => $nav['position'] === 26 && $nav['previous'] === $ids[24] && $nav['next'] === null);
+        $this->assertStringContainsString('page=2', $response->viewData('studentListUrl'));
+    }
+
+    public function test_navegacao_conserva_filtro_de_transporte_e_busca(): void
+    {
+        $user = $this->criarUsuario('navegacao-transporte@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $first = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Ana da Serra');
+        $last = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Zélia da Serra');
+        $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Bruno da Serra');
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($first, $last): void {
+            StudentEnrollment::query()->whereIn('student_id', [$first, $last])->get()->each(function (StudentEnrollment $entry): void {
+                $entry->forceFill(['transport_status' => 'active'])->save();
+            });
+        });
+        $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos';
+        $response = $this->actingAs($user)->get($base.'/'.$first.'?busca=Serra&transporte=usa')->assertOk()
+            ->assertViewHas('navigation', fn ($nav) => $nav['total'] === 2 && $nav['next'] === $last);
+        $this->assertStringContainsString('transporte=usa', $response->viewData('studentNavigationLinks')['next']);
+        $this->assertStringContainsString('busca=Serra', $response->viewData('studentListUrl'));
+    }
+
     public function test_secretaria_abre_ficha_do_aluno_com_vinculo_ativo_na_escola(): void
     {
         $user = $this->criarUsuario('ficha-autorizada@example.invalid');
