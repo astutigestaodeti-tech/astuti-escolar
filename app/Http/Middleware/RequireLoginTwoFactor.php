@@ -28,6 +28,10 @@ class RequireLoginTwoFactor
                     ], 403);
                 }
 
+                // A prévia cadastral nunca deve guardar a seleção de impressão
+                // no fluxo de login; o usuário deve confirmar e selecionar novamente.
+                abort_if($request->routeIs('school.students.print.preview'), 403, 'Confirme o segundo fator antes de gerar a ficha.');
+
                 app(TwoFactorSession::class)->rememberDestination($request);
 
                 return redirect()->route('two-factor.challenge');
