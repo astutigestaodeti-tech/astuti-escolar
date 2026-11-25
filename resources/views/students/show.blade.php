@@ -7,24 +7,33 @@
     <x-icon name="seta" :size="16" />
     <a href="{{ route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">{{ $school->name }}</a>
     <x-icon name="seta" :size="16" />
-    <a href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Alunos</a>
+    <a href="{{ $studentListUrl }}">Alunos</a>
     <x-icon name="seta" :size="16" />
     <span aria-current="page">Ficha do aluno</span>
 @endsection
 
+@push('head')
+    <link rel="stylesheet" href="{{ asset('css/navegacao-registros.css') }}?v={{ filemtime(public_path('css/navegacao-registros.css')) }}">
+@endpush
+
 @section('content')
-    <div class="folha-titulo">
-        <div>
-            <span class="contexto">Consulta individual</span>
-            <h1>Ficha do aluno</h1>
-            <p>Informações de consulta da unidade {{ $school->name }}.</p>
+    <div class="folha-titulo registro-titulo">
+        <div class="registro-titulo-cabecalho">
+            <div class="registro-titulo-texto">
+                <span class="contexto">Consulta individual</span>
+                <h1>Ficha do aluno</h1>
+                <p>Informações de consulta da unidade {{ $school->name }}.</p>
+            </div>
+            <div class="registro-nav-acoes" role="group" aria-label="Ações do cadastro">
+                <span class="etiqueta ok">Vínculo ativo</span>
+                @if ($canManage)
+                    <a class="registro-nav-botao registro-nav-verde" href="{{ route('school.students.create', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="adicionar" :size="16" /> Novo aluno</a>
+                    <a class="registro-nav-botao registro-nav-ambar" href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}"><x-icon name="ficha" :size="16" /> Editar dados</a>
+                @endif
+                <a class="registro-nav-botao registro-nav-neutro" href="{{ $studentListUrl }}" aria-label="Voltar à lista" title="Voltar à lista"><x-icon name="lista" :size="16" /> Lista</a>
+            </div>
         </div>
-        <div class="acoes-titulo">
-            <span class="etiqueta ok">Vínculo ativo</span>
-            @if ($canManage)
-                <a class="botao secundario" href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}"><x-icon name="ficha" :size="16" /> Editar dados</a>
-            @endif
-        </div>
+        <x-record-navigation :links="$studentNavigationLinks" :position="$navigation['position']" :total="$navigation['total']" :selection-label="$studentSelectionLabel" :search-url="$studentSearchUrl" :search-value="$studentSearchValue" :search-filters="$studentSearchFilters" search-placeholder="Nome do aluno, responsável, RA ou CPF" />
     </div>
 
     @if (session('status'))

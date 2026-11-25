@@ -77,7 +77,7 @@
                     <tbody>
                     @foreach ($students as $student)
                         <tr>
-                            <td><a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}" aria-label="Abrir ficha de {{ $student->full_name }}"><strong>{{ $student->full_name }}</strong></a>
+                            <td><a href="{{ route('school.students.show', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id, ...array_filter(['busca' => $search, 'transporte' => $transport], fn ($value) => $value !== ''), ...($students->currentPage() > 1 ? ['page' => $students->currentPage()] : [])]) }}" aria-label="Abrir ficha de {{ $student->full_name }}"><strong>{{ $student->full_name }}</strong></a>
                                 @if ($student->ra)<small class="lista-ra numero">RA {{ $student->ra }}</small>@endif</td>
                             <td class="numero">{{ $student->birth_date?->format('d/m/Y') ?? 'Não informada' }}</td>
                             @php($situacaoTransporte = $student->enrollments->first()?->transport_status)
