@@ -4,11 +4,15 @@ namespace Tests\Feature\Students;
 
 use App\Models\Platform\Municipality;
 use App\Models\Tenant\AuditLog;
+use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
+use App\Students\StudentNavigation;
+use App\Students\StudentSelection;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -62,6 +66,21 @@ class SchoolStudentShowTest extends TwoMunicipalityTestCase
             $ids[] = $this->matricularAluno($this->municipioA, self::ESCOLA_A1, 'Aluno Homônimo');
         }
         sort($ids);
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($ids): void {
+            $school = School::query()->findOrFail(self::ESCOLA_A1);
+            $student = Student::query()->findOrFail($ids[12]);
+            $selection = StudentSelection::query($school);
+            $db = DB::connection('tenant');
+            $db->enableQueryLog();
+            try {
+                $db->flushQueryLog();
+                $navigation = app(StudentNavigation::class)->forSelection($selection, $student);
+                $this->assertSame(13, $navigation['position']);
+                $this->assertLessThanOrEqual(7, count($db->getQueryLog()));
+            } finally {
+                $db->disableQueryLog();
+            }
+        });
         $base = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos';
         $this->actingAs($user)->get($base.'/'.$ids[24])->assertOk()
             ->assertViewHas('navigation', fn ($nav) => $nav['position'] === 25 && $nav['total'] === 26 && $nav['next'] === $ids[25]
