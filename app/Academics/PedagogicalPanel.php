@@ -5,6 +5,7 @@ namespace App\Academics;
 use App\Models\Tenant\AcademicPeriod;
 use App\Models\Tenant\AttendanceSession;
 use App\Models\Tenant\ClassCouncil;
+use App\Models\Tenant\LessonRecord;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCalendarDay;
 use App\Models\Tenant\SchoolClass;
@@ -28,6 +29,9 @@ final class PedagogicalPanel
             ->where(fn ($q) => $q->whereNull('school_id')->orWhereIn('school_id', $schools->pluck('id')))
             ->get()->groupBy(fn ($entry) => $entry->school_id ?? 'network');
         $sessions = AttendanceSession::query()->whereIn('school_class_id', $classes->pluck('id'))->get(['id', 'school_class_id', 'attendance_date'])->groupBy('school_class_id');
+        // Só datas, sem carregar conteúdo ou atividade no painel da rede.
+        $lessonDates = LessonRecord::query()->whereIn('school_class_id', $classes->pluck('id'))
+            ->where('lesson_date', '<=', today()->toDateString())->distinct()->get(['school_class_id', 'lesson_date'])->groupBy('school_class_id');
         // Nenhum parecer, observação ou encaminhamento é selecionado.
         $councils = ClassCouncil::query()->whereIn('school_class_id', $classes->pluck('id'))->whereIn('academic_period_id', $periods->pluck('id'))
             ->get(['school_class_id', 'academic_period_id', 'status'])->groupBy('school_class_id');
@@ -64,6 +68,7 @@ final class PedagogicalPanel
                 $byPeriod = $councils->get($class->id, collect())->keyBy('academic_period_id');
                 $periodRows = $periods->map(fn ($p) => [
                     'period' => $p, 'council' => $byPeriod->get($p->id)?->status ?? 'not_started',
+                    'com_conteudo' => $lessonDates->get($class->id, collect())->filter(fn ($lesson) => $lesson->lesson_date->betweenIncluded($p->starts_on, $p->ends_on))->count(),
                     ...$this->aulas->calcular($year, $p, $schoolCalendar, $sessions->get($class->id, collect()), $c, today()),
                 ])->all();
                 $rows[] = ['class' => $class, 'eligible' => $eligible, 'distorted' => $distorted, 'unclassified' => $unclassified,

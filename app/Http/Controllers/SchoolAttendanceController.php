@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Academics\LessonAccess;
+use App\Academics\LessonDiary;
 use App\Audit\AuditTrail;
 use App\Calendar\SchoolCalendar;
 use App\Models\Tenant\AttendanceMark;
 use App\Models\Tenant\AttendanceSession;
+use App\Models\Tenant\ClassYearClosure;
+use App\Models\Tenant\CurricularComponent;
 use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentHealthAlert;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -25,7 +29,7 @@ class SchoolAttendanceController extends Controller
 {
     private const STATUSES = ['present', 'absent', 'justified'];
 
-    public function index(Request $request, string $municipio, string $escola, string $turma): View
+    public function index(Request $request, string $municipio, string $escola, string $turma): Response
     {
         [$municipality, $school, $class] = $this->schoolClass($request, $escola, $turma);
         $validated = $request->validate(['data' => ['nullable', 'date_format:Y-m-d']], [
@@ -59,11 +63,38 @@ class SchoolAttendanceController extends Controller
         $healthAlerts = StudentHealthAlert::query()->whereIn('student_id', $students->pluck('id'))
             ->where('severity', 'critical')->orderBy('created_at')->get()->groupBy('student_id');
 
-        return view('classes.attendance', compact(
+        $lessonPermissions = app(LessonAccess::class)->forClass($request->user(), $municipality, $school, $class);
+        $lessonRecords = collect();
+        $lessonComponents = collect();
+        $lessonPolivalent = $lessonClosed = $lessonDateAllowed = $lessonCanEdit = false;
+        $lessonComponent = $lessonSelected = null;
+        if ($lessonPermissions['view']) {
+            $diary = app(LessonDiary::class);
+            $lessonRecords = $diary->day($class, $date);
+            $lessonComponents = CurricularComponent::query()
+                ->where(fn ($q) => $q->where('active', true)->orWhereIn('id', $lessonRecords->pluck('curricular_component_id')->filter()))
+                ->orderBy('display_order')->orderBy('name')->get();
+            $lessonPolivalent = $diary->polivalent($class) || $lessonRecords->contains(fn ($r) => $r->curricular_component_id === null);
+            $requested = $request->query('componente_aula');
+            if (is_string($requested) && $lessonComponents->contains('id', $requested)) {
+                $lessonComponent = $requested;
+            } elseif (! $lessonPolivalent) {
+                $lessonComponent = $lessonComponents->first()?->id;
+            }
+            $lessonSelected = $lessonRecords->first(fn ($r) => $r->curricular_component_id === $lessonComponent);
+            $lessonClosed = ClassYearClosure::query()->whereKey($class->id)->whereNotNull('closed_at')->exists();
+            $lessonDateAllowed = $diary->dateAllowed($class, $date);
+            $lessonCanEdit = $lessonPermissions['write'] && ! $lessonClosed && $lessonDateAllowed
+                && ($lessonPolivalent || $lessonComponent !== null);
+        }
+
+        return response()->view('classes.attendance', compact(
             'municipality', 'school', 'class', 'date', 'students',
             'session', 'marks', 'historical', 'canManage', 'canSubmit',
             'present', 'absent', 'justified', 'healthAlerts', 'calendarNotice',
-        ));
+            'lessonPermissions', 'lessonRecords', 'lessonComponents', 'lessonPolivalent', 'lessonComponent',
+            'lessonSelected', 'lessonClosed', 'lessonDateAllowed', 'lessonCanEdit',
+        ))->header('Cache-Control', 'private, no-store');
     }
 
     public function store(Request $request, string $municipio, string $escola, string $turma): RedirectResponse
