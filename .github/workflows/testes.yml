@@ -95,6 +95,16 @@ jobs:
           docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d postgres -c "CREATE DATABASE astuti_tenant_a_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
           docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d postgres -c "CREATE DATABASE astuti_tenant_b_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
 
+      - name: Localizar cache de downloads Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache de downloads Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-downloads-${{ runner.os }}-php84-${{ hashFiles('composer.lock') }}
+
       - name: Instalar dependencias PHP
         run: composer install --no-interaction --prefer-dist --no-progress
 
@@ -108,8 +118,12 @@ jobs:
 
       - name: Executar testes
         run: |
-          php artisan test
-          php artisan test
+          echo '::group::Primeira rodada da suite PHP'
+          php artisan test --profile
+          echo '::endgroup::'
+          echo '::group::Segunda rodada da suite PHP (repetibilidade)'
+          php artisan test --profile
+          echo '::endgroup::'
 
       - name: Preparar Node 24
         uses: actions/setup-node@v6
@@ -183,6 +197,16 @@ jobs:
           tools: composer:v2
           extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, gd, exif
           coverage: none
+
+      - name: Localizar cache de downloads Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache de downloads Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-downloads-${{ runner.os }}-php84-${{ hashFiles('composer.lock') }}
 
       - name: Instalar dependencias
         run: composer install --no-interaction --prefer-dist --no-progress
@@ -287,6 +311,16 @@ jobs:
           container_id="$(docker ps --filter 'ancestor=postgres:17' --format '{{.ID}}' | head -n 1)"
           test -n "$container_id"
           docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_migration_ci -d postgres -c "CREATE DATABASE astuti_migration_pg_admin_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+
+      - name: Localizar cache de downloads Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache de downloads Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-downloads-${{ runner.os }}-php84-${{ hashFiles('composer.lock') }}
 
       - name: Instalar dependencias PHP
         run: composer install --no-interaction --prefer-dist --no-progress
