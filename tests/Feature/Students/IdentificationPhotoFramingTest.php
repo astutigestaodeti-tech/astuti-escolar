@@ -51,7 +51,25 @@ class IdentificationPhotoFramingTest extends TestCase
         (new IdentificationPhoto)->storeContents($this->markedImage(600, 900), 'municipio-ficticio/alunos');
     }
 
-    private function markedImage(int $width, int $height): string
+    public function test_respeita_orientacao_exif_antes_do_encaixe(): void
+    {
+        Storage::fake('local');
+        $jpeg = $this->markedImage(600, 900, true);
+        // EXIF sintético: TIFF little endian, um campo Orientation = 6 (90° horário).
+        $exif = "Exif\x00\x00II".pack('vVv', 42, 8, 1).pack('vvVvvV', 274, 3, 1, 6, 0, 0);
+        $jpeg = substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($exif) + 2).$exif.substr($jpeg, 2);
+
+        $path = (new IdentificationPhoto)->storeContents($jpeg, 'municipio-ficticio/alunos');
+        $image = imagecreatefromstring(Storage::disk('local')->get($path));
+        $this->assertColor($image, 240, 88, [30, 180, 30]);
+        $this->assertColor($image, 240, 391, [220, 180, 30]);
+        $this->assertColor($image, 8, 240, [30, 30, 220]);
+        $this->assertColor($image, 471, 240, [220, 30, 30]);
+        $this->assertColor($image, 240, 4, [255, 255, 255]);
+        imagedestroy($image);
+    }
+
+    private function markedImage(int $width, int $height, bool $jpeg = false): string
     {
         $image = imagecreatetruecolor($width, $height);
         imagefill($image, 0, 0, imagecolorallocate($image, 100, 100, 100));
@@ -61,7 +79,11 @@ class IdentificationPhotoFramingTest extends TestCase
         imagefilledrectangle($image, $width - 40, 40, $width - 1, $height - 41, imagecolorallocate($image, 220, 180, 30));
 
         ob_start();
-        imagepng($image);
+        if ($jpeg) {
+            imagejpeg($image, null, 95);
+        } else {
+            imagepng($image);
+        }
         $contents = (string) ob_get_clean();
         imagedestroy($image);
 
