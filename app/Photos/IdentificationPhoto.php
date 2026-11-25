@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Foto de identificação: recorta quadrado, reduz para 480 px e grava de
+ * Foto de identificação: preserva a imagem integral em 480 × 480 px e grava de
  * novo como JPEG. Regravar descarta metadados escondidos (como GPS) e
  * qualquer conteúdo que não seja imagem. O arquivo fica no disco privado.
  */
@@ -43,11 +43,14 @@ final class IdentificationPhoto
             throw ValidationException::withMessages(['foto' => 'A foto está muito pequena. Use uma imagem com pelo menos 120 pixels de largura e altura.']);
         }
 
-        // Recorte quadrado central, onde normalmente está o rosto.
-        $side = min($width, $height);
+        // Encaixe proporcional: nenhum pixel de origem é eliminado por recorte.
+        // A tela quadrada mantém o contrato dos cadastros e da impressão.
+        $scale = self::SIZE / max($width, $height);
+        $targetWidth = max(1, (int) round($width * $scale));
+        $targetHeight = max(1, (int) round($height * $scale));
         $square = imagecreatetruecolor(self::SIZE, self::SIZE);
         imagefill($square, 0, 0, imagecolorallocate($square, 255, 255, 255));
-        imagecopyresampled($square, $image, 0, 0, intdiv($width - $side, 2), intdiv($height - $side, 2), self::SIZE, self::SIZE, $side, $side);
+        imagecopyresampled($square, $image, intdiv(self::SIZE - $targetWidth, 2), intdiv(self::SIZE - $targetHeight, 2), 0, 0, $targetWidth, $targetHeight, $width, $height);
         imagedestroy($image);
 
         ob_start();
@@ -56,7 +59,9 @@ final class IdentificationPhoto
         imagedestroy($square);
 
         $path = 'fotos/'.$folder.'/'.Str::uuid().'.jpg';
-        Storage::disk(self::DISK)->put($path, $jpeg);
+        if ($jpeg === '' || ! Storage::disk(self::DISK)->put($path, $jpeg)) {
+            throw ValidationException::withMessages(['foto' => 'Não foi possível armazenar a foto. A foto anterior foi preservada. Tente novamente.']);
+        }
 
         return $path;
     }
