@@ -75,12 +75,13 @@ class Publisher:
             raise
         return handle
 
-    def authorization_data(self):
+    def authorization_data(self, recovery=False):
         trusted(self.authorization, self.owner)
         data = json.loads(self.authorization.read_text())
         if set(data) != {"enabled", "environment", "old", "new", "digests"}:
             raise RuntimeError("autorizacao_invalida")
-        if data["enabled"] is not True or data["environment"] != "homologacao":
+        if (type(data["enabled"]) is not bool or data["environment"] != "homologacao"
+                or (not recovery and data["enabled"] is not True)):
             raise RuntimeError("publicacao_desabilitada")
         old, new = data["old"], data["new"]
         if not all(isinstance(x, str) and SHA.fullmatch(x) for x in (old, new)) or old == new:
@@ -114,12 +115,15 @@ class Publisher:
         sync_dir(self.state)
 
     def recover_locked(self, smoke):
+        if self.pending.is_symlink():
+            raise RuntimeError("journal_invalido")
         if not self.pending.exists():
             return "sem_pendencia"
         trusted(self.pending, os.getuid())
         record = json.loads(self.pending.read_text())
-        data = self.authorization_data()
-        if record != data:
+        data = self.authorization_data(recovery=True)
+        # Desabilitar novas publicacoes nao revoga a ancora de recuperacao.
+        if not isinstance(record, dict) or record != dict(data, enabled=True):
             raise RuntimeError("autorizacao_alterada_durante_transacao")
         if self.current() not in (data["old"], data["new"]):
             raise RuntimeError("estado_ativo_invalido")
@@ -135,7 +139,7 @@ class Publisher:
         with self.lock():
             return self.recover_locked(smoke)
 
-    def publish(self, smoke, checkpoint=lambda _: None):
+    def publish(self, smoke, checkpoint=lambda _: None, gate=None):
         with self.lock():
             if self.pending.exists() or self.pending.is_symlink():
                 raise RuntimeError("recuperacao_pendente")
@@ -146,6 +150,10 @@ class Publisher:
                 self.verify(sha, data)
             if smoke(data["old"]) is not True:
                 raise RuntimeError("versao_anterior_indisponivel")
+            if gate is not None:
+                gate(data)
+            if self.authorization_data() != data:
+                raise RuntimeError("autorizacao_alterada")
             write_atomic(self.pending, json.dumps(data, sort_keys=True).encode())
             checkpoint("journal")
             self.switch(data["new"])
@@ -194,7 +202,11 @@ def main():
     if os.getuid() == 0:
         raise SystemExit("publicador_nao_pode_ser_root")
     publisher = Publisher(ROOT, STATE, AUTH)
-    result = getattr(publisher, args.action)(local_smoke)
+    if args.action == "publish":
+        from publication_gate import check
+        result = publisher.publish(local_smoke, gate=check)
+    else:
+        result = publisher.recover(local_smoke)
     print(result)
     return 2 if args.action == "publish" and result != "aplicado" else 0
 
