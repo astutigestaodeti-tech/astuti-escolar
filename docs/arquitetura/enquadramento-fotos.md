@@ -7,3 +7,7 @@ Nas fichas, consultas e documentos impressos usar encaixe integral (object-fit: 
 Fotos antigas processadas pelo recorte central não recuperam pixels descartados por alteração CSS. Para recuperá-las, usar somente arquivos originais autorizados, confirmar correspondência de cada pessoa, fazer backup privado e validar a substituição. Não reimportar automaticamente nem publicar fotos, capturas ou PDFs de alunos. Não conservar arquivos originais adicionais no sistema sem necessidade.
 
 Os testes usam padrões geométricos de cores, não fotografias de pessoas. A homologação visual na VPS, inclusive impressão, continua necessária. Nenhum arquivo existente foi substituído neste PR.
+
+## Molduras e zoom do navegador (#211)
+
+A área útil da foto mantém a proporção 3:4, sem borda interna: utilizar contorno externo (outline), que não participa do cálculo de largura e altura. Preservar object-fit: contain, sem recortar ou deformar. O mesmo vale para a moldura de impressão de 30 × 40 mm; manter margens A4. Conferir visualmente em zoom de 80%, 90%, 100%, 110% e 125%, e PDF a 100% de escala. O teste estático verifica o contrato CSS, não substitui homologação visual no navegador. Nenhuma fotografia existente deve ser reprocessada para corrigir uma faixa causada pela moldura.
