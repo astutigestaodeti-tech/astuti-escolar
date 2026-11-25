@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
+use App\Models\Platform\Municipality;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentGuardian;
@@ -74,7 +75,9 @@ class StudentRegistrationPrintController extends Controller
             'grupos.*' => ['required', 'string', 'distinct', Rule::in(array_keys(self::GROUPS))],
             'finalidade' => ['nullable', 'string', Rule::in(array_keys(self::PURPOSES))],
         ]);
-        abort_if($validator->fails(), 422, 'Escolha pelo menos um grupo de informações válido e revise a finalidade.');
+        if ($validator->fails()) {
+            return $this->invalidSelection($request, $municipality, $school, $student, 'Escolha pelo menos um grupo de informações válido e revise a finalidade.');
+        }
         $validated = $validator->validated();
         // Ordem institucional, não a ordem recebida do navegador.
         $groups = array_values(array_intersect(array_keys(self::GROUPS), $validated['grupos']));
@@ -83,7 +86,9 @@ class StudentRegistrationPrintController extends Controller
         if ($sensitive) {
             Gate::authorize('manageHealth', [$school, $municipality]);
             $purpose = $validated['finalidade'] ?? null;
-            abort_if($purpose === null, 422, 'Informe a finalidade para incluir informações sensíveis.');
+            if ($purpose === null) {
+                return $this->invalidSelection($request, $municipality, $school, $student, 'Selecione a finalidade para incluir informações sensíveis.');
+            }
         }
 
         $guardians = collect();
@@ -122,6 +127,21 @@ class StudentRegistrationPrintController extends Controller
         ]);
 
         return response()->view('students.print-preview', compact('municipality', 'school', 'student', 'groups', 'purpose', 'guardians', 'pickups', 'enrollments', 'alerts', 'specialEducation', 'generatedAt', 'issuer'))
+            ->header('Cache-Control', 'private, no-store');
+    }
+
+    private function invalidSelection(Request $request, Municipality $municipality, School $school, Student $student, string $selectionError): Response
+    {
+        abort_if($request->expectsJson(), 422, $selectionError);
+        $canIncludeSensitive = Gate::allows('manageHealth', [$school, $municipality]);
+        $allowed = $canIncludeSensitive ? array_keys(self::GROUPS) : array_diff(array_keys(self::GROUPS), self::SENSITIVE);
+        $submitted = $request->input('grupos');
+        $selectedGroups = is_array($submitted) ? array_values(array_filter($allowed, fn (string $key): bool => in_array($key, $submitted, true))) : [];
+        $submittedPurpose = $request->input('finalidade');
+        $selectedPurpose = $canIncludeSensitive && is_string($submittedPurpose) && array_key_exists($submittedPurpose, self::PURPOSES) ? $submittedPurpose : null;
+
+        // Resposta direta: não guardar seleção ou finalidade na sessão.
+        return response()->view('students.print-configure', compact('municipality', 'school', 'student', 'canIncludeSensitive', 'selectionError', 'selectedGroups', 'selectedPurpose'), 422)
             ->header('Cache-Control', 'private, no-store');
     }
 

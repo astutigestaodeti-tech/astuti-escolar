@@ -86,7 +86,18 @@ class StudentRegistrationPrintTest extends TwoMunicipalityTestCase
     public function test_dados_sensiveis_exigem_selecao_e_finalidade_e_sao_minimizados(): void
     {
         $this->signIn();
-        $this->post($this->url(), ['grupos' => ['saude']])->assertStatus(422);
+        $invalid = $this->post($this->url(), ['grupos' => ['foto', 'saude']])->assertStatus(422)
+            ->assertSee('Selecione a finalidade para incluir informações sensíveis.')
+            ->assertSee('Selecione as informações')
+            ->assertSee('value="foto" checked', false)
+            ->assertSee('value="saude" checked', false)
+            ->assertDontSee('value="endereco" checked', false)
+            ->assertDontSee('value="educacao_especial" checked', false)
+            ->assertDontSee('Alerta sintético grave')
+            ->assertSessionMissing('_old_input');
+        $this->assertStringContainsString('no-store', (string) $invalid->headers->get('Cache-Control'));
+        $this->postJson($this->url(), ['grupos' => ['saude']])->assertStatus(422);
+        $this->assertSame(0, app(TenantContext::class)->runFor($this->municipioA, fn () => AuditLog::query()->where('action', 'student.registration_print.generated')->count()));
         $this->post($this->url(), ['grupos' => ['saude', 'educacao_especial'], 'finalidade' => 'seguranca_escolar'])
             ->assertOk()->assertSee('Alerta sintético grave')->assertSee('Cuidado sintético')->assertSee('Baixa visão')
             ->assertSee('Frequenta o AEE')->assertDontSee('Alerta sintético não grave')->assertDontSee('Rua Sintética de Teste');
