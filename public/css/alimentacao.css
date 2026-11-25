@@ -15,7 +15,7 @@
 .pagina-alimentacao .alimentacao-indicadores dd{font-size:1.3rem;font-weight:700;margin:6px 0 0}
 @media(max-width:600px){.pagina-alimentacao .alimentacao-form button{width:100%}}
 @media print{
-@page{size:A4 landscape;margin:12mm}
+@page{size:A4 landscape;margin:30mm 20mm 20mm 30mm}
 .pagina-alimentacao .lateral,.pagina-alimentacao .topo,.pagina-alimentacao .rodape,.pagina-alimentacao .rodape-versao,.pagina-alimentacao .voltar,.pagina-alimentacao form,.pagina-alimentacao .alimentacao-links,.pagina-alimentacao .botao{display:none!important}
 .pagina-alimentacao .app,.pagina-alimentacao .area,.pagina-alimentacao .conteudo{display:block!important;width:100%!important;margin:0!important;padding:0!important;max-width:none!important}
 .pagina-alimentacao .folha{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;margin-bottom:12mm}
