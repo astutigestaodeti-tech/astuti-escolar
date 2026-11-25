@@ -1,0 +1,19 @@
+/* Controles de registro dentro do título, sem cartão ou faixa adicional. */
+.folha-titulo.registro-titulo{align-items:center;gap:12px}
+.registro-titulo .registro-titulo-texto{min-width:0}
+.registro-titulo .registro-titulo-acoes{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0}
+.registro-nav,.registro-nav-passos,.registro-nav-acoes{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-width:0}
+.registro-nav{justify-content:flex-end}
+.registro-nav-contador{font-size:12px;font-weight:600;color:var(--tinta-2);white-space:nowrap;font-variant-numeric:tabular-nums;margin-right:3px}
+.registro-nav-botao{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:32px;padding:4px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;font-weight:700;line-height:1.3;text-decoration:none;white-space:nowrap}
+.registro-nav-botao .icone{flex:none}
+.registro-nav-azul{background:#245aab;color:#fff;border-color:#245aab}
+.registro-nav-azul:hover{background:#174384;color:#fff}
+.registro-nav-neutro{background:#fff;color:#34465c;border-color:#aebdce}
+.registro-nav-verde{background:#24683e;color:#fff;border-color:#24683e}
+.registro-nav-ambar{background:#fff2d5;color:#774500;border-color:#d6ac65}
+.registro-nav-inativo{background:#e7ebf0;color:#59677a;border-color:#cfd7e2;cursor:default}
+.registro-nav-botao:focus-visible{outline:3px solid #245aab;outline-offset:2px}
+@media(max-width:1100px){.registro-titulo .registro-titulo-acoes{align-items:flex-start}.registro-nav{justify-content:flex-start}}
+@media(max-width:640px){.registro-titulo .registro-titulo-acoes{margin-top:8px}.registro-nav-botao{min-height:36px}.registro-nav{gap:5px}.registro-nav-contador{flex-basis:100%}}
+@media print{.registro-nav{display:none}}
