@@ -27,3 +27,11 @@ test('moldura impressa mantém área 30 por 40 mm e encaixe integral', () => {
     assert.match(print, /\.ficha-print-foto img\{[^}]*width:100%;height:100%;object-fit:contain/);
     assert.match(print, /@page ficha-cadastral\{size:A4 portrait;margin:30mm 20mm 20mm 30mm/);
 });
+
+test('ficha compacta mantém margens, conteúdo visível e fonte legível na impressão', () => {
+    assert.match(print, /body\.impressao-ficha-aluno \.ficha-print-papel\{font:9\.5pt\/1\.15 Arial,sans-serif\}/);
+    assert.match(print, /\.ficha-print-dados\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+    assert.match(print, /\.ficha-print-identidade \.ficha-print-dados\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
+    assert.match(print, /body\.impressao-ficha-aluno \.ficha-print-papel\{[^}]*overflow:visible/);
+    assert.doesNotMatch(print, /(?:line-clamp\s*:|text-overflow\s*:|zoom\s*:|transform\s*:\s*scale)/);
+});
