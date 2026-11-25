@@ -5,6 +5,7 @@ namespace App\Students;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class StudentSelection
 {
@@ -26,7 +27,7 @@ final class StudentSelection
         return $query;
     }
 
-    public static function activeHere(Builder $query, School $school): void
+    public static function activeHere(Builder|Relation $query, School $school): void
     {
         $query->where('school_id', $school->id)->where('status', 'active');
     }
