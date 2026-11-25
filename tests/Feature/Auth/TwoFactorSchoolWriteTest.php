@@ -3,6 +3,8 @@
 namespace Tests\Feature\Auth;
 
 use App\Http\Middleware\RequireConfirmedTwoFactor;
+use App\Models\Platform\PlatformAuditLog;
+use App\Security\DevelopmentAdminAccess;
 use App\Security\Totp;
 use Illuminate\Support\Facades\Route;
 use Tests\Support\TwoMunicipalityTestCase;
@@ -15,6 +17,54 @@ class TwoFactorSchoolWriteTest extends TwoMunicipalityTestCase
 
         Route::post('/_teste/escrita-escolar', fn () => response('gravado'))
             ->middleware(['web', 'auth', RequireConfirmedTwoFactor::class]);
+    }
+
+    public function test_excecao_admin_local_exige_login_auditado_ip_prazo_e_nao_desativa_totp(): void
+    {
+        $user = $this->criarUsuario('admin@usuarios.astuti.invalid');
+        $user->forceFill([
+            'two_factor_secret' => 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+        Route::post('/_teste/escrita-recente', fn () => response('gravado'))
+            ->middleware(['web', 'auth', RequireConfirmedTwoFactor::class.':recente']);
+        app()->detectEnvironment(fn () => 'local');
+        config()->set('app.env', 'local');
+        config()->set('auth.development_admin', [
+            'enabled' => true,
+            'ip' => '8.8.4.4',
+            'expires_at' => (string) now()->addHour()->getTimestamp(),
+        ]);
+        $this->withServerVariables(['REMOTE_ADDR' => '8.8.4.4', 'HTTPS' => 'on']);
+        try {
+            $this->actingAs($user)->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+            $this->post('https://localhost/logout')->assertRedirect('/login');
+            $this->post('https://localhost/login', ['email' => 'admin', 'password' => 'SenhaForteDeTeste123!'])
+                ->assertRedirect('/')->assertSessionHas(DevelopmentAdminAccess::SESSION_KEY)
+                ->assertSessionMissing('astuti.two_factor');
+            $this->assertTrue(PlatformAuditLog::query()->where('user_id', $user->id)->where('action', 'auth.login_dev_password_only')->exists());
+            $this->post('https://localhost/_teste/escrita-escolar')->assertOk();
+            $this->post('https://localhost/_teste/escrita-recente')->assertOk();
+            $this->post('https://localhost/seguranca/segundo-fator/desativar', ['password' => 'SenhaForteDeTeste123!'])->assertForbidden();
+            $this->assertNotNull($user->fresh()->two_factor_confirmed_at);
+            $this->withServerVariables(['REMOTE_ADDR' => '8.8.8.8', 'HTTPS' => 'on'])
+                ->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+            $this->withServerVariables(['REMOTE_ADDR' => '8.8.4.4', 'HTTPS' => 'on']);
+            config()->set('auth.development_admin.enabled', false);
+            $this->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+            config()->set('auth.development_admin.enabled', true);
+            app()->detectEnvironment(fn () => 'production');
+            config()->set('app.env', 'production');
+            $this->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+            app()->detectEnvironment(fn () => 'local');
+            config()->set('app.env', 'local');
+            $this->travel(61)->minutes();
+            $this->post('https://localhost/_teste/escrita-escolar')->assertForbidden();
+        } finally {
+            $this->travelBack();
+            app()->detectEnvironment(fn () => 'testing');
+            config()->set('app.env', 'testing');
+        }
     }
 
     public function test_senha_sozinha_nao_libera_gravacao_escolar(): void
