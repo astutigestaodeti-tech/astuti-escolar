@@ -7,23 +7,30 @@
     <x-icon name="seta" :size="16" />
     <a href="{{ route('schools.show', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">{{ $school->name }}</a>
     <x-icon name="seta" :size="16" />
-    <a href="{{ route('school.students.index', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}">Alunos</a>
+    <a href="{{ $studentListUrl }}">Alunos</a>
     <x-icon name="seta" :size="16" />
     <span aria-current="page">Ficha do aluno</span>
 @endsection
 
+@push('head')
+    <link rel="stylesheet" href="{{ asset('css/navegacao-registros.css') }}?v={{ filemtime(public_path('css/navegacao-registros.css')) }}">
+@endpush
+
 @section('content')
-    <div class="folha-titulo">
-        <div>
+    <div class="folha-titulo registro-titulo">
+        <div class="registro-titulo-texto">
             <span class="contexto">Consulta individual</span>
             <h1>Ficha do aluno</h1>
             <p>Informações de consulta da unidade {{ $school->name }}.</p>
         </div>
-        <div class="acoes-titulo">
+        <div class="registro-titulo-acoes">
             <span class="etiqueta ok">Vínculo ativo</span>
-            @if ($canManage)
-                <a class="botao secundario" href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}"><x-icon name="ficha" :size="16" /> Editar dados</a>
-            @endif
+            <x-record-navigation :links="$studentNavigationLinks" :position="$navigation['position']" :total="$navigation['total']" :selection-label="$studentSelectionLabel" :list-url="$studentListUrl" :search-url="$studentSearchUrl">
+                @if ($canManage)
+                    <a class="registro-nav-botao registro-nav-verde" href="{{ route('school.students.create', ['municipio' => $municipality->slug, 'escola' => $school->id]) }}"><x-icon name="adicionar" :size="15" /> Novo aluno</a>
+                    <a class="registro-nav-botao registro-nav-ambar" href="{{ route('school.students.edit', ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id]) }}"><x-icon name="ficha" :size="15" /> Editar dados</a>
+                @endif
+            </x-record-navigation>
         </div>
     </div>
 
