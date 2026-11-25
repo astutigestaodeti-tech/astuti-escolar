@@ -34,6 +34,8 @@
 @media(max-width:640px){.ficha-print-form{padding:16px}.ficha-print-papel{padding:16px}.ficha-print-identidade{flex-wrap:wrap}.ficha-print-identidade-dados{flex-basis:100%}.ficha-print-dados{grid-template-columns:1fr}.ficha-print-botoes{justify-content:flex-start}}
 @page ficha-cadastral{size:A4 portrait;margin:30mm 20mm 20mm 30mm;@bottom-right{content:"Página " counter(page) " de " counter(pages);font:10pt Arial,sans-serif;color:#34465c}}
 @media print{
+    /* O fundo da raiz cobre a página inteira, inclusive após o fim da ficha. */
+    :root:has(body.impressao-ficha-aluno){background:#fff}
     body.ficha-print-configuracao .app{display:none!important}
     body.impressao-ficha-aluno{page:ficha-cadastral;background:#fff;color:#111;font:10pt Arial,sans-serif}
     body.impressao-ficha-aluno .pular,body.impressao-ficha-aluno .lateral,body.impressao-ficha-aluno .topo,body.impressao-ficha-aluno .ficha-print-acoes,body.impressao-ficha-aluno .rodape,body.impressao-ficha-aluno .rodape-versao,body.impressao-ficha-aluno .voltar,body.impressao-ficha-aluno .aviso-demo{display:none!important}
