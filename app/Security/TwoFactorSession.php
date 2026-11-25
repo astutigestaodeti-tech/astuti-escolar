@@ -44,19 +44,21 @@ class TwoFactorSession
 
     public function clear(Request $request): void
     {
-        $request->session()->forget([self::SESSION_KEY, self::PENDING_INPUT_KEY, self::REASON_KEY]);
+        $request->session()->forget([self::SESSION_KEY, self::PENDING_INPUT_KEY, self::REASON_KEY, DevelopmentAdminAccess::SESSION_KEY]);
     }
 
     /** Verificação de entrada: vale para consultar e gravar no dia a dia. */
     public function isVerified(Request $request, User $user): bool
     {
-        return $this->verifiedWithin($request, $user, self::LOGIN_MAX_AGE_SECONDS);
+        return app(DevelopmentAdminAccess::class)->active($request, $user)
+            || $this->verifiedWithin($request, $user, self::LOGIN_MAX_AGE_SECONDS);
     }
 
     /** Confirmação recente: exigida antes de ações delicadas. */
     public function isRecentlyVerified(Request $request, User $user): bool
     {
-        return $this->verifiedWithin($request, $user, self::RECENT_MAX_AGE_SECONDS);
+        return app(DevelopmentAdminAccess::class)->active($request, $user)
+            || $this->verifiedWithin($request, $user, self::RECENT_MAX_AGE_SECONDS);
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Audit\AuditTrail;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Security\DevelopmentAdminAccess;
 use App\Security\TwoFactorSession;
 use App\Support\EmailNormalizer;
 use Illuminate\Contracts\View\View;
@@ -66,8 +67,14 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
         app(TwoFactorSession::class)->clear($request);
+        $developmentAccess = app(DevelopmentAdminAccess::class);
+        $passwordOnly = $developmentAccess->eligible($request, Auth::user());
         try {
             app(AuditTrail::class)->record('platform', 'auth.login', User::class, (string) Auth::id());
+            if ($passwordOnly) {
+                app(AuditTrail::class)->record('platform', 'auth.login_dev_password_only', User::class, (string) Auth::id());
+                $developmentAccess->start($request, Auth::user());
+            }
         } catch (Throwable $exception) {
             // Nunca manter uma sessão autenticada sem o registro obrigatório.
             Auth::logout();
@@ -77,7 +84,7 @@ class LoginController extends Controller
             abort(503, 'Acesso temporariamente indisponível. Tente novamente mais tarde.');
         }
 
-        if (Auth::user()->two_factor_confirmed_at !== null) {
+        if (Auth::user()->two_factor_confirmed_at !== null && ! $passwordOnly) {
             return redirect()->route('two-factor.challenge');
         }
 

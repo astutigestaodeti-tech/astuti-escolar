@@ -69,3 +69,19 @@ cd /srv/astuti-escolar
 php artisan astuti:demo-fotos-alunos /tmp/fotos-ficticias-alunos.zip
 php artisan astuti:demo-fotos-alunos /tmp/fotos-ficticias-alunos.zip --confirmar=COLOCAR-FOTOS-FICTICIAS --responsavel=demo.monte-sereno@astuti.invalid
 ```
+
+## Acesso temporário do admin sem código TOTP
+
+Exclusivamente para homologação fictícia, com `APP_ENV=local`, senha válida da conta ativa `admin` já cadastrada no autenticador e IP público individual confirmado. Por padrão desativado. Nunca habilitar em produção nem usar com dados reais. Preferir sempre TOTP. O acesso reduz a proteção a senha + restrição de origem; IP compartilhado não identifica uma pessoa.
+
+No .env privado, por até sete dias (prazo Unix em segundos, obtido no servidor com `date -d '+7 days' +%s`, preferir prazo menor):
+
+```dotenv
+DEV_ADMIN_PASSWORD_ONLY=true
+DEV_ADMIN_ALLOWED_IP=
+DEV_ADMIN_EXPIRES_AT=
+```
+
+Preencher com o IP público exato do navegador autorizado (não IP da VPS, rede CIDR, IP privado ou loopback) e o prazo. Não publicar valores. Antes de ativar, conferir se o túnel/proxy confiável encaminha o IP real do visitante, se X-Forwarded-For e CF-Connecting-IP correspondem e se o acesso usa HTTPS. Não ampliar a lista de proxies confiáveis para contornar uma recusa. Se o IP mudar, o acesso excepcional é recusado; usar o autenticador. O sistema não apaga o TOTP e não marca a sessão como verificada pelo autenticador. A segurança da própria conta continua exigindo TOTP real. Após editar o .env, limpar cache de configuração e recarregar PHP-FPM pelo procedimento operacional, sair e entrar de novo; conferir login e recusa fora da origem permitida. O evento auth.login_dev_password_only distingue o acesso excepcional na auditoria, sem substituir a auditoria escolar.
+
+Para revogar, definir DEV_ADMIN_PASSWORD_ONLY=false e limpar cache de configuração/recarregar PHP-FPM. A exceção é reavaliada a cada requisição e expira automaticamente. A senha e os códigos do autenticador não mudam. Não copiar a configuração para outra VPS.
