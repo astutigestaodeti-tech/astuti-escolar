@@ -115,6 +115,35 @@ class CensusReadinessTest extends TwoMunicipalityTestCase
         });
     }
 
+    public function test_conferencia_isola_municipios_mesmo_com_identificador_de_ano_igual(): void
+    {
+        $this->aluno('Aluno Local Fictício', self::ESCOLA_A1, $this->classes['fund_manha']);
+        app(TenantContext::class)->runFor($this->municipioB, function (): void {
+            SchoolYear::query()->create([
+                'id' => $this->yearId, 'year' => 2026,
+                'start_date' => '2026-02-01', 'end_date' => '2026-12-15', 'status' => 'active',
+            ]);
+            $student = Student::query()->create([
+                'id' => (string) Str::uuid(), 'full_name' => 'Aluno Externo Fictício',
+            ]);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $student->id,
+                'school_id' => self::ESCOLA_B1, 'school_year_id' => $this->yearId,
+                'status' => 'active',
+            ]);
+        });
+
+        $this->entrar('municipal_manager');
+        $this->get(self::URL)->assertOk()->assertDontSee('Aluno Externo Fictício')
+            ->assertViewHas('data', function (array $data): bool {
+                $this->assertSame(1, $data['totals']['enrollments']);
+                $this->assertSame(0, $data['byType']['sem_turma']);
+                $this->assertSame([self::ESCOLA_A1], $data['rows']->pluck('school_id')->all());
+
+                return true;
+            });
+    }
+
     public function test_sem_ano_de_referencia_nao_agrega_outros_anos(): void
     {
         $this->aluno('Aluno Fictício', self::ESCOLA_A1, $this->classes['fund_manha']);
