@@ -22,11 +22,11 @@ class SpecialEducationTest extends TwoMunicipalityTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->travelTo(Carbon::parse('2027-04-15 15:00:00'));
+        $this->travelTo(Carbon::parse('2026-04-15 15:00:00'));
         $this->student = app(TenantContext::class)->runFor($this->municipioA, function (): string {
             $year = SchoolYear::query()->create([
-                'id' => (string) Str::uuid(), 'year' => 2027,
-                'start_date' => '2027-02-01', 'end_date' => '2027-12-15', 'status' => 'active',
+                'id' => (string) Str::uuid(), 'year' => 2026,
+                'start_date' => '2026-02-01', 'end_date' => '2026-12-15', 'status' => 'active',
             ]);
             $student = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'Lia Especial Fictícia', 'race_color' => 'parda', 'residence_zone' => 'urban']);
             StudentEnrollment::query()->create([
@@ -71,7 +71,7 @@ class SpecialEducationTest extends TwoMunicipalityTestCase
             'exam_resources' => ['prova_ampliada', 'tempo_adicional'],
             'aee_status' => 'participa',
             'aee_school_id' => self::ESCOLA_A2,
-            'aee_started_on' => '2027-03-01',
+            'aee_started_on' => '2026-03-01',
             'support_professional' => 'sim',
         ])->assertRedirect($this->url().'#educacao-especial');
 
