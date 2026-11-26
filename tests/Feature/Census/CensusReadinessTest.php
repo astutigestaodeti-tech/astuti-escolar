@@ -29,13 +29,13 @@ class CensusReadinessTest extends TwoMunicipalityTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->travelTo(Carbon::parse('2027-04-15 15:00:00'));
+        $this->travelTo(Carbon::parse('2026-04-15 15:00:00'));
 
         app(TenantContext::class)->runFor($this->municipioA, function (): void {
             School::query()->findOrFail(self::ESCOLA_A1)->forceFill(['inep_code' => '35999001'])->save();
             $year = SchoolYear::query()->create([
-                'id' => (string) Str::uuid(), 'year' => 2027,
-                'start_date' => '2027-02-01', 'end_date' => '2027-12-15', 'status' => 'active',
+                'id' => (string) Str::uuid(), 'year' => 2026,
+                'start_date' => '2026-02-01', 'end_date' => '2026-12-15', 'status' => 'active',
             ]);
             $this->yearId = $year->id;
             foreach ([
@@ -84,6 +84,77 @@ class CensusReadinessTest extends TwoMunicipalityTestCase
         ])->assertRedirect();
 
         return $user;
+    }
+
+    public function test_conferencia_nao_mistura_matriculas_de_anos_diferentes(): void
+    {
+        $student = $this->aluno('Transferência Fictícia', self::ESCOLA_A1, $this->classes['fund_manha']);
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($student): void {
+            $future = SchoolYear::query()->create([
+                'id' => (string) Str::uuid(), 'year' => 2027,
+                'start_date' => '2027-02-01', 'end_date' => '2027-12-15', 'status' => 'active',
+            ]);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $student,
+                'school_id' => self::ESCOLA_A2, 'school_year_id' => $future->id,
+                'school_class_id' => null, 'status' => 'active',
+            ]);
+        });
+
+        $this->travelTo(Carbon::parse('2027-04-15 15:00:00'));
+        config(['censo.vaaf_base' => 6000.0]);
+        $this->entrar('municipal_manager');
+        $this->get(self::URL)->assertOk()->assertViewHas('data', function (array $data): bool {
+            $this->assertSame(1, $data['totals']['enrollments']);
+            $this->assertSame(0, $data['byType']['duplicada']);
+            $this->assertSame(0, $data['byType']['sem_turma']);
+            $this->assertSame(6000.0, $data['totals']['fundeb']);
+            $this->assertSame(114.0, $data['totals']['pnae']);
+
+            return true;
+        });
+    }
+
+    public function test_conferencia_isola_municipios_mesmo_com_identificador_de_ano_igual(): void
+    {
+        $this->aluno('Aluno Local Fictício', self::ESCOLA_A1, $this->classes['fund_manha']);
+        app(TenantContext::class)->runFor($this->municipioB, function (): void {
+            SchoolYear::query()->create([
+                'id' => $this->yearId, 'year' => 2026,
+                'start_date' => '2026-02-01', 'end_date' => '2026-12-15', 'status' => 'active',
+            ]);
+            $student = Student::query()->create([
+                'id' => (string) Str::uuid(), 'full_name' => 'Aluno Externo Fictício',
+            ]);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $student->id,
+                'school_id' => self::ESCOLA_B1, 'school_year_id' => $this->yearId,
+                'status' => 'active',
+            ]);
+        });
+
+        $this->entrar('municipal_manager');
+        $this->get(self::URL)->assertOk()->assertDontSee('Aluno Externo Fictício')
+            ->assertViewHas('data', function (array $data): bool {
+                $this->assertSame(1, $data['totals']['enrollments']);
+                $this->assertSame(0, $data['byType']['sem_turma']);
+                $this->assertSame([self::ESCOLA_A1], $data['rows']->pluck('school_id')->all());
+
+                return true;
+            });
+    }
+
+    public function test_sem_ano_de_referencia_nao_agrega_outros_anos(): void
+    {
+        $this->aluno('Aluno Fictício', self::ESCOLA_A1, $this->classes['fund_manha']);
+        config(['censo.year_reference' => 2025]);
+        $this->entrar('municipal_manager');
+        $this->get(self::URL)->assertOk()->assertViewHas('data', function (array $data): bool {
+            $this->assertSame(0, $data['totals']['enrollments']);
+            $this->assertSame(0, $data['byType']['duplicada']);
+
+            return true;
+        });
     }
 
     public function test_so_a_gestao_municipal_abre_a_conferencia(): void

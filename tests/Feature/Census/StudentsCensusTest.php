@@ -20,12 +20,12 @@ class StudentsCensusTest extends TwoMunicipalityTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->travelTo(Carbon::parse('2027-05-20 10:00:00'));
+        $this->travelTo(Carbon::parse('2026-05-20 10:00:00'));
         app(TenantContext::class)->runFor($this->municipioA, function (): void {
             DB::connection('tenant')->table('schools')->where('id', self::ESCOLA_A1)->update(['inep_code' => '35999001']);
             $year = SchoolYear::query()->create([
-                'id' => (string) Str::uuid(), 'year' => 2027,
-                'start_date' => '2027-02-01', 'end_date' => '2027-12-15', 'status' => 'active',
+                'id' => (string) Str::uuid(), 'year' => 2026,
+                'start_date' => '2026-02-01', 'end_date' => '2026-12-15', 'status' => 'active',
             ]);
             $class = SchoolClass::query()->create([
                 'id' => (string) Str::uuid(), 'school_id' => self::ESCOLA_A1, 'school_year_id' => $year->id,
@@ -43,7 +43,7 @@ class StudentsCensusTest extends TwoMunicipalityTestCase
                 ]);
                 StudentEnrollment::query()->create([
                     'id' => (string) Str::uuid(), 'student_id' => $student->id, 'school_id' => self::ESCOLA_A1, 'school_class_id' => $class->id,
-                    'school_year_id' => $year->id, 'status' => 'active', 'started_at' => '2027-02-01', 'other_schooling_space' => 1,
+                    'school_year_id' => $year->id, 'status' => 'active', 'started_at' => '2026-02-01', 'other_schooling_space' => 1,
                 ]);
                 if ($i === 0) {
                     StudentCensus::query()->create([

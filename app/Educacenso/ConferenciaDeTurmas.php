@@ -20,8 +20,9 @@ final class ConferenciaDeTurmas
      * @param  Collection<int, School>  $escolas
      * @return Collection<string, list<array{turma: SchoolClass, censo: ?SchoolClassCensus, registro: Registro20}>> por escola
      */
-    public function para(Collection $escolas, SchoolYear $ano): Collection
+    public function para(Collection $escolas, SchoolYear $ano, ?string $dataReferencia = null): Collection
     {
+        $dataReferencia ??= today()->toDateString();
         $turmas = SchoolClass::query()->whereIn('school_id', $escolas->pluck('id'))
             ->where('school_year_id', $ano->id)->where('status', 'active')
             ->orderBy('name')->orderBy('id')->get(['id', 'school_id', 'school_year_id', 'name', 'stage', 'shift', 'status']);
@@ -31,8 +32,8 @@ final class ConferenciaDeTurmas
             ->whereHas('student', fn ($query) => $query->whereNull('deleted_at'))
             ->selectRaw('school_class_id, count(distinct student_id) as total')->groupBy('school_class_id')->pluck('total', 'school_class_id');
         $professores = ClassTeacherAssignment::query()->whereIn('school_class_id', $ids)
-            ->where('starts_on', '<=', today()->toDateString())
-            ->where(fn ($query) => $query->whereNull('ends_on')->orWhere('ends_on', '>=', today()->toDateString()))
+            ->where('starts_on', '<=', $dataReferencia)
+            ->where(fn ($query) => $query->whereNull('ends_on')->orWhere('ends_on', '>=', $dataReferencia))
             ->selectRaw('school_class_id, count(*) as total')->groupBy('school_class_id')->pluck('total', 'school_class_id');
 
         $porEscola = $escolas->keyBy('id');
