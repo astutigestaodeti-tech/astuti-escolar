@@ -24,3 +24,23 @@
 .pagina-alimentacao .alimentacao-tabela th,.pagina-alimentacao .alimentacao-tabela td{padding:6px;min-width:0}
 }
 .pagina-alimentacao .folha + .folha{margin-top:20px}
+
+/* Prévia do cardápio: controles na tela e somente o documento no papel. */
+@media screen{
+    .pagina-cardapio-previa .timbre-impressao,
+    .pagina-cardapio-previa .timbre-impressao-rodape{display:block}
+    .pagina-cardapio-previa .alimentacao-filtro{margin-bottom:20px}
+}
+@media print{
+    @page cardapio-mural{size:A4 landscape;margin:20mm 20mm 20mm 30mm}
+    .pagina-cardapio{page:cardapio-mural}
+    .pagina-cardapio .folha-titulo{margin-bottom:6mm}
+    .pagina-cardapio .cardapio-etapa{break-inside:auto;page-break-inside:auto;margin-bottom:6mm}
+    .pagina-cardapio .cardapio-etapa .folha-cabecalho{break-after:avoid}
+    .pagina-cardapio .alimentacao-tabela{table-layout:fixed;width:100%;min-width:0}
+    .pagina-cardapio .alimentacao-tabela th,
+    .pagina-cardapio .alimentacao-tabela td{overflow-wrap:anywhere;min-width:0;white-space:normal}
+    .pagina-cardapio .alimentacao-tabela th:first-child{width:16%}
+    .pagina-cardapio .alimentacao-tabela thead{display:table-header-group}
+    .pagina-cardapio .alimentacao-tabela tr{break-inside:avoid;page-break-inside:avoid}
+}
