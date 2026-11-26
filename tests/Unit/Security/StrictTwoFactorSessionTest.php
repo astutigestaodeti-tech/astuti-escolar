@@ -54,16 +54,14 @@ final class StrictTwoFactorSessionTest extends TestCase
 
     private function user(string $status = 'active', string $secret = 'test-secret', string $id = 'test-id'): User
     {
-        $user = $this->createMock(User::class);
-        $user->method('getKey')->willReturn($id);
-        $user->method('getAttribute')->willReturnCallback(static fn ($key) => match ($key) {
+        // Modelo real em memória: o mock integral substitui também __get()
+        // do Eloquent e impede a leitura dos atributos usados pelo bypass.
+        return (new User)->forceFill([
+            'id' => $id,
             'status' => $status,
             'email' => EmailNormalizer::fromLogin('admin'),
             'two_factor_secret' => $secret,
             'two_factor_confirmed_at' => now(),
-            default => null,
-        });
-
-        return $user;
+        ]);
     }
 }
