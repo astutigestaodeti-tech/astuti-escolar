@@ -221,6 +221,21 @@
                                 @endif
                             </div>
                         @endif
+                        @if ($canManage && $enrollment->status === 'active')
+                            @php
+                                $params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id, 'matricula' => $enrollment->id];
+                            @endphp
+                            <div class="vinculo-datas so-tela" role="group" aria-label="Movimentações da matrícula do ano letivo {{ $enrollment->schoolYear?->year ?? 'não informado' }}">
+                                <small><strong>Movimentações da matrícula - {{ $enrollment->schoolYear?->year ?? 'ano não informado' }}</strong></small>
+                                <div class="formulario-acoes">
+                                    <a class="botao secundario" href="{{ route('school.enrollments.transfer.form', $params) }}">Transferir matrícula</a>
+                                    <a class="botao secundario" href="{{ route('school.enrollments.end.form', $params) }}">Encerrar matrícula</a>
+                                    @if ($canDeleteEnrollment)
+                                        <a class="botao secundario" href="{{ route('school.enrollments.delete-registration.form', $params) }}">Excluir cadastro</a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
                     </li>
                 @endforeach
             </ul>
@@ -260,20 +275,6 @@
         </aside>
     </div>
 
-    @if ($canManage)
-        @foreach ($enrollments->where('status', 'active') as $enrollment)
-            @php
-                $params = ['municipio' => $municipality->slug, 'escola' => $school->id, 'aluno' => $student->id, 'matricula' => $enrollment->id];
-            @endphp
-            <div class="formulario-acoes" aria-label="Movimentações da matrícula do ano letivo {{ $enrollment->schoolYear?->year }}">
-                <a class="botao secundario" href="{{ route('school.enrollments.transfer.form', $params) }}">Transferir matrícula</a>
-                <a class="botao secundario" href="{{ route('school.enrollments.end.form', $params) }}">Encerrar matrícula</a>
-                @if ($canDeleteEnrollment)
-                    <a class="botao secundario" href="{{ route('school.enrollments.delete-registration.form', $params) }}">Excluir cadastro</a>
-                @endif
-            </div>
-        @endforeach
-    @endif
 
     @if ($canManage)
         <div class="nota"><x-icon name="escudo" /><div><strong>Alterações exigem o segundo fator</strong><p>Para editar, confirme o código do seu aplicativo autenticador. Toda alteração fica registrada no histórico. Utilize apenas informações fictícias.</p></div></div>
