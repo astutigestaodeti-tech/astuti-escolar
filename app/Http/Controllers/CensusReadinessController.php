@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Attendance\SchoolAbsenceAlerts;
 use App\Audit\AuditTrail;
 use App\Census\CensusReadiness;
 use App\Educacenso\ConferenciaDeAlunos;
@@ -16,6 +15,7 @@ use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolCensus;
 use App\Models\Tenant\SchoolInfrastructureCensus;
 use App\Models\Tenant\SchoolYear;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -42,38 +42,41 @@ class CensusReadinessController extends Controller
             'aviso' => ['nullable', Rule::in(array_keys(CensusReadiness::WARNINGS))],
         ]);
 
-        $data = $readiness->forNetwork();
+        $reference = (int) config('censo.year_reference');
+        $ano = Tabelas::anoMaisRecente();
+        $year = SchoolYear::query()->where('year', $reference)->first();
+        // Sem ano correspondente, a consulta deve retornar zero matrículas.
+        $data = $readiness->forNetwork(CarbonImmutable::create($reference, 3, 31), $year?->id ?? '00000000-0000-0000-0000-000000000000');
+        $layoutYear = $reference === $ano ? $year : null;
         $list = $data['rows']->filter(fn (array $item): bool => $item['warnings'] !== [])
             ->when($validated['escola'] ?? null, fn ($rows, string $school) => $rows->where('school_id', $school))
             ->when($validated['aviso'] ?? null, fn ($rows, string $type) => $rows->filter(fn (array $item): bool => in_array($type, $item['warnings'], true)))
             ->values();
 
         // Turmas no formato do Educacenso (registro 20), por escola.
-        $year = app(SchoolAbsenceAlerts::class)->currentYear();
         $schools = School::query()->where('status', 'active')->get();
-        $classes = $year === null ? collect() : $turmas->para($schools, $year)
+        $classes = $layoutYear === null ? collect() : $turmas->para($schools, $layoutYear)
             ->map(fn (array $linhas): array => [
                 'total' => count($linhas),
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['registro']->pronto())),
             ]);
         // Alunos no formato do Educacenso (registros 30 e 60), por escola.
-        $students = $year === null ? collect() : $alunos->para($schools, $year)
+        $students = $layoutYear === null ? collect() : $alunos->para($schools, $layoutYear)
             ->map(fn (array $linhas): array => [
                 'total' => count($linhas),
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['r30']->pronto() && $linha['r60']->pronto())),
             ]);
 
-        $staff = $servidores->para($schools, $year)->map(fn (array $linhas): array => [
+        $staff = $layoutYear === null ? collect() : $servidores->para($schools, $layoutYear)->map(fn (array $linhas): array => [
             'total' => count($linhas),
             'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['pronto'])),
         ]);
 
         // Registros 00 e 10: ano correspondente ao leiaute, sem consultas por escola.
-        $ano = Tabelas::anoMaisRecente();
-        $anoLetivo = SchoolYear::query()->where('year', $ano)->first();
+        $anoLetivo = $layoutYear;
         $dadosEscolas = SchoolCensus::query()->whereIn('school_id', $schools->pluck('id'))->get()->keyBy('school_id');
         $infraestruturas = SchoolInfrastructureCensus::query()->where('census_year', $ano)->whereIn('school_id', $schools->pluck('id'))->get()->keyBy('school_id');
-        $schoolReadiness = $schools->mapWithKeys(fn (School $school): array => [
+        $schoolReadiness = $layoutYear === null ? collect() : $schools->mapWithKeys(fn (School $school): array => [
             $school->id => Registro00::para($school, $dadosEscolas->get($school->id), $anoLetivo, $ano)->pronto()
                 && Registro10::para($school, $infraestruturas->get($school->id), $dadosEscolas->get($school->id), $ano)->pronto(),
         ]);
