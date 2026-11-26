@@ -1,13 +1,17 @@
 @extends('layouts.municipal')
 @section('title', 'Cardápio escolar')
-@section('body-class', 'pagina-alimentacao')
+@section('body-class', 'pagina-alimentacao pagina-cardapio'.(request()->boolean('imprimir') && $week ? ' pagina-cardapio-previa' : ''))
 @push('head')
 <link rel="stylesheet" href="{{ asset('css/alimentacao.css') }}?v={{ filemtime(public_path('css/alimentacao.css')) }}">
+@if(request()->boolean('imprimir') && $week)
+<script src="{{ asset('js/cardapio-impressao.js') }}?v={{ filemtime(public_path('js/cardapio-impressao.js')) }}" defer></script>
+@endif
 @endpush
 @php
     $params = ['municipio' => $municipality->slug];
     $base = $school ? route('school.meals.menu', [...$params, 'escola' => $school->id]) : route('meals.menu', $params);
     $start = $week?->toDateString();
+    $imprimir = request()->boolean('imprimir') && $week !== null;
     $weeks = $week ? [$week->subWeek(), $week->addWeek()] : [];
     $stages = \App\Meals\SchoolMeals::STAGES;
     $types = \App\Meals\SchoolMeals::MEALS;
@@ -19,11 +23,22 @@
 @endsection
 @section('content')
 <div class="folha-titulo"><div><span class="contexto">{{ $school ? $school->name : 'Gestão municipal' }}</span>
-<h1>Cardápio escolar</h1><p>Planejamento semanal por etapa, disponível para todas as escolas da rede.</p></div>
+<h1>Cardápio escolar</h1><p>Planejamento semanal por etapa, disponível para todas as escolas da rede.@if($year) Ano letivo {{ $year->year }}.@endif</p></div>
 @if ($week)<span class="marcador">{{ $week->format('d/m') }} a {{ $week->addDays(6)->format('d/m/Y') }}</span>@endif</div>
 @if(session('status'))<div class="status-sucesso" role="status">{{ session('status') }}</div>@endif
 @if($errors->any())<div class="erro" role="alert"><strong>Confira os dados.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
-<section class="folha alimentacao-filtro">
+@if($imprimir)
+<section class="folha so-tela alimentacao-filtro" aria-label="Impressão do cardápio">
+<div class="folha-corpo">
+<p>Prévia para o mural. Confira o cardápio e utilize a impressão do navegador para imprimir ou salvar em PDF.</p>
+<div class="alimentacao-links">
+<button class="botao" type="button" data-cardapio-imprimir>Imprimir / Salvar em PDF</button>
+<a class="botao secundario" href="{{ $base.'?'.http_build_query(['ano' => $year->year, 'semana' => $start]) }}">Voltar ao cardápio</a>
+</div>
+<noscript><p>Utilize a opção Imprimir do navegador (Ctrl + P).</p></noscript>
+</div></section>
+@else
+<section class="folha alimentacao-filtro so-tela">
 <div class="folha-cabecalho"><div><h2>Consultar semana</h2><p>O cardápio é único para a rede e separado por etapa.</p></div></div>
 <div class="folha-corpo">
 <form action="{{ $base }}" method="GET" class="alimentacao-form">
@@ -44,9 +59,10 @@
 </div>
 @endif
 </div></section>
+@endif
 @if($year && $week)
 @foreach($stages as $stage => $label)
-<section class="folha">
+<section class="folha cardapio-etapa">
 <div class="folha-cabecalho"><div><h2>{{ $label }}</h2><p>Semana iniciada em {{ $week->format('d/m/Y') }}.</p></div></div>
 <div class="rolagem alimentacao-rolagem">
 <table class="tabela alimentacao-tabela"><thead><tr><th scope="col">Dia</th>@foreach($types as $type)<th scope="col">{{ $type }}</th>@endforeach</tr></thead>
@@ -59,8 +75,8 @@
 @endforeach
 </tbody></table></div></section>
 @endforeach
-@if($canEdit)
-<section class="folha"><div class="folha-cabecalho"><div><h2>Editar cardápio</h2><p>Somente a gestão municipal pode alterar o planejamento. Todas as alterações são auditadas.</p></div></div>
+@if($canEdit && !$imprimir)
+<section class="folha so-tela"><div class="folha-cabecalho"><div><h2>Editar cardápio</h2><p>Somente a gestão municipal pode alterar o planejamento. Todas as alterações são auditadas.</p></div></div>
 <div class="folha-corpo">
 <form method="POST" action="{{ route('meals.menu.save', $params) }}" class="alimentacao-form">
 @csrf<input type="hidden" name="ano_id" value="{{ $year->id }}"><input type="hidden" name="semana" value="{{ $start }}">
@@ -70,7 +86,7 @@
 <label class="alimentacao-largo">Alimentos e preparações <textarea class="entrada" name="cardapio" maxlength="500" rows="2" required placeholder="Ex.: arroz, feijão, legumes e fruta">{{ old('cardapio') }}</textarea></label>
 <button class="botao" type="submit">Salvar cardápio</button>
 </form></div></section>
-<section class="folha"><div class="folha-cabecalho"><div><h2>Copiar semana</h2><p>A cópia substitui os itens correspondentes no destino e deixa trilha de auditoria.</p></div></div>
+<section class="folha so-tela"><div class="folha-cabecalho"><div><h2>Copiar semana</h2><p>A cópia substitui os itens correspondentes no destino e deixa trilha de auditoria.</p></div></div>
 <div class="folha-corpo">
 <form method="POST" action="{{ route('meals.menu.copy', $params) }}" class="alimentacao-form">
 @csrf<input type="hidden" name="ano_id" value="{{ $year->id }}">
