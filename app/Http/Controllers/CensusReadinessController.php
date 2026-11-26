@@ -48,6 +48,8 @@ class CensusReadinessController extends Controller
         // Sem ano correspondente, a consulta deve retornar zero matrículas.
         $data = $readiness->forNetwork(CarbonImmutable::create($reference, 3, 31), $year?->id, requireYear: true);
         $layoutYear = $reference === $ano ? $year : null;
+        // Portaria MEC 264/2007: última quarta-feira de maio (27/05/2026).
+        $dataReferencia = CarbonImmutable::create($reference, 5, 1)->lastOfMonth(CarbonImmutable::WEDNESDAY)->toDateString();
         $list = $data['rows']->filter(fn (array $item): bool => $item['warnings'] !== [])
             ->when($validated['escola'] ?? null, fn ($rows, string $school) => $rows->where('school_id', $school))
             ->when($validated['aviso'] ?? null, fn ($rows, string $type) => $rows->filter(fn (array $item): bool => in_array($type, $item['warnings'], true)))
@@ -55,7 +57,7 @@ class CensusReadinessController extends Controller
 
         // Turmas no formato do Educacenso (registro 20), por escola.
         $schools = School::query()->where('status', 'active')->get();
-        $classes = $layoutYear === null ? collect() : $turmas->para($schools, $layoutYear)
+        $classes = $layoutYear === null ? collect() : $turmas->para($schools, $layoutYear, $dataReferencia)
             ->map(fn (array $linhas): array => [
                 'total' => count($linhas),
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['registro']->pronto())),
@@ -67,7 +69,7 @@ class CensusReadinessController extends Controller
                 'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['r30']->pronto() && $linha['r60']->pronto())),
             ]);
 
-        $staff = $layoutYear === null ? collect() : $servidores->para($schools, $layoutYear)->map(fn (array $linhas): array => [
+        $staff = $layoutYear === null ? collect() : $servidores->para($schools, $layoutYear, $dataReferencia)->map(fn (array $linhas): array => [
             'total' => count($linhas),
             'ready' => count(array_filter($linhas, fn (array $linha): bool => $linha['pronto'])),
         ]);
