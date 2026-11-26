@@ -736,3 +736,7 @@ Os números vêm de uma consulta PostgreSQL agregada para todas as matrículas a
 ## 24/11/2026 - Manual do usuário (issue #124)
 
 Entrega de doze capítulos e índice em `docs/manual/`, incluindo primeiro acesso, segundo fator e dados da Prefeitura. Caminhos e botões conferidos na main após #140, incluindo gravação coletiva da sondagem. Orientações por perfil, passos numerados, dúvidas e proteção de dados. Sem código, migrations ou prints; capturas após validação de Jefferson.
+
+## 26/11/2026 - Aba Agente no menu (#244, proposta)
+
+Integração de menu, rota, autorização por UUID local e 2FA real, auditoria de leitura, no-store, throttle, histórico filtrável e paginado, atualização de 8 segundos somente na aba visível. Sem banco novo, sem execução de comandos e sem acesso a dados escolares. CI, revisão, liberação controlada das rotas/configuração na VPS e homologação visual ainda necessários.

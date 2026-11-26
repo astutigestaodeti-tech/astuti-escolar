@@ -39,6 +39,11 @@ final class DeploymentSnapshot
         'falha_execucao' => 'Falha na execução do agente',
     ];
 
+    public static function stages(): array
+    {
+        return self::LABELS;
+    }
+
     public function read(int $now): array
     {
         clearstatcache(true, self::PATH);

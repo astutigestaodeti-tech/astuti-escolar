@@ -10,3 +10,5 @@
 .agente-evento-links{display:flex;flex-wrap:wrap;gap:12px}
 .agente-evento-links a{overflow-wrap:anywhere}
 @media(max-width:640px){.agente-evento{align-items:flex-start;flex-direction:column}}
+
+.agente-filtro{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.agente-filtro>div{min-width:0;flex:1 1 220px}.agente-filtro select{width:100%}#agente-atualizacao{margin:12px 0 0}#agente-dados{display:grid;gap:16px;min-width:0}

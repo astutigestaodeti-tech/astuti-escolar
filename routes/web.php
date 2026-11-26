@@ -13,6 +13,7 @@ use App\Http\Controllers\ClassYearEndController;
 use App\Http\Controllers\ConfirmedStudentImportController;
 use App\Http\Controllers\ConfirmedTransportImportController;
 use App\Http\Controllers\DemonstrationController;
+use App\Http\Controllers\DeveloperAgentController;
 use App\Http\Controllers\EducacensoReturnController;
 use App\Http\Controllers\EducacensoSchoolController;
 use App\Http\Controllers\EnrollmentDeclarationController;
@@ -97,6 +98,10 @@ Route::prefix('/seguranca/segundo-fator')->middleware('auth')->group(function ()
 });
 
 Route::prefix('/m/{municipio}')->middleware(['auth', RequireLoginTwoFactor::class, ResolveMunicipality::class])->group(function (): void {
+    // Console técnico: opt-in local por UUID, 2FA real e auditoria no controlador.
+    Route::get('/agente', [DeveloperAgentController::class, 'index'])->middleware('throttle:20,1')->name('developer.agent.index');
+    Route::get('/agente/snapshot', [DeveloperAgentController::class, 'snapshot'])->middleware('throttle:20,1')->name('developer.agent.snapshot');
+
     // Lista de espera: somente gestão municipal e unidades autorizadas. Sem acesso público.
     Route::get('/lista-de-espera', [WaitlistController::class, 'index'])->name('waitlist.index');
     Route::get('/lista-de-espera/novo', [WaitlistController::class, 'create'])->middleware(RequireConfirmedTwoFactor::class)->name('waitlist.create');
