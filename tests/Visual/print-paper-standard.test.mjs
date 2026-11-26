@@ -11,7 +11,7 @@ test('todos os estilos de página impressa usam A4 e margens institucionais', ()
         for (const rule of css.matchAll(/@page\s*([^{}]*)\{([^{}]*)/g)) {
             count++;
             assert.match(rule[2], /\bsize:\s*A4\s+(portrait|landscape)\s*;/, file);
-            assert.match(rule[2], /\bmargin:\s*30mm\s+20mm\s+20mm\s+30mm\s*(?:;|$)/, file);
+            assert.match(rule[2], /\bmargin:\s*20mm\s+20mm\s+20mm\s+30mm\s*(?:;|$)/, file);
             assert.doesNotMatch(rule[2], /\bmargin-(?:top|right|bottom|left)\s*:/, file);
         }
     }
@@ -20,6 +20,6 @@ test('todos os estilos de página impressa usam A4 e margens institucionais', ()
 
 test('estilo principal oferece A4 retrato como fallback e mantém frequência em paisagem', () => {
     const css = readFileSync(new URL('astuti.css', cssDir), 'utf8');
-    assert.match(css, /@page\s*\{\s*size:A4 portrait;\s*margin:30mm 20mm 20mm 30mm/);
+    assert.match(css, /@page\s*\{\s*size:A4 portrait;\s*margin:20mm 20mm 20mm 30mm/);
     assert.match(css, /@page frequencia-mensal\s*\{\s*size:A4 landscape;/);
 });
