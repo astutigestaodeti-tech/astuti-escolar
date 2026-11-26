@@ -108,6 +108,46 @@ class PublisherTest(unittest.TestCase):
             self.publisher.publish(lambda _: False)
         self.assertFalse(self.publisher.pending.exists())
 
+    def test_disable_during_transaction_allows_recovery(self):
+        def disable(phase):
+            if phase == "switched":
+                self.data["enabled"] = False
+                self.save_auth()
+                raise Interrupted()
+        with self.assertRaises(Interrupted):
+            self.publisher.publish(lambda _: True, disable)
+        self.assertEqual(self.reopen().recover(lambda _: True), "revertido")
+        self.assertEqual(self.publisher.current(), OLD)
+
+    def test_changed_recovery_anchor_blocks(self):
+        def interrupt(phase):
+            if phase == "switched":
+                raise Interrupted()
+        with self.assertRaises(Interrupted):
+            self.publisher.publish(lambda _: True, interrupt)
+        self.data["digests"][OLD] = "0" * 64
+        self.save_auth()
+        with self.assertRaisesRegex(RuntimeError, "autorizacao_alterada"):
+            self.reopen().recover(lambda _: True)
+        self.assertTrue(self.publisher.pending.exists())
+
+    def test_gate_refusal_before_switch(self):
+        def deny(_):
+            raise RuntimeError("planejamento_nao_elegivel")
+        with self.assertRaisesRegex(RuntimeError, "planejamento_nao_elegivel"):
+            self.publisher.publish(lambda _: True, gate=deny)
+        self.assertEqual(self.publisher.current(), OLD)
+        self.assertFalse(self.publisher.pending.exists())
+
+    def test_gate_authorization_change_blocks(self):
+        def disable(_):
+            self.data["enabled"] = False
+            self.save_auth()
+        with self.assertRaisesRegex(RuntimeError, "publicacao_desabilitada"):
+            self.publisher.publish(lambda _: True, gate=disable)
+        self.assertEqual(self.publisher.current(), OLD)
+        self.assertFalse(self.publisher.pending.exists())
+
     def test_lock_blocks(self):
         with self.publisher.lock():
             with self.assertRaises(BlockingIOError):
