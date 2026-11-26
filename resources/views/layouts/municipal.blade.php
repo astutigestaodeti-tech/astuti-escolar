@@ -172,6 +172,12 @@
                     <x-icon name="alunos" /><span>Lista de espera</span>
                 </a>
             @endcan
+            @if (app(\App\Developer\AgentAccess::class)->allows($usuario))
+                <span class="menu-titulo">Console técnico</span>
+                <a class="menu-item {{ request()->routeIs('developer.agent.*') ? 'ativo' : '' }}" href="{{ route('developer.agent.index', $parametrosMunicipio) }}" @if (request()->routeIs('developer.agent.*')) aria-current="page" @endif>
+                    <x-icon name="indicadores" /><span>Agente</span>
+                </a>
+            @endif
         </nav>
 
         <div class="lateral-rodape">

@@ -42,7 +42,7 @@
         </div>
     </div>
     <div class="folha-corpo">
-        @forelse (array_slice($snapshot['events'], 0, 30) as $event)
+        @forelse ($snapshot['events'] as $event)
             <article class="agente-evento agente-etapa-{{ $event['stage'] }}">
                 <div>
                     <strong>{{ $event['label'] }}</strong>
@@ -60,8 +60,14 @@
         @empty
             <p>Nenhum evento registrado no histórico disponível.</p>
         @endforelse
-        @if (count($snapshot['events']) > 30)
-            <p>Exibindo os 30 eventos mais recentes do histórico disponível.</p>
-        @endif
+        <p>{{ $total }} eventos no filtro. Página {{ $page }} de {{ $pages }}.</p>
+        <div class="agente-evento-links">
+            @if ($page > 1)
+                <a href="{{ route('developer.agent.index', ['municipio' => $municipality->slug, 'stage' => $stage, 'page' => $page - 1]) }}">Página anterior</a>
+            @endif
+            @if ($page < $pages)
+                <a href="{{ route('developer.agent.index', ['municipio' => $municipality->slug, 'stage' => $stage, 'page' => $page + 1]) }}">Próxima página</a>
+            @endif
+        </div>
     </div>
 </section>
