@@ -231,14 +231,9 @@
             @endphp
             <p class="rodape-versao">
                 @if ($versao['commit'])
-                    Versão {{ $versao['commit'] }}@if ($versao['branch']) ({{ $versao['branch'] }})@endif, atualizada em {{ $versao['updated_at']->format('d/m/Y') }} às {{ $versao['updated_at']->format('H:i') }}
+                    Versão {{ $versao['commit'] }}@if ($versao['updated_at']), atualizada em {{ $versao['updated_at']->format('d/m/Y') }} às {{ $versao['updated_at']->format('H:i') }}@endif
                 @else
                     Versão não identificada
-                @endif
-                @if (app()->environment('local'))
-                    @foreach (\App\Support\SystemInfo::databases() as $banco)
-                        <span>{{ $banco }}</span>
-                    @endforeach
                 @endif
             </p>
         </main>
