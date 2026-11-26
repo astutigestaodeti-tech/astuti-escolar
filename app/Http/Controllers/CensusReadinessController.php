@@ -46,7 +46,7 @@ class CensusReadinessController extends Controller
         $ano = Tabelas::anoMaisRecente();
         $year = SchoolYear::query()->where('year', $reference)->first();
         // Sem ano correspondente, a consulta deve retornar zero matrículas.
-        $data = $readiness->forNetwork(CarbonImmutable::create($reference, 3, 31), $year?->id ?? '00000000-0000-0000-0000-000000000000');
+        $data = $readiness->forNetwork(CarbonImmutable::create($reference, 3, 31), $year?->id, requireYear: true);
         $layoutYear = $reference === $ano ? $year : null;
         $list = $data['rows']->filter(fn (array $item): bool => $item['warnings'] !== [])
             ->when($validated['escola'] ?? null, fn ($rows, string $school) => $rows->where('school_id', $school))
