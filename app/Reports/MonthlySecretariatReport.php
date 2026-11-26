@@ -152,7 +152,7 @@ class MonthlySecretariatReport
         // O serviço calcula todas as matrículas da escola em lote.
         if ($from->toDateString() <= $year->end_date->toDateString() && $until->toDateString() >= $year->start_date->toDateString()) {
             foreach ($schools as $school) {
-                $entries = $this->alerts->enrollments($school, $year)
+                $entries = $this->alerts->enrollments($school, $year, summaryOnly: true)
                     ->filter(fn (StudentEnrollment $entry): bool => $entry->started_at === null || $entry->started_at->lte($until));
                 $summaries = $this->alerts->summaries($school, $year, $entries, $until);
                 $alerts += collect($summaries)->where('alert', true)->count();

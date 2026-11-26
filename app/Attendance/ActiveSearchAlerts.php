@@ -58,11 +58,25 @@ class ActiveSearchAlerts
             ->with(['marks' => fn ($query) => $query->whereIn('student_id', $enrollments->pluck('student_id')->unique())
                 ->select('id', 'attendance_session_id', 'student_id', 'status')])
             ->get()->groupBy('school_class_id');
+        // Indexa as marcas uma única vez por sessão, em vez de procurar
+        // linearmente cada aluno em todas as chamadas da turma.
+        $indexed = $sessions->map(fn (Collection $classSessions): Collection => $classSessions->mapWithKeys(
+            fn ($session): array => [$session->attendance_date->toDateString() => $session->marks->groupBy('student_id')->map(fn (Collection $marks) => $marks->first()->status)]
+        ));
+        $schoolDays = [];
+        for ($date = Carbon::parse($start); $date->toDateString() <= $end; $date->addDay()) {
+            $key = $date->toDateString();
+            $kinds = ($calendar->get($key) ?? collect())->pluck('kind');
+            if ($kinds->intersect(['holiday', 'recess', 'non_school_day'])->isEmpty()
+                && ($date->isWeekday() || $kinds->contains('extra_school_day'))) {
+                $schoolDays[] = $key;
+            }
+        }
         $monthStart = max($start, Carbon::parse($end)->startOfMonth()->toDateString());
         $result = [];
         foreach ($enrollments as $entry) {
-            $marks = ($sessions->get($entry->school_class_id) ?? collect())->mapWithKeys(
-                fn ($session) => [$session->attendance_date->toDateString() => $session->marks->firstWhere('student_id', $entry->student_id)?->status]
+            $marks = ($indexed->get($entry->school_class_id) ?? collect())->map(
+                fn (Collection $marks) => $marks->get($entry->student_id)
             );
             // Não apagar um alerta só porque a próxima chamada ainda não foi feita.
             $lastRecorded = $marks->filter()->keys()->sort()->last();
@@ -73,12 +87,12 @@ class ActiveSearchAlerts
             $absences = 0;
             $justified = 0;
             $entryStart = max($start, $entry->started_at?->toDateString() ?? $start);
-            for ($date = Carbon::parse($entryStart); $date->toDateString() <= $entryEnd; $date->addDay()) {
-                $key = $date->toDateString();
-                $kinds = ($calendar->get($key) ?? collect())->pluck('kind');
-                if ($kinds->intersect(['holiday', 'recess', 'non_school_day'])->isNotEmpty()
-                    || (! $date->isWeekday() && ! $kinds->contains('extra_school_day'))) {
+            foreach ($schoolDays as $key) {
+                if ($key < $entryStart) {
                     continue;
+                }
+                if ($key > $entryEnd) {
+                    break;
                 }
                 $mark = $marks->get($key);
                 // Sem chamada não se presume falta nem presença: o dia não conta e
