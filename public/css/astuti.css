@@ -91,10 +91,12 @@ button,input,select{font:inherit;color:inherit}
 
 .area{min-width:0;display:flex;flex-direction:column}
 .topo{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:0 36px;background:var(--folha);border-bottom:1px solid var(--linha)}
-.trilha{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--tinta-3);min-width:0}
-.trilha a{color:var(--tinta-3);text-decoration:none}
-.trilha a:hover{color:var(--caneta);text-decoration:underline}
-.trilha [aria-current]{color:var(--tinta);font-weight:700}
+.trilha{display:flex;align-items:center;gap:6px;font-size:15px;line-height:1.4;color:#526e91;min-width:0;padding:4px 8px;background:#eff6ff;border-radius:5px;white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.trilha>*{flex-shrink:0}
+.trilha a{color:#24558a;font-weight:500;text-decoration:none}
+.trilha a:hover,.trilha a:focus-visible{color:#173b65;text-decoration:underline}
+.trilha a:focus-visible{outline:2px solid #24558a;outline-offset:-2px;border-radius:2px}
+.trilha [aria-current]{color:#173b65;font-weight:700}
 .topo-acoes{display:flex;align-items:center;gap:14px}
 .ano-letivo{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--tinta-2);padding:6px 11px;border:1px solid var(--linha);border-radius:999px}
 .ano-letivo strong{color:var(--tinta)}
