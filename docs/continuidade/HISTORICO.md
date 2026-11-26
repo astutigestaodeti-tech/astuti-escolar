@@ -740,3 +740,8 @@ Entrega de doze capítulos e índice em `docs/manual/`, incluindo primeiro acess
 ## 26/11/2026 - Aba Agente no menu (#244, proposta)
 
 Integração de menu, rota, autorização por UUID local e 2FA real, auditoria de leitura, no-store, throttle, histórico filtrável e paginado, atualização de 8 segundos somente na aba visível. Sem banco novo, sem execução de comandos e sem acesso a dados escolares. CI, revisão, liberação controlada das rotas/configuração na VPS e homologação visual ainda necessários.
+
+
+## 26/11/2026 - Astuti Maintenance: contrato offline (#249, proposta)
+
+Primeiro bloco: validador de pedido declarativo v1, Ed25519, escopo local, validade, sequência monotônica e catálogo somente diagnóstico, com testes negativos. Sem execução, endpoint, mudança de VPS, privilégio ou chave privada real. Estado durável, antirreplay completo, idempotência, inventário local e instalador ficam para as próximas unidades. CI e revisão pendentes antes de integração.
