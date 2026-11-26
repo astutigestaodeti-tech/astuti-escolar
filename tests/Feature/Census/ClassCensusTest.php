@@ -197,6 +197,23 @@ class ClassCensusTest extends TwoMunicipalityTestCase
             ->assertSessionHasErrors('semana_inicio');
     }
 
+    public function test_conferencia_da_rede_considera_vinculos_na_data_do_censo(): void
+    {
+        $this->tenant(function (): void {
+            ClassTeacherAssignment::query()->where('school_class_id', $this->classId)
+                ->update(['ends_on' => '2026-05-27']);
+            ClassTeacherAssignment::query()->where('school_class_id', $this->infantId)
+                ->update(['starts_on' => '2026-05-28']);
+        });
+
+        $this->travelTo(Carbon::parse('2026-06-15 10:00:00'));
+        $this->login('municipal_manager');
+        $this->put($this->classUrl(), $this->validData())->assertRedirect();
+        $this->get('/m/municipio-a/conferencia-do-censo')->assertOk()
+            ->assertViewHas('classes', fn ($classes): bool => $classes->get(self::ESCOLA_A1) === ['total' => 2, 'ready' => 1])
+            ->assertViewHas('staff', fn ($staff): bool => $staff->get(self::ESCOLA_A1)['total'] === 1);
+    }
+
     public function test_permissao_isolamento_e_conferencia_do_censo(): void
     {
         $this->login('teacher', [self::ESCOLA_A1]);
