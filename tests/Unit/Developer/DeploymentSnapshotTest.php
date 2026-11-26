@@ -59,13 +59,20 @@ final class DeploymentSnapshotTest extends TestCase
     public function test_stale_snapshot_preserves_history_without_inventing_health(): void
     {
         $data = $this->snapshot([
-            ['etapa' => 'implantado', 'epoch' => self::NOW - 120],
-            ['etapa' => 'rollback_concluido', 'epoch' => self::NOW - 100],
-        ], ['collected_at' => self::NOW - 90]);
+            ['etapa' => 'implantado', 'epoch' => self::NOW - 180],
+            ['etapa' => 'rollback_concluido', 'epoch' => self::NOW - 160],
+        ], ['collected_at' => self::NOW - 151]);
 
         self::assertTrue($data['available']);
         self::assertTrue($data['stale']);
         self::assertSame('rollback_concluido', $data['events'][0]['stage']);
+    }
+
+    public function test_freshness_matches_two_minute_collection_with_tolerance(): void
+    {
+        self::assertFalse($this->snapshot([], ['collected_at' => self::NOW - 120])['stale']);
+        self::assertFalse($this->snapshot([], ['collected_at' => self::NOW - 150])['stale']);
+        self::assertTrue($this->snapshot([], ['collected_at' => self::NOW - 151])['stale']);
     }
 
     public function test_invalid_or_oversized_snapshots_fail_closed(): void

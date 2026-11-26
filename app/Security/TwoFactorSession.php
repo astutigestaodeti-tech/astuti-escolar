@@ -54,6 +54,16 @@ class TwoFactorSession
             || $this->verifiedWithin($request, $user, self::LOGIN_MAX_AGE_SECONDS);
     }
 
+    /** Console técnico: exige confirmação real, sem a exceção de desenvolvimento. */
+    public function isVerifiedWithoutBypass(Request $request, User $user): bool
+    {
+        return $request->hasSession()
+            && $user->status === 'active'
+            && is_string($user->two_factor_secret)
+            && $user->two_factor_secret !== ''
+            && $this->verifiedWithin($request, $user, self::LOGIN_MAX_AGE_SECONDS);
+    }
+
     /** Confirmação recente: exigida antes de ações delicadas. */
     public function isRecentlyVerified(Request $request, User $user): bool
     {

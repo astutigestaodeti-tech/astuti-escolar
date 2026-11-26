@@ -18,7 +18,8 @@ final class DeploymentSnapshot
 
     private const MAX_EVENTS = 1000;
 
-    private const MAX_AGE = 60;
+    // Coleta a cada 120 segundos, com tolerância de 30 segundos.
+    private const MAX_AGE = 150;
 
     private const RETENTION = 7776000;
 
