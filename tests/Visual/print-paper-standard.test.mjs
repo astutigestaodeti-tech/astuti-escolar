@@ -15,7 +15,7 @@ test('todos os estilos de página impressa usam A4 e margens institucionais', ()
             assert.doesNotMatch(rule[2], /\bmargin-(?:top|right|bottom|left)\s*:/, file);
         }
     }
-    assert.ok(count >= 9, 'As regras de página existentes precisam ser verificadas.');
+    assert.ok(count >= 10, 'As regras de página existentes precisam ser verificadas.');
 });
 
 test('estilo principal oferece A4 retrato como fallback e mantém frequência em paisagem', () => {

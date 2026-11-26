@@ -91,10 +91,12 @@ button,input,select{font:inherit;color:inherit}
 
 .area{min-width:0;display:flex;flex-direction:column}
 .topo{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:0 36px;background:var(--folha);border-bottom:1px solid var(--linha)}
-.trilha{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--tinta-3);min-width:0}
-.trilha a{color:var(--tinta-3);text-decoration:none}
-.trilha a:hover{color:var(--caneta);text-decoration:underline}
-.trilha [aria-current]{color:var(--tinta);font-weight:700}
+.trilha{display:flex;align-items:center;gap:6px;font-size:15px;line-height:1.4;color:#526e91;min-width:0;padding:4px 8px;background:#eff6ff;border-radius:5px;white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.trilha>*{flex-shrink:0}
+.trilha a{color:#24558a;font-weight:500;text-decoration:none}
+.trilha a:hover,.trilha a:focus-visible{color:#173b65;text-decoration:underline}
+.trilha a:focus-visible{outline:2px solid #24558a;outline-offset:-2px;border-radius:2px}
+.trilha [aria-current]{color:#173b65;font-weight:700}
 .topo-acoes{display:flex;align-items:center;gap:14px}
 .ano-letivo{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--tinta-2);padding:6px 11px;border:1px solid var(--linha);border-radius:999px}
 .ano-letivo strong{color:var(--tinta)}
@@ -105,6 +107,9 @@ button,input,select{font:inherit;color:inherit}
 .botao-sair:hover{border-color:var(--tinta-3);color:var(--tinta)}
 
 .conteudo{width:100%;max-width:1240px;padding:28px 36px 40px}
+/* A largura de leitura impressa é independente da área de trabalho. */
+@media screen{.conteudo{max-width:none;min-width:0}}
+@media screen and (max-width:640px){.conteudo{overflow-wrap:anywhere}}
 .rodape{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;margin-top:40px;padding-top:16px;border-top:1px solid var(--linha);font-size:13px;color:var(--tinta-3)}
 .rodape-versao{margin:8px 0 0;font-size:12px;color:var(--tinta-3);opacity:.85;font-variant-numeric:tabular-nums}
 .rodape-versao span{margin-left:12px;white-space:nowrap}
@@ -956,5 +961,16 @@ select.entrada{cursor:pointer}
     .hoje-acoes details{text-align:left}
 }
 
-/* Padrão institucional A4: superior 20mm, direita 20mm, inferior 20mm, esquerda 30mm. */
+/* Padrão institucional A4, inclusive documentos sem regra específica. */
 @page{size:A4 portrait;margin:20mm 20mm 20mm 30mm}
+
+/* Ajustes de toque sem alterar a impressão ou esconder colunas. */
+@media screen and (pointer:coarse){
+    .menu-item,.botao,.botao-sair{min-height:44px}
+    .entrada{min-height:44px;font-size:16px}
+}
+@media screen and (max-width:640px){
+    .topo{gap:8px;padding-inline:16px}
+    .topo-acoes{gap:8px;flex-shrink:0}
+    .conteudo{padding-inline:16px}
+}
