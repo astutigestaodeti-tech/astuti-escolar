@@ -1,0 +1,12 @@
+.agente-resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:14px;margin:16px 0 0}
+.agente-resumo>div{border:1px solid var(--linha,#d8dce2);border-radius:8px;padding:14px;min-width:0}
+.agente-resumo dt{font-size:.9rem;color:var(--tinta-2,#526478)}
+.agente-resumo dd{font-weight:700;margin:6px 0 0;overflow-wrap:anywhere}
+.agente-evento{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--linha,#d8dce2);border-left:4px solid #718096;padding:12px 14px;margin:0 0 8px;min-width:0}
+.agente-evento p{margin:4px 0 0;color:var(--tinta-2,#526478)}
+.agente-etapa-implantado,.agente-etapa-ci_aprovado{border-left-color:#237044}
+.agente-etapa-falha_execucao,.agente-etapa-falha_implantacao,.agente-etapa-versao_bloqueada{border-left-color:#a72e29}
+.agente-etapa-aguardando_ci,.agente-etapa-implantando,.agente-etapa-recuperando,.agente-etapa-implantacao_especial{border-left-color:#91620b}
+.agente-evento-links{display:flex;flex-wrap:wrap;gap:12px}
+.agente-evento-links a{overflow-wrap:anywhere}
+@media(max-width:640px){.agente-evento{align-items:flex-start;flex-direction:column}}
