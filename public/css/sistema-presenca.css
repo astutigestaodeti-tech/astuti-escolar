@@ -5,3 +5,23 @@
 .pagina-presenca .presenca-lancado{display:block;font-size:13px;color:var(--tinta-2);margin-bottom:6px}
 .pagina-presenca .presenca-lista form{margin:0}
 @media (max-width:640px){.pagina-presenca .busca-matriculas .filtro-ano,.pagina-presenca .busca-matriculas .campo{flex:0 0 auto}}
+
+/* Ajustar a lista nominal ao espaço disponível sem ocultar ações ou dados. */
+@media screen {
+    .pagina-presenca .presenca-lista{margin-top:16px;min-width:0}
+    .pagina-presenca .presenca-lista .rolagem{max-width:100%;overflow-x:auto}
+    .pagina-presenca .presenca-lista .tabela{width:100%;min-width:900px;table-layout:fixed}
+    .pagina-presenca .presenca-lista .tabela th,
+    .pagina-presenca .presenca-lista .tabela td{white-space:normal;overflow-wrap:anywhere;padding-inline:10px}
+    .pagina-presenca .presenca-lista .tabela th:first-child,
+    .pagina-presenca .presenca-lista .tabela td:first-child{width:20%;padding-left:var(--recuo-folha)}
+    .pagina-presenca .presenca-lista .tabela th:nth-child(2){width:7%}
+    .pagina-presenca .presenca-lista .tabela th:nth-child(3){width:8%}
+    .pagina-presenca .presenca-lista .tabela th:nth-child(4),
+    .pagina-presenca .presenca-lista .tabela th:nth-child(5){width:16%}
+    .pagina-presenca .presenca-lista .tabela th:nth-child(6){width:17%}
+    .pagina-presenca .presenca-lista .tabela th:last-child{width:16%}
+    .pagina-presenca .presenca-lista .tabela th:last-child,
+    .pagina-presenca .presenca-lista .tabela td:last-child{padding-right:var(--recuo-folha)}
+    .pagina-presenca .presenca-lista .botao{max-width:100%;padding-inline:8px;white-space:normal;text-align:center;line-height:1.3}
+}

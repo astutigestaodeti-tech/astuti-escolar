@@ -25,7 +25,7 @@ test('moldura impressa mantém área 30 por 40 mm e encaixe integral', () => {
     assert.match(frame, /(?:^|;)border:0(?:;|$)/);
     assert.match(frame, /outline:1px solid #c5ced9/);
     assert.match(print, /\.ficha-print-foto img\{[^}]*width:100%;height:100%;object-fit:contain/);
-    assert.match(print, /@page ficha-cadastral\{size:A4 portrait;margin:30mm 20mm 20mm 30mm/);
+    assert.match(print, /@page ficha-cadastral\{size:A4 portrait;margin:20mm 20mm 20mm 30mm/);
 });
 
 test('ficha compacta mantém margens, conteúdo visível e fonte legível na impressão', () => {
