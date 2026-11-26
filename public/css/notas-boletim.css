@@ -36,7 +36,7 @@
 .pagina-boletim .boletim-resumo{padding:12px 0;border-top:1px solid var(--linha)}
 .pagina-boletim .boletim-rodape{font-size:12px;color:var(--tinta-2);margin-top:12px}
 @media(max-width:650px){.pagina-notas .notas-filtros>label:not(.notas-checkbox),.pagina-notas .notas-filtros>.botao{flex:1 1 100%}}
-@page{size:A4 portrait;margin:30mm 20mm 20mm 30mm}
+@page{size:A4 portrait;margin:20mm 20mm 20mm 30mm}
 @media print{
     html,body.pagina-boletim{background:#fff!important;color:#000!important}
     .pagina-boletim .lateral,.pagina-boletim .topo,.pagina-boletim .folha-titulo,

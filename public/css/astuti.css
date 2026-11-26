@@ -752,7 +752,7 @@ select.entrada{cursor:pointer}
 .relatorio-mensal-assinaturas>div{border-top:1px solid var(--tinta);padding-top:5px}
 @media(max-width:760px){.relatorio-frequencia{padding:12px}.relatorio-mensal-cabecalho dl{grid-template-columns:1fr}.relatorio-mensal-assinaturas{gap:16px;margin:48px 0 8px}}
 
-@page frequencia-mensal{size:A4 landscape;margin:30mm 20mm 20mm 30mm}
+@page frequencia-mensal{size:A4 landscape;margin:20mm 20mm 20mm 30mm}
 @media print{
     body.impressao-frequencia .relatorio-frequencia{page:frequencia-mensal;border:0;padding:0;border-radius:0}
     body.impressao-frequencia .lateral,body.impressao-frequencia .topo,body.impressao-frequencia .conteudo>:not(.relatorio-frequencia){display:none!important}
@@ -907,7 +907,7 @@ select.entrada{cursor:pointer}
     .verificacao-publica{padding:20px 12px}
     .verificacao-dados>div{grid-template-columns:95px minmax(0,1fr)}
 }
-@page declaracao-matricula{size:A4 portrait;margin:30mm 20mm 20mm 30mm}
+@page declaracao-matricula{size:A4 portrait;margin:20mm 20mm 20mm 30mm}
 @media print{
     body.impressao-declaracao{page:declaracao-matricula;background:#fff;color:#111;font-family:Arial,sans-serif}
     body.impressao-declaracao .lateral,body.impressao-declaracao .topo,body.impressao-declaracao .declaracao-acoes,
@@ -962,7 +962,7 @@ select.entrada{cursor:pointer}
 }
 
 /* Padrão institucional A4, inclusive documentos sem regra específica. */
-@page{size:A4 portrait;margin:30mm 20mm 20mm 30mm}
+@page{size:A4 portrait;margin:20mm 20mm 20mm 30mm}
 
 /* Ajustes de toque sem alterar a impressão ou esconder colunas. */
 @media screen and (pointer:coarse){

@@ -21,6 +21,10 @@
 - Todo conteúdo dentro de um cartão (`.folha`), fora o título (`.folha-cabecalho`) e tabelas de borda a borda, fica dentro de `.folha-corpo` ou de um bloco que use `var(--recuo-folha)` (22 px; 16 px no celular). Nada de campo, botão, texto ou caixa encostado na borda.
 - Antes de abrir PR com tela nova ou alterada, inclua a tela em `tests/Feature/Layout/AllSchoolPagesOpenTest.php` e rode `ASTUTI_DUMP_TELAS=/tmp/telas php artisan test --filter=AllSchoolPagesOpenTest` seguido de `python3 scripts/qualidade/checar-margens.py /tmp/telas 1440 390`. O resultado precisa ser "Problemas de margem: 0" (a conferência também acusa campo e botão empilhados a menos de 6 px). Busca de lista usa o padrão `.busca` (campo com lupa e botão "Pesquisar" ao lado), como em Alunos e Servidores.
 
+## Padrão institucional de impressão (25/11/2026)
+
+- Todos os documentos impressos ou exportados em PDF usam papel A4, margem esquerda de 30 mm e margens superior, direita e inferior de 20 mm. Em CSS: `margin:20mm 20mm 20mm 30mm` (topo, direita, base, esquerda). A orientação retrato ou paisagem depende do documento, sem alterar as margens físicas. Esta regra substitui qualquer padrão de margens de impressão anterior. Não confundir com os recuos dos cartões da interface. Conferir regras `@page` globais e nomeadas, estilos específicos, PDFs e prévias de impressão; evitar margens duplicadas e cortes de conteúdo.
+
 ## Modo de trabalho aprovado em 21/11/2026
 
 1. **Processo proporcional ao risco.** Correções pequenas de consulta, filtro, visual e texto dispensam novas especificações e planos em `docs/superpowers`. Entregue código e teste juntos em uma unidade lógica. Use o ciclo completo de análise, desenho, testes e revisão para importadores, integração SED, auditoria, permissões, segundo fator, exclusão, restauração e migrações de banco.
