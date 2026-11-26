@@ -3,55 +3,68 @@
 namespace App\Support;
 
 use Illuminate\Support\Carbon;
+use JsonException;
 
 /**
- * Versão em execução e banco em uso, para o rodapé. Lê o Git direto dos
- * arquivos (sem executar comandos) e nunca falha: sem Git, diz que não sabe.
+ * Lê somente a identificação da versão publicada pelo agente.
+ * Nunca consulta o Git, executa comandos ou expõe configurações de banco.
  */
 final class SystemInfo
 {
-    /** @return array{branch: ?string, commit: ?string, updated_at: ?Carbon} */
-    public static function version(?string $basePath = null): array
+    public const VERSION_PATH = '/var/lib/astuti-release-view/version.json';
+
+    /** @return array{branch: null, commit: ?string, updated_at: ?Carbon} */
+    public static function version(?string $manifestPath = null): array
     {
-        $git = self::gitDir($basePath ?? base_path());
+        $path = $manifestPath ?? self::VERSION_PATH;
         $empty = ['branch' => null, 'commit' => null, 'updated_at' => null];
-        if ($git === null || ! is_readable($git.'/HEAD')) {
+
+        clearstatcache(true, $path);
+        if (realpath($path) !== $path || ! is_file($path)) {
             return $empty;
         }
 
-        $head = trim((string) file_get_contents($git.'/HEAD'));
-        $times = [filemtime($git.'/HEAD') ?: 0];
-        $branch = null;
-        $commit = null;
-
-        if (str_starts_with($head, 'ref: ')) {
-            $ref = trim(substr($head, 5));
-            $branch = str_starts_with($ref, 'refs/heads/') ? substr($ref, 11) : $ref;
-            if (is_readable($git.'/'.$ref)) {
-                $commit = trim((string) file_get_contents($git.'/'.$ref));
-                $times[] = filemtime($git.'/'.$ref) ?: 0;
-            } elseif (is_readable($git.'/packed-refs')) {
-                foreach (file($git.'/packed-refs', FILE_IGNORE_NEW_LINES) ?: [] as $line) {
-                    if (str_ends_with($line, ' '.$ref)) {
-                        $commit = substr($line, 0, 40);
-                        $times[] = filemtime($git.'/packed-refs') ?: 0;
-                    }
-                }
-            }
-        } elseif (preg_match('/\A[0-9a-f]{40}\z/', $head) === 1) {
-            $commit = $head;
+        $file = @fopen($path, 'rb');
+        if ($file === false) {
+            return $empty;
         }
 
+        try {
+            $raw = stream_get_contents($file, 4097);
+        } finally {
+            fclose($file);
+        }
+
+        if (! is_string($raw) || strlen($raw) > 4096) {
+            return $empty;
+        }
+
+        try {
+            $data = json_decode($raw, true, 8, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return $empty;
+        }
+
+        if (! is_array($data)
+            || ($data['schema'] ?? null) !== 1
+            || ! is_string($data['commit'] ?? null)
+            || preg_match('/\A[0-9a-f]{40}\z/D', $data['commit']) !== 1) {
+            return $empty;
+        }
+
+        $timestamp = $data['deployed_at'] ?? null;
+
         return [
-            'branch' => $branch,
-            'commit' => $commit !== null && preg_match('/\A[0-9a-f]{7,64}\z/', $commit) === 1 ? substr($commit, 0, 7) : null,
-            'updated_at' => Carbon::createFromTimestamp(max($times))->setTimezone('America/Sao_Paulo'),
+            'branch' => null,
+            'commit' => substr($data['commit'], 0, 7),
+            'updated_at' => is_int($timestamp) && $timestamp > 0 && $timestamp <= now()->getTimestamp()
+                ? Carbon::createFromTimestamp($timestamp)->setTimezone('America/Sao_Paulo')
+                : null,
         ];
     }
 
     /**
-     * Bancos em uso nesta tela: o da plataforma e, dentro de uma prefeitura,
-     * o da prefeitura. Só para ambiente de desenvolvimento.
+     * Informações de conexão para uso técnico interno, nunca no rodapé.
      *
      * @return list<string>
      */
@@ -68,21 +81,5 @@ final class SystemInfo
         }
 
         return $lines;
-    }
-
-    private static function gitDir(string $basePath): ?string
-    {
-        $git = $basePath.'/.git';
-        if (is_dir($git)) {
-            return $git;
-        }
-        // Worktree: ".git" é um arquivo com "gitdir: caminho".
-        if (is_file($git) && preg_match('/\Agitdir:\s*(.+)\z/', trim((string) file_get_contents($git)), $m) === 1) {
-            $dir = str_starts_with($m[1], '/') ? $m[1] : $basePath.'/'.$m[1];
-
-            return is_dir($dir) ? $dir : null;
-        }
-
-        return null;
     }
 }
