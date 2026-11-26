@@ -16,8 +16,9 @@ use Illuminate\Support\Collection;
 /** Conferência dos servidores elegíveis, com consultas em lote. */
 final class ConferenciaDeServidores
 {
-    public function para(Collection $escolas, ?SchoolYear $ano): Collection
+    public function para(Collection $escolas, ?SchoolYear $ano, ?string $dataReferencia = null): Collection
     {
+        $dataReferencia ??= today()->toDateString();
         $ids = $escolas->pluck('id');
         $escolasCenso = SchoolCensus::query()->whereIn('school_id', $ids)->get()->keyBy('school_id');
         $turmas = $ano === null ? collect() : SchoolClass::query()->whereIn('school_id', $ids)
@@ -25,8 +26,8 @@ final class ConferenciaDeServidores
         $turmasPorId = $turmas->keyBy('id');
         $turmasCenso = SchoolClassCensus::query()->whereIn('school_class_id', $turmas->pluck('id'))->get()->keyBy('school_class_id');
         $atribuicoes = ClassTeacherAssignment::query()->whereIn('school_class_id', $turmas->pluck('id'))
-            ->where('starts_on', '<=', today()->toDateString())
-            ->where(fn ($query) => $query->whereNull('ends_on')->orWhere('ends_on', '>=', today()->toDateString()))
+            ->where('starts_on', '<=', $dataReferencia)
+            ->where(fn ($query) => $query->whereNull('ends_on')->orWhere('ends_on', '>=', $dataReferencia))
             ->get()->groupBy('staff_member_id');
         $servidores = StaffMember::query()->whereIn('school_id', $ids)->where('status', 'active')
             ->where(fn ($query) => $query->whereIn('role', ['director', 'coordinator'])->orWhereIn('id', $atribuicoes->keys()))
