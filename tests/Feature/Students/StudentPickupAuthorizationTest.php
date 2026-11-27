@@ -127,6 +127,9 @@ class StudentPickupAuthorizationTest extends TwoMunicipalityTestCase
         $this->assertSame('Ana Pessoa Fictícia', $audit->after['full_name']);
         $this->assertSame('[REDACTED]', $audit->after['document']);
         $this->assertSame('[REDACTED]', $audit->after['phone']);
+        $this->assertSame('[REDACTED]', $audit->after['notes']);
+        $this->assertSame('Buscar somente após combinar com a escola.', $authorization->notes);
+        $this->assertStringNotContainsString('Buscar somente', json_encode($audit->after, JSON_UNESCAPED_UNICODE));
         $this->assertNull($audit->before);
         $this->assertStringNotContainsString('12.345.678-X', json_encode($audit->after));
         $this->assertStringNotContainsString('11987654321', json_encode($audit->after));
@@ -182,6 +185,7 @@ class StudentPickupAuthorizationTest extends TwoMunicipalityTestCase
             'phone' => '(11) 4444-5555',
             'document' => 'CPF 123.456.789-09',
             'relationship' => 'Transporte escolar',
+            'notes' => 'Restrição familiar fictícia para conferência.',
         ]))->assertRedirect($this->showUrl().'#quem-pode-buscar');
 
         [$person, $audit] = $this->inMunicipality(fn (): array => [
@@ -199,6 +203,10 @@ class StudentPickupAuthorizationTest extends TwoMunicipalityTestCase
         $this->assertSame('[REDACTED]', $audit->after['phone']);
         $this->assertSame('[REDACTED]', $audit->before['document']);
         $this->assertSame('[REDACTED]', $audit->after['document']);
+        $this->assertSame('[REDACTED]', $audit->before['notes']);
+        $this->assertSame('[REDACTED]', $audit->after['notes']);
+        $this->assertSame('Restrição familiar fictícia para conferência.', $person->notes);
+        $this->assertStringNotContainsString('Restrição familiar', json_encode([$audit->before, $audit->after], JSON_UNESCAPED_UNICODE));
         $this->assertStringNotContainsString('123.456.789-09', json_encode([$audit->before, $audit->after]));
     }
 
@@ -368,6 +376,7 @@ class StudentPickupAuthorizationTest extends TwoMunicipalityTestCase
         $this->assertSame('Ana Pessoa Fictícia', $audit->before['full_name']);
         $this->assertSame('[REDACTED]', $audit->before['phone']);
         $this->assertSame('[REDACTED]', $audit->before['document']);
+        $this->assertSame('[REDACTED]', $audit->before['notes']);
         $this->assertSame($motivo, $audit->after['motivo']);
         $this->assertStringNotContainsString('11987654321', json_encode([$audit->before, $audit->after]));
         $this->assertStringNotContainsString('12.345.678-X', json_encode([$audit->before, $audit->after]));
