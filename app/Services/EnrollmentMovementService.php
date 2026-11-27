@@ -18,7 +18,7 @@ class EnrollmentMovementService
         $this->withLockedEnrollment($enrollment, $version, function (StudentEnrollment $locked) use ($destinationId, $date): void {
             $this->validateDate($locked, $date);
 
-            if ($destinationId === $locked->school_id) {
+            if (strtolower($destinationId) === $locked->school_id) {
                 throw ValidationException::withMessages(['escola_destino_id' => 'Escolha uma escola de destino diferente da origem.']);
             }
 

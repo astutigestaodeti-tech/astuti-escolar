@@ -3,6 +3,7 @@
 namespace Tests\Feature\Students;
 
 use App\Models\Tenant\AuditLog;
+use App\Models\Tenant\School;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
@@ -148,6 +149,53 @@ class EnrollmentMovementTest extends TwoMunicipalityTestCase
         $this->tenant(function () use ($fixture): void {
             $this->assertSame('active', StudentEnrollment::query()->findOrFail($fixture['enrollment'])->status);
             $this->assertSame(2, StudentEnrollment::query()->where('student_id', $fixture['student'])->count());
+        });
+    }
+
+    public function test_transferencia_reconhece_a_escola_de_origem_com_uuid_em_maiusculas(): void
+    {
+        $schoolId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+        $this->tenant(fn () => School::query()->create([
+            'id' => $schoolId,
+            'name' => 'Escola Fictícia de Origem',
+            'status' => 'active',
+        ]));
+        $fixture = $this->fixture(school: $schoolId);
+        $user = $this->account('gestor-origem-transferencia@example.invalid', 'municipal_manager');
+        $this->confirmed($user);
+
+        $this->post($this->actionUrl($fixture, 'transferir', $schoolId), $this->transferData($fixture, [
+            'escola_destino_id' => strtoupper($schoolId),
+        ]))->assertSessionHasErrors([
+            'escola_destino_id' => 'Escolha uma escola de destino diferente da origem.',
+        ]);
+
+        $this->tenant(function () use ($fixture): void {
+            $this->assertSame('active', StudentEnrollment::query()->findOrFail($fixture['enrollment'])->status);
+            $this->assertSame(1, StudentEnrollment::query()->where('student_id', $fixture['student'])->count());
+        });
+    }
+
+    public function test_reenvio_da_transferencia_preserva_matriculas_e_auditoria(): void
+    {
+        $fixture = $this->fixture();
+        $user = $this->account('secretaria-reenvio-transferencia@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->confirmed($user);
+
+        $url = $this->actionUrl($fixture, 'transferir');
+        $payload = $this->transferData($fixture);
+        $this->post($url, $payload)->assertSessionHasNoErrors()->assertRedirect();
+        $this->post($url, $payload)->assertSessionHasErrors('versao');
+
+        $this->tenant(function () use ($fixture): void {
+            $origin = StudentEnrollment::query()->findOrFail($fixture['enrollment']);
+            $destination = StudentEnrollment::query()->where('student_id', $fixture['student'])
+                ->where('school_id', self::ESCOLA_A2)->sole();
+
+            $this->assertSame('transferred', $origin->status);
+            $this->assertSame('active', $destination->status);
+            $this->assertSame(1, AuditLog::query()->where('auditable_id', $origin->id)->where('action', 'updated')->count());
+            $this->assertSame(1, AuditLog::query()->where('auditable_id', $destination->id)->where('action', 'created')->count());
         });
     }
 
