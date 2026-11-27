@@ -81,8 +81,11 @@ class SistemaPresencaController extends Controller
         abort_if($ano === null, 404);
         $data = $request->validate([
             'aluno' => ['required', 'uuid'],
+            'ano_letivo' => ['bail', 'required', 'uuid', Rule::in([$ano->id])],
             'periodo' => ['required', 'integer', Rule::in(array_keys(SistemaPresenca::PERIODOS))],
             'lancado' => ['required', Rule::in(['0', '1'])],
+        ], [
+            'ano_letivo.*' => 'A página está desatualizada. Confira o ano letivo exibido e tente novamente.',
         ]);
         $existe = StudentEnrollment::query()->where('school_id', $school->id)->where('school_year_id', $ano->id)
             ->where('student_id', $data['aluno'])->exists();

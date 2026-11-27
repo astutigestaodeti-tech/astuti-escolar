@@ -124,18 +124,52 @@ class SistemaPresencaTest extends TwoMunicipalityTestCase
         $this->get($this->url().'?periodo=1&situacao=abaixo')->assertOk()->assertSee('Ana Fictícia Souza')->assertSee('Pedro Fictício Lima');
         $this->get($this->url().'?periodo=1&busca=pedro')->assertOk()->assertDontSee('Ana Fictícia Souza');
 
-        $this->post($this->url(), ['aluno' => $this->ids['ana'], 'periodo' => 1, 'lancado' => '1'])->assertRedirect();
+        $this->post($this->url(), ['aluno' => $this->ids['ana'], 'ano_letivo' => $this->ids['year'], 'periodo' => 1, 'lancado' => '1'])->assertRedirect();
         $this->get($this->url().'?periodo=1')->assertSee('Lançado em')->assertSee('Lançados: 1.');
-        $this->post($this->url(), ['aluno' => $this->ids['ana'], 'periodo' => 1, 'lancado' => '1'])->assertRedirect();
+        $this->post($this->url(), ['aluno' => $this->ids['ana'], 'ano_letivo' => $this->ids['year'], 'periodo' => 1, 'lancado' => '1'])->assertRedirect();
         $this->assertSame(1, $this->tenant(fn () => PresenceRegistration::query()->count()));
-        $this->post($this->url(), ['aluno' => $this->ids['ana'], 'periodo' => 1, 'lancado' => '0'])->assertRedirect();
+        $this->post($this->url(), ['aluno' => $this->ids['ana'], 'ano_letivo' => $this->ids['year'], 'periodo' => 1, 'lancado' => '0'])->assertRedirect();
         $this->assertSame(0, $this->tenant(fn () => PresenceRegistration::query()->count()));
 
         $logs = $this->tenant(fn () => AuditLog::query()->where('action', 'like', 'presence_registration.%')->orderBy('occurred_at')->pluck('action')->all());
         $this->assertSame(['presence_registration.marked', 'presence_registration.unmarked'], $logs);
 
         // Aluno de outra escola não pode ser marcado.
-        $this->post($this->url(), ['aluno' => (string) Str::uuid(), 'periodo' => 1, 'lancado' => '1'])->assertNotFound();
+        $this->post($this->url(), ['aluno' => (string) Str::uuid(), 'ano_letivo' => $this->ids['year'], 'periodo' => 1, 'lancado' => '1'])->assertNotFound();
+    }
+
+    public function test_formulario_de_ano_anterior_nao_registra_frequencia_no_novo_ano(): void
+    {
+        $nextYear = $this->tenant(function (): SchoolYear {
+            $year = SchoolYear::query()->create([
+                'id' => (string) Str::uuid(), 'year' => 2027, 'start_date' => '2027-02-01', 'end_date' => '2027-12-17', 'status' => 'active',
+            ]);
+            $class = SchoolClass::query()->create([
+                'id' => (string) Str::uuid(), 'school_id' => self::ESCOLA_A1, 'school_year_id' => $year->id,
+                'name' => '4º Ano A', 'stage' => 'Ensino Fundamental', 'modality' => 'Regular', 'shift' => 'Manhã', 'status' => 'active',
+            ]);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $this->ids['ana'], 'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $year->id, 'school_class_id' => $class->id, 'status' => 'active',
+            ]);
+
+            return $year;
+        });
+        $this->login('school_secretary', [self::ESCOLA_A1]);
+        $page = $this->url().'?periodo=1';
+        $this->get($page)->assertOk()
+            ->assertSee('name="ano_letivo" value="'.$this->ids['year'].'"', false);
+
+        $this->travelTo(Carbon::parse('2027-04-06 10:00:00'));
+        $this->login('school_secretary', [self::ESCOLA_A1]);
+        $payload = ['aluno' => $this->ids['ana'], 'ano_letivo' => $this->ids['year'], 'periodo' => 1, 'lancado' => '1'];
+        $this->from($page)->post($this->url(), $payload)->assertRedirect($page)->assertSessionHasErrors('ano_letivo');
+        $this->get($page)->assertOk()->assertSee('A página está desatualizada.')
+            ->assertSee('name="ano_letivo" value="'.$nextYear->id.'"', false);
+        $this->assertSame(0, $this->tenant(fn () => PresenceRegistration::query()->count()));
+
+        $this->post($this->url(), [...$payload, 'ano_letivo' => $nextYear->id])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame($nextYear->id, $this->tenant(fn () => PresenceRegistration::query()->sole()->school_year_id));
     }
 
     public function test_gestao_ve_resumo_da_rede_e_professor_nao_acessa(): void
