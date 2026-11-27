@@ -818,7 +818,7 @@ class ConfirmedStudentImportController extends Controller
         if (! is_string($row['name'] ?? null) || mb_strlen($row['name']) < 5 || mb_strlen($row['name']) > 180
             || ! in_array($row['class_id'] ?? null, $classIds, true)
             || ! (is_null($row['birth_date'] ?? null) || (is_string($row['birth_date']) && preg_match('/\A\d{4}-\d{2}-\d{2}\z/', $row['birth_date']) === 1))
-            || ! (is_null($row['ra'] ?? null) || (is_string($row['ra']) && preg_match('/\A\d{9,12}-[\dX]\/[A-Z]{2}\z/', $row['ra']) === 1))) {
+            || ! (is_null($row['ra'] ?? null) || (is_string($row['ra']) && preg_match('/\A\d{9,12}-[\dX]\/[A-Z]{2}\z/', $row['ra']) === 1 && isset(BrazilianStates::NAMES[substr($row['ra'], -2)])))) {
             throw ValidationException::withMessages(['lote' => 'A conferência está desatualizada ou contém turma/dados inválidos. Envie a planilha novamente.']);
         }
     }

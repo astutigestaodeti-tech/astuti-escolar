@@ -150,6 +150,51 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertSame([3, 3, 1], $this->contagens());
     }
 
+    public function test_importacao_preserva_zeros_do_ra_e_cpf_e_deixa_uf_inexistente_pendente(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+        $file = $this->planilha([
+            ['Nome', 'Data de nascimento', 'Turma', 'RA', 'CPF do aluno'],
+            ['Ana Identidade Fictícia', '01/02/2020', '1A', '0001234567890/sp', '01234567890'],
+            ['Bia Documento Fictício', '03/04/2020', '1A', '000987654321-1/XX', '00000000000'],
+            ['Caio Sem Documento Fictício', '05/06/2020', '1A', '', ''],
+        ]);
+        try {
+            [$token, $confirmations] = $this->preparar('identidade.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+        $payload = json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR);
+        $rows = collect($payload['rows'])->keyBy('name');
+        $this->assertSame('000123456789-0/SP', $rows['Ana Identidade Fictícia']['ra']);
+        $this->assertSame('012.345.678-90', $rows['Ana Identidade Fictícia']['census']['cpf']);
+        $this->assertNull($rows['Bia Documento Fictício']['ra']);
+        $this->assertArrayNotHasKey('cpf', $rows['Bia Documento Fictício']['census']);
+        $this->assertContains('ra', array_column($rows['Bia Documento Fictício']['pending'], 'field'));
+        $this->assertContains('cpf', array_column($rows['Bia Documento Fictício']['pending'], 'field'));
+        $this->assertNull($rows['Caio Sem Documento Fictício']['ra']);
+        $this->assertArrayNotHasKey('cpf', $rows['Caio Sem Documento Fictício']['census']);
+
+        // Prévia antiga autenticada com UF inválida também não pode gravar.
+        $payload['rows'][0]['ra'] = '000123456789-0/XX';
+        $oldToken = Crypt::encryptString(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+        $this->post($this->url().'/confirmar', ['lote' => $oldToken, 'confirmados' => $confirmations])->assertSessionHasErrors('lote');
+        $this->assertSame([0, 0, 0], $this->contagens());
+
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'confirmados' => $confirmations])->assertRedirect($this->url());
+        $this->assertSame([3, 3, 1], $this->contagens());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $students = Student::query()->get()->keyBy('full_name');
+            $this->assertSame('000123456789-0/SP', $students['Ana Identidade Fictícia']->ra);
+            $this->assertSame('012.345.678-90', $students['Ana Identidade Fictícia']->cpf);
+            foreach (['Bia Documento Fictício', 'Caio Sem Documento Fictício'] as $name) {
+                $this->assertNull($students[$name]->ra);
+                $this->assertNull($students[$name]->cpf);
+            }
+        });
+    }
+
     public function test_envio_e_previa_nao_gravam_alunos_nem_matriculas(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
