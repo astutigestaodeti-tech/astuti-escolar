@@ -1,0 +1,133 @@
+name: Ensaio isolado de layout 290 e 292
+
+on:
+  push:
+    branches: [qa/layout-fase2-290-292]
+
+permissions:
+  contents: read
+
+jobs:
+  renderizar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sha: faefd0d9a12d23c0eb561b8bd633eca3b868e183
+            pr: '290'
+          - sha: 39ea57a6f0477fddacbe3808b50a3d1865947ee9
+            pr: '292'
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci_only_user
+          POSTGRES_DB: postgres
+          POSTGRES_USER: astuti_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U astuti_ci -d postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      PLATFORM_DB_HOST: 127.0.0.1
+      PLATFORM_DB_PORT: '5432'
+      PLATFORM_DB_DATABASE: astuti_platform_test
+      PLATFORM_DB_USERNAME: astuti_ci
+      PLATFORM_DB_PASSWORD: ci_only_user
+      TENANCY_INTEGRATION: '1'
+      TENANCY_TEST_DB_HOST: 127.0.0.1
+      TENANCY_TEST_DB_PORT: '5432'
+      TENANCY_TEST_DB_A: astuti_tenant_a_test
+      TENANCY_TEST_DB_B: astuti_tenant_b_test
+      TENANCY_TEST_DB_USER: astuti_ci
+      TENANCY_TEST_DB_PASSWORD: ci_only_user
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.sha }}
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, gd, exif
+          coverage: none
+
+      - name: Preparar dados de teste
+        shell: bash
+        run: |
+          for database in astuti_platform_test astuti_tenant_a_test astuti_tenant_b_test; do
+            PGPASSWORD=ci_only_user psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U astuti_ci -d postgres -c "CREATE DATABASE $database WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+          done
+          composer install --no-interaction --prefer-dist --no-progress
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Renderizar telas fictícias
+        shell: bash
+        env:
+          PR: ${{ matrix.pr }}
+        run: |
+          mkdir -p "${RUNNER_TEMP}/astuti-telas" "${RUNNER_TEMP}/astuti-alvo"
+          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=test_todas_as_telas_da_escola_abrem_para_a_direcao
+          if [ "$PR" = 290 ]; then
+            cp "${RUNNER_TEMP}/astuti-telas/aluno_imprimir_previa.html" "${RUNNER_TEMP}/astuti-alvo/"
+          else
+            cp "${RUNNER_TEMP}/astuti-telas"/sistema_presenca{,_p1,_aviso}.html "${RUNNER_TEMP}/astuti-alvo/"
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Aferir recuos e impressão com Chromium
+        shell: bash
+        if: always()
+        env:
+          PR: ${{ matrix.pr }}
+        run: |
+          python -m pip install 'playwright==1.51.0' 'PyMuPDF==1.25.5'
+          python -m playwright install --with-deps chromium
+          find "${RUNNER_TEMP}/astuti-alvo" -name '*.html' -type f | grep -q .
+          margin_status=0
+          python scripts/qualidade/checar-margens.py "${RUNNER_TEMP}/astuti-alvo" 1440 390 || margin_status=$?
+          if [ "$PR" = 290 ]; then
+            python - <<'PY'
+          import os
+          from pathlib import Path
+          import fitz
+          from playwright.sync_api import sync_playwright
+
+          source = Path(os.environ['RUNNER_TEMP'], 'astuti-alvo', 'aluno_imprimir_previa.html')
+          with sync_playwright() as playwright:
+              browser = playwright.chromium.launch()
+              page = browser.new_page()
+              page.goto(source.as_uri())
+              assert page.locator('.ficha-print-papel').is_visible()
+              pdf = fitz.open(stream=page.pdf(prefer_css_page_size=True, print_background=True))
+              assert len(pdf) == 1, len(pdf)
+              printed = pdf[0]
+              assert 'Ficha cadastral do aluno' in printed.get_text()
+              width, height = (value * 25.4 / 72 for value in (printed.rect.width, printed.rect.height))
+              assert abs(width - 210) < 0.5 and abs(height - 297) < 0.5, (width, height)
+
+              # A borda sentinela de posição fixa demarca a área útil da página.
+              page.add_style_tag(content='@media print {.ficha-print-papel::after {content:"";position:fixed;inset:0;border:1px solid magenta}}')
+              probe = fitz.open(stream=page.pdf(prefer_css_page_size=True, print_background=True))
+              areas = [draw['rect'] for draw in probe[0].get_drawings() if draw['color'] == (1, 0, 1)]
+              assert len(areas) == 1, areas
+              box = areas[0]
+              margins = tuple(round(value * 25.4 / 72, 1) for value in (box.x0, box.y0, printed.rect.width - box.x1, printed.rect.height - box.y1))
+              print(f'A4: {width:.1f} × {height:.1f} mm. Margens esquerda, topo, direita e base: {margins} mm')
+              assert all(abs(value - target) < 0.6 for value, target in zip(margins, (30, 20, 20, 20))), margins
+          PY
+          fi
+          exit "$margin_status"
