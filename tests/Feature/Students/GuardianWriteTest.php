@@ -397,6 +397,41 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
             ->assertSee('Este responsável está ligado a 2 alunos. Nome, CPF, telefones, e-mail e trabalho alterados aqui valem para todos eles.');
     }
 
+    public function test_edicao_sem_telefone_recusa_alteracao_parcial_e_preserva_cadastro_compartilhado(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $this->post($this->url(), $this->data())->assertRedirect();
+        $this->post($this->url($this->studentSibling), $this->data(['phone' => '', 'is_primary_contact' => '0']))->assertRedirect();
+
+        [$linkId, $beforeGuardian, $beforeLinks, $beforeAudit] = $this->inMunicipality(fn (): array => [
+            StudentGuardian::query()->where('student_id', $this->studentA)->sole()->id,
+            Guardian::query()->sole()->getAttributes(),
+            StudentGuardian::query()->orderBy('id')->get()->map->getAttributes()->all(),
+            AuditLog::query()->whereIn('auditable_type', [Guardian::class, StudentGuardian::class])->count(),
+        ]);
+        $url = $this->url().'/'.$linkId;
+
+        $payload = $this->data(['full_name' => 'Nome Fictício Alterado', 'relationship' => 'other', 'is_primary_contact' => '0']);
+        unset($payload['phone']);
+        $this->put($url, $payload)->assertSessionHasErrors(['phone' => 'Informe um telefone para contato.']);
+        $this->put($url, array_replace($payload, ['phone' => '']))->assertSessionHasErrors(['phone' => 'Informe um telefone para contato.']);
+        $this->put($url, array_replace($payload, ['phone' => '123']))->assertSessionHasErrors(['phone' => 'Informe um telefone com DDD e 10 ou 11 números.']);
+
+        $this->inMunicipality(function () use ($beforeGuardian, $beforeLinks, $beforeAudit): void {
+            $this->assertSame($beforeGuardian, Guardian::query()->sole()->getAttributes());
+            $this->assertSame($beforeLinks, StudentGuardian::query()->orderBy('id')->get()->map->getAttributes()->all());
+            $this->assertSame($beforeAudit, AuditLog::query()->whereIn('auditable_type', [Guardian::class, StudentGuardian::class])->count());
+        });
+
+        $this->put($url, array_replace($payload, ['phone' => '(11) 3333-4444']))->assertRedirect();
+        $this->inMunicipality(function (): void {
+            $this->assertSame('1133334444', Guardian::query()->sole()->phone);
+            $this->assertSame(2, StudentGuardian::query()->count());
+            $this->assertSame('other', StudentGuardian::query()->where('student_id', $this->studentA)->sole()->relationship);
+            $this->assertSame('mother', StudentGuardian::query()->where('student_id', $this->studentSibling)->sole()->relationship);
+        });
+    }
+
     public function test_telefone_com_dez_digitos_aparece_formatado_na_ficha(): void
     {
         $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
