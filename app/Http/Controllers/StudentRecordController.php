@@ -482,9 +482,9 @@ class StudentRecordController extends Controller
     {
         return [
             'social_name' => ['nullable', 'string', 'min:3', 'max:180', 'regex:/\A\p{L}[\p{L}\p{M}\' .-]*\z/u'],
-            'sex' => ['nullable', 'in:'.implode(',', array_keys(self::SEX_LABELS))],
-            'race_color' => ['nullable', 'in:'.implode(',', array_keys(self::RACE_LABELS))],
-            'nationality' => ['nullable', 'in:'.implode(',', array_keys(self::NATIONALITY_LABELS))],
+            'sex' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::SEX_LABELS))],
+            'race_color' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::RACE_LABELS))],
+            'nationality' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::NATIONALITY_LABELS))],
             'birthplace_city' => ['nullable', 'string', 'max:120'],
             'birthplace_state' => ['nullable', 'string', 'size:2', BrazilianStates::VALIDATION_RULE],
             'cpf' => ['nullable', 'string', 'max:20', new Cpf],
@@ -517,32 +517,35 @@ class StudentRecordController extends Controller
         foreach (['sex', 'race_color', 'nationality'] as $field) {
             if ($request->exists($field)) {
                 $value = $request->input($field);
-                $merge[$field] = is_string($value) && trim($value) !== '' ? trim($value) : null;
+                $merge[$field] = is_string($value) ? (trim($value) === '' ? null : trim($value)) : $value;
             }
         }
         if ($request->exists('birthplace_state')) {
             $value = $request->input('birthplace_state');
-            $merge['birthplace_state'] = is_string($value) && trim($value) !== '' ? strtoupper(trim($value)) : null;
+            $merge['birthplace_state'] = is_string($value) ? (trim($value) === '' ? null : strtoupper(trim($value))) : $value;
         }
         if ($request->exists('cpf')) {
             $value = $request->input('cpf');
-            $merge['cpf'] = is_string($value) && trim($value) !== '' ? (Cpf::normalize($value) ?? trim($value)) : null;
+            $merge['cpf'] = is_string($value) ? (trim($value) === '' ? null : (Cpf::normalize($value) ?? trim($value))) : $value;
         }
         if ($request->exists('rg_number')) {
-            $merge['rg_number'] = IdentityDocuments::normalizeRg(is_string($request->input('rg_number')) ? $request->input('rg_number') : null);
+            $value = $request->input('rg_number');
+            $merge['rg_number'] = is_string($value) && preg_match('/\A[0-9Xx.\s\/-]*\z/u', $value) === 1 ? IdentityDocuments::normalizeRg($value) : $value;
         }
         if ($request->exists('rg_issuer')) {
             $value = $request->input('rg_issuer');
-            $merge['rg_issuer'] = is_string($value) && trim($value) !== '' ? strtoupper(trim($value)) : null;
+            $merge['rg_issuer'] = is_string($value) ? (trim($value) === '' ? null : strtoupper(trim($value))) : $value;
         }
         foreach (['rg_state', 'rg_issued_at'] as $field) {
             if ($request->exists($field)) {
                 $value = $request->input($field);
-                $merge[$field] = is_string($value) && trim($value) !== '' ? ($field === 'rg_state' ? strtoupper(trim($value)) : trim($value)) : null;
+                $merge[$field] = is_string($value) ? (trim($value) === '' ? null : ($field === 'rg_state' ? strtoupper(trim($value)) : trim($value))) : $value;
             }
         }
         if ($request->exists('birth_certificate')) {
-            $merge['birth_certificate'] = IdentityDocuments::normalizeBirthCertificate(is_string($request->input('birth_certificate')) ? $request->input('birth_certificate') : null);
+            $value = $request->input('birth_certificate');
+            $normalized = is_string($value) ? IdentityDocuments::normalizeBirthCertificate($value) : $value;
+            $merge['birth_certificate'] = $normalized === '' ? $value : $normalized;
         }
         $request->merge($merge);
     }
