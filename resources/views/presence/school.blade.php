@@ -63,7 +63,7 @@
     <section class="folha presenca-lista" aria-labelledby="titulo-lista">
         <div class="folha-cabecalho"><div><h2 id="titulo-lista">Frequência por aluno</h2><p>Percentual de presença em cada mês, sobre as chamadas registradas enquanto o aluno estava na turma.</p></div></div>
         @error('ano_letivo')
-            <p class="folha-corpo" role="alert">{{ $message }}</p>
+            <div class="folha-corpo"><p class="status-erro" role="alert">{{ $message }}</p></div>
         @enderror
         @if ($linhas->isEmpty())
             <div class="vazio">{{ $ano === null ? 'Cadastre o ano letivo para apurar a frequência.' : 'Nenhum aluno nesta seleção.' }}</div>
