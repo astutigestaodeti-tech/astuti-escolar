@@ -40,7 +40,7 @@ class StudentRecordController extends Controller
 {
     private const NAME_RULES = ['required', 'string', 'min:5', 'max:180', 'regex:/\A\p{L}[\p{L}\p{M}\' .-]*\z/u'];
 
-    private const BIRTH_RULES = ['nullable', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before:today'];
+    private const BIRTH_RULES = ['nullable', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before_or_equal:today'];
 
     private const ADDRESS_FIELDS = ['address_street', 'address_number', 'address_complement', 'address_district', 'address_city', 'address_state', 'postal_code', 'residence_zone'];
 
@@ -68,6 +68,7 @@ class StudentRecordController extends Controller
     public const NATIONALITY_LABELS = ['brasileira' => 'Brasileira', 'naturalizada' => 'Brasileira nascida no exterior ou naturalizada', 'estrangeira' => 'Estrangeira'];
 
     private const VALIDATION_MESSAGES = [
+        'birth_date.before_or_equal' => 'A data de nascimento não pode ser no futuro.',
         'social_name.regex' => 'O nome social aceita letras, espaços, apóstrofo, ponto e hífen.',
         'sex.in' => 'Selecione o sexo na lista.',
         'race_color.in' => 'Selecione a cor/raça na lista. Se a família não declarou, escolha "Não declarada".',
