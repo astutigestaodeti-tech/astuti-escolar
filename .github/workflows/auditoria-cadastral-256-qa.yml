@@ -47,7 +47,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@v6
         with:
-          ref: 09b7453fba71a8037cc791981b150e71a8fea52e
+          ref: 18c42e34528d450e7fe6c066a8b677bd2480e6cd
           path: app
           persist-credentials: false
       - uses: shivammathur/setup-php@v2
@@ -58,7 +58,7 @@ jobs:
           coverage: none
       - name: Preparar bancos e fixture exclusivamente descartáveis
         run: |
-          test "$(git rev-parse HEAD)" = "09b7453fba71a8037cc791981b150e71a8fea52e"
+          test "$(git rev-parse HEAD)" = "18c42e34528d450e7fe6c066a8b677bd2480e6cd"
           for database in astuti_platform_test astuti_tenant_a_test astuti_tenant_b_test; do
             PGPASSWORD=ci_only_user psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U astuti_ci -d postgres -c "CREATE DATABASE $database WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
           done
@@ -93,5 +93,8 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8765/up >/dev/null
           python ../harness/qa/auditoria-256/browser.py
-          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM students s JOIN student_enrollments e ON e.student_id=s.id JOIN student_guardians sg ON sg.student_id=s.id JOIN guardians g ON g.id=sg.guardian_id WHERE s.full_name='Alice Fictícia Auditoria' AND s.birth_date='2019-05-10' AND g.full_name='Responsável Fictício Auditoria' AND e.school_id='11111111-1111-4111-8111-111111111111' AND e.status='active';" | grep -qx 1
-          echo 'Persistência PostgreSQL: aluno, matrícula e vínculo confirmados.'
+          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM students s JOIN student_enrollments e ON e.student_id=s.id WHERE s.full_name='Alice Fictícia Auditoria Revisada' AND s.birth_date='2019-05-10' AND s.address_street='Estrada Fictícia de Auditoria' AND s.residence_zone='rural' AND e.school_id='11111111-1111-4111-8111-111111111111' AND e.status='active';" | grep -qx 1
+          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM guardians WHERE full_name='Responsável Fictício Auditoria';" | grep -qx 1
+          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM student_guardians sg JOIN students s ON s.id=sg.student_id WHERE s.full_name='Alice Fictícia Auditoria Revisada';" | grep -qx 0
+          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM audit_logs WHERE action='deleted' AND auditable_type LIKE '%StudentGuardian' AND \"after\"->>'motivo'='Desvínculo fictício para auditoria automatizada.' AND user_id IS NOT NULL;" | grep -qx 1
+          echo 'Persistência PostgreSQL: edição, matrícula, responsável preservado, desvínculo e autoria/motivo confirmados.'

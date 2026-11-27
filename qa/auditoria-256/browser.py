@@ -62,5 +62,45 @@ with sync_playwright() as p:
     assert response.status == 403, response.status
     page.goto(student_url)
     expect(page.get_by_text(guardian, exact=True).first).to_be_visible()
+    # Edição do registro e recuperação pela pesquisa.
+    page.goto(student_url + "/editar")
+    updated_name = "Alice Fictícia Auditoria Revisada"
+    page.locator("#full_name").fill(updated_name)
+    page.locator("#address_street").fill("Estrada Fictícia de Auditoria")
+    page.locator("#residence_zone").select_option("rural")
+    page.get_by_role("button", name="Salvar alterações", exact=True).click()
+    page.goto(student_url)
+    expect(page.get_by_text(updated_name, exact=True).first).to_be_visible()
+    expect(page.get_by_text("Estrada Fictícia de Auditoria", exact=False).first).to_be_visible()
+    page.goto(base + school + "/alunos")
+    page.locator("#busca-aluno").fill(updated_name)
+    page.get_by_role("button", name="Pesquisar", exact=True).click()
+    result = page.get_by_role("link", name="Abrir ficha de " + updated_name)
+    expect(result).to_have_count(1)
+    result.click()
+    expect(page.get_by_text(updated_name, exact=True).first).to_be_visible()
+
+    # Geração real da prévia, sem grupos sensíveis nem impressão automática.
+    page.goto(student_url + "/imprimir")
+    for checkbox in page.locator('input[name="grupos[]"]:checked').all():
+        checkbox.uncheck()
+    for group in ("matricula", "endereco", "foto"):
+        page.locator(f'input[name="grupos[]"][value="{group}"]').check()
+    page.get_by_role("button", name="Visualizar ficha para impressão").click()
+    expect(page.locator(".ficha-print-papel")).to_be_visible()
+    expect(page.locator(".ficha-print-papel")).to_contain_text(updated_name)
+    expect(page.locator(".ficha-print-papel")).to_contain_text("Estrada Fictícia de Auditoria")
+    expect(page.locator(".ficha-print-papel")).to_contain_text("Sem foto")
+    expect(page.locator(".ficha-print-papel")).not_to_contain_text(guardian)
+
+    # Desvínculo só com motivo válido; cadastro do responsável permanece.
+    page.goto(student_url)
+    page.get_by_role("link", name="Desvincular " + guardian + " do aluno", exact=True).click()
+    page.get_by_role("button", name="Confirmar desvínculo").click()
+    expect(page.get_by_text("Informe o motivo do desvínculo.").first).to_be_visible()
+    page.locator("#motivo").fill("Desvínculo fictício para auditoria automatizada.")
+    page.get_by_role("button", name="Confirmar desvínculo").click()
+    page.goto(student_url)
+    expect(page.get_by_text(guardian, exact=True)).to_have_count(0)
     browser.close()
-print("E2E: login + TOTP, nascimento futuro recusado, criação, vínculo, consulta de ficha e isolamento de escola aprovados.")
+print("E2E ampliado: login, TOTP, criação, vínculo, isolamento, edição, busca, prévia e desvínculo aprovados.")
