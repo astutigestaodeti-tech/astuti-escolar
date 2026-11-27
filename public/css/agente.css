@@ -12,3 +12,8 @@
 @media(max-width:640px){.agente-evento{align-items:flex-start;flex-direction:column}}
 
 .agente-filtro{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.agente-filtro>div{min-width:0;flex:1 1 220px}.agente-filtro select{width:100%}#agente-atualizacao{margin:12px 0 0}#agente-dados{display:grid;gap:16px;min-width:0}
+
+.agente-grupo{border:1px solid var(--linha,#d8dce2);border-left:4px solid #718096;border-radius:8px;padding:14px;margin:0 0 14px;min-width:0;overflow-wrap:anywhere}
+.agente-grupo.agente-etapa-implantado,.agente-grupo.agente-etapa-ci_aprovado{border-left-color:#237044}
+.agente-grupo.agente-etapa-falha_execucao,.agente-grupo.agente-etapa-falha_implantacao,.agente-grupo.agente-etapa-versao_bloqueada{border-left-color:#a72e29}
+.agente-grupo h3{margin:0 0 6px;font-size:1rem}.agente-grupo p{margin:6px 0}.agente-detalhes{margin-top:12px}.agente-detalhes summary{cursor:pointer;padding:6px 0}.agente-detalhes .agente-evento{margin:8px 0 0}
