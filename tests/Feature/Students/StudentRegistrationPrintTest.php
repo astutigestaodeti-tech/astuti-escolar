@@ -4,6 +4,7 @@ namespace Tests\Feature\Students;
 
 use App\Models\Tenant\AuditLog;
 use App\Models\Tenant\Guardian;
+use App\Models\Tenant\SchoolClass;
 use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
@@ -120,6 +121,38 @@ class StudentRegistrationPrintTest extends TwoMunicipalityTestCase
             ->assertSee('Turma:')->assertDontSee('Transporte:');
         $this->post($this->url(), ['grupos' => ['transporte']])->assertOk()
             ->assertSee('Transporte:')->assertDontSee('Turma:');
+    }
+
+    public function test_impressao_preserva_numero_zero_e_etapa_individual_da_matricula(): void
+    {
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $student = Student::query()->findOrFail($this->student);
+            $student->update(['address_number' => '0']);
+            $enrollment = $student->enrollments()->sole();
+            $class = SchoolClass::query()->create([
+                'id' => (string) Str::uuid(),
+                'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $enrollment->school_year_id,
+                'name' => 'Turma Multi Fictícia',
+                'stage' => 'Ensino fundamental multisseriado',
+                'modality' => 'regular',
+                'shift' => 'morning',
+                'status' => 'active',
+            ]);
+            $enrollment->update(['school_class_id' => $class->id, 'inep_stage_code' => 15]);
+        });
+        $this->signIn();
+        $this->post($this->url(), ['grupos' => ['endereco', 'matricula']])->assertOk()
+            ->assertSee('Rua Sintética de Teste, 0')
+            ->assertSee('Etapa: 2º ano')
+            ->assertDontSee('Etapa: Ensino fundamental multisseriado');
+
+        app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->findOrFail($this->student)->update(['address_street' => null]));
+        $this->post($this->url(), ['grupos' => ['endereco']])->assertOk()
+            ->assertSee('<dd>0</dd>', false);
+        $this->post($this->url(), ['grupos' => ['foto']])->assertOk()
+            ->assertDontSee('Rua Sintética de Teste, 0')
+            ->assertDontSee('Etapa: 2º ano');
     }
 
     public function test_rejeita_grupos_invalidos_e_nao_amplia_acesso(): void
