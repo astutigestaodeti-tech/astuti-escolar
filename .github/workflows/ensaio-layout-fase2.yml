@@ -15,8 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sha: faefd0d9a12d23c0eb561b8bd633eca3b868e183
-            pr: '290'
           - sha: 39ea57a6f0477fddacbe3808b50a3d1865947ee9
             pr: '292'
     services:
@@ -77,6 +75,29 @@ jobs:
           PR: ${{ matrix.pr }}
         run: |
           mkdir -p "${RUNNER_TEMP}/astuti-telas" "${RUNNER_TEMP}/astuti-alvo"
+          python - <<'PYCODE'
+          from pathlib import Path
+          files = [
+              Path('tests/Feature/Layout/AllSchoolPagesOpenTest.php'),
+              Path('tests/Feature/Attendance/SistemaPresencaTest.php'),
+          ]
+          for path in files:
+              code = path.read_text()
+              matching = "->assertSessionHasErrors('ano_letivo');"
+              debug = """
+                  fwrite(STDERR, 'ANTES: '.json_encode(session('errors')?->getBag('default')->all(), JSON_UNESCAPED_UNICODE).PHP_EOL);
+              """
+              code = code.replace(matching, matching + debug)
+              needle = "->assertOk()->assertSee('A página está desatualizada.')"
+              inspect = """->assertOk()->tap(function ($response) {
+                  fwrite(STDERR, 'DEPOIS: '.json_encode(session('errors')?->getBag('default')->all(), JSON_UNESCAPED_UNICODE).PHP_EOL);
+                  preg_match_all('/<[^>]+role="alert"[^>]*>.*?<\\/[^>]+>/us', $response->getContent(), $matches);
+                  fwrite(STDERR, 'AVISOS: '.json_encode($matches[0], JSON_UNESCAPED_UNICODE).PHP_EOL);
+              })->assertSee('A página está desatualizada.')"""
+              assert needle in code
+              path.write_text(code.replace(needle, inspect))
+          PYCODE
+          php artisan test --filter=SistemaPresencaTest || true
           ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=test_todas_as_telas_da_escola_abrem_para_a_direcao
           if [ "$PR" = 290 ]; then
             cp "${RUNNER_TEMP}/astuti-telas/aluno_imprimir_previa.html" "${RUNNER_TEMP}/astuti-alvo/"
