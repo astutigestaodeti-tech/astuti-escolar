@@ -82,10 +82,13 @@ with sync_playwright() as p:
 
     # Geração real da prévia, sem grupos sensíveis nem impressão automática.
     page.goto(student_url + "/imprimir")
-    for checkbox in page.locator('input[name="grupos[]"]:checked').all():
-        checkbox.uncheck()
-    for group in ("matricula", "endereco", "foto"):
-        page.locator(f'input[name="grupos[]"][value="{group}"]').check()
+    selected_groups = {"matricula", "endereco", "foto"}
+    groups = page.locator('input[name="grupos[]"]')
+    values = groups.evaluate_all("(nodes) => nodes.map(node => node.value)")
+    assert len(values) == len(set(values)) and selected_groups.issubset(values)
+    for group in values:
+        page.locator(f'input[name="grupos[]"][value="{group}"]').set_checked(group in selected_groups)
+    assert set(groups.evaluate_all("(nodes) => nodes.filter(node => node.checked).map(node => node.value)")) == selected_groups
     page.get_by_role("button", name="Visualizar ficha para impressão").click()
     expect(page.locator(".ficha-print-papel")).to_be_visible()
     expect(page.locator(".ficha-print-papel")).to_contain_text(updated_name)
