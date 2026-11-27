@@ -216,6 +216,33 @@ class EnrollmentRenewalTest extends TwoMunicipalityTestCase
         }
     }
 
+    public function test_ano_desatualizado_e_matricula_fora_da_lista_recusam_lote_sem_gravacao(): void
+    {
+        $this->login('school_secretary');
+
+        $payload = $this->payload();
+        $payload['ano_destino'] = $this->yearId;
+        $this->post($this->url(), $payload)->assertSessionHasErrors([
+            'destinos' => 'O ano seguinte não está disponível. Consulte novamente.',
+        ]);
+
+        $payload = $this->payload();
+        $payload['destinos'][(string) Str::uuid()] = $this->nextAfternoonId;
+        $this->post($this->url(), $payload)->assertSessionHasErrors([
+            'destinos' => 'A lista da turma mudou. Consulte novamente antes de gravar.',
+        ]);
+
+        $this->tenant(function (): void {
+            $this->assertSame(1, StudentEnrollment::query()->where('school_year_id', $this->nextYearId)->count());
+            $this->assertSame(9, StudentEnrollment::query()->where('school_year_id', $this->yearId)->count());
+            $this->assertSame(6, StudentFinalResult::query()->where('school_class_id', $this->sourceId)->count());
+            $this->assertSame(0, AuditLog::query()->where('action', 'enrollment.renewal.batch')->count());
+        });
+
+        $this->post($this->url(), $this->payload())->assertRedirect($this->url())
+            ->assertSessionHas('renewal_summary.renewed', 3);
+    }
+
     public function test_cadastro_possivelmente_repetido_fica_para_conferencia_humana(): void
     {
         $this->tenant(function (): void {
