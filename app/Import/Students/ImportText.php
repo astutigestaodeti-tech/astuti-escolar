@@ -126,8 +126,10 @@ final class ImportText
             return ['date' => null, 'issue' => 'Data de nascimento ilegivel: "'.(self::clean($value) ?? '').'".', 'age' => null];
         }
 
-        $date = $date->setTimezone(new DateTimeZone('UTC'))->setTime(0, 0);
-        if ($date > $reference || (int) $date->format('Y') < 1900) {
+        // Nascimento representa uma data civil, não um instante no tempo.
+        // Preserva o dia da fonte e compara com o dia civil de referência.
+        $date = new DateTimeImmutable($date->format('Y-m-d'), new DateTimeZone('UTC'));
+        if ($date->format('Y-m-d') > $reference->format('Y-m-d') || (int) $date->format('Y') < 1900) {
             return ['date' => null, 'issue' => 'Data de nascimento fora do intervalo possivel: '.$date->format('d/m/Y').'.', 'age' => null];
         }
 
