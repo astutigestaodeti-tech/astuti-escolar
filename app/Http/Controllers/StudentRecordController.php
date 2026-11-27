@@ -14,6 +14,7 @@ use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Security\TwoFactorSession;
 use App\Students\DuplicateStudents;
+use App\Students\StudentIdentityConflict;
 use App\Validation\Cpf;
 use App\Validation\IdentityDocuments;
 use App\Validation\SedRa;
@@ -224,7 +225,7 @@ class StudentRecordController extends Controller
                 return $student;
             });
         } catch (QueryException $exception) {
-            $this->rethrowRaConflict($exception);
+            StudentIdentityConflict::rethrow($exception);
         }
 
         return redirect()
@@ -367,7 +368,7 @@ class StudentRecordController extends Controller
                 return $studentDirty || $classDirty;
             });
         } catch (QueryException $exception) {
-            $this->rethrowRaConflict($exception);
+            StudentIdentityConflict::rethrow($exception);
         }
 
         return redirect()
@@ -475,19 +476,6 @@ class StudentRecordController extends Controller
                 'ra' => 'Este RA já está cadastrado. Confira o registro existente antes de prosseguir.',
             ]);
         }
-    }
-
-    /** Preserva a mensagem de cadastro em corridas concorrentes pelo mesmo RA. */
-    private function rethrowRaConflict(QueryException $exception): never
-    {
-        if ($exception->getCode() === '23505'
-            && str_contains($exception->getMessage(), 'students_ra_normalized_unique')) {
-            throw ValidationException::withMessages([
-                'ra' => 'Este RA já está cadastrado. Confira o registro existente antes de prosseguir.',
-            ]);
-        }
-
-        throw $exception;
     }
 
     private function censusRules(): array
