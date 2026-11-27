@@ -1,4 +1,4 @@
-name: Ensaio isolado de layout 295 e 299
+name: Ensaio isolado de layout 299 após 295
 
 on:
   push:
@@ -15,9 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sha: 086a023046ef19b9814b5aa9167b5fb3f622051a
-            pr: '295'
-          - sha: 23d6604b08512f7add3c29246e5e83a87ee863aa
+          - sha: 26b4f2dc76d95d576fae672c0e17b8c253f52252
             pr: '299'
     services:
       postgres:
