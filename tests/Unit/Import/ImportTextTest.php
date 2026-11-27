@@ -42,6 +42,24 @@ final class ImportTextTest extends TestCase
         $this->assertSame($esperado, $resultado['date']?->format('Y-m-d'));
     }
 
+    public function test_nascimento_preserva_data_civil_e_limite_do_dia_de_referencia(): void
+    {
+        $reference = new DateTimeImmutable('2027-07-30 00:00:00', new DateTimeZone('Asia/Tokyo'));
+        foreach (['30/07/2027', new DateTimeImmutable('2027-07-30 00:00:00', new DateTimeZone('Asia/Tokyo'))] as $value) {
+            $result = ImportText::birthDate($value, $reference);
+            $this->assertNull($result['issue']);
+            $this->assertSame('2027-07-30', $result['date']?->format('Y-m-d'));
+        }
+
+        $future = ImportText::birthDate(new DateTimeImmutable('2027-07-31 00:00:00', new DateTimeZone('Asia/Tokyo')), $reference);
+        $this->assertNull($future['date']);
+        $this->assertNotNull($future['issue']);
+
+        $missing = ImportText::birthDate(null, $reference);
+        $this->assertNull($missing['date']);
+        $this->assertNotNull($missing['issue']);
+    }
+
     public function test_idade_nao_vira_data(): void
     {
         $resultado = ImportText::birthDate('8 anos', $this->reference());
