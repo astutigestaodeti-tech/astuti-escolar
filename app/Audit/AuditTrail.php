@@ -197,6 +197,12 @@ class AuditTrail
 
                 continue;
             }
+            // Observações de retirada podem mencionar saúde ou restrições familiares.
+            if ($value !== null && $entity === StudentPickupAuthorization::class && $key === 'notes') {
+                $values[$key] = '[REDACTED]';
+
+                continue;
+            }
             // Dados sensíveis: a auditoria registra que mudou, sem guardar o valor.
             if ($value !== null && preg_match('/\A(?:password|senha|token|secret|segredo|laudo|medical|saude|saúde|diagnos(?:tico)?|cid|access_key|race_color|cpf|document|phone|institutional_email|phone_secondary|work_phone|transport_stop|transport_adapted_vehicle|guardian_phone|priority_criteria|status_reason|correction_reason|cancel_reason|revoke_reason|verification_code|blood_type|alert_text|care_instructions|rg_number|birth_certificate)\z/iu', (string) $key)) {
                 $values[$key] = '[REDACTED]';
