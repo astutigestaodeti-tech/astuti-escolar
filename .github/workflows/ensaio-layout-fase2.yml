@@ -15,9 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sha: faefd0d9a12d23c0eb561b8bd633eca3b868e183
+          - sha: c39af436f1829abb736def5c54da95a358e53af8
             pr: '290'
-          - sha: 7eb0dfa727cf3132ab701b18b4895c1cb542d83f
+          - sha: bb05e6ceb9a8cd5fcc81eedf87cc3ad128afecfd
             pr: '292'
     services:
       postgres:
@@ -93,7 +93,6 @@ jobs:
 
       - name: Aferir recuos e impressão com Chromium
         shell: bash
-        if: always()
         env:
           PR: ${{ matrix.pr }}
         run: |
@@ -117,6 +116,7 @@ jobs:
               assert page.locator('.ficha-print-papel').is_visible()
               pdf = fitz.open(stream=page.pdf(prefer_css_page_size=True, print_background=True))
               assert len(pdf) == 1, len(pdf)
+              pdf.save(Path(os.environ['RUNNER_TEMP'], 'Ficha-cadastral-ficticia-27-11-2026.pdf'))
               printed = pdf[0]
               assert 'Ficha cadastral do aluno' in printed.get_text()
               assert 'Retrato do cadastro na data indicada.' in printed.get_text()
@@ -135,3 +135,12 @@ jobs:
           PY
           fi
           exit "$margin_status"
+
+      - name: Guardar PDF fictício aferido
+        if: matrix.pr == '290'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ficha-cadastral-ficticia-27-11-2026
+          path: ${{ runner.temp }}/Ficha-cadastral-ficticia-27-11-2026.pdf
+          retention-days: 30
+          if-no-files-found: error
