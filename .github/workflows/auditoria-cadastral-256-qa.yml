@@ -1,0 +1,97 @@
+name: Auditoria cadastral isolada 256 - navegador
+on:
+  push:
+    branches: [qa/auditoria-cadastral-256]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci_only_user
+          POSTGRES_DB: postgres
+          POSTGRES_USER: astuti_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U astuti_ci -d postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      PLATFORM_DB_HOST: 127.0.0.1
+      PLATFORM_DB_PORT: '5432'
+      PLATFORM_DB_DATABASE: astuti_platform_test
+      PLATFORM_DB_USERNAME: astuti_ci
+      PLATFORM_DB_PASSWORD: ci_only_user
+      TENANCY_INTEGRATION: '1'
+      TENANCY_TEST_DB_HOST: 127.0.0.1
+      TENANCY_TEST_DB_PORT: '5432'
+      TENANCY_TEST_DB_A: astuti_tenant_a_test
+      TENANCY_TEST_DB_B: astuti_tenant_b_test
+      TENANCY_TEST_DB_USER: astuti_ci
+      TENANCY_TEST_DB_PASSWORD: ci_only_user
+
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: harness
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: 09b7453fba71a8037cc791981b150e71a8fea52e
+          path: app
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, gd, exif
+          coverage: none
+      - name: Preparar bancos e fixture exclusivamente descartáveis
+        run: |
+          test "$(git rev-parse HEAD)" = "09b7453fba71a8037cc791981b150e71a8fea52e"
+          for database in astuti_platform_test astuti_tenant_a_test astuti_tenant_b_test; do
+            PGPASSWORD=ci_only_user psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U astuti_ci -d postgres -c "CREATE DATABASE $database WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+          done
+          composer install --no-interaction --prefer-dist --no-progress
+          cp .env.example .env
+          php artisan key:generate --force
+          php artisan test --filter='SchoolPendenciesTest|StudentRegistrationPrintTest|StudentRecordWriteTest|GuardianWriteTest'
+          cp ../harness/qa/auditoria-256/AuditBrowserFixtureTest.php tests/Feature/Students/
+          php artisan test --filter=AuditBrowserFixtureTest
+          cp ../harness/qa/auditoria-256/tenancy.php config/tenancy.php
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Navegador real e persistência
+        env:
+          APP_ENV: testing
+          APP_DEBUG: 'false'
+          APP_URL: http://127.0.0.1:8765
+          SESSION_DRIVER: database
+          SESSION_CONNECTION: platform
+          CACHE_STORE: database
+          DB_CACHE_CONNECTION: platform
+        run: |
+          python -m pip install 'playwright==1.51.0'
+          python -m playwright install --with-deps chromium
+          php artisan serve --host=127.0.0.1 --port=8765 >"${RUNNER_TEMP}/astuti-qa-http.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8765/up >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8765/up >/dev/null
+          python ../harness/qa/auditoria-256/browser.py
+          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM students s JOIN student_enrollments e ON e.student_id=s.id JOIN student_guardians sg ON sg.student_id=s.id JOIN guardians g ON g.id=sg.guardian_id WHERE s.full_name='Alice Fictícia Auditoria' AND s.birth_date='2019-05-10' AND g.full_name='Responsável Fictício Auditoria' AND e.school_id='11111111-1111-4111-8111-111111111111' AND e.status='active';" | grep -qx 1
+          echo 'Persistência PostgreSQL: aluno, matrícula e vínculo confirmados.'
