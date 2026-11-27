@@ -82,7 +82,7 @@
 
                 <div class="formulario-campo">
                     <label class="rotulo" for="birth_date">Data de nascimento</label>
-                    <input class="entrada" id="birth_date" name="birth_date" type="date" min="1900-01-01" max="{{ now()->subDay()->format('Y-m-d') }}"
+                    <input class="entrada" id="birth_date" name="birth_date" type="date" min="1900-01-01" max="{{ now()->format('Y-m-d') }}"
                            value="{{ old('birth_date', $student?->birth_date?->format('Y-m-d')) }}"
                            @error('birth_date') aria-invalid="true" aria-describedby="birth_date-erro" @enderror>
                     @error('birth_date')<p class="campo-erro" id="birth_date-erro">{{ $message }}</p>@enderror
