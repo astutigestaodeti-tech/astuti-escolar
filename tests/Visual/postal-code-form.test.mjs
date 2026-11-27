@@ -19,6 +19,10 @@ test('sugestao nao apaga valor manual nem numero ou complemento', () => {
     assert.equal(shouldApplySuggestion('Corrigido pelo usuario', 'Bairro informado', 'Centro'), false);
     assert.equal(shouldApplySuggestion('Rua existente', 'Rua existente', ''), false);
     assert.equal(shouldApplySuggestion('Rua existente', 'Rua existente', null), false);
+    assert.equal(shouldApplySuggestion('Rua manual', 'Rua manual', 'Rua sugerida', false), false);
+    assert.equal(shouldApplySuggestion('', '', 'Rua sugerida', false), true);
+    assert.equal(shouldApplySuggestion('Rua manual', 'Rua manual', 'Rua sugerida', true), true);
+    assert.equal(shouldApplySuggestion('Rua alterada', 'Rua manual', 'Rua sugerida', true), false);
 });
 
 test('CEP geral explica por que rua e bairro precisam ser preenchidos', () => {
@@ -129,5 +133,70 @@ test('mudar o CEP durante a consulta reabilita o botao de busca', async () => {
     } finally {
         globalThis.document = previousDocument;
         globalThis.fetch = previousFetch;
+    }
+});
+
+
+test('busca automatica preserva dados manuais e busca explicita permite atualizar', async () => {
+    const previousDocument = globalThis.document;
+    const previousFetch = globalThis.fetch;
+    const previousSetTimeout = globalThis.setTimeout;
+    const previousClearTimeout = globalThis.clearTimeout;
+    const handlers = {};
+    let scheduled;
+    const cep = { value: '01001000', addEventListener: (event, handler) => { handlers[event] = handler; } };
+    const button = { disabled: false, addEventListener: (event, handler) => { handlers[event] = handler; } };
+    const status = { textContent: '' };
+    const fields = {
+        street: { value: 'Rua manual' }, district: { value: 'Bairro manual' },
+        city: { value: '' }, state: { value: '' },
+    };
+    const number = { value: '123' };
+    const complement = { value: 'Casa 2' };
+    const zone = { value: 'rural' };
+    const nodes = {
+        '[name="postal_code"]': cep,
+        '[data-postal-search]': button,
+        '[data-postal-status]': status,
+        '[name="address_street"]': fields.street,
+        '[name="address_district"]': fields.district,
+        '[name="address_city"]': fields.city,
+        '[name="address_state"]': fields.state,
+        '[name="address_number"]': number,
+        '[name="address_complement"]': complement,
+        '[name="residence_zone"]': zone,
+    };
+    try {
+        globalThis.document = {
+            readyState: 'complete',
+            querySelector: () => ({ dataset: { postalLookupUrl: '/alunos/cep/__CEP__' }, querySelector: (selector) => nodes[selector] }),
+        };
+        globalThis.fetch = async () => ({
+            ok: true,
+            json: async () => ({ source: 'online', street: 'Rua sugerida', district: 'Centro', city: 'São Paulo', state: 'SP' }),
+        });
+        await import('../../public/js/student-postal-code.js?simular-preservacao=' + Date.now());
+        globalThis.setTimeout = (callback) => { scheduled = callback; return 1; };
+        globalThis.clearTimeout = () => {};
+        handlers.input();
+        await scheduled();
+        assert.equal(fields.street.value, 'Rua manual');
+        assert.equal(fields.district.value, 'Bairro manual');
+        assert.equal(fields.city.value, 'São Paulo');
+        assert.equal(fields.state.value, 'SP');
+        assert.match(status.textContent, /Campos já preenchidos foram mantidos/);
+
+        await handlers.click();
+        assert.equal(fields.street.value, 'Rua sugerida');
+        assert.equal(fields.district.value, 'Centro');
+        assert.equal(number.value, '123');
+        assert.equal(complement.value, 'Casa 2');
+        assert.equal(zone.value, 'rural');
+        assert.doesNotMatch(status.textContent, /Campos já preenchidos foram mantidos/);
+    } finally {
+        globalThis.document = previousDocument;
+        globalThis.fetch = previousFetch;
+        globalThis.setTimeout = previousSetTimeout;
+        globalThis.clearTimeout = previousClearTimeout;
     }
 });
