@@ -612,6 +612,7 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
         ];
         $this->post($this->url(), $this->data($invalid))
             ->assertSessionHasErrors(array_keys($invalid));
+        $this->post($this->url(), $this->data(['rg_state' => '0']))->assertSessionHasErrors('rg_state');
         $this->assertSame(0, $this->inMunicipality(fn (): int => Guardian::query()->count()));
 
         $this->post($this->url(), $this->data([

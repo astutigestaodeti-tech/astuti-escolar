@@ -316,6 +316,9 @@ class GuardianController extends Controller
         $workplace = $request->input('workplace');
         $rg = $request->input('rg_number');
         $rgState = $request->input('rg_state');
+        if (is_string($rgState)) {
+            $rgState = strtoupper(trim($rgState));
+        }
 
         $request->merge([
             'full_name' => is_string($name) ? preg_replace('/\s+/u', ' ', trim($name)) : $name,
@@ -326,7 +329,7 @@ class GuardianController extends Controller
             'workplace' => is_string($workplace) ? (preg_replace('/\s+/u', ' ', trim($workplace)) ?: null) : $workplace,
             'work_phone' => $this->normalizePhone($request->input('work_phone')),
             'rg_number' => is_string($rg) && preg_match('/\A[0-9Xx.\s\/-]*\z/u', $rg) === 1 ? IdentityDocuments::normalizeRg($rg) : $rg,
-            'rg_state' => is_string($rgState) ? (strtoupper(trim($rgState)) ?: null) : $rgState,
+            'rg_state' => $rgState === '' ? null : $rgState,
             'is_legal_guardian' => $request->boolean('is_legal_guardian'),
             'is_primary_contact' => $request->boolean('is_primary_contact'),
         ]);
