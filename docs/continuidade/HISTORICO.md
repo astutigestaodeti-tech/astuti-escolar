@@ -745,3 +745,7 @@ Integração de menu, rota, autorização por UUID local e 2FA real, auditoria d
 ## 26/11/2026 - Astuti Maintenance: contrato offline (#249, proposta)
 
 Primeiro bloco: validador de pedido declarativo v1, Ed25519, escopo local, validade, sequência monotônica e catálogo somente diagnóstico, com testes negativos. Sem execução, endpoint, mudança de VPS, privilégio ou chave privada real. Estado durável, antirreplay completo, idempotência, inventário local e instalador ficam para as próximas unidades. CI e revisão pendentes antes de integração.
+
+## 27/11/2026 - Auditoria cadastral: segurança e acessibilidade (#256)
+
+Frentes independentes sobre main 2e57e67: #293 propõe mascarar observações livres de retirada nos novos eventos de auditoria, mantendo o cadastro autorizado e os motivos já exigidos; sem alteração de histórico imutável. Nesta unidade, teste estrutural do formulário de responsáveis e registro das lacunas de acessibilidade em docs/planejamento/fase-2/01-acessibilidade-cadastros.md. Não altera telas, permissões ou dados reais. CI e revisão pendentes; teclado, leitor de tela, correção da associação de erros e homologação ainda necessários. Não integrar apenas por aprovação de teste estrutural.

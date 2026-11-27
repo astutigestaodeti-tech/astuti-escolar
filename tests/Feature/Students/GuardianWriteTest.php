@@ -98,6 +98,35 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
         ], $override);
     }
 
+    public function test_formulario_de_responsavel_preserva_rotulos_e_ordem_nativa_de_foco(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $response = $this->get($this->url().'/novo')->assertOk();
+
+        $document = new \DOMDocument;
+        $this->assertTrue($document->loadHTML($response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING));
+        $xpath = new \DOMXPath($document);
+        $forms = $xpath->query('//form[.//input[@id="full_name"]]');
+        $this->assertCount(1, $forms);
+        $form = $forms->item(0);
+
+        $fields = ['full_name', 'cpf', 'rg_number', 'rg_state', 'phone', 'phone_secondary', 'email', 'workplace', 'work_phone', 'relationship'];
+        foreach ($fields as $field) {
+            $this->assertCount(1, $xpath->query('//*[@id="'.$field.'"]'), 'Identificador único: '.$field);
+            $this->assertCount(1, $xpath->query('.//label[@for="'.$field.'"]', $form), 'Rótulo associado: '.$field);
+        }
+        foreach (['is_legal_guardian', 'is_primary_contact'] as $field) {
+            $this->assertCount(1, $xpath->query('.//label//input[@type="checkbox" and @name="'.$field.'"]', $form));
+        }
+        $this->assertCount(0, $xpath->query('.//*[@tabindex and number(@tabindex) > 0]', $form));
+        $this->assertCount(1, $xpath->query('.//input[@id="full_name" and @required]', $form));
+        $this->assertCount(1, $xpath->query('.//select[@id="relationship" and @required]', $form));
+        $this->assertCount(1, $xpath->query('.//input[@id="phone" and @type="tel" and @inputmode="tel"]', $form));
+        $this->assertCount(1, $xpath->query('.//input[@id="cpf" and @aria-describedby="cpf-ajuda"]', $form));
+        $this->assertCount(1, $xpath->query('.//*[@id="cpf-ajuda"]', $form));
+        $this->assertCount(2, $xpath->query('.//button[@type="submit"]', $form));
+    }
+
     public function test_secretaria_cria_responsavel_e_vinculo_com_auditoria_redigida(): void
     {
         $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
