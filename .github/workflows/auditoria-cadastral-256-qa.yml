@@ -1,11 +1,11 @@
-name: Auditoria cadastral isolada 256 - navegador
+name: Auditoria cadastral isolada 256 - concorrência PostgreSQL
 on:
   push:
-    branches: [qa/auditoria-cadastral-256]
+    branches: [qa/auditoria-concorrencia-256]
 permissions:
   contents: read
 jobs:
-  browser:
+  concorrencia:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
@@ -65,36 +65,11 @@ jobs:
           composer install --no-interaction --prefer-dist --no-progress
           cp .env.example .env
           php artisan key:generate --force
-          php artisan test --filter='SchoolPendenciesTest|StudentRegistrationPrintTest|StudentRecordWriteTest|GuardianWriteTest'
           cp ../harness/qa/auditoria-256/AuditBrowserFixtureTest.php tests/Feature/Students/
           php artisan test --filter=AuditBrowserFixtureTest
           cp ../harness/qa/auditoria-256/tenancy.php config/tenancy.php
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Navegador real e persistência
+      - name: Conflitos reais de CPF e RA em conexões independentes
         env:
           APP_ENV: testing
           APP_DEBUG: 'false'
-          APP_URL: http://127.0.0.1:8765
-          SESSION_DRIVER: database
-          SESSION_CONNECTION: platform
-          CACHE_STORE: database
-          DB_CACHE_CONNECTION: platform
-        run: |
-          python -m pip install 'playwright==1.51.0'
-          python -m playwright install --with-deps chromium
-          php artisan serve --host=127.0.0.1 --port=8765 >"${RUNNER_TEMP}/astuti-qa-http.log" 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8765/up >/dev/null; then break; fi
-            sleep 1
-          done
-          curl -fsS http://127.0.0.1:8765/up >/dev/null
-          python ../harness/qa/auditoria-256/browser.py
-          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM students s JOIN student_enrollments e ON e.student_id=s.id WHERE s.full_name='Alice Fictícia Auditoria Revisada' AND s.birth_date='2019-05-10' AND s.address_street='Estrada Fictícia de Auditoria' AND s.residence_zone='rural' AND e.school_id='11111111-1111-4111-8111-111111111111' AND e.status='active';" | grep -qx 1
-          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM guardians WHERE full_name='Responsável Fictício Auditoria';" | grep -qx 1
-          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM student_guardians sg JOIN students s ON s.id=sg.student_id WHERE s.full_name='Alice Fictícia Auditoria Revisada';" | grep -qx 0
-          PGPASSWORD=ci_only_user psql -h 127.0.0.1 -U astuti_ci -d astuti_tenant_a_test -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM audit_logs WHERE action='deleted' AND auditable_type LIKE '%StudentGuardian' AND \"after\"->>'motivo'='Desvínculo fictício para auditoria automatizada.' AND user_id IS NOT NULL;" | grep -qx 1
-          echo 'Persistência PostgreSQL: edição, matrícula, responsável preservado, desvínculo e autoria/motivo confirmados.'
+        run: php ../harness/qa/auditoria-256/concurrency.php
