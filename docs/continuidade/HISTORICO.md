@@ -745,3 +745,7 @@ Integração de menu, rota, autorização por UUID local e 2FA real, auditoria d
 ## 26/11/2026 - Astuti Maintenance: contrato offline (#249, proposta)
 
 Primeiro bloco: validador de pedido declarativo v1, Ed25519, escopo local, validade, sequência monotônica e catálogo somente diagnóstico, com testes negativos. Sem execução, endpoint, mudança de VPS, privilégio ou chave privada real. Estado durável, antirreplay completo, idempotência, inventário local e instalador ficam para as próximas unidades. CI e revisão pendentes antes de integração.
+
+## 27/11/2026 - Fase 2/02: transferência de matrícula (#257)
+
+A transferência reconhece o UUID da escola de origem em letras maiúsculas e retorna o mesmo erro específico antes de consultar o destino. Testes com dados fictícios verificam a rejeição sem gravação e o reenvio de uma transferência concluída sem duplicar a matrícula ou a auditoria. Unidade independente do cadastro de alunos e da ficha A4. Sem alteração de permissões, banco ou política de publicação.
