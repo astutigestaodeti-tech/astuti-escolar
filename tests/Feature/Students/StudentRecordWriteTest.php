@@ -235,6 +235,52 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
     }
 
+    public function test_grafias_validas_e_nome_social_persistem_e_sao_localizados_na_busca(): void
+    {
+        $user = $this->conta('nomes-ficticios@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $this->post($this->url(), $this->dados(['full_name' => 'Ana', 'social_name' => 'Lu']))
+            ->assertSessionHasErrors(['full_name', 'social_name']);
+        $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+
+        $this->post($this->url(), $this->dados([
+            'full_name' => "  Éva   D'Ávila-Souza ",
+            'social_name' => '  Lua   Fictícia ',
+        ]))->assertRedirect();
+
+        [$id, $version] = $this->noMunicipio($this->municipioA, function (): array {
+            $student = Student::query()->sole();
+            $this->assertSame(["Éva D'Ávila-Souza", 'Lua Fictícia'], [$student->full_name, $student->social_name]);
+
+            return [$student->id, DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token];
+        });
+        foreach (["eva d'avila-souza", 'lua ficticia'] as $search) {
+            $this->get($this->url().'?'.http_build_query(['busca' => $search]))->assertOk()
+                ->assertViewHas('students', fn ($students): bool => $students->pluck('id')->all() === [$id]);
+        }
+
+        $payload = ['full_name' => "Íris D'Ávila-Luz", 'social_name' => 'Luz Ávila', 'birth_date' => '2019-05-10', 'versao' => $version];
+        $this->put($this->url('/'.$id), array_replace($payload, ['full_name' => 'Ana', 'social_name' => 'Lu']))
+            ->assertSessionHasErrors(['full_name', 'social_name']);
+        $this->noMunicipio($this->municipioA, function () use ($id): void {
+            $student = Student::query()->findOrFail($id);
+            $this->assertSame(["Éva D'Ávila-Souza", 'Lua Fictícia'], [$student->full_name, $student->social_name]);
+        });
+
+        $this->put($this->url('/'.$id), $payload)->assertRedirect($this->url('/'.$id));
+        $this->noMunicipio($this->municipioA, function () use ($id): void {
+            $student = Student::query()->findOrFail($id);
+            $this->assertSame(["Íris D'Ávila-Luz", 'Luz Ávila'], [$student->full_name, $student->social_name]);
+        });
+        foreach (["iris d'avila-luz", 'luz avila'] as $search) {
+            $this->get($this->url().'?'.http_build_query(['busca' => $search]))->assertOk()
+                ->assertViewHas('students', fn ($students): bool => $students->pluck('id')->all() === [$id]);
+        }
+        $this->get($this->url().'?'.http_build_query(['busca' => 'lua ficticia']))->assertOk()
+            ->assertViewHas('students', fn ($students): bool => $students->isEmpty());
+    }
+
     public function test_nascimento_no_dia_atual_e_aceito_e_data_futura_e_recusada(): void
     {
         $user = $this->conta('nascimento-atual@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
