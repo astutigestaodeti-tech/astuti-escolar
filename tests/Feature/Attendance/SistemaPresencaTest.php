@@ -163,7 +163,10 @@ class SistemaPresencaTest extends TwoMunicipalityTestCase
         $this->travelTo(Carbon::parse('2027-04-06 10:00:00'));
         $this->login('school_secretary', [self::ESCOLA_A1]);
         $payload = ['aluno' => $this->ids['ana'], 'ano_letivo' => $this->ids['year'], 'periodo' => 1, 'lancado' => '1'];
-        $this->from($page)->post($this->url(), $payload)->assertRedirect($page)->assertSessionHasErrors('ano_letivo');
+        $this->from($page)->post($this->url(), $payload)->assertRedirect($page)->assertSessionHasErrors([
+            'ano_letivo' => 'A página está desatualizada. Confira o ano letivo exibido e tente novamente.',
+        ]);
+        $this->withCookie(config('session.cookie'), session()->getId());
         $this->get($page)->assertOk()->assertSee('A página está desatualizada.')
             ->assertSee('name="ano_letivo" value="'.$nextYear->id.'"', false);
         $this->assertSame(0, $this->tenant(fn () => PresenceRegistration::query()->count()));
@@ -184,7 +187,10 @@ class SistemaPresencaTest extends TwoMunicipalityTestCase
         $this->tenant(fn () => SchoolYear::query()->findOrFail($this->ids['year'])->update(['status' => 'completed']));
 
         $this->post($this->url(), ['aluno' => $this->ids['ana'], 'ano_letivo' => $this->ids['year'], 'periodo' => 1, 'lancado' => '1'])
-            ->assertRedirect($this->url())->assertSessionHasErrors('ano_letivo');
+            ->assertRedirect($this->url())->assertSessionHasErrors([
+                'ano_letivo' => 'Não há ano letivo disponível para registrar o lançamento.',
+            ]);
+        $this->withCookie(config('session.cookie'), session()->getId());
         $this->get($this->url())->assertOk()->assertSee('Não há ano letivo disponível para registrar o lançamento.');
 
         $this->assertSame(0, $this->tenant(fn () => PresenceRegistration::query()->count()));
