@@ -1,0 +1,141 @@
+name: Ensaio de CI paralelo (não obrigatório)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/ensaio-ci-paralelo.yml'
+      - 'scripts/qualidade/ensaiar-ci-paralelo.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  grupos:
+    name: Ensaio PHP (${{ matrix.grupo }})
+    strategy:
+      fail-fast: false
+      matrix:
+        grupo: [geral, ocr]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci_only_user
+          POSTGRES_DB: postgres
+          POSTGRES_USER: astuti_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U astuti_ci -d postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      ASTUTI_CI_GRUPO: ${{ matrix.grupo }}
+      PLATFORM_DB_HOST: 127.0.0.1
+      PLATFORM_DB_PORT: '5432'
+      PLATFORM_DB_DATABASE: astuti_platform_test
+      PLATFORM_DB_USERNAME: astuti_ci
+      PLATFORM_DB_PASSWORD: ci_only_user
+      TENANCY_INTEGRATION: '1'
+      TENANCY_TEST_DB_HOST: 127.0.0.1
+      TENANCY_TEST_DB_PORT: '5432'
+      TENANCY_TEST_DB_A: astuti_tenant_a_test
+      TENANCY_TEST_DB_B: astuti_tenant_b_test
+      TENANCY_TEST_DB_USER: astuti_ci
+      TENANCY_TEST_DB_PASSWORD: ci_only_user
+
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Testar seguranca do ensaio de restauracao PostgreSQL
+        run: bash tests/Shell/EnsaiarRestauracaoPostgresqlTest.sh
+
+      - name: Testar backup pre-copia PostgreSQL
+        run: bash tests/Shell/CriarBackupsPreCopiaTest.sh
+
+      - name: Testar copia ficticia em PostgreSQL isolado
+        run: bash tests/Shell/EnsaiarCopiaIsoladaPostgresqlTest.sh
+
+      - name: Testar abertura segura do login PostgreSQL isolado
+        run: bash tests/Shell/TestarLoginIsoladoPostgresqlTest.sh
+
+      - name: Instalar leitor de documentos (OCR)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends tesseract-ocr tesseract-ocr-por poppler-utils
+          tesseract --list-langs | grep -qx por
+
+      - name: Preparar PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, gd, exif
+          coverage: none
+
+      - name: Conferir ambiente
+        run: |
+          php -v
+          composer --version
+          php -m | grep -Ei 'pdo_pgsql|pdo_sqlite|mbstring'
+
+      - name: Preparar bancos descartaveis
+        run: |
+          container_id="$(docker ps --filter 'ancestor=postgres:17' --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d postgres -c "CREATE DATABASE astuti_platform_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d postgres -c "CREATE DATABASE astuti_tenant_a_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+          docker exec "$container_id" psql -v ON_ERROR_STOP=1 -U astuti_ci -d postgres -c "CREATE DATABASE astuti_tenant_b_test WITH TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'pt-BR';"
+
+      - name: Localizar cache de downloads Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache de downloads Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-downloads-${{ runner.os }}-php84-${{ hashFiles('composer.lock') }}
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Preparar ambiente de testes
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Conferir estilo PHP
+        run: vendor/bin/pint --test
+
+      - name: Conferir cobertura da divisão e executar duas rodadas
+        run: bash scripts/qualidade/ensaiar-ci-paralelo.sh
+
+      - name: Preparar Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependencias da interface
+        run: npm ci
+
+      - name: Compilar interface
+        run: npm run build
+
+      - name: Verificar identidade visual
+        run: npm run test:ui
