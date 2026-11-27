@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Audit\AuditTrail;
 use App\Developer\AgentAccess;
+use App\Developer\DeploymentHistory;
 use App\Developer\DeploymentSnapshot;
 use App\Models\User;
 use App\Security\TwoFactorSession;
@@ -77,19 +78,17 @@ final class DeveloperAgentController extends Controller
         $stages = DeploymentSnapshot::stages();
         $stage = $request->query('stage');
         $stage = is_string($stage) && isset($stages[$stage]) ? $stage : '';
-        $events = $snapshot['events'];
-        if ($stage !== '') {
-            $events = array_values(array_filter($events, static fn (array $event): bool => $event['stage'] === $stage));
-        }
-        $total = count($events);
-        $pages = max(1, (int) ceil($total / 30));
+        $groups = app(DeploymentHistory::class)->group($snapshot['events'], $stage);
+        $total = count($groups);
+        $pages = max(1, (int) ceil($total / 10));
         $requested = $request->query('page');
         $page = is_string($requested) && ctype_digit($requested) ? min($pages, max(1, (int) $requested)) : 1;
-        $snapshot['events'] = array_slice($events, ($page - 1) * 30, 30);
+        $groups = array_slice($groups, ($page - 1) * 10, 10);
 
         return [
             'municipality' => $request->attributes->get('astuti.municipality'),
             'snapshot' => $snapshot,
+            'groups' => $groups,
             'stages' => $stages,
             'stage' => $stage,
             'total' => $total,
