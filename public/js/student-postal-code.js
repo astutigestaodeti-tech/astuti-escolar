@@ -10,8 +10,9 @@ export function formatPostalCode(value) {
     return digits === null ? value : digits.slice(0, 5) + '-' + digits.slice(5);
 }
 
-export function shouldApplySuggestion(current, valueAtLookup, suggestion) {
-    return typeof suggestion === 'string' && suggestion.trim() !== '' && current === valueAtLookup;
+export function shouldApplySuggestion(current, valueAtLookup, suggestion, force = true) {
+    return typeof suggestion === 'string' && suggestion.trim() !== '' && current === valueAtLookup
+        && (force || current.trim() === '');
 }
 
 export function postalLookupMessage(data) {
@@ -84,12 +85,19 @@ function bootPostalLookup() {
                 status.textContent = data.message || 'Não foi possível consultar o CEP. Preencha o endereço manualmente.';
                 return;
             }
+            let preserved = false;
             Object.entries(fields).forEach(([key, field]) => {
-                if (shouldApplySuggestion(field.value, before[key], data[key])) field.value = data[key];
+                if (shouldApplySuggestion(field.value, before[key], data[key], force)) {
+                    field.value = data[key];
+                } else if (typeof data[key] === 'string' && data[key].trim() !== '' && field.value !== data[key]) {
+                    preserved = true;
+                }
             });
             cep.value = formatPostalCode(cep.value);
             lastSuccess = digits;
-            status.textContent = postalLookupMessage(data);
+            status.textContent = postalLookupMessage(data) + (preserved
+                ? ' Campos já preenchidos foram mantidos. Confira o endereço antes de gravar.'
+                : '');
         } catch (error) {
             if (error.name !== 'AbortError' && thisSequence === sequence) {
                 status.textContent = 'Consulta indisponível. Você pode preencher o endereço manualmente.';
