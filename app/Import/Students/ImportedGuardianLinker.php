@@ -11,17 +11,14 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Cadastra e vincula o responsável que veio na planilha, dentro da
- * transação da importação. A mesma pessoa nunca vira dois cadastros:
- * pelo CPF, ou, sem CPF, pelo mesmo nome e telefone (irmãos na lista).
+ * transação da importação. Reutiliza pelo CPF ou por nome e telefone
+ * compatíveis, sem unir registros que tenham CPFs distintos.
  */
 final class ImportedGuardianLinker
 {
     public const RELATIONSHIPS = ['mother', 'father', 'other'];
 
     public int $linked = 0;
-
-    /** @var array<string, string> nome normalizado|telefone => id do responsável neste lote */
-    private array $batch = [];
 
     public static function normalizedName(string $name): string
     {
@@ -40,13 +37,13 @@ final class ImportedGuardianLinker
             }
         }
 
-        $key = $data['phone'] === null ? null : self::normalizedName($data['name']).'|'.$data['phone'];
-        if ($guardian === null && $key !== null) {
-            $guardian = isset($this->batch[$key])
-                ? Guardian::query()->find($this->batch[$key])
-                : Guardian::query()->where('phone', $data['phone'])->lockForUpdate()->get()
-                    ->first(fn (Guardian $candidate): bool => self::normalizedName($candidate->full_name) === self::normalizedName($data['name'])
-                        && ($candidate->cpf === null || $data['cpf'] === null || $candidate->cpf === $data['cpf']));
+        if ($guardian === null && $data['phone'] !== null) {
+            // A própria transação enxerga os responsáveis já criados neste lote.
+            // Revalidar o CPF em cada linha: nome e telefone iguais não bastam
+            // para reutilizar uma pessoa com outro CPF.
+            $guardian = Guardian::query()->where('phone', $data['phone'])->lockForUpdate()->get()
+                ->first(fn (Guardian $candidate): bool => self::normalizedName($candidate->full_name) === self::normalizedName($data['name'])
+                    && ($candidate->cpf === null || $data['cpf'] === null || $candidate->cpf === $data['cpf']));
         }
 
         if ($guardian === null) {
@@ -62,10 +59,6 @@ final class ImportedGuardianLinker
                 'email' => null,
             ]);
             app(AuditTrail::class)->record('tenant', 'created', Guardian::class, $guardian->id, null, $guardian->only(['id', 'full_name', 'cpf', 'phone', 'email']));
-        }
-
-        if ($key !== null) {
-            $this->batch[$key] = $guardian->id;
         }
 
         if (StudentGuardian::query()->where('student_id', $student->id)->where('guardian_id', $guardian->id)->exists()) {

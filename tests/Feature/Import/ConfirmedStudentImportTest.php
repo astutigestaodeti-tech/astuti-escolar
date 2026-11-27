@@ -847,6 +847,38 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertTrue($audit->every(fn ($log): bool => ($log->after['phone'] ?? null) === '[REDACTED]'));
     }
 
+    public function test_lote_nao_reutiliza_responsavel_com_cpf_distinto_mesmo_nome_e_telefone(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', '529.982.247-25'],
+            ['Bruno Aluno Fictício', '01/03/2019', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', '111.444.777-35'],
+            ['Carla Aluna Fictícia', '01/04/2018', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', '529.982.247-25'],
+        ]);
+        try {
+            [$token] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(2, Guardian::query()->count());
+            $this->assertSame(3, StudentGuardian::query()->count());
+            $porAluno = StudentGuardian::query()->with(['student', 'guardian'])->get()
+                ->mapWithKeys(fn (StudentGuardian $link): array => [$link->student->full_name => $link->guardian->cpf])->sortKeys()->all();
+            $this->assertSame([
+                'Ana Aluna Fictícia' => '529.982.247-25',
+                'Bruno Aluno Fictício' => '111.444.777-35',
+                'Carla Aluna Fictícia' => '529.982.247-25',
+            ], $porAluno);
+        });
+    }
+
     public function test_reimportacao_vincula_responsavel_so_a_quem_nao_tem_e_recusa_cpf_com_outro_nome(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A']);
