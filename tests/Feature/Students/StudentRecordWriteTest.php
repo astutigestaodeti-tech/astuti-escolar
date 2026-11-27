@@ -736,6 +736,12 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
             ...$invalidos,
         ])->assertSessionHasErrors(array_keys($invalidos));
 
+        $this->put($this->url('/'.$aluno->id), [
+            'full_name' => $aluno->full_name,
+            'versao' => $versao,
+            'birth_certificate' => '---',
+        ])->assertSessionHasErrors('birth_certificate');
+
         $atual = $this->noMunicipio($this->municipioA, fn (): Student => Student::query()->sole());
         $this->assertSame($aluno->getAttributes(), $atual->getAttributes());
     }

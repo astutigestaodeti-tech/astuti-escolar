@@ -544,7 +544,8 @@ class StudentRecordController extends Controller
         }
         if ($request->exists('birth_certificate')) {
             $value = $request->input('birth_certificate');
-            $merge['birth_certificate'] = is_string($value) ? IdentityDocuments::normalizeBirthCertificate($value) : $value;
+            $normalized = is_string($value) ? IdentityDocuments::normalizeBirthCertificate($value) : $value;
+            $merge['birth_certificate'] = $normalized === '' ? $value : $normalized;
         }
         $request->merge($merge);
     }
