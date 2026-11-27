@@ -53,7 +53,7 @@
             <section class="ficha-print-grupo">
                 <h3>Endereço residencial</h3>
                 <dl class="ficha-print-dados">
-                    <div><dt>Logradouro e número</dt><dd>{{ implode(', ', array_filter([$student->address_street, $student->address_number], fn ($value) => $value !== null && $value !== '')) ?: 'Não informado' }}</dd></div>
+                    <div><dt>Logradouro e número</dt><dd>@php($addressLine = implode(', ', array_filter([$student->address_street, $student->address_number], fn ($value) => $value !== null && $value !== ''))){{ $addressLine === '' ? 'Não informado' : $addressLine }}</dd></div>
                     <div><dt>Complemento</dt><dd>{{ $student->address_complement ?? 'Não informado' }}</dd></div>
                     <div><dt>Bairro</dt><dd>{{ $student->address_district ?? 'Não informado' }}</dd></div>
                     <div><dt>Município / UF</dt><dd>{{ implode('/', array_filter([$student->address_city, $student->address_state])) ?: 'Não informado' }}</dd></div>

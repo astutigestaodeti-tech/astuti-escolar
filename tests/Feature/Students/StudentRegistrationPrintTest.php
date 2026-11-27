@@ -146,6 +146,10 @@ class StudentRegistrationPrintTest extends TwoMunicipalityTestCase
             ->assertSee('Rua Sintética de Teste, 0')
             ->assertSee('Etapa: 2º ano')
             ->assertDontSee('Etapa: Ensino fundamental multisseriado');
+
+        app(TenantContext::class)->runFor($this->municipioA, fn () => Student::query()->findOrFail($this->student)->update(['address_street' => null]));
+        $this->post($this->url(), ['grupos' => ['endereco']])->assertOk()
+            ->assertSee('<dd>0</dd>', false);
         $this->post($this->url(), ['grupos' => ['foto']])->assertOk()
             ->assertDontSee('Rua Sintética de Teste, 0')
             ->assertDontSee('Etapa: 2º ano');
