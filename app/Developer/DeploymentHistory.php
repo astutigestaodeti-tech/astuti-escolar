@@ -59,6 +59,12 @@ final class DeploymentHistory
             'title' => 'Aba Agente disponível no menu',
             'description' => 'Inclui acesso privativo, histórico, filtros e atualização automática.',
         ],
+        'fd2d505884e37320520ba48b9a1a652d96ac2ecb' => [
+            'previous' => '4de8ea4feb982e549cd263586d6e3413264caa43',
+            'pr' => 251,
+            'title' => 'Astuti Maintenance: validação de solicitações',
+            'description' => 'Valida solicitações de diagnóstico assinadas, sem executar comandos ou conceder privilégios.',
+        ],
     ];
 
     public function releases(?string $previous, ?string $target): array
