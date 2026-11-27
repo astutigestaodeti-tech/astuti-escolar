@@ -22,6 +22,8 @@ final class IdentificationPhoto
 
     public const DISK = 'local';
 
+    private const MAX_PIXELS = 24_000_000;
+
     public function store(UploadedFile $file, string $folder): string
     {
         return $this->storeContents((string) file_get_contents($file->getRealPath()), $folder);
@@ -32,6 +34,16 @@ final class IdentificationPhoto
     {
         if (! function_exists('imagecreatefromstring')) {
             throw ValidationException::withMessages(['foto' => 'O servidor ainda não está preparado para fotos (falta a extensão GD do PHP). Avise o suporte.']);
+        }
+
+        // Verifique os cabeçalhos antes de alocar a imagem descomprimida no GD.
+        $dimensions = @getimagesizefromstring($contents);
+        if ($dimensions === false || ! in_array($dimensions[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
+            throw ValidationException::withMessages(['foto' => 'Não consegui abrir esta imagem. Envie uma foto JPG, PNG ou WebP.']);
+        }
+        [$sourceWidth, $sourceHeight] = $dimensions;
+        if ($sourceWidth < 1 || $sourceHeight < 1 || $sourceWidth > intdiv(self::MAX_PIXELS, $sourceHeight)) {
+            throw ValidationException::withMessages(['foto' => 'A resolução da foto é muito alta. Reduza a imagem para até 24 megapixels e tente novamente.']);
         }
 
         $image = @imagecreatefromstring($contents);

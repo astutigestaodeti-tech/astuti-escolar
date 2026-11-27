@@ -41,6 +41,24 @@ class IdentificationPhotoFramingTest extends TestCase
         }
     }
 
+    public function test_recusa_resolucao_excessiva_antes_da_decodificacao_e_sem_gravar_arquivo(): void
+    {
+        Storage::fake('local');
+
+        // Cabeçalho PNG sintético de 6000 x 6000: sem alocar 36 milhões de pixels.
+        $ihdr = 'IHDR'.pack('NNCCCCC', 6000, 6000, 8, 2, 0, 0, 0);
+        $png = "\x89PNG\r\n\x1a\n".pack('N', 13).$ihdr.pack('N', crc32($ihdr));
+
+        try {
+            (new IdentificationPhoto)->storeContents($png, 'municipio-ficticio/alunos');
+            $this->fail('A resolução excessiva deveria ser recusada.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(['A resolução da foto é muito alta. Reduza a imagem para até 24 megapixels e tente novamente.'], $exception->errors()['foto']);
+        }
+
+        $this->assertSame([], Storage::disk('local')->allFiles());
+    }
+
     public function test_falha_de_gravacao_nao_devolve_caminho_inexistente(): void
     {
         $disk = \Mockery::mock(FilesystemAdapter::class);
