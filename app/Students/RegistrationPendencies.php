@@ -32,8 +32,10 @@ class RegistrationPendencies
      */
     public function forSchool(School $school): Collection
     {
+        $today = today()->toDateString();
         $rows = StudentEnrollment::query()
             ->join('students', 'students.id', '=', 'student_enrollments.student_id')
+            ->join('school_years', 'school_years.id', '=', 'student_enrollments.school_year_id')
             ->leftJoin('school_classes', 'school_classes.id', '=', 'student_enrollments.school_class_id')
             ->where('student_enrollments.school_id', $school->id)
             ->where('student_enrollments.status', 'active')
@@ -44,6 +46,13 @@ class RegistrationPendencies
                 'students.postal_code', 'students.photo_path', 'students.latitude', 'students.longitude', 'school_classes.name as class_name',
             ])
             ->selectRaw('EXISTS (SELECT 1 FROM student_guardians sg WHERE sg.student_id = students.id) AS has_guardian')
+            // A lista continua contando pessoas com matrícula ativa, inclusive as que só têm
+            // matrícula futura. Turma/transporte vêm da matrícula preferencial de cada aluno.
+            // Mesma precedência de vigência da frequência; ano concluído só como fallback.
+            ->orderByRaw("CASE WHEN school_years.status = 'completed' OR school_years.deleted_at IS NOT NULL THEN 3 WHEN school_years.start_date <= ? AND school_years.end_date >= ? THEN 0 WHEN school_years.start_date <= ? THEN 1 ELSE 2 END", [$today, $today, $today])
+            ->orderByRaw("CASE WHEN school_years.status != 'completed' AND school_years.deleted_at IS NULL AND school_years.start_date > ? THEN school_years.year END ASC", [$today])
+            ->orderByDesc('school_years.year')
+            ->orderBy('student_enrollments.id')
             ->get();
 
         $schoolMapped = $school->latitude !== null && $school->longitude !== null;
