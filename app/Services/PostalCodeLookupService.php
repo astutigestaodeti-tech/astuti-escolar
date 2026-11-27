@@ -39,11 +39,12 @@ class PostalCodeLookupService
             return [['message' => 'CEP não encontrado. Preencha o endereço manualmente.'], 404];
         }
 
-        $providerCode = $this->part($payload, 'cep', 9);
+        $providerCode = $payload['cep'] ?? null;
         $city = $this->part($payload, 'localidade', 120);
         $state = $this->part($payload, 'uf', 2);
 
-        if ($providerCode === null || str_replace('-', '', $providerCode) !== $digits
+        if (! is_string($providerCode) || preg_match('/\A(?:\d{8}|\d{5}-\d{3})\z/', $providerCode) !== 1
+            || str_replace('-', '', $providerCode) !== $digits
             || $city === null || $state === null || ! array_key_exists($state, BrazilianStates::NAMES)) {
             return $this->unavailable($cache);
         }
