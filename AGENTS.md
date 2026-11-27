@@ -7,14 +7,14 @@
 - Produção: uma VPS, uma aplicação Laravel e dois bancos PostgreSQL locais privados (`platform` e `tenant`) exclusivos por Prefeitura. A instalação fica travada no município configurado. Não há VPS de produção compartilhada.
 - Preserve isolamento entre escolas e perfis, autenticação reforçada, auditoria obrigatória, LGPD e dados de menores. Use somente dados fictícios em testes.
 - Não altere dados, PostgreSQL original do notebook na porta 5432, MariaDB, backups ou `.env` sem aprovação específica. Não execute `DROP DATABASE`, `migrate:fresh`, `db:wipe` ou limpeza destrutiva em bases existentes.
-- Nunca publique segredos, senhas, dumps, documentos de estudantes ou dados reais no Git. Não faça deploy automaticamente. Merge só com CI verde e revisão (ver coordenação).
+- Nunca publique segredos, senhas, dumps, documentos de estudantes ou dados reais no Git. A implantação automática em Monte Sereno é autorizada somente pelo agente restrito e nas operações elegíveis. Merge só com CI verde e revisão técnica registrada (ver coordenação).
 - LGPD desde o desenho é obrigatória em toda tabela, tela, importação e API: siga `docs/arquitetura/lgpd-by-design.md` e diga no PR como a regra foi aplicada.
 
 ## Coordenação de desenvolvimento
 
-- Por decisão de Jefferson em 22/11/2026, o Claude é o programador-chefe: distribui as tarefas, revisa e mescla os PRs com CI verde. O ChatGPT executa os blocos atribuídos. Instruções ao ChatGPT podem chegar pelo chat ou por issue no GitHub com o rótulo `chatgpt`; uma tarefa por vez.
+- Por decisão do proprietário em 25/11/2026, reafirmada em 26/11/2026, o ChatGPT é o único programador-chefe e responsável por arquitetura, prioridades, implementação, revisão técnica, testes, integração e acompanhamento da implantação. Não aguardar Claude nem revisão independente inexistente como requisito geral. O proprietário autoriza revisão técnica própria e integração de PRs elegíveis em Monte Sereno após CI verde no SHA exato, base atualizada, avaliação de segurança e caminho de implantação validado. Registrar a natureza da revisão com transparência; nunca simular revisão independente, contornar proteções da main ou integrar mudança de alto risco sem as verificações e autorizações específicas necessárias.
 - Antes de diagnosticar problema relatado por Jefferson, confira no rodapé da tela a versão e o banco em uso.
-- Antes de programar, faça um inventário dos PRs abertos e de suas bases; não altere branches de outras frentes. Use um PR pequeno por objetivo, com CI, sem merge ou deploy automáticos.
+- Antes de programar, faça um inventário dos PRs abertos e de suas bases; não altere branches de outras frentes. Use um PR pequeno por objetivo, com CI; o programador-chefe pode integrar após as verificações obrigatórias. A implantação segue o agente restrito e a política local, sem execução arbitrária.
 
 ## Padrão visual dos cartões
 
