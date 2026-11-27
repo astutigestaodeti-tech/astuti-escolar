@@ -53,7 +53,7 @@
             <section class="ficha-print-grupo">
                 <h3>Endereço residencial</h3>
                 <dl class="ficha-print-dados">
-                    <div><dt>Logradouro e número</dt><dd>{{ implode(', ', array_filter([$student->address_street, $student->address_number])) ?: 'Não informado' }}</dd></div>
+                    <div><dt>Logradouro e número</dt><dd>@php($addressLine = implode(', ', array_filter([$student->address_street, $student->address_number], fn ($value) => $value !== null && $value !== ''))){{ $addressLine === '' ? 'Não informado' : $addressLine }}</dd></div>
                     <div><dt>Complemento</dt><dd>{{ $student->address_complement ?? 'Não informado' }}</dd></div>
                     <div><dt>Bairro</dt><dd>{{ $student->address_district ?? 'Não informado' }}</dd></div>
                     <div><dt>Município / UF</dt><dd>{{ implode('/', array_filter([$student->address_city, $student->address_state])) ?: 'Não informado' }}</dd></div>
@@ -90,7 +90,7 @@
                 <h3>@if (in_array('matricula', $groups, true)) Matrículas ativas nesta escola @endif @if (in_array('matricula', $groups, true) && in_array('transporte', $groups, true)) | @endif @if (in_array('transporte', $groups, true)) Transporte escolar @endif</h3>
                 @forelse ($enrollments as $entry)
                     <div class="ficha-print-item">
-                        <p><strong>Ano letivo {{ $entry->schoolYear?->year ?? 'Não informado' }}</strong>@if (in_array('matricula', $groups, true)) | Turma: {{ $entry->schoolClass?->name ?? 'Sem turma' }} | Etapa: {{ $entry->schoolClass?->stage ?? 'Não informada' }} | Turno: {{ $entry->schoolClass?->shift ?? 'Não informado' }} | Início: {{ $entry->started_at?->format('d/m/Y') ?? 'Não informado' }}@endif</p>
+                        <p><strong>Ano letivo {{ $entry->schoolYear?->year ?? 'Não informado' }}</strong>@if (in_array('matricula', $groups, true)) | Turma: {{ $entry->schoolClass?->name ?? 'Sem turma' }} | Etapa: {{ \App\Academics\RenewalStage::INEP[$entry->inep_stage_code] ?? $entry->schoolClass?->stage ?? 'Não informada' }} | Turno: {{ $entry->schoolClass?->shift ?? 'Não informado' }} | Início: {{ $entry->started_at?->format('d/m/Y') ?? 'Não informado' }}@endif</p>
                         @if (in_array('transporte', $groups, true))
                             <p>Transporte: {{ ['active' => 'Usa transporte', 'not_requested' => 'Não solicitado', 'cancelled' => 'Cancelado'][$entry->transport_status ?? ''] ?? 'Sem informação' }}@if ($entry->transport_status === 'active') | Linha: {{ $entry->transport_route ?? 'Não informada' }} | Ponto: {{ $entry->transport_stop ?? 'Não informado' }}@endif</p>
                         @endif
