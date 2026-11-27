@@ -110,6 +110,46 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         ]);
     }
 
+    public function test_importacao_preserva_nascimento_de_hoje_e_deixa_ausente_ou_futuro_pendente(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+        $today = new \DateTimeImmutable('today');
+        $file = $this->planilha([
+            ['Nome', 'Data de nascimento', 'Turma'],
+            ['Alice Recém Nascida Fictícia', $today->format('d/m/Y'), '1A'],
+            ['Bruno Sem Data Fictício', '', '1A'],
+            ['Clara Data Futura Fictícia', $today->modify('+2 days')->format('d/m/Y'), '1A'],
+        ]);
+        try {
+            [$token, $confirmations] = $this->preparar('nascimentos.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $rows = collect(json_decode(Crypt::decryptString($token), true, 512, JSON_THROW_ON_ERROR)['rows'])->keyBy('name');
+        $this->assertCount(3, $rows);
+        $this->assertSame($today->format('Y-m-d'), $rows['Alice Recém Nascida Fictícia']['birth_date']);
+        $this->assertNotContains('data_nascimento', array_column($rows['Alice Recém Nascida Fictícia']['pending'], 'field'));
+        foreach (['Bruno Sem Data Fictício', 'Clara Data Futura Fictícia'] as $name) {
+            $this->assertNull($rows[$name]['birth_date']);
+            $this->assertContains('data_nascimento', array_column($rows[$name]['pending'], 'field'));
+        }
+        $this->assertSame([0, 0, 0], $this->contagens());
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'confirmados' => $confirmations])->assertRedirect($this->url());
+        $this->assertSame([3, 3, 1], $this->contagens());
+
+        $dates = app(TenantContext::class)->runFor($this->municipioA, fn (): array => Student::query()->get()
+            ->mapWithKeys(fn (Student $student): array => [$student->full_name => $student->birth_date?->format('Y-m-d')])->sortKeys()->all());
+        $this->assertSame([
+            'Alice Recém Nascida Fictícia' => $today->format('Y-m-d'),
+            'Bruno Sem Data Fictício' => null,
+            'Clara Data Futura Fictícia' => null,
+        ], $dates);
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'confirmados' => $confirmations])->assertSessionHasErrors('lote');
+        $this->assertSame([3, 3, 1], $this->contagens());
+    }
+
     public function test_envio_e_previa_nao_gravam_alunos_nem_matriculas(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A', '2A', '3A', '4A', '5A']);
