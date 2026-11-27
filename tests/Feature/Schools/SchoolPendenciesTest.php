@@ -12,6 +12,7 @@ use App\Models\Tenant\StudentGuardian;
 use App\Security\Totp;
 use App\Students\RegistrationPendencies;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
@@ -166,7 +167,7 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
 
     public function test_pendencias_anuais_priorizam_matricula_vigente_sem_duplicar_ou_ocultar_alunos(): void
     {
-        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-20 12:00:00'));
+        $this->travelTo(Carbon::parse('2026-11-20 12:00:00'));
         $currentId = $this->tenant(function (): string {
             $year = SchoolYear::query()->create([
                 'id' => (string) Str::uuid(), 'year' => 2026, 'start_date' => '2026-02-01', 'end_date' => '2026-12-18', 'status' => 'active',
@@ -207,7 +208,7 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
             ->assertSee('Eva Mora Longe')->assertSee('matricula='.$currentId, false)
             ->assertDontSee('Matrícula Encerrada Fictícia')->assertDontSee('Gabi de Outra Escola');
 
-        $this->travelTo(\Illuminate\Support\Carbon::parse('2027-03-01 12:00:00'));
+        $this->travelTo(Carbon::parse('2027-03-01 12:00:00'));
         $this->tenant(function () use ($currentId): void {
             $service = app(RegistrationPendencies::class);
             $rows = $service->forSchool(School::query()->findOrFail(self::ESCOLA_A1))->keyBy('id');
