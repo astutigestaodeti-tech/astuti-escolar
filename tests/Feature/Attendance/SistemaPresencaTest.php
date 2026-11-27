@@ -170,6 +170,25 @@ class SistemaPresencaTest extends TwoMunicipalityTestCase
 
         $this->post($this->url(), [...$payload, 'ano_letivo' => $nextYear->id])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame($nextYear->id, $this->tenant(fn () => PresenceRegistration::query()->sole()->school_year_id));
+
+        $this->from($page)->post($this->url(), [...$payload, 'lancado' => '0'])
+            ->assertRedirect($page)->assertSessionHasErrors('ano_letivo');
+        $this->assertSame($nextYear->id, $this->tenant(fn () => PresenceRegistration::query()->sole()->school_year_id));
+        $this->assertSame(0, $this->tenant(fn () => AuditLog::query()->where('action', 'presence_registration.unmarked')->count()));
+    }
+
+    public function test_formulario_sem_ano_disponivel_retorna_aviso_sem_gravar(): void
+    {
+        $this->login('school_secretary', [self::ESCOLA_A1]);
+        $this->get($this->url())->assertOk()->assertSee('name="ano_letivo" value="'.$this->ids['year'].'"', false);
+        $this->tenant(fn () => SchoolYear::query()->findOrFail($this->ids['year'])->update(['status' => 'completed']));
+
+        $this->post($this->url(), ['aluno' => $this->ids['ana'], 'ano_letivo' => $this->ids['year'], 'periodo' => 1, 'lancado' => '1'])
+            ->assertRedirect($this->url())->assertSessionHasErrors('ano_letivo');
+        $this->get($this->url())->assertOk()->assertSee('Não há ano letivo disponível para registrar o lançamento.');
+
+        $this->assertSame(0, $this->tenant(fn () => PresenceRegistration::query()->count()));
+        $this->assertSame(0, $this->tenant(fn () => AuditLog::query()->where('action', 'like', 'presence_registration.%')->count()));
     }
 
     public function test_gestao_ve_resumo_da_rede_e_professor_nao_acessa(): void

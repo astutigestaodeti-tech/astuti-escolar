@@ -78,14 +78,22 @@ class SistemaPresencaController extends Controller
     {
         [$municipality, $school] = $this->authorizedSchool($request, $escola);
         $ano = $this->anos->currentYear();
-        abort_if($ano === null, 404);
+        if ($ano === null) {
+            return redirect()->route('school.presence.index', [
+                'municipio' => $municipality->slug, 'escola' => $school->id,
+            ])->withErrors(['ano_letivo' => 'Não há ano letivo disponível para registrar o lançamento.']);
+        }
+
+        $avisoAno = 'A página está desatualizada. Confira o ano letivo exibido e tente novamente.';
         $data = $request->validate([
             'aluno' => ['required', 'uuid'],
             'ano_letivo' => ['bail', 'required', 'uuid', Rule::in([$ano->id])],
             'periodo' => ['required', 'integer', Rule::in(array_keys(SistemaPresenca::PERIODOS))],
             'lancado' => ['required', Rule::in(['0', '1'])],
         ], [
-            'ano_letivo.*' => 'A página está desatualizada. Confira o ano letivo exibido e tente novamente.',
+            'ano_letivo.required' => $avisoAno,
+            'ano_letivo.uuid' => $avisoAno,
+            'ano_letivo.in' => $avisoAno,
         ]);
         $existe = StudentEnrollment::query()->where('school_id', $school->id)->where('school_year_id', $ano->id)
             ->where('student_id', $data['aluno'])->exists();
