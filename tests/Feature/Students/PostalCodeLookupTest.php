@@ -98,16 +98,18 @@ class PostalCodeLookupTest extends TwoMunicipalityTestCase
         Http::assertSentCount(1);
     }
 
-    public function test_resposta_com_cep_divergente_ou_malformado_nao_e_armazenada(): void
+    public function test_resposta_com_cep_ou_uf_invalidos_nao_e_armazenada(): void
     {
         $this->verify($this->account());
         Http::fake(['viacep.com.br/*' => Http::sequence()
             ->push(array_replace($this->response(), ['cep' => '01002-000']))
             ->push(array_replace($this->response(), ['cep' => '01001-000X']))
             ->push(array_replace($this->response(), ['cep' => ['01001-000']]))
+            ->push(array_replace($this->response(), ['uf' => 'SPX']))
+            ->push(array_replace($this->response(), ['uf' => ['SP']]))
             ->push($this->response())]);
 
-        for ($attempt = 0; $attempt < 3; $attempt++) {
+        for ($attempt = 0; $attempt < 5; $attempt++) {
             $this->getJson($this->url())->assertStatus(503)
                 ->assertJsonPath('message', 'Consulta de CEP indisponível. Preencha o endereço manualmente.');
             $this->assertSame(0, app(TenantContext::class)->runFor($this->municipioA, fn (): int => DB::connection('tenant')
@@ -117,7 +119,7 @@ class PostalCodeLookupTest extends TwoMunicipalityTestCase
         $this->getJson($this->url())->assertOk()->assertJsonPath('postal_code', '01001-000')
             ->assertJsonPath('source', 'online');
         $this->getJson($this->url())->assertOk()->assertJsonPath('source', 'cache');
-        Http::assertSentCount(4);
+        Http::assertSentCount(6);
     }
 
     public function test_erro_do_servico_permite_preenchimento_manual_sem_cache(): void

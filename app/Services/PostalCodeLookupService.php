@@ -41,11 +41,11 @@ class PostalCodeLookupService
 
         $providerCode = $payload['cep'] ?? null;
         $city = $this->part($payload, 'localidade', 120);
-        $state = $this->part($payload, 'uf', 2);
+        $state = $payload['uf'] ?? null;
 
         if (! is_string($providerCode) || preg_match('/\A(?:\d{8}|\d{5}-\d{3})\z/', $providerCode) !== 1
             || str_replace('-', '', $providerCode) !== $digits
-            || $city === null || $state === null || ! array_key_exists($state, BrazilianStates::NAMES)) {
+            || $city === null || ! is_string($state) || ! array_key_exists($state, BrazilianStates::NAMES)) {
             return $this->unavailable($cache);
         }
 
