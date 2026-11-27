@@ -689,6 +689,63 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         $this->assertSame('Livro A-12, folha 34, termo 5678', $this->noMunicipio($this->municipioA, fn (): string => Student::query()->where('full_name', 'Outra Criança Fictícia')->firstOrFail()->birth_certificate));
     }
 
+    public function test_dados_cadastrais_invalidos_nao_sao_convertidos_em_nulos_ou_documentos_validos(): void
+    {
+        $user = $this->conta('documentos-invalidos@example.invalid', 'school_director', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+
+        $invalidos = [
+            'sex' => ['female'],
+            'race_color' => ['parda'],
+            'nationality' => ['brasileira'],
+            'birthplace_state' => ['SP'],
+            'cpf' => ['529.982.247-25'],
+            'rg_number' => 'ABC123456789',
+            'rg_issuer' => ['SSP'],
+            'rg_state' => ['SP'],
+            'rg_issued_at' => ['2024-03-15'],
+            'birth_certificate' => ['Livro A-12'],
+        ];
+        $this->post($this->url(), $this->dados($invalidos))
+            ->assertSessionHasErrors(array_keys($invalidos));
+        $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+
+        $validos = [
+            'sex' => 'female',
+            'race_color' => 'parda',
+            'nationality' => 'brasileira',
+            'birthplace_state' => 'SP',
+            'cpf' => '529.982.247-25',
+            'rg_number' => '12.345.678-9',
+            'rg_issuer' => 'SSP',
+            'rg_state' => 'SP',
+            'rg_issued_at' => '2024-03-15',
+            'birth_certificate' => 'Livro A-12, folha 34, termo 5678',
+        ];
+        $this->post($this->url(), $this->dados($validos))->assertRedirect();
+
+        [$aluno, $versao] = $this->noMunicipio($this->municipioA, function (): array {
+            $student = Student::query()->sole();
+
+            return [$student, DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token];
+        });
+
+        $this->put($this->url('/'.$aluno->id), [
+            'full_name' => $aluno->full_name,
+            'versao' => $versao,
+            ...$invalidos,
+        ])->assertSessionHasErrors(array_keys($invalidos));
+
+        $this->put($this->url('/'.$aluno->id), [
+            'full_name' => $aluno->full_name,
+            'versao' => $versao,
+            'birth_certificate' => '---',
+        ])->assertSessionHasErrors('birth_certificate');
+
+        $atual = $this->noMunicipio($this->municipioA, fn (): Student => Student::query()->sole());
+        $this->assertSame($aluno->getAttributes(), $atual->getAttributes());
+    }
+
     public function test_formulario_tem_o_grupo_do_censo_com_as_opcoes_do_educacenso(): void
     {
         $user = $this->conta('censo-form@example.invalid', 'school_director', [self::ESCOLA_A1]);
