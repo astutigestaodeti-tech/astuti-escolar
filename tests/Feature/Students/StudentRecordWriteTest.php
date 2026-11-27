@@ -235,6 +235,31 @@ class StudentRecordWriteTest extends TwoMunicipalityTestCase
         $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
     }
 
+    public function test_nascimento_no_dia_atual_e_aceito_e_data_futura_e_recusada(): void
+    {
+        $user = $this->conta('nascimento-atual@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
+        $this->entrarComSegundoFator($user);
+        $today = now()->format('Y-m-d');
+        $tomorrow = now()->addDay()->format('Y-m-d');
+
+        $this->get($this->url('/novo'))->assertOk()->assertSee('max="'.$today.'"', false);
+        $this->from($this->url('/novo'))->post($this->url(), $this->dados(['birth_date' => $tomorrow]))
+            ->assertSessionHasErrors(['birth_date' => 'A data de nascimento não pode ser no futuro.']);
+        $this->assertSame(0, $this->noMunicipio($this->municipioA, fn (): int => Student::query()->count()));
+
+        $this->post($this->url(), $this->dados(['birth_date' => $today]))->assertRedirect();
+        [$id, $version, $birth] = $this->noMunicipio($this->municipioA, function (): array {
+            $student = Student::query()->sole();
+
+            return [$student->id, DB::connection('tenant')->table('students')->where('id', $student->id)->selectRaw('xmin::text AS token')->first()->token, $student->birth_date->format('Y-m-d')];
+        });
+        $this->assertSame($today, $birth);
+        $this->put($this->url('/'.$id), [
+            'full_name' => 'Lívia Fictícia de Souza', 'birth_date' => $tomorrow, 'versao' => $version,
+        ])->assertSessionHasErrors('birth_date');
+        $this->assertSame($today, $this->noMunicipio($this->municipioA, fn (): string => Student::query()->findOrFail($id)->birth_date->format('Y-m-d')));
+    }
+
     public function test_possivel_duplicidade_exige_confirmacao_e_nunca_funde(): void
     {
         $user = $this->conta('duplicado@example.invalid', 'school_secretary', [self::ESCOLA_A1]);
