@@ -313,19 +313,23 @@ class GuardianController extends Controller
         $cpf = $request->input('cpf');
         $phone = $request->input('phone');
         $email = $request->input('email');
-        $digits = fn (mixed $value): mixed => is_string($value) ? (preg_replace('/\D/', '', $value) ?: null) : $value;
         $workplace = $request->input('workplace');
+        $rg = $request->input('rg_number');
+        $rgState = $request->input('rg_state');
+        if (is_string($rgState)) {
+            $rgState = strtoupper(trim($rgState));
+        }
 
         $request->merge([
             'full_name' => is_string($name) ? preg_replace('/\s+/u', ' ', trim($name)) : $name,
             'cpf' => is_string($cpf) && trim($cpf) !== '' ? (Cpf::normalize($cpf) ?? trim($cpf)) : $cpf,
-            'phone' => is_string($phone) ? preg_replace('/\D/', '', $phone) : $phone,
+            'phone' => $this->normalizePhone($phone),
             'email' => is_string($email) ? trim($email) : $email,
-            'phone_secondary' => $digits($request->input('phone_secondary')),
+            'phone_secondary' => $this->normalizePhone($request->input('phone_secondary')),
             'workplace' => is_string($workplace) ? (preg_replace('/\s+/u', ' ', trim($workplace)) ?: null) : $workplace,
-            'work_phone' => $digits($request->input('work_phone')),
-            'rg_number' => IdentityDocuments::normalizeRg(is_string($request->input('rg_number')) ? $request->input('rg_number') : null),
-            'rg_state' => is_string($request->input('rg_state')) && trim($request->input('rg_state')) !== '' ? strtoupper(trim($request->input('rg_state'))) : null,
+            'work_phone' => $this->normalizePhone($request->input('work_phone')),
+            'rg_number' => is_string($rg) && preg_match('/\A[0-9Xx.\s\/-]*\z/u', $rg) === 1 ? IdentityDocuments::normalizeRg($rg) : $rg,
+            'rg_state' => $rgState === '' ? null : $rgState,
             'is_legal_guardian' => $request->boolean('is_legal_guardian'),
             'is_primary_contact' => $request->boolean('is_primary_contact'),
         ]);
@@ -362,6 +366,25 @@ class GuardianController extends Controller
             'phone_secondary' => 'Outro telefone', 'workplace' => 'Onde trabalha', 'work_phone' => 'Telefone do trabalho',
             'is_legal_guardian' => 'Responsável legal', 'is_primary_contact' => 'Contato principal',
         ]);
+    }
+
+    /** Remove somente a formatação esperada, preservando entradas inválidas para validação. */
+    private function normalizePhone(mixed $value): mixed
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/\A[0-9().\s+-]+\z/u', $value) !== 1) {
+            return $value;
+        }
+
+        return preg_replace('/\D/', '', $value) ?: $value;
     }
 
     private function guardianFields(array $data): array

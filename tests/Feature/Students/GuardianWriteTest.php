@@ -600,6 +600,36 @@ class GuardianWriteTest extends TwoMunicipalityTestCase
             ->assertSessionHas('status', fn (string $message): bool => str_ends_with($message, 'Agora informe o próximo responsável.'));
     }
 
+    public function test_dados_de_contato_e_rg_invalidos_nao_sao_convertidos_em_dados_validos_ou_nulos(): void
+    {
+        $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
+        $invalid = [
+            'phone' => 'ABC11987654321',
+            'phone_secondary' => 'telefone',
+            'work_phone' => 'ABC1133334444',
+            'rg_number' => 'ABC123456789',
+            'rg_state' => ['SP'],
+        ];
+        $this->post($this->url(), $this->data($invalid))
+            ->assertSessionHasErrors(array_keys($invalid));
+        $this->post($this->url(), $this->data(['rg_state' => '0']))->assertSessionHasErrors('rg_state');
+        $this->assertSame(0, $this->inMunicipality(fn (): int => Guardian::query()->count()));
+
+        $this->post($this->url(), $this->data([
+            'phone_secondary' => '(11) 3333-4444',
+            'work_phone' => '(11) 4444-5555',
+            'rg_number' => '12.345.678-9',
+            'rg_state' => 'SP',
+        ]))->assertRedirect();
+        $linkId = $this->inMunicipality(fn (): string => StudentGuardian::query()->sole()->id);
+        $this->put($this->url().'/'.$linkId, $this->data(array_replace($invalid, ['rg_number' => ['123456789']])))
+            ->assertSessionHasErrors(array_keys($invalid));
+
+        $guardian = $this->inMunicipality(fn (): Guardian => Guardian::query()->sole());
+        $this->assertSame(['11987654321', '1133334444', '1144445555', '123456789', 'SP'],
+            [$guardian->phone, $guardian->phone_secondary, $guardian->work_phone, $guardian->rg_number, $guardian->rg_state]);
+    }
+
     public function test_rg_do_responsavel_grava_mascarado_na_auditoria_e_aparece_no_cartao(): void
     {
         $this->verifyTwoFactor($this->userWithRole('school_secretary', [self::ESCOLA_A1]));
