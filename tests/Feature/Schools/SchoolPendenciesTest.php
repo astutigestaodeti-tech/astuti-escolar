@@ -131,6 +131,39 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
             ->assertDontSee('Homônimo Fictício');
     }
 
+    public function test_resumo_conta_alunos_distintos_e_atualiza_apos_corrigir_pendencia(): void
+    {
+        $this->tenant(function (): void {
+            $service = app(RegistrationPendencies::class);
+            $school = School::query()->findOrFail(self::ESCOLA_A1);
+            $summary = $service->summary($service->forSchool($school));
+            $this->assertSame([
+                'total' => 6,
+                'complete' => 1,
+                'withPendencies' => 5,
+                'byType' => [
+                    'repetido' => 0, 'responsavel' => 2, 'turma' => 1, 'nascimento' => 1,
+                    'endereco' => 1, 'transporte' => 1, 'foto' => 1, 'mapa' => 1,
+                ],
+            ], $summary);
+
+            $guardian = Guardian::query()->create([
+                'id' => (string) Str::uuid(), 'full_name' => 'Responsável Fictício Teste', 'phone' => '11987654321',
+            ]);
+            StudentGuardian::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $this->ids['sem_responsavel'],
+                'guardian_id' => $guardian->id, 'relationship' => 'mother', 'is_primary_contact' => true,
+            ]);
+
+            $after = $service->summary($service->forSchool($school));
+            $this->assertSame(6, $after['total']);
+            $this->assertSame(2, $after['complete']);
+            $this->assertSame(4, $after['withPendencies']);
+            $this->assertSame([...$summary['byType'], 'responsavel' => 1], $after['byType']);
+            $this->assertSame(1, $after['byType']['nascimento']);
+        });
+    }
+
     public function test_calcula_a_escola_inteira_em_uma_consulta(): void
     {
         $queries = $this->tenant(function (): int {
