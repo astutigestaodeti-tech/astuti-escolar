@@ -767,3 +767,10 @@ F04, base 9dcf42c. A junção SQL de contagem de transporte ignorava a exclusão
 
 
 Validação complementar: a matrícula exibida deve corresponder ao filtro selecionado, sem redefinir a precedência anual da lista geral. Ensaio de lista filtrada incluído na cobertura de layout, CI e QA no head sincronizado pendentes.
+
+
+## 28/11/2026 - Auditoria #256: isolamento de localização residencial (proposta)
+
+F05/F06, base da0c8b1. Regressão de acesso direto ao mapa e gravação de coordenadas por secretaria autorizada somente em outra unidade: aluno fora do vínculo escolar retorna 404, escola sem escopo 403, nenhum envio ao geocodificador, coordenadas intactas e sem evento de atualização de aluno. Rota, Gate manageStudents, escopo de matrícula ativa e segundo fator confirmado na gravação existentes; sem mudança de política, schema ou dados reais. CI pendente; matriz integral F05/F06 permanece aberta.
+
+Complemento F06: gravação sem segundo fator configurado e sem verificação na sessão deve ser proibida; após confirmação TOTP, a mesma operação salva coordenadas e mascara ambos os valores na auditoria. Sem modificar política; CI pendente.
