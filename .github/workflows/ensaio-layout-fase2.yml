@@ -1,4 +1,4 @@
-name: Ensaio isolado de layout cadastral 315
+name: Ensaio integral de margens e abertura #256
 
 on:
   push:
@@ -10,13 +10,13 @@ permissions:
 jobs:
   renderizar:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         include:
-          - sha: 25c3ce92ae29a0a7bc23bf1613fd83ad3e35a1c9
-            pr: '315'
+          - sha: 0fc7f76cff748b41c09dbe1c88d4a80a85876204
+            pr: '256'
     services:
       postgres:
         image: postgres:17
@@ -75,40 +75,22 @@ jobs:
           TARGET_SHA: ${{ matrix.sha }}
         run: |
           test "$(git rev-parse HEAD)" = "$TARGET_SHA"
-          mkdir -p "${RUNNER_TEMP}/astuti-telas" "${RUNNER_TEMP}/astuti-alvo"
+          mkdir -p "${RUNNER_TEMP}/astuti-telas"
+          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=AllSchoolPagesOpenTest
           ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=ConfirmedStudentImportTest
-          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=test_todas_as_telas_da_escola_abrem_para_a_direcao
-          for name in importacao_alunos_previa importacao_responsavel_divergente importacao_responsavel_invalido; do
+          for name in alunos aluno matriculas resp_novo resp_editar resp_desvincular aluno_imprimir_config aluno_mapa importacao_alunos_previa importacao_responsavel_divergente importacao_responsavel_invalido alunos_transporte_usa alunos_transporte_adaptado alunos_transporte_nao_solicitado; do
             test -s "${RUNNER_TEMP}/astuti-telas/$name.html"
-            cp "${RUNNER_TEMP}/astuti-telas/$name.html" "${RUNNER_TEMP}/astuti-alvo/"
           done
+          echo "Telas renderizadas: $(find "${RUNNER_TEMP}/astuti-telas" -maxdepth 1 -type f -name '*.html' | wc -l)"
+          find "${RUNNER_TEMP}/astuti-telas" -maxdepth 1 -type f -name '*.html' -printf '%f\n' | sort
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Conferir pendência de responsáveis divergentes e margens em Chromium
+      - name: Conferir todas as margens em Chromium (1440 e 390 px)
         shell: bash
         run: |
           python -m pip install 'playwright==1.51.0'
           python -m playwright install --with-deps chromium
-          python - <<'PY'
-          import os
-          from pathlib import Path
-          from playwright.sync_api import sync_playwright
-
-          root = Path(os.environ['RUNNER_TEMP'], 'astuti-alvo')
-          with sync_playwright() as p:
-              browser = p.chromium.launch()
-              for width in (1440, 390):
-                  page = browser.new_page(viewport={'width': width, 'height': 900})
-                  page.goto((root / 'importacao_responsavel_divergente.html').as_uri())
-                  assert page.get_by_text('Responsáveis ou contatos divergentes nas linhas repetidas. Nenhum vínculo foi importado; confira na ficha.', exact=True).count() == 1
-                  assert page.get_by_text('responsáveis divergentes em linhas repetidas (1 aluno)', exact=False).count() == 1
-                  assert page.get_by_text('Maria Pessoa Fictícia', exact=False).count() == 0
-                  assert page.get_by_text('Joana Pessoa Fictícia', exact=False).count() == 0
-                  page.close()
-              browser.close()
-          print('Pendência específica e ausência dos nomes divergentes conferidas em 1440/390 px.')
-          PY
-          python scripts/qualidade/checar-margens.py "${RUNNER_TEMP}/astuti-alvo" 1440 390
+          python scripts/qualidade/checar-margens.py "${RUNNER_TEMP}/astuti-telas" 1440 390
