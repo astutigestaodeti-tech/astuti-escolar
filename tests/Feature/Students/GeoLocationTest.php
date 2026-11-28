@@ -247,8 +247,11 @@ class GeoLocationTest extends TwoMunicipalityTestCase
 
         $this->inMunicipality(function () use ($first, $second): void {
             $audits = AuditLog::query()->where('auditable_type', Student::class)
-                ->where('auditable_id', $this->student)->where('action', 'updated')->get()->keyBy('user_id');
+                ->where('auditable_id', $this->student)->where('action', 'updated')->get();
             $this->assertCount(2, $audits);
+            $this->assertSame(1, $audits->where('user_id', $first->id)->count());
+            $this->assertSame(1, $audits->where('user_id', $second->id)->count());
+            $audits = $audits->keyBy('user_id');
             $this->assertSame('school_secretary', $audits[$first->id]->role);
             $this->assertSame('school_director', $audits[$second->id]->role);
             $this->assertNotSame($audits[$first->id]->request_id, $audits[$second->id]->request_id);
