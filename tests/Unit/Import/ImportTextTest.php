@@ -119,6 +119,8 @@ final class ImportTextTest extends TestCase
     public function test_ra_so_no_formato_da_sed(): void
     {
         $this->assertSame('999000000041-7/SP', ImportText::ra(' 999000000041-7/sp '));
+        $this->assertSame('0001234567890/SP', ImportText::ra('0001234567890/sp'));
+        $this->assertNull(ImportText::ra('000123456789-0/XX'));
         $this->assertNull(ImportText::ra('41'));
         $this->assertNull(ImportText::ra(null));
     }

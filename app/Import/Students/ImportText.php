@@ -235,7 +235,7 @@ final class ImportText
 
         $text = strtoupper(str_replace(' ', '', $text));
 
-        return preg_match('/^\d{9,12}-?[\dX]\/[A-Z]{2}$/', $text) ? $text : null;
+        return preg_match('/\A\d{9,12}-?[\dX]\/[A-Z]{2}\z/', $text) === 1 && isset(BrazilianStates::NAMES[substr($text, -2)]) ? $text : null;
     }
 
     /** CEP brasileiro, sem adivinhar zero à esquerda perdido em célula numérica. */
