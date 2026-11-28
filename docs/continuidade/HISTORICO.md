@@ -774,3 +774,10 @@ Validação complementar: a matrícula exibida deve corresponder ao filtro selec
 F05/F06, base da0c8b1. Regressão de acesso direto ao mapa e gravação de coordenadas por secretaria autorizada somente em outra unidade: aluno fora do vínculo escolar retorna 404, escola sem escopo 403, nenhum envio ao geocodificador, coordenadas intactas e sem evento de atualização de aluno. Rota, Gate manageStudents, escopo de matrícula ativa e segundo fator confirmado na gravação existentes; sem mudança de política, schema ou dados reais. CI pendente; matriz integral F05/F06 permanece aberta.
 
 Complemento F06: gravação sem segundo fator configurado e sem verificação na sessão deve ser proibida; após confirmação TOTP, a mesma operação salva coordenadas e mascara ambos os valores na auditoria. Sem modificar política; CI pendente.
+
+
+## 28/11/2026 - Auditoria #256: responsáveis divergentes em linhas repetidas (proposta)
+
+F03, base 1c963ff. A consolidação escolhia o primeiro responsável válido mesmo com divergência posterior. Compara nome normalizado, parentesco, CPF e telefone quando ambos presentes; conflito deixa o vínculo pendente sem reintroduzi-lo pela terceira linha. Dados complementares compatíveis podem preencher o campo ausente. Prévia exibe aviso genérico, sem nomes divergentes, e matrícula continua após conferência; teste de regressão e dump visual. Sem schema, permissões ou dados reais. CI e QA pendentes.
+
+Complemento da revisão por eventos: CPF e telefone complementares em linhas sem identificador comum não autorizam unir dados de homônimos. Mantém pendência sem vínculo, preserva complemento quando há identificador coincidente. Regressão dedicada, novo CI/QA necessários.
