@@ -6,6 +6,7 @@ use App\Audit\AuditTrail;
 use App\Models\Tenant\Guardian;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentGuardian;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -25,6 +26,21 @@ final class ImportedGuardianLinker
         return Str::lower(Str::ascii(preg_replace('/\s+/u', ' ', trim($name)) ?? trim($name)));
     }
 
+    /**
+     * @param  array{name: string, relationship: string, phone: ?string, cpf: ?string}  $data
+     * @return Collection<int, Guardian>
+     */
+    public static function compatiblePhoneCandidates(array $data, bool $lock = false): Collection
+    {
+        if ($data['phone'] === null) {
+            return collect();
+        }
+
+        return Guardian::query()->where('phone', $data['phone'])->when($lock, fn ($query) => $query->lockForUpdate())->get()
+            ->filter(fn (Guardian $candidate): bool => self::normalizedName($candidate->full_name) === self::normalizedName($data['name'])
+                && ($candidate->cpf === null || $data['cpf'] === null || $candidate->cpf === $data['cpf']));
+    }
+
     /** @param array{name: string, relationship: string, phone: ?string, cpf: ?string} $data */
     public function link(Student $student, array $data): void
     {
@@ -41,9 +57,11 @@ final class ImportedGuardianLinker
             // A própria transação enxerga os responsáveis já criados neste lote.
             // Revalidar o CPF em cada linha: nome e telefone iguais não bastam
             // para reutilizar uma pessoa com outro CPF.
-            $guardian = Guardian::query()->where('phone', $data['phone'])->lockForUpdate()->get()
-                ->first(fn (Guardian $candidate): bool => self::normalizedName($candidate->full_name) === self::normalizedName($data['name'])
-                    && ($candidate->cpf === null || $data['cpf'] === null || $candidate->cpf === $data['cpf']));
+            $candidates = self::compatiblePhoneCandidates($data, true);
+            if ($candidates->count() > 1) {
+                throw ValidationException::withMessages(['lote' => 'Mais de um responsável corresponde ao nome e telefone depois da prévia. Refaça a conferência; nenhum registro foi gravado.']);
+            }
+            $guardian = $candidates->first();
         }
 
         if ($guardian === null) {

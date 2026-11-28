@@ -29,6 +29,7 @@
             'responsavel' => 'responsáveis com telefone ou CPF a conferir',
             'responsavel_nome' => 'nomes de responsáveis inválidos',
             'responsavel_divergente' => 'responsáveis divergentes em linhas repetidas',
+            'responsavel_ambiguo' => 'responsáveis com identificação ambígua',
         ];
         $parentescos = ['mother' => 'Mãe', 'father' => 'Pai', 'other' => 'Responsável'];
         $censusLabels = [
@@ -158,6 +159,9 @@
                                     @endif
                                     @if (in_array('responsavel_divergente', array_column($row['pending'], 'field'), true))
                                         <span class="conf-origem">Responsáveis ou contatos divergentes nas linhas repetidas. Nenhum vínculo foi importado; confira na ficha.</span>
+                                    @endif
+                                    @if (in_array('responsavel_ambiguo', array_column($row['pending'], 'field'), true))
+                                        <span class="conf-origem">Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.</span>
                                     @endif
                                 </td>
                                 <td class="conf-numero">

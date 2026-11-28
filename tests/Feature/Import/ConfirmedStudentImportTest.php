@@ -1126,6 +1126,132 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         });
     }
 
+    public function test_previa_nao_escolhe_responsavel_ambiguo_por_nome_e_telefone_sem_cpf(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            foreach (['529.982.247-25', '111.444.777-35'] as $cpf) {
+                Guardian::query()->create([
+                    'id' => (string) Str::uuid(),
+                    'full_name' => 'Maria Pessoa Fictícia',
+                    'cpf' => $cpf,
+                    'phone' => '1133334444',
+                ]);
+            }
+        });
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', ''],
+            ['Bruno Aluno Fictício', '01/03/2019', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', '111.444.777-35'],
+        ]);
+        try {
+            [$token, , $html] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $rows = $this->linhasDoLote($token);
+        $ana = $this->linhaDe($rows, 'Ana Aluna Fictícia');
+        $this->assertNull($ana['guardian']);
+        $this->assertContains('responsavel_ambiguo', array_column($ana['pending'], 'field'));
+        $this->assertStringContainsString('Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.', $html);
+        $this->assertStringContainsString('responsáveis com identificação ambígua', $html);
+        if ($dump = getenv('ASTUTI_DUMP_TELAS')) {
+            $html = str_replace(rtrim((string) config('app.url'), '/').'/', 'file://'.public_path().'/', $html);
+            file_put_contents(rtrim($dump, '/').'/importacao_responsavel_ambiguo.html', preg_replace('/\.(css|js)\?v=\d+/', '.$1', $html));
+        }
+        $this->assertContains('Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.', array_column($ana['pending'], 'message'));
+        $this->assertNotNull($this->linhaDe($rows, 'Bruno Aluno Fictício')['guardian']);
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(2, Student::query()->count());
+            $this->assertSame(2, StudentEnrollment::query()->count());
+            $this->assertSame(2, Guardian::query()->count());
+            $link = StudentGuardian::query()->with(['student', 'guardian'])->sole();
+            $this->assertSame('Bruno Aluno Fictício', $link->student->full_name);
+            $this->assertSame('111.444.777-35', $link->guardian->cpf);
+        });
+    }
+
+    public function test_previa_considera_cpf_de_responsaveis_do_proprio_lote_independentemente_da_ordem(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', '529.982.247-25'],
+            ['Bruno Aluno Fictício', '01/03/2019', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', '111.444.777-35'],
+            ['Carla Aluna Fictícia', '01/04/2018', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', ''],
+            ['Davi Aluno Fictício', '01/05/2018', '1A', 'Rita Pessoa Fictícia', '(11) 3333-5555', ''],
+            ['Eva Aluna Fictícia', '01/06/2018', '1A', 'Rita Pessoa Fictícia', '(11) 3333-5555', '123.456.789-09'],
+            ['Fabio Aluno Fictício', '01/07/2018', '1A', 'Rita Pessoa Fictícia', '(11) 3333-5555', '935.411.347-80'],
+        ]);
+        try {
+            [$token] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $rows = $this->linhasDoLote($token);
+        foreach (['Carla Aluna Fictícia', 'Davi Aluno Fictício'] as $name) {
+            $row = $this->linhaDe($rows, $name);
+            $this->assertNull($row['guardian']);
+            $this->assertContains('Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.', array_column($row['pending'], 'message'));
+        }
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(6, Student::query()->count());
+            $this->assertSame(6, StudentEnrollment::query()->count());
+            $this->assertSame(4, Guardian::query()->count());
+            $porAluno = StudentGuardian::query()->with(['student', 'guardian'])->get()
+                ->mapWithKeys(fn (StudentGuardian $link): array => [$link->student->full_name => $link->guardian->cpf])->sortKeys()->all();
+            $this->assertSame([
+                'Ana Aluna Fictícia' => '529.982.247-25',
+                'Bruno Aluno Fictício' => '111.444.777-35',
+                'Eva Aluna Fictícia' => '123.456.789-09',
+                'Fabio Aluno Fictício' => '935.411.347-80',
+            ], $porAluno);
+        });
+    }
+
+    public function test_ambiguidade_de_responsavel_surgida_apos_previa_reverte_lote(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+        $createGuardian = function (string $cpf): void {
+            app(TenantContext::class)->runFor($this->municipioA, function () use ($cpf): void {
+                Guardian::query()->create([
+                    'id' => (string) Str::uuid(),
+                    'full_name' => 'Maria Pessoa Fictícia',
+                    'cpf' => $cpf,
+                    'phone' => '1133334444',
+                ]);
+            });
+        };
+        $createGuardian('529.982.247-25');
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', ''],
+        ]);
+        try {
+            [$token] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $this->assertNotNull($this->linhasDoLote($token)[0]['guardian']);
+        $createGuardian('111.444.777-35');
+        $this->post($this->url().'/confirmar', ['lote' => $token])
+            ->assertSessionHasErrors(['lote' => 'Mais de um responsável corresponde ao nome e telefone depois da prévia. Refaça a conferência; nenhum registro foi gravado.']);
+        $this->assertSame([0, 0, 0], $this->contagens());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(2, Guardian::query()->count());
+            $this->assertSame(0, StudentGuardian::query()->count());
+            $this->assertSame(0, AuditLog::query()->where('action', 'student_import.completed')->count());
+        });
+    }
+
     public function test_reimportacao_vincula_responsavel_so_a_quem_nao_tem_e_recusa_cpf_com_outro_nome(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A']);

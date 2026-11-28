@@ -798,3 +798,12 @@ Complemento da revisão por eventos: conferir todos os eventos do responsável, 
 ## 28/11/2026 - Auditoria #256: acessibilidade dos erros de responsáveis (proposta)
 
 F08/16.1. Associa mensagens de erro individuais aos campos de criação/edição e desvínculo por aria-invalid/aria-describedby, preserva ajudas e disponibiliza foco inicial no resumo somente quando houver erro. AllSchoolPagesOpenTest passa por respostas reais de validação e renderiza três telas de erro. Sem alteração de regras, coleta, autorização ou banco. CI e ensaio de teclado/margens necessários; nenhum teste local.
+
+
+## 28/11/2026 - Auditoria #256: responsáveis ambíguos no cadastro municipal (proposta)
+
+F03/09.1. A seleção por nome/telefone anteriormente usava o primeiro candidato compatível, mesmo com dois CPFs distintos e ausência de CPF na planilha. Prévia deixa vínculo pendente quando há mais de um candidato e preserva matrícula; confirmação revalida candidatos sob lock e reverte o lote se surgir ambiguidade. CPF exato continua prevalecendo. Testes fictícios de candidatos preexistentes e ambiguidade após prévia. Sem schema, alteração de tela ou ampliação de dados/permissões; CI pendente. Não garante exclusão de candidatos inseridos simultaneamente sem lock comum.
+
+Complemento da revisão por eventos: a prévia combina os CPFs do próprio lote e os candidatos persistidos por nome/telefone, sem depender da ordem, para não repetir rollback em todo reenvio. Regressão com dois grupos, linha sem CPF antes/depois, seis matrículas e quatro vínculos por CPF. Mantém rollback para nova ambiguidade após a prévia. A análise é conservadora e considera inclusive linhas que podem ser ignoradas na confirmação. Novo CI necessário.
+
+Revisão técnica complementar: pendência de responsável ambíguo recebe código próprio e aviso na linha do aluno, além do resumo. Teste confirma HTML e gera dump de dados fictícios para Chromium. Novo CI/QA obrigatórios; não encerra matriz integral.
