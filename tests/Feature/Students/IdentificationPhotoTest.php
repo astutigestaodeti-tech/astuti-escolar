@@ -8,6 +8,7 @@ use App\Models\Tenant\SchoolYear;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentEnrollment;
 use App\Models\Tenant\StudentGuardian;
+use App\Models\Tenant\StudentPickupAuthorization;
 use App\Models\User;
 use App\Security\Totp;
 use App\Support\UploadLimit;
@@ -194,6 +195,78 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
             $this->assertSame($first, Student::query()->findOrFail($this->student)->photo_path);
             $this->assertSame($auditCount, AuditLog::query()->where('auditable_id', $this->student)->count());
         });
+        $this->get($url)->assertOk();
+    }
+
+    public function test_revogar_autorizacao_remove_apenas_sua_foto_privada_apos_validacao(): void
+    {
+        $id = $this->inMunicipality(fn (): string => StudentPickupAuthorization::query()->create([
+            'id' => (string) Str::uuid(),
+            'student_id' => $this->student,
+            'full_name' => 'Pessoa autorizada fictícia',
+            'phone' => '11987654321',
+        ])->id);
+        $url = $this->url('autorizado', $id);
+        $remove = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->student.'/pessoas-autorizadas/'.$id.'/remover';
+        $reason = ['motivo' => 'Autorização fictícia revogada pela escola.'];
+        $this->user('school_secretary', [self::ESCOLA_A1, self::ESCOLA_A2]);
+        $this->post($url, ['foto' => $this->photo()])->assertSessionHas('status', 'Foto adicionada.');
+        $first = $this->inMunicipality(fn (): string => StudentPickupAuthorization::query()->findOrFail($id)->photo_path);
+        $this->post($url, ['foto' => $this->photo(600, 900)])->assertSessionHas('status', 'Foto atualizada.');
+        $last = $this->inMunicipality(fn (): string => StudentPickupAuthorization::query()->findOrFail($id)->photo_path);
+        Storage::disk('local')->assertMissing($first);
+        Storage::disk('local')->assertExists($last);
+        $this->assertSame([360, 480], array_slice(getimagesizefromstring(Storage::disk('local')->get($last)), 0, 2));
+        $this->get($url)->assertOk()->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+        $this->get($this->url('autorizado', $id, self::ESCOLA_A2))->assertNotFound();
+
+        $this->post($this->url('aluno', $this->student), ['foto' => $this->photo()])->assertRedirect();
+        $studentPhoto = $this->inMunicipality(fn (): string => Student::query()->findOrFail($this->student)->photo_path);
+        $this->post($remove, ['motivo' => ''])->assertSessionHasErrors('motivo');
+        $this->user('teacher', [self::ESCOLA_A1]);
+        $this->post($remove, $reason)->assertForbidden();
+        Storage::disk('local')->assertExists($last);
+        $this->assertTrue($this->inMunicipality(fn (): bool => StudentPickupAuthorization::query()->whereKey($id)->exists()));
+
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $this->post($remove, $reason)->assertSessionHas('status', 'Autorização de retirada removida. A pessoa não consta mais na lista de autorizados.');
+        Storage::disk('local')->assertMissing($last);
+        Storage::disk('local')->assertExists($studentPhoto);
+        $this->assertFalse($this->inMunicipality(fn (): bool => StudentPickupAuthorization::query()->whereKey($id)->exists()));
+        $this->get($url)->assertNotFound();
+        $audit = $this->inMunicipality(fn (): AuditLog => AuditLog::query()->where('auditable_type', StudentPickupAuthorization::class)->where('auditable_id', $id)->where('action', 'deleted')->sole());
+        $this->assertArrayNotHasKey('photo_path', $audit->before);
+        $this->assertStringNotContainsString($last, json_encode([$audit->before, $audit->after]));
+    }
+
+    public function test_falha_na_revogacao_preserva_autorizacao_e_foto(): void
+    {
+        $id = $this->inMunicipality(fn (): string => StudentPickupAuthorization::query()->create([
+            'id' => (string) Str::uuid(),
+            'student_id' => $this->student,
+            'full_name' => 'Pessoa autorizada fictícia',
+            'phone' => '11987654321',
+        ])->id);
+        $url = $this->url('autorizado', $id);
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $this->post($url, ['foto' => $this->photo()])->assertRedirect();
+        $path = $this->inMunicipality(fn (): string => StudentPickupAuthorization::query()->findOrFail($id)->photo_path);
+        StudentPickupAuthorization::deleted(function (StudentPickupAuthorization $authorization) use ($id): void {
+            if ($authorization->id === $id) {
+                throw new RuntimeException('Falha fictícia na revogação');
+            }
+        });
+        $this->withoutExceptionHandling();
+        try {
+            $this->post('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->student.'/pessoas-autorizadas/'.$id.'/remover', [
+                'motivo' => 'Autorização fictícia revogada pela escola.',
+            ]);
+            $this->fail('A falha fictícia deveria interromper a revogação.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Falha fictícia na revogação', $exception->getMessage());
+        }
+        Storage::disk('local')->assertExists($path);
+        $this->assertSame($path, $this->inMunicipality(fn (): string => StudentPickupAuthorization::query()->findOrFail($id)->photo_path));
         $this->get($url)->assertOk();
     }
 
