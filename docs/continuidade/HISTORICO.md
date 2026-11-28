@@ -749,3 +749,8 @@ Primeiro bloco: validador de pedido declarativo v1, Ed25519, escopo local, valid
 ## 27/11/2026 - Auditoria cadastral: segurança e acessibilidade (#256)
 
 Frentes independentes sobre main 2e57e67: #293 propõe mascarar observações livres de retirada nos novos eventos de auditoria, mantendo o cadastro autorizado e os motivos já exigidos; sem alteração de histórico imutável. Nesta unidade, teste estrutural do formulário de responsáveis e registro das lacunas de acessibilidade em docs/planejamento/fase-2/01-acessibilidade-cadastros.md. Não altera telas, permissões ou dados reais. CI e revisão pendentes; teclado, leitor de tela, correção da associação de erros e homologação ainda necessários. Não integrar apenas por aprovação de teste estrutural.
+
+
+## 28/11/2026 - Auditoria #256: retirada e prévia de importação (propostas)
+
+Base b363d3b. Frentes independentes F02/F03: transação tenant com lock de aluno e vínculo e auditoria atômica no registro de saída, validação de UUID e regressões de revogação/rollback; aviso de nome de responsável inválido na prévia, sem bloquear matrícula por campo opcional ou guardar valor rejeitado na mensagem. Sem ampliar perfis, coletar dados judiciais, mudar schema ou tocar dados reais. A presunção de autorização e restrições judiciais estruturadas exigem decisão funcional; corrida real exige ensaio dedicado. CI e homologação pendentes, sem testes locais. #309 integrado, CI push aprovado, implantação a confirmar.
