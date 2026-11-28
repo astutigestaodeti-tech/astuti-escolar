@@ -932,6 +932,81 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertTrue($audit->every(fn ($log): bool => ($log->after['phone'] ?? null) === '[REDACTED]'));
     }
 
+    public function test_previa_avisa_nome_invalido_do_responsavel_sem_impedir_importacao_do_aluno(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Nome 123', '11955554444', ''],
+            ['Bruno Aluno Fictício', '01/03/2019', '1A', '', '', ''],
+            ['Carla Aluna Fictícia', '01/04/2018', '1A', 'Maria Pessoa Fictícia', '11955553333', ''],
+        ]);
+        try {
+            [$token, , $html] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $message = 'Nome do responsável inválido em uma linha da planilha; esse nome foi ignorado. Confira o nome completo na ficha.';
+        $rows = $this->linhasDoLote($token);
+        $invalid = $this->linhaDe($rows, 'Ana Aluna Fictícia');
+        $missing = $this->linhaDe($rows, 'Bruno Aluno Fictício');
+        $this->assertNull($invalid['guardian']);
+        $this->assertContains($message, array_column($invalid['pending'], 'message'));
+        $this->assertNull($missing['guardian']);
+        $this->assertNotContains($message, array_column($missing['pending'], 'message'));
+        $this->assertStringContainsString($message, $html);
+        $this->assertStringContainsString('nomes de responsáveis inválidos (1 aluno)', $html);
+        $this->assertStringNotContainsString('Nome 123', $html);
+        $dump = getenv('ASTUTI_DUMP_TELAS') ?: null;
+        if ($dump !== null) {
+            $html = str_replace(rtrim((string) config('app.url'), '/').'/', 'file://'.public_path().'/', $html);
+            file_put_contents(rtrim($dump, '/').'/importacao_responsavel_invalido.html', preg_replace('/\.(css|js)\?v=\d+/', '.$1', $html));
+        }
+
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(3, Student::query()->count());
+            $this->assertSame(1, Guardian::query()->count());
+            $this->assertSame('Carla Aluna Fictícia', StudentGuardian::query()->with('student')->sole()->student->full_name);
+        });
+    }
+
+    public function test_linhas_repetidas_com_responsavel_invalido_e_valido_preservam_apenas_o_vinculo_valido(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Nome 123', '11955554444', ''],
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '11955553333', ''],
+        ]);
+        try {
+            [$token, $confirmations, $html] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $rows = $this->linhasDoLote($token);
+        $this->assertCount(1, $rows);
+        $this->assertCount(1, $confirmations);
+        $this->assertSame('Maria Pessoa Fictícia', $rows[0]['guardian']['name']);
+        $this->assertStringContainsString('Responsável: Maria Pessoa Fictícia', $html);
+        $this->assertStringContainsString('Nome do responsável inválido em uma linha da planilha; esse nome foi ignorado.', $html);
+        $this->assertStringNotContainsString('Nome 123', $html);
+
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'confirmados' => $confirmations])->assertRedirect($this->url());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(1, Student::query()->count());
+            $this->assertSame(1, StudentEnrollment::query()->count());
+            $this->assertSame(1, Guardian::query()->count());
+            $this->assertSame('Maria Pessoa Fictícia', StudentGuardian::query()->with('guardian')->sole()->guardian->full_name);
+        });
+    }
+
     public function test_lote_nao_reutiliza_responsavel_com_cpf_distinto_mesmo_nome_e_telefone(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A']);
