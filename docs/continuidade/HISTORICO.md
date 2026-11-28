@@ -774,3 +774,8 @@ Validação complementar: a matrícula exibida deve corresponder ao filtro selec
 F05/F06, base da0c8b1. Regressão de acesso direto ao mapa e gravação de coordenadas por secretaria autorizada somente em outra unidade: aluno fora do vínculo escolar retorna 404, escola sem escopo 403, nenhum envio ao geocodificador, coordenadas intactas e sem evento de atualização de aluno. Rota, Gate manageStudents, escopo de matrícula ativa e segundo fator confirmado na gravação existentes; sem mudança de política, schema ou dados reais. CI pendente; matriz integral F05/F06 permanece aberta.
 
 Complemento F06: gravação sem segundo fator configurado e sem verificação na sessão deve ser proibida; após confirmação TOTP, a mesma operação salva coordenadas e mascara ambos os valores na auditoria. Sem modificar política; CI pendente.
+
+
+## 28/11/2026 - Auditoria #256: autoria e máscara da localização residencial (proposta)
+
+F06, base 1bc92bb. Complementa recomendação do revisor por eventos: identifica conta e perfil do operador no evento 2FA; duas gravações fictícias por secretaria e direção comprovam eventos distintos, valores antigos e novos mascarados e posição efetivamente atualizada. Sem alterações de comportamento, schema, dados ou permissões. CI pendente; matriz de auditoria permanece aberta.
