@@ -781,3 +781,8 @@ Complemento F06: gravação sem segundo fator configurado e sem verificação na
 F03, base 1c963ff. A consolidação escolhia o primeiro responsável válido mesmo com divergência posterior. Compara nome normalizado, parentesco, CPF e telefone quando ambos presentes; conflito deixa o vínculo pendente sem reintroduzi-lo pela terceira linha. Dados complementares compatíveis podem preencher o campo ausente. Prévia exibe aviso genérico, sem nomes divergentes, e matrícula continua após conferência; teste de regressão e dump visual. Sem schema, permissões ou dados reais. CI e QA pendentes.
 
 Complemento da revisão por eventos: CPF e telefone complementares em linhas sem identificador comum não autorizam unir dados de homônimos. Mantém pendência sem vínculo, preserva complemento quando há identificador coincidente. Regressão dedicada, novo CI/QA necessários.
+
+
+## 28/11/2026 - Auditoria #256: autoria e máscara da localização residencial (proposta)
+
+F06, base 1bc92bb. Complementa recomendação do revisor por eventos: identifica conta e perfil do operador no evento 2FA; duas gravações fictícias por secretaria e direção comprovam eventos distintos, valores antigos e novos mascarados e posição efetivamente atualizada. Sem alterações de comportamento, schema, dados ou permissões. CI pendente; matriz de auditoria permanece aberta.
