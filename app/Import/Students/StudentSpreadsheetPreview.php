@@ -505,7 +505,9 @@ final class StudentSpreadsheetPreview
                     } elseif (ImportedGuardianLinker::normalizedName($first->guardian['name']) !== ImportedGuardianLinker::normalizedName($other->guardian['name'])
                         || $first->guardian['relationship'] !== $other->guardian['relationship']
                         || ($first->guardian['cpf'] !== null && $other->guardian['cpf'] !== null && $first->guardian['cpf'] !== $other->guardian['cpf'])
-                        || ($first->guardian['phone'] !== null && $other->guardian['phone'] !== null && $first->guardian['phone'] !== $other->guardian['phone'])) {
+                        || ($first->guardian['phone'] !== null && $other->guardian['phone'] !== null && $first->guardian['phone'] !== $other->guardian['phone'])
+                        || ($first->guardian['cpf'] !== null && $first->guardian['phone'] === null && $other->guardian['cpf'] === null && $other->guardian['phone'] !== null)
+                        || ($first->guardian['phone'] !== null && $first->guardian['cpf'] === null && $other->guardian['phone'] === null && $other->guardian['cpf'] !== null)) {
                         // Uma linha não autoriza escolher entre pessoas ou dados divergentes.
                         $guardianConflict = true;
                         $first->guardian = null;

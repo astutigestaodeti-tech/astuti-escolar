@@ -1057,6 +1057,43 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         });
     }
 
+    public function test_linhas_repetidas_nao_combinam_cpf_e_telefone_de_homonimos_sem_identificador_comum(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '', '529.982.247-25'],
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '11955553333', ''],
+            ['Bruno Aluno Fictício', '01/03/2019', '1A', 'Joana Pessoa Fictícia', '11955554444', ''],
+            ['Bruno Aluno Fictício', '01/03/2019', '1A', 'Joana Pessoa Fictícia', '', '111.444.777-35'],
+        ]);
+        try {
+            [$token, $confirmations, $html] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $rows = $this->linhasDoLote($token);
+        $this->assertCount(2, $rows);
+        $this->assertCount(2, $confirmations);
+        foreach ($rows as $row) {
+            $this->assertNull($row['guardian']);
+            $this->assertContains('responsavel_divergente', array_column($row['pending'], 'field'));
+        }
+        $this->assertStringContainsString('responsáveis divergentes em linhas repetidas (2 alunos)', $html);
+        foreach (['Maria Pessoa Fictícia', 'Joana Pessoa Fictícia', '529.982.247-25', '111.444.777-35', '11955553333', '11955554444'] as $value) {
+            $this->assertStringNotContainsString($value, $html);
+        }
+        $this->post($this->url().'/confirmar', ['lote' => $token, 'confirmados' => $confirmations])->assertRedirect($this->url());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(2, Student::query()->count());
+            $this->assertSame(2, StudentEnrollment::query()->count());
+            $this->assertSame(0, Guardian::query()->count());
+            $this->assertSame(0, StudentGuardian::query()->count());
+        });
+    }
+
     public function test_lote_nao_reutiliza_responsavel_com_cpf_distinto_mesmo_nome_e_telefone(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A']);

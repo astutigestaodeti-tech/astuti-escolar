@@ -164,6 +164,76 @@ class GeoLocationTest extends TwoMunicipalityTestCase
         $this->post($this->base().'/alunos/'.$this->student.'/localizacao', ['latitude' => '-23.47', 'longitude' => '-46.6', 'geo_source' => 'mapa'])->assertForbidden();
     }
 
+    public function test_localizacao_residencial_recusa_aluno_de_outra_escola_e_nao_envia_endereco_ao_geocodificador(): void
+    {
+        Http::fake();
+        $otherStudent = $this->inMunicipality(function (): string {
+            $student = Student::query()->create([
+                'id' => (string) Str::uuid(), 'full_name' => 'Aluno Fictício Outra Escola',
+                'address_street' => 'Rua Fictícia Reservada', 'address_number' => '200',
+                'address_city' => 'Monte Sereno', 'address_state' => 'SP',
+            ]);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $student->id,
+                'school_id' => self::ESCOLA_A2, 'school_year_id' => SchoolYear::query()->where('year', 2027)->sole()->id,
+                'status' => 'active',
+            ]);
+
+            return $student->id;
+        });
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $payload = ['latitude' => '-23.47', 'longitude' => '-46.6', 'geo_source' => 'mapa'];
+        $wrongStudent = $this->base().'/alunos/'.$otherStudent.'/localizacao';
+        $otherSchool = '/m/municipio-a/escolas/'.self::ESCOLA_A2.'/alunos/'.$otherStudent.'/localizacao';
+        $this->get($wrongStudent)->assertNotFound();
+        $this->post($wrongStudent, $payload)->assertNotFound();
+        $this->get($otherSchool)->assertForbidden();
+        $this->post($otherSchool, $payload)->assertForbidden();
+        Http::assertNothingSent();
+        $this->inMunicipality(function () use ($otherStudent): void {
+            foreach ([$this->student, $otherStudent] as $id) {
+                $student = Student::query()->findOrFail($id);
+                $this->assertNull($student->latitude);
+                $this->assertNull($student->longitude);
+            }
+            $this->assertSame(0, AuditLog::query()->where('auditable_type', Student::class)
+                ->whereIn('auditable_id', [$this->student, $otherStudent])->where('action', 'updated')->count());
+        });
+    }
+
+    public function test_gravacao_de_localizacao_exige_segundo_fator_e_mascara_coordenadas(): void
+    {
+        Http::fake();
+        $user = $this->criarUsuario('localizacao-segundo-fator@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $url = $this->base().'/alunos/'.$this->student.'/localizacao';
+        $payload = ['latitude' => '-23.47', 'longitude' => '-46.6', 'geo_source' => 'mapa'];
+
+        // Sem cadastro do segundo fator, somente o middleware da gravação deve impedir a alteração.
+        $this->actingAs($user)->postJson($url, $payload)->assertForbidden();
+        $user->forceFill(['two_factor_secret' => self::SECRET, 'two_factor_confirmed_at' => now()])->save();
+        $this->actingAs($user)->postJson($url, $payload)->assertForbidden();
+        $this->inMunicipality(function (): void {
+            $student = Student::query()->findOrFail($this->student);
+            $this->assertNull($student->latitude);
+            $this->assertNull($student->longitude);
+            $this->assertSame(0, AuditLog::query()->where('auditable_type', Student::class)
+                ->where('auditable_id', $this->student)->where('action', 'updated')->count());
+        });
+        $this->post('/seguranca/segundo-fator/desafio', ['code' => app(Totp::class)->at(self::SECRET, now()->getTimestamp())])->assertRedirect();
+        $this->post($url, $payload)->assertRedirect()->assertSessionHas('status', 'Localização da residência salva.');
+        $this->inMunicipality(function (): void {
+            $student = Student::query()->findOrFail($this->student);
+            $this->assertEqualsWithDelta(-23.47, (float) $student->latitude, 0.000001);
+            $this->assertEqualsWithDelta(-46.6, (float) $student->longitude, 0.000001);
+            $audit = AuditLog::query()->where('auditable_type', Student::class)
+                ->where('auditable_id', $this->student)->where('action', 'updated')->sole();
+            $this->assertSame('[REDACTED]', $audit->after['latitude']);
+            $this->assertSame('[REDACTED]', $audit->after['longitude']);
+        });
+        Http::assertNothingSent();
+    }
+
     public function test_endereco_copiado_do_google_e_escrito_por_extenso_e_cai_para_a_rua_sem_o_numero(): void
     {
         // O mapa não conhece o número 856: responde vazio com número e acha a rua sem ele.
