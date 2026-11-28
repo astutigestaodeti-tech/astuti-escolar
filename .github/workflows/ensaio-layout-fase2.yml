@@ -1,4 +1,4 @@
-name: Ensaio isolado de layout cadastral 307
+name: Ensaio isolado de layout cadastral 311
 
 on:
   push:
@@ -15,8 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sha: 9062519c15696b7314c00c0e99da932458f8f124
-            pr: '307'
+          - sha: 69c84a5b565dcfc6ee0fbe8876e797126d171fb9
+            pr: '311'
     services:
       postgres:
         image: postgres:17
@@ -76,9 +76,9 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$TARGET_SHA"
           mkdir -p "${RUNNER_TEMP}/astuti-telas" "${RUNNER_TEMP}/astuti-alvo"
-          php artisan test --filter=SchoolPendenciesTest
+          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=ConfirmedStudentImportTest
           ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=test_todas_as_telas_da_escola_abrem_para_a_direcao
-          for name in pendencias pendencias_foto aluno alunos aluno_novo aluno_editar resp_novo resp_editar resp_desvincular aluno_imprimir_config aluno_mapa censo_aluno imp_alunos; do
+          for name in importacao_alunos_previa importacao_responsavel_invalido imp_alunos; do
             test -s "${RUNNER_TEMP}/astuti-telas/$name.html"
             cp "${RUNNER_TEMP}/astuti-telas/$name.html" "${RUNNER_TEMP}/astuti-alvo/"
           done
@@ -87,7 +87,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Conferir referência anual e margens reais em Chromium
+      - name: Conferir aviso da prévia e margens reais em Chromium
         shell: bash
         run: |
           python -m pip install 'playwright==1.51.0'
@@ -102,14 +102,13 @@ jobs:
               browser = p.chromium.launch()
               for width in (1440, 390):
                   page = browser.new_page(viewport={'width': width, 'height': 900})
-                  page.goto((root / 'pendencias.html').as_uri())
-                  assert page.get_by_text('Cada aluno é contado uma vez.', exact=False).count() == 1
-                  assert page.get_by_role('columnheader', name='Turma / ano letivo').count() == 1
-                  assert page.locator('td').get_by_text('Ano letivo', exact=False).count() >= 1
-                  page.goto((root / 'aluno.html').as_uri())
-                  assert page.locator('li[id^="matricula-"]').count() >= 1
+                  page.goto((root / 'importacao_responsavel_invalido.html').as_uri())
+                  assert page.get_by_text('Nome do responsável inválido em uma linha da planilha; esse nome foi ignorado.', exact=False).count() == 1
+                  assert page.get_by_text('nomes de responsáveis inválidos (1 aluno)', exact=False).count() == 1
+                  assert page.get_by_text('Nome 123', exact=False).count() == 0
+                  assert page.get_by_role('heading', name='Conferir antes de importar').count() == 1
                   page.close()
               browser.close()
-          print('Referência anual e âncoras conferidas em 1440/390 px.')
+          print('Aviso específico e ausência de nome inválido conferidos em 1440/390 px.')
           PY
           python scripts/qualidade/checar-margens.py "${RUNNER_TEMP}/astuti-alvo" 1440 390
