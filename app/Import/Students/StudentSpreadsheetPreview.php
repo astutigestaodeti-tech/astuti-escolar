@@ -362,7 +362,7 @@ final class StudentSpreadsheetPreview
             return;
         }
         if (mb_strlen($name) < 5 || mb_strlen($name) > 180 || preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $name) !== 1) {
-            $student->addIssue(ImportIssue::PENDING, 'responsavel_nome', 'Nome do responsável inválido na planilha; o vínculo não foi importado. Confira o nome completo na ficha.');
+            $student->addIssue(ImportIssue::PENDING, 'responsavel_nome', 'Nome do responsável inválido em uma linha da planilha; esse nome foi ignorado. Confira o nome completo na ficha.');
 
             return;
         }

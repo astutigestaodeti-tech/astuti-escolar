@@ -153,7 +153,7 @@
                                         <span class="conf-origem">Responsável: {{ $item['guardian_label'] }}</span>
                                     @endif
                                     @if (in_array('responsavel_nome', array_column($row['pending'], 'field'), true))
-                                        <span class="conf-origem">Nome do responsável inválido na planilha; o vínculo não foi importado. Confira o nome completo na ficha.</span>
+                                        <span class="conf-origem">Nome do responsável inválido em uma linha da planilha; esse nome foi ignorado. Confira o nome completo na ficha.</span>
                                     @endif
                                 </td>
                                 <td class="conf-numero">
