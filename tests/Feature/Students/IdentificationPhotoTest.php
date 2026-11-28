@@ -13,8 +13,10 @@ use App\Security\Totp;
 use App\Support\UploadLimit;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Tests\Support\TwoMunicipalityTestCase;
 
 class IdentificationPhotoTest extends TwoMunicipalityTestCase
@@ -132,6 +134,67 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
 
         $actions = $this->inMunicipality(fn (): array => AuditLog::query()->where('auditable_type', Guardian::class)->orderBy('occurred_at')->pluck('action')->all());
         $this->assertSame(['photo.updated', 'photo.updated', 'photo.removed'], $actions);
+    }
+
+    public function test_substituicao_do_aluno_rele_foto_atual_e_remove_arquivo_sem_vinculo(): void
+    {
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $url = $this->url('aluno', $this->student);
+        $this->post($url, ['foto' => $this->photo()])->assertRedirect();
+        $first = $this->inMunicipality(fn (): string => Student::query()->findOrFail($this->student)->photo_path);
+        $intermediate = dirname($first).'/'.Str::uuid().'.jpg';
+        Storage::disk('local')->put($intermediate, Storage::disk('local')->get($first));
+
+        // Simula uma troca já confirmada entre a leitura inicial e a gravação.
+        // Não é ensaio com duas conexões simultâneas: comprova a releitura.
+        $changed = false;
+        Student::retrieved(function (Student $student) use (&$changed, $intermediate, $first): void {
+            if (! $changed && $student->id === $this->student) {
+                $changed = true;
+                DB::connection('tenant')->table('students')->where('id', $student->id)->update(['photo_path' => $intermediate]);
+                Storage::disk('local')->delete($first);
+            }
+        });
+        $this->post($url, ['foto' => $this->photo(600, 900)])->assertSessionHas('status', 'Foto atualizada.');
+        $this->assertTrue($changed);
+        $last = $this->inMunicipality(fn (): string => Student::query()->findOrFail($this->student)->photo_path);
+        $this->assertNotSame($intermediate, $last);
+        Storage::disk('local')->assertMissing([$first, $intermediate]);
+        $this->assertSame([$last], Storage::disk('local')->allFiles(dirname($last)));
+        $this->get($url)->assertOk()->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+        $this->post($url.'/remover')->assertSessionHas('status', 'Foto removida.');
+        $this->assertSame([], Storage::disk('local')->allFiles(dirname($last)));
+        $this->assertNull($this->inMunicipality(fn (): ?string => Student::query()->findOrFail($this->student)->photo_path));
+        $this->get($url)->assertNotFound();
+    }
+
+    public function test_falha_de_gravacao_preserva_foto_anterior_e_nao_deixa_arquivo_novo(): void
+    {
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $url = $this->url('aluno', $this->student);
+        $this->post($url, ['foto' => $this->photo()])->assertRedirect();
+        [$first, $auditCount] = $this->inMunicipality(fn (): array => [
+            Student::query()->findOrFail($this->student)->photo_path,
+            AuditLog::query()->where('auditable_id', $this->student)->count(),
+        ]);
+        Student::updated(function (Student $student): void {
+            if ($student->id === $this->student && $student->wasChanged('photo_path')) {
+                throw new RuntimeException('Falha fictícia após gravação da foto');
+            }
+        });
+        $this->withoutExceptionHandling();
+        try {
+            $this->post($url, ['foto' => $this->photo(600, 900)]);
+            $this->fail('A falha fictícia deveria interromper a gravação.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Falha fictícia após gravação da foto', $exception->getMessage());
+        }
+        $this->assertSame([$first], Storage::disk('local')->allFiles(dirname($first)));
+        $this->inMunicipality(function () use ($first, $auditCount): void {
+            $this->assertSame($first, Student::query()->findOrFail($this->student)->photo_path);
+            $this->assertSame($auditCount, AuditLog::query()->where('auditable_id', $this->student)->count());
+        });
+        $this->get($url)->assertOk();
     }
 
     public function test_arquivo_que_nao_e_imagem_e_foto_pequena_sao_recusados(): void
