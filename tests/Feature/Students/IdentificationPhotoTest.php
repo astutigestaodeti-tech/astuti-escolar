@@ -270,6 +270,77 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
         $this->get($url)->assertOk();
     }
 
+    public function test_desvinculo_preserva_foto_dos_irmaos_e_remove_no_ultimo_vinculo(): void
+    {
+        $links = $this->inMunicipality(function (): array {
+            $first = StudentGuardian::query()->where('guardian_id', $this->guardian)->sole();
+            $second = StudentGuardian::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $this->otherSchoolStudent,
+                'guardian_id' => $this->guardian,
+                'relationship' => 'mother',
+            ]);
+
+            return [$first->id, $second->id];
+        });
+        $this->user('school_secretary', [self::ESCOLA_A1, self::ESCOLA_A2]);
+        $url = $this->url('responsavel', $this->guardian);
+        $otherUrl = $this->url('responsavel', $this->guardian, self::ESCOLA_A2);
+        $this->post($url, ['foto' => $this->photo()])->assertRedirect();
+        $path = $this->inMunicipality(fn (): string => Guardian::query()->findOrFail($this->guardian)->photo_path);
+        $reason = ['motivo' => 'Desvínculo fictício solicitado pela família.'];
+        $firstUnlink = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->student.'/responsaveis/'.$links[0].'/desvincular';
+        $lastUnlink = '/m/municipio-a/escolas/'.self::ESCOLA_A2.'/alunos/'.$this->otherSchoolStudent.'/responsaveis/'.$links[1].'/desvincular';
+
+        $this->post($firstUnlink, $reason)->assertRedirect();
+        Storage::disk('local')->assertExists($path);
+        $this->get($url)->assertNotFound();
+        $this->get($otherUrl)->assertOk();
+
+        $this->post($lastUnlink, ['motivo' => ''])->assertSessionHasErrors('motivo');
+        Storage::disk('local')->assertExists($path);
+        $this->post($lastUnlink, $reason)->assertRedirect();
+        Storage::disk('local')->assertMissing($path);
+        $this->get($otherUrl)->assertNotFound();
+        $this->post($otherUrl, ['foto' => $this->photo()])->assertNotFound();
+        $this->inMunicipality(function () use ($path): void {
+            $guardian = Guardian::query()->findOrFail($this->guardian);
+            $this->assertNull($guardian->photo_path);
+            $this->assertNull($guardian->photo_updated_at);
+            $this->assertSame(0, StudentGuardian::query()->where('guardian_id', $this->guardian)->count());
+            $audit = AuditLog::query()->where('auditable_type', Guardian::class)->where('auditable_id', $this->guardian)->where('action', 'photo.removed')->sole();
+            $this->assertNull($audit->after['photo_updated_at']);
+            $this->assertStringNotContainsString($path, json_encode([$audit->before, $audit->after]));
+        });
+    }
+
+    public function test_falha_no_ultimo_desvinculo_preserva_foto_e_vinculo(): void
+    {
+        $link = $this->inMunicipality(fn (): string => StudentGuardian::query()->where('guardian_id', $this->guardian)->sole()->id);
+        $this->user('school_secretary', [self::ESCOLA_A1]);
+        $url = $this->url('responsavel', $this->guardian);
+        $this->post($url, ['foto' => $this->photo()])->assertRedirect();
+        $path = $this->inMunicipality(fn (): string => Guardian::query()->findOrFail($this->guardian)->photo_path);
+        AuditLog::creating(function (AuditLog $log): void {
+            if ($log->action === 'photo.removed') {
+                throw new RuntimeException('Falha fictícia na auditoria da remoção da foto');
+            }
+        });
+        $this->withoutExceptionHandling();
+        try {
+            $this->post('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->student.'/responsaveis/'.$link.'/desvincular', [
+                'motivo' => 'Desvínculo fictício solicitado pela família.',
+            ]);
+            $this->fail('A falha fictícia deveria interromper o desvínculo.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Falha fictícia na auditoria da remoção da foto', $exception->getMessage());
+        }
+        Storage::disk('local')->assertExists($path);
+        $this->assertSame($path, $this->inMunicipality(fn (): string => Guardian::query()->findOrFail($this->guardian)->photo_path));
+        $this->assertTrue($this->inMunicipality(fn (): bool => StudentGuardian::query()->whereKey($link)->exists()));
+        $this->get($url)->assertOk();
+    }
+
     public function test_arquivo_que_nao_e_imagem_e_foto_pequena_sao_recusados(): void
     {
         $this->user('school_secretary', [self::ESCOLA_A1]);
