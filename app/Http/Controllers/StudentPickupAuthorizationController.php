@@ -6,6 +6,7 @@ use App\Audit\AuditTrail;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentPickupAuthorization;
+use App\Photos\IdentificationPhoto;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -85,7 +86,7 @@ class StudentPickupAuthorizationController extends Controller
         return view('pickups.remove', compact('municipality', 'school', 'student', 'authorization'));
     }
 
-    public function remove(Request $request, string $municipio, string $escola, string $aluno, string $autorizacao): RedirectResponse
+    public function remove(Request $request, string $municipio, string $escola, string $aluno, string $autorizacao, IdentificationPhoto $photos): RedirectResponse
     {
         [$municipality, $school] = $this->authorizedStudent($request, $escola, $aluno);
 
@@ -100,11 +101,12 @@ class StudentPickupAuthorizationController extends Controller
             'motivo.max' => 'O motivo deve ter no máximo 500 caracteres.',
         ], ['motivo' => 'Motivo']);
 
-        DB::connection('tenant')->transaction(function () use ($aluno, $school, $autorizacao, $data): void {
+        $oldPhoto = DB::connection('tenant')->transaction(function () use ($aluno, $school, $autorizacao, $data): ?string {
             $this->lockedStudent($aluno, $school);
             $authorization = StudentPickupAuthorization::query()
                 ->where('student_id', $aluno)->lockForUpdate()->findOrFail($autorizacao);
             $before = $this->snapshot($authorization);
+            $oldPhoto = $authorization->photo_path;
 
             $authorization->delete();
 
@@ -112,7 +114,11 @@ class StudentPickupAuthorizationController extends Controller
                 'tenant', 'deleted', StudentPickupAuthorization::class, $authorization->id,
                 $before, ['motivo' => $data['motivo']],
             );
+
+            return $oldPhoto;
         });
+        // O arquivo pertence à autorização removida; só apagar depois do commit.
+        $photos->delete($oldPhoto);
 
         return $this->backToStudent($municipality->slug, $school->id, $aluno, 'Autorização de retirada removida. A pessoa não consta mais na lista de autorizados.');
     }
