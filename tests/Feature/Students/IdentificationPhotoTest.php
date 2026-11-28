@@ -13,10 +13,12 @@ use App\Models\User;
 use App\Security\Totp;
 use App\Support\UploadLimit;
 use App\Tenancy\TenantContext;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Mockery;
 use RuntimeException;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -216,7 +218,7 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
 
         $disk = Storage::disk('local');
         $original = $disk->get($first);
-        $unavailable = \Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
+        $unavailable = Mockery::mock(Filesystem::class);
         $unavailable->shouldReceive('put')->once()->withArgs(fn (string $path, string $contents): bool => str_starts_with($path, dirname($first).'/') && $path !== $first && $contents !== '')->andReturnFalse();
         Storage::set('local', $unavailable);
         try {
