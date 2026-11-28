@@ -786,3 +786,8 @@ Complemento da revisão por eventos: CPF e telefone complementares em linhas sem
 ## 28/11/2026 - Auditoria #256: autoria e máscara da localização residencial (proposta)
 
 F06, base 1bc92bb. Complementa recomendação do revisor por eventos: identifica conta e perfil do operador no evento 2FA; duas gravações fictícias por secretaria e direção comprovam eventos distintos, valores antigos e novos mascarados e posição efetivamente atualizada. Sem alterações de comportamento, schema, dados ou permissões. CI pendente; matriz de auditoria permanece aberta.
+
+
+## 28/11/2026 - Auditoria #256: acessibilidade dos erros de responsáveis (proposta)
+
+F08/16.1. Associa mensagens de erro individuais aos campos de criação/edição e desvínculo por aria-invalid/aria-describedby, preserva ajudas e disponibiliza foco inicial no resumo somente quando houver erro. AllSchoolPagesOpenTest passa por respostas reais de validação e renderiza três telas de erro. Sem alteração de regras, coleta, autorização ou banco. CI e ensaio de teclado/margens necessários; nenhum teste local.

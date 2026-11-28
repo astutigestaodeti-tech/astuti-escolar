@@ -46,7 +46,7 @@
         </div>
 
         @if ($errors->any())
-            <div class="erro" role="alert">
+            <div class="erro" role="alert" tabindex="-1" autofocus>
                 <x-icon name="alerta" :size="18" />
                 <div>
                     <strong>Revise o formulário</strong>
@@ -64,9 +64,9 @@
             <div class="formulario-grade">
                 <div class="formulario-campo largo">
                     <label class="rotulo" for="motivo">Motivo do desvínculo *</label>
-                    <textarea class="entrada" id="motivo" name="motivo" rows="4" minlength="10" maxlength="500" required aria-describedby="motivo-ajuda">{{ old('motivo') }}</textarea>
+                    <textarea class="entrada" id="motivo" name="motivo" rows="4" minlength="10" maxlength="500" required aria-describedby="motivo-ajuda{{ $errors->has('motivo') ? ' motivo-erro' : '' }}" @error('motivo') aria-invalid="true" @enderror>{{ old('motivo') }}</textarea>
                     <p class="texto-ajuda" id="motivo-ajuda">Escreva de 10 a 500 caracteres. O motivo e a autoria ficarão registrados na auditoria.</p>
-                    @error('motivo')<p class="campo-erro">{{ $message }}</p>@enderror
+                    @error('motivo')<p class="campo-erro" id="motivo-erro">{{ $message }}</p>@enderror
                 </div>
             </div>
             <div class="formulario-acoes">
