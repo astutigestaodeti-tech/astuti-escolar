@@ -208,7 +208,8 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
         [$first, $updatedAt, $auditId] = $this->inMunicipality(function () use ($user): array {
             $guardian = Guardian::query()->findOrFail($this->guardian);
             $audit = AuditLog::query()->where('auditable_type', Guardian::class)
-                ->where('auditable_id', $guardian->id)->where('action', 'photo.updated')->sole();
+                ->where('auditable_id', $guardian->id)->sole();
+            $this->assertSame('photo.updated', $audit->action);
             $this->assertSame($user->id, $audit->user_id);
             $this->assertSame('school_secretary', $audit->role);
             $this->assertArrayNotHasKey('photo_path', $audit->after);
@@ -235,7 +236,7 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
             $this->assertSame($first, $guardian->photo_path);
             $this->assertSame($updatedAt, $guardian->photo_updated_at->toIso8601String());
             $this->assertSame($auditId, AuditLog::query()->where('auditable_type', Guardian::class)
-                ->where('auditable_id', $guardian->id)->where('action', 'photo.updated')->sole()->id);
+                ->where('auditable_id', $guardian->id)->sole()->id);
         });
         $this->get($url)->assertOk()->assertHeader('Cache-Control', 'max-age=0, no-store, private');
     }

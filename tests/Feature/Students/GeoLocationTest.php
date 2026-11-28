@@ -222,7 +222,7 @@ class GeoLocationTest extends TwoMunicipalityTestCase
         });
         $this->post('/seguranca/segundo-fator/desafio', ['code' => app(Totp::class)->at(self::SECRET, now()->getTimestamp())])->assertRedirect();
         $this->post($url, $payload)->assertRedirect()->assertSessionHas('status', 'Localização da residência salva.');
-        $this->inMunicipality(function (): void {
+        $this->inMunicipality(function () use ($user): void {
             $student = Student::query()->findOrFail($this->student);
             $this->assertEqualsWithDelta(-23.47, (float) $student->latitude, 0.000001);
             $this->assertEqualsWithDelta(-46.6, (float) $student->longitude, 0.000001);
@@ -230,6 +230,39 @@ class GeoLocationTest extends TwoMunicipalityTestCase
                 ->where('auditable_id', $this->student)->where('action', 'updated')->sole();
             $this->assertSame('[REDACTED]', $audit->after['latitude']);
             $this->assertSame('[REDACTED]', $audit->after['longitude']);
+            $this->assertSame($user->id, $audit->user_id);
+            $this->assertSame('school_secretary', $audit->role);
+        });
+        Http::assertNothingSent();
+    }
+
+    public function test_alteracao_de_localizacao_residencial_audita_autoria_e_mascara_valores_anteriores_e_novos(): void
+    {
+        Http::fake();
+        $first = $this->user('school_secretary', [self::ESCOLA_A1]);
+        $url = $this->base().'/alunos/'.$this->student.'/localizacao';
+        $this->post($url, ['latitude' => '-23.47', 'longitude' => '-46.6', 'geo_source' => 'mapa'])->assertRedirect();
+        $second = $this->user('school_director', [self::ESCOLA_A1]);
+        $this->post($url, ['latitude' => '-23.48', 'longitude' => '-46.61', 'geo_source' => 'mapa'])->assertRedirect();
+
+        $this->inMunicipality(function () use ($first, $second): void {
+            $audits = AuditLog::query()->where('auditable_type', Student::class)
+                ->where('auditable_id', $this->student)->where('action', 'updated')->get();
+            $this->assertCount(2, $audits);
+            $this->assertSame(1, $audits->where('user_id', $first->id)->count());
+            $this->assertSame(1, $audits->where('user_id', $second->id)->count());
+            $audits = $audits->keyBy('user_id');
+            $this->assertSame('school_secretary', $audits[$first->id]->role);
+            $this->assertSame('school_director', $audits[$second->id]->role);
+            $this->assertNotSame($audits[$first->id]->request_id, $audits[$second->id]->request_id);
+            foreach (['latitude', 'longitude'] as $field) {
+                $this->assertSame('[REDACTED]', $audits[$first->id]->after[$field]);
+                $this->assertSame('[REDACTED]', $audits[$second->id]->before[$field]);
+                $this->assertSame('[REDACTED]', $audits[$second->id]->after[$field]);
+            }
+            $student = Student::query()->findOrFail($this->student);
+            $this->assertEqualsWithDelta(-23.48, (float) $student->latitude, 0.000001);
+            $this->assertEqualsWithDelta(-46.61, (float) $student->longitude, 0.000001);
         });
         Http::assertNothingSent();
     }

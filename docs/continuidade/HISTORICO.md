@@ -783,6 +783,13 @@ F03, base 1c963ff. A consolidação escolhia o primeiro responsável válido mes
 Complemento da revisão por eventos: CPF e telefone complementares em linhas sem identificador comum não autorizam unir dados de homônimos. Mantém pendência sem vínculo, preserva complemento quando há identificador coincidente. Regressão dedicada, novo CI/QA necessários.
 
 
+## 28/11/2026 - Auditoria #256: autoria e máscara da localização residencial (proposta)
+
+F06, base 1bc92bb. Complementa recomendação do revisor por eventos: identifica conta e perfil do operador no evento 2FA; duas gravações fictícias por secretaria e direção comprovam eventos distintos, valores antigos e novos mascarados e posição efetivamente atualizada. Sem alterações de comportamento, schema, dados ou permissões. CI pendente; matriz de auditoria permanece aberta.
+
+
 ## 28/11/2026 - Auditoria #256: falha de escrita da foto privada (proposta)
 
 F01/F06, base 1bc92bb. Regressão de disco recusando put na troca da foto de responsável: preserva bytes, caminho, data, auditoria e consulta privada da foto anterior. Verifica autoria, perfil e ausência de caminho no evento. Falha simulada antes de escrita; não comprova exclusão com falha, escrita parcial, crash ou concorrência real. Sem alteração de comportamento, schema, dados ou permissões. CI pendente, sem testes locais.
+
+Complemento da revisão por eventos: conferir todos os eventos do responsável, não apenas photo.updated, antes e após falha de put. Novo CI necessário.
