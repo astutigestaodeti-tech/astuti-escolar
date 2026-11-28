@@ -107,6 +107,16 @@ class ConfirmedStudentImportController extends Controller
         // O mesmo CPF em dois alunos da planilha não identifica ninguém: nenhum dos dois o recebe.
         $cpfCount = array_count_values(array_filter(array_map(fn (ImportedStudent $student): ?string => $student->census['cpf'] ?? null, $preview->students)));
 
+        // Considerar também os CPFs do próprio lote, independentemente da ordem
+        // das linhas. Uma linha sem CPF não pode escolher entre homônimos.
+        $guardianCpfs = [];
+        foreach ($preview->students as $student) {
+            $guardian = $student->guardian;
+            if ($guardian !== null && $guardian['cpf'] !== null && $guardian['phone'] !== null) {
+                $guardianCpfs[ImportedGuardianLinker::normalizedName($guardian['name'])][$guardian['phone']][$guardian['cpf']] = true;
+            }
+        }
+
         $rows = [];
         foreach ($preview->students as $student) {
             $confirmation = [];
@@ -147,6 +157,18 @@ class ConfirmedStudentImportController extends Controller
             }
 
             $guardian = $this->importedGuardian($student->guardian, $pending);
+            if ($guardian !== null && $guardian['cpf'] === null && $guardian['phone'] !== null) {
+                $cpfs = $guardianCpfs[ImportedGuardianLinker::normalizedName($guardian['name'])][$guardian['phone']] ?? [];
+                foreach (ImportedGuardianLinker::compatiblePhoneCandidates($guardian) as $matchGuardian) {
+                    if ($matchGuardian->cpf !== null) {
+                        $cpfs[$matchGuardian->cpf] = true;
+                    }
+                }
+                if (count($cpfs) > 1) {
+                    $guardian = null;
+                    $pending[] = ['field' => 'responsavel', 'message' => 'Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.'];
+                }
+            }
 
             // Aluno já cadastrado: endereço, Censo e responsável só completam o que está vazio, com marcação.
             $addressTargetId = null;
