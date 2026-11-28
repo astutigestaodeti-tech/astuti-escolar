@@ -28,7 +28,7 @@ class RegistrationPendencies
     ];
 
     /**
-     * @return Collection<int, array{id: string, name: string, class: ?string, enrollment: string, pendencies: list<string>}>
+     * @return Collection<int, array{id: string, name: string, class: ?string, year: int, enrollment: string, pendencies: list<string>}>
      */
     public function forSchool(School $school): Collection
     {
@@ -41,7 +41,7 @@ class RegistrationPendencies
             ->where('student_enrollments.status', 'active')
             ->whereNull('students.deleted_at')
             ->select([
-                'student_enrollments.id as enrollment_id', 'student_enrollments.school_class_id', 'student_enrollments.transport_status',
+                'student_enrollments.id as enrollment_id', 'student_enrollments.school_class_id', 'student_enrollments.transport_status', 'school_years.year as reference_year',
                 'students.id', 'students.full_name', 'students.birth_date', 'students.address_street', 'students.address_number',
                 'students.postal_code', 'students.photo_path', 'students.latitude', 'students.longitude', 'school_classes.name as class_name',
             ])
@@ -112,6 +112,7 @@ class RegistrationPendencies
                 'id' => $row->id,
                 'name' => $row->full_name,
                 'class' => $row->class_name,
+                'year' => (int) $row->reference_year,
                 'enrollment' => $row->enrollment_id,
                 'pendencies' => $pendencies,
             ];
