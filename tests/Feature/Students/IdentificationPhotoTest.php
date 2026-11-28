@@ -13,10 +13,12 @@ use App\Models\User;
 use App\Security\Totp;
 use App\Support\UploadLimit;
 use App\Tenancy\TenantContext;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Mockery;
 use RuntimeException;
 use Tests\Support\TwoMunicipalityTestCase;
 
@@ -196,6 +198,47 @@ class IdentificationPhotoTest extends TwoMunicipalityTestCase
             $this->assertSame($auditCount, AuditLog::query()->where('auditable_id', $this->student)->count());
         });
         $this->get($url)->assertOk();
+    }
+
+    public function test_falha_de_escrita_no_disco_preserva_foto_e_auditoria_anteriores(): void
+    {
+        $user = $this->user('school_secretary', [self::ESCOLA_A1]);
+        $url = $this->url('responsavel', $this->guardian);
+        $this->post($url, ['foto' => $this->photo()])->assertSessionHas('status', 'Foto adicionada.');
+        [$first, $updatedAt, $auditId] = $this->inMunicipality(function () use ($user): array {
+            $guardian = Guardian::query()->findOrFail($this->guardian);
+            $audit = AuditLog::query()->where('auditable_type', Guardian::class)
+                ->where('auditable_id', $guardian->id)->sole();
+            $this->assertSame('photo.updated', $audit->action);
+            $this->assertSame($user->id, $audit->user_id);
+            $this->assertSame('school_secretary', $audit->role);
+            $this->assertArrayNotHasKey('photo_path', $audit->after);
+
+            return [$guardian->photo_path, $guardian->photo_updated_at->toIso8601String(), $audit->id];
+        });
+
+        $disk = Storage::disk('local');
+        $original = $disk->get($first);
+        $unavailable = Mockery::mock(Filesystem::class);
+        $unavailable->shouldReceive('put')->once()->withArgs(fn (string $path, string $contents): bool => str_starts_with($path, dirname($first).'/') && $path !== $first && $contents !== '')->andReturnFalse();
+        Storage::set('local', $unavailable);
+        try {
+            $this->post($url, ['foto' => $this->photo(600, 900)])
+                ->assertSessionHasErrors(['foto' => 'Não foi possível armazenar a foto. A foto anterior foi preservada. Tente novamente.']);
+        } finally {
+            Storage::set('local', $disk);
+        }
+
+        $this->assertSame([$first], $disk->allFiles(dirname($first)));
+        $this->assertSame($original, $disk->get($first));
+        $this->inMunicipality(function () use ($first, $updatedAt, $auditId): void {
+            $guardian = Guardian::query()->findOrFail($this->guardian);
+            $this->assertSame($first, $guardian->photo_path);
+            $this->assertSame($updatedAt, $guardian->photo_updated_at->toIso8601String());
+            $this->assertSame($auditId, AuditLog::query()->where('auditable_type', Guardian::class)
+                ->where('auditable_id', $guardian->id)->sole()->id);
+        });
+        $this->get($url)->assertOk()->assertHeader('Cache-Control', 'max-age=0, no-store, private');
     }
 
     public function test_revogar_autorizacao_remove_apenas_sua_foto_privada_apos_validacao(): void
