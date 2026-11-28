@@ -14,11 +14,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * Foto de identificação do aluno, do responsável e da pessoa autorizada a
@@ -51,7 +53,7 @@ class IdentificationPhotoController extends Controller
     {
         [, $school, $municipality] = $this->school($request, $escola);
         Gate::authorize('manageStudents', [$school, $municipality]);
-        $entity = $this->entity($tipo, $id, $school);
+        $this->entity($tipo, $id, $school);
 
         $this->assertUploadArrived($request);
 
@@ -65,9 +67,22 @@ class IdentificationPhotoController extends Controller
             ],
         );
 
-        $old = $entity->photo_path;
         $path = $photos->store($request->file('foto'), $municipality->slug.'/'.self::FOLDERS[$tipo]);
-        $this->save($entity, $path, 'photo.updated');
+        try {
+            $old = DB::connection('tenant')->transaction(function () use ($tipo, $id, $school, $path): ?string {
+                // Revalidar o vínculo e ler a foto atual somente sob o lock.
+                $entity = $this->entity($tipo, $id, $school, lock: true);
+                $old = $entity->photo_path;
+                $this->save($entity, $path, 'photo.updated');
+
+                return $old;
+            });
+        } catch (Throwable $exception) {
+            $photos->delete($path);
+
+            throw $exception;
+        }
+        // Só descartar a foto anterior após confirmar cadastro e auditoria.
         $photos->delete($old);
 
         return back()->with('status', $old === null ? 'Foto adicionada.' : 'Foto atualizada.');
@@ -77,13 +92,16 @@ class IdentificationPhotoController extends Controller
     {
         [, $school, $municipality] = $this->school($request, $escola);
         Gate::authorize('manageStudents', [$school, $municipality]);
-        $entity = $this->entity($tipo, $id, $school);
+        $old = DB::connection('tenant')->transaction(function () use ($tipo, $id, $school): ?string {
+            $entity = $this->entity($tipo, $id, $school, lock: true);
+            $old = $entity->photo_path;
+            if ($old !== null) {
+                $this->save($entity, null, 'photo.removed');
+            }
 
-        $old = $entity->photo_path;
-        if ($old !== null) {
-            $this->save($entity, null, 'photo.removed');
-            $photos->delete($old);
-        }
+            return $old;
+        });
+        $photos->delete($old);
 
         return back()->with('status', 'Foto removida.');
     }
@@ -115,19 +133,21 @@ class IdentificationPhotoController extends Controller
     }
 
     /** Só pessoas ligadas a aluno com matrícula ativa nesta escola. */
-    private function entity(string $tipo, string $id, School $school): Model
+    private function entity(string $tipo, string $id, School $school, bool $lock = false): Model
     {
         $activeHere = fn (Builder $enrollments) => $enrollments->where('school_id', $school->id)->where('status', 'active');
 
-        return match ($tipo) {
-            'aluno' => Student::query()->whereHas('enrollments', $activeHere)->findOrFail($id),
+        $query = match ($tipo) {
+            'aluno' => Student::query()->whereHas('enrollments', $activeHere),
             'responsavel' => Guardian::query()->whereIn('id', StudentGuardian::query()
                 ->whereHas('student', fn (Builder $student) => $student->whereHas('enrollments', $activeHere))
-                ->select('guardian_id'))->findOrFail($id),
+                ->select('guardian_id')),
             'autorizado' => StudentPickupAuthorization::query()
-                ->whereHas('student', fn (Builder $student) => $student->whereHas('enrollments', $activeHere))->findOrFail($id),
+                ->whereHas('student', fn (Builder $student) => $student->whereHas('enrollments', $activeHere)),
             default => abort(404),
         };
+
+        return $query->when($lock, fn (Builder $query) => $query->lockForUpdate())->findOrFail($id);
     }
 
     private function save(Model $entity, ?string $path, string $action): void
