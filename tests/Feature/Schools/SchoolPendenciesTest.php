@@ -198,6 +198,8 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
             $this->assertArrayNotHasKey($this->ids['outra_escola'], $rows->all());
             $this->assertSame([], $rows[$this->ids['completo']]['pendencies']);
             $this->assertSame($currentId, $rows[$this->ids['longe']]['enrollment']);
+            $this->assertSame(2026, $rows[$this->ids['longe']]['year']);
+            $this->assertSame(2027, $rows[$this->ids['completo']]['year']);
             $this->assertSame(['turma'], $rows[$this->ids['longe']]['pendencies']);
             $this->assertSame(2, $service->summary($rows)['byType']['turma']);
             $this->assertSame(0, $service->summary($rows)['byType']['transporte']);
@@ -205,7 +207,7 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
 
         $this->login('school_secretary');
         $this->get($this->url('?tipo=turma'))->assertOk()
-            ->assertSee('Eva Mora Longe')->assertSee('matricula='.$currentId, false)
+            ->assertSee('Eva Mora Longe')->assertSee('matricula='.$currentId, false)->assertSee('Ano letivo 2026')
             ->assertDontSee('Matrícula Encerrada Fictícia')->assertDontSee('Gabi de Outra Escola');
 
         $this->travelTo(Carbon::parse('2027-03-01 12:00:00'));
@@ -215,8 +217,14 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
             $this->assertCount(6, $rows);
             $this->assertNotSame($currentId, $rows[$this->ids['longe']]['enrollment']);
             $this->assertSame('4º Ano A', $rows[$this->ids['longe']]['class']);
+            $this->assertSame(2027, $rows[$this->ids['longe']]['year']);
             $this->assertSame(['transporte'], $rows[$this->ids['longe']]['pendencies']);
         });
+        $futureId = $this->tenant(fn (): string => StudentEnrollment::query()->where('student_id', $this->ids['longe'])->where('id', '!=', $currentId)->sole()->id);
+        $this->get($this->url('?tipo=transporte'))->assertOk()
+            ->assertSee('Ano letivo 2027')->assertSee('#matricula-'.$futureId, false);
+        $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->ids['longe'])
+            ->assertOk()->assertSee('id="matricula-'.$futureId.'"', false);
         $this->travelBack();
     }
 

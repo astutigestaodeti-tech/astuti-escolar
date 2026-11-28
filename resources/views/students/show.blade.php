@@ -202,7 +202,7 @@
                             default => 'Outro',
                         };
                     @endphp
-                    <li>
+                    <li id="matricula-{{ $enrollment->id }}">
                         <span class="etiqueta neutra numero">Ano letivo {{ $enrollment->schoolYear?->year ?? 'Não informado' }}</span>
                         <span class="etiqueta {{ $enrollment->status === 'active' ? 'ok' : 'neutra' }}">{{ $situacao }}</span>
                         <div class="vinculo-datas"><small>Turma: {{ $enrollment->schoolClass?->name ?? 'Não informada' }}</small></div>

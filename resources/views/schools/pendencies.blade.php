@@ -11,7 +11,7 @@
             'responsavel' => [route('school.students.guardians.create', $parametrosAluno), 'Adicionar responsável'],
             'turma' => [route('school.students.edit', [...$parametrosAluno, 'matricula' => $aluno['enrollment']]), 'Escolher turma'],
             'nascimento', 'endereco' => [route('school.students.edit', $parametrosAluno), 'Editar cadastro'],
-            'transporte' => [route('school.students.show', $parametrosAluno).'#titulo-endereco-aluno', 'Conferir transporte'],
+            'transporte' => [route('school.students.show', $parametrosAluno).'#matricula-'.$aluno['enrollment'], 'Conferir transporte'],
             'foto' => [route('school.students.show', $parametrosAluno), 'Adicionar foto'],
             'mapa' => [route('school.students.geo.edit', $parametrosAluno), 'Marcar no mapa'],
         };
@@ -33,7 +33,7 @@
         <div>
             <span class="contexto">Qualidade do cadastro</span>
             <h1>Pendências do cadastro</h1>
-            <p>O que falta completar nos alunos com matrícula ativa em {{ $school->name }}. Cada pendência leva direto à tela onde ela se resolve.</p>
+            <p>O que falta completar nos alunos com matrícula ativa em {{ $school->name }}. Cada aluno é contado uma vez. Turma e transporte correspondem ao ano letivo indicado na lista.</p>
         </div>
     </div>
 
@@ -67,12 +67,12 @@
         @else
             <div class="rolagem">
                 <table class="tabela pendencias-tabela">
-                    <thead><tr><th scope="col">Aluno</th><th scope="col">Turma</th><th scope="col">O que falta</th></tr></thead>
+                    <thead><tr><th scope="col">Aluno</th><th scope="col">Turma / ano letivo</th><th scope="col">O que falta</th></tr></thead>
                     <tbody>
                     @foreach ($students as $aluno)
                         <tr>
                             <td><a class="pendencias-aluno" href="{{ route('school.students.show', [...$parametrosEscola, 'aluno' => $aluno['id']]) }}">{{ $aluno['name'] }}</a></td>
-                            <td>{{ $aluno['class'] ?? 'Sem turma' }}</td>
+                            <td>{{ $aluno['class'] ?? 'Sem turma' }}<div class="texto-ajuda">Ano letivo {{ $aluno['year'] }}</div></td>
                             <td>
                                 <ul class="pendencias-itens">
                                     @foreach ($aluno['pendencies'] as $tipo)
