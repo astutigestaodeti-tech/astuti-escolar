@@ -754,3 +754,8 @@ Frentes independentes sobre main 2e57e67: #293 propõe mascarar observações li
 ## 28/11/2026 - Auditoria #256: retirada e prévia de importação (propostas)
 
 Base b363d3b. Frentes independentes F02/F03: transação tenant com lock de aluno e vínculo e auditoria atômica no registro de saída, validação de UUID e regressões de revogação/rollback; aviso de nome de responsável inválido na prévia, sem bloquear matrícula por campo opcional ou guardar valor rejeitado na mensagem. Sem ampliar perfis, coletar dados judiciais, mudar schema ou tocar dados reais. A presunção de autorização e restrições judiciais estruturadas exigem decisão funcional; corrida real exige ensaio dedicado. CI e homologação pendentes, sem testes locais. #309 integrado, CI push aprovado, implantação a confirmar.
+
+
+## 28/11/2026 - Auditoria #256: foto de responsável sem vínculo (proposta)
+
+F01, base 6dd5bce. Desvínculo preserva foto compartilhada enquanto houver outro aluno; último vínculo limpa referência e audita sob lock da pessoa, excluindo arquivo após commit. Alteração de foto revalida escopo após adquirir lock. Regressões de irmãos em escolas distintas, tentativa inválida, remoção final e rollback. Sem mudar schema, permissões ou regra de guarda. Concorrência real e falhas de disco continuam pendentes; CI e homologação a verificar. #311 QA isolado aprovado no head 69c84a5, sem margem, CI geral a confirmar.

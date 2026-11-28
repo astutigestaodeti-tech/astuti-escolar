@@ -8,6 +8,7 @@ use App\Models\Tenant\Guardian;
 use App\Models\Tenant\School;
 use App\Models\Tenant\Student;
 use App\Models\Tenant\StudentGuardian;
+use App\Photos\IdentificationPhoto;
 use App\Validation\Cpf;
 use App\Validation\IdentityDocuments;
 use Illuminate\Contracts\View\View;
@@ -237,7 +238,7 @@ class GuardianController extends Controller
         ]);
     }
 
-    public function unlink(Request $request, string $municipio, string $escola, string $aluno, string $vinculo): RedirectResponse
+    public function unlink(Request $request, string $municipio, string $escola, string $aluno, string $vinculo, IdentificationPhoto $photos): RedirectResponse
     {
         [$municipality, $school] = $this->authorizedStudent($request, $escola, $aluno);
         $reason = $request->input('motivo');
@@ -252,10 +253,10 @@ class GuardianController extends Controller
             'motivo.max' => 'O motivo deve ter no máximo 500 caracteres.',
         ], ['motivo' => 'Motivo']);
 
-        [$guardianName, $stillLinked] = DB::connection('tenant')->transaction(function () use ($aluno, $school, $vinculo, $data): array {
+        [$guardianName, $stillLinked, $oldPhoto] = DB::connection('tenant')->transaction(function () use ($aluno, $school, $vinculo, $data): array {
             $this->lockedStudent($aluno, $school);
             $link = StudentGuardian::query()->where('student_id', $aluno)->lockForUpdate()->findOrFail($vinculo);
-            $guardian = Guardian::query()->findOrFail($link->guardian_id);
+            $guardian = Guardian::query()->lockForUpdate()->findOrFail($link->guardian_id);
             $before = $this->linkSnapshot($link);
 
             $link->delete();
@@ -271,8 +272,18 @@ class GuardianController extends Controller
 
             $stillLinked = StudentGuardian::query()->where('guardian_id', $guardian->id)->exists();
 
-            return [$guardian->full_name, $stillLinked];
+            $oldPhoto = null;
+            if (! $stillLinked && $guardian->photo_path !== null) {
+                $oldPhoto = $guardian->photo_path;
+                $beforePhoto = ['photo_updated_at' => $guardian->photo_updated_at?->toIso8601String()];
+                $guardian->forceFill(['photo_path' => null, 'photo_updated_at' => null])->save();
+                app(AuditTrail::class)->record('tenant', 'photo.removed', Guardian::class, $guardian->id, $beforePhoto, ['photo_updated_at' => null]);
+            }
+
+            return [$guardian->full_name, $stillLinked, $oldPhoto];
         });
+        // A foto pertence à pessoa; irmãos ainda vinculados precisam dela.
+        $photos->delete($oldPhoto);
 
         // Texto neutro: o responsável pode ser mãe, pai, avô, tia...
         $message = "O vínculo de {$guardianName} com o aluno foi removido.";
