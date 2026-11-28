@@ -28,6 +28,7 @@
             'cpf' => 'CPF do aluno inválido ou repetido',
             'responsavel' => 'responsáveis com telefone ou CPF a conferir',
             'responsavel_nome' => 'nomes de responsáveis inválidos',
+            'responsavel_divergente' => 'responsáveis divergentes em linhas repetidas',
         ];
         $parentescos = ['mother' => 'Mãe', 'father' => 'Pai', 'other' => 'Responsável'];
         $censusLabels = [
@@ -154,6 +155,9 @@
                                     @endif
                                     @if (in_array('responsavel_nome', array_column($row['pending'], 'field'), true))
                                         <span class="conf-origem">Nome do responsável inválido em uma linha da planilha; esse nome foi ignorado. Confira o nome completo na ficha.</span>
+                                    @endif
+                                    @if (in_array('responsavel_divergente', array_column($row['pending'], 'field'), true))
+                                        <span class="conf-origem">Responsáveis ou contatos divergentes nas linhas repetidas. Nenhum vínculo foi importado; confira na ficha.</span>
                                     @endif
                                 </td>
                                 <td class="conf-numero">

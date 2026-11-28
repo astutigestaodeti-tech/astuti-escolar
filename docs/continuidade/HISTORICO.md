@@ -776,6 +776,13 @@ F05/F06, base da0c8b1. Regressão de acesso direto ao mapa e gravação de coord
 Complemento F06: gravação sem segundo fator configurado e sem verificação na sessão deve ser proibida; após confirmação TOTP, a mesma operação salva coordenadas e mascara ambos os valores na auditoria. Sem modificar política; CI pendente.
 
 
+## 28/11/2026 - Auditoria #256: responsáveis divergentes em linhas repetidas (proposta)
+
+F03, base 1c963ff. A consolidação escolhia o primeiro responsável válido mesmo com divergência posterior. Compara nome normalizado, parentesco, CPF e telefone quando ambos presentes; conflito deixa o vínculo pendente sem reintroduzi-lo pela terceira linha. Dados complementares compatíveis podem preencher o campo ausente. Prévia exibe aviso genérico, sem nomes divergentes, e matrícula continua após conferência; teste de regressão e dump visual. Sem schema, permissões ou dados reais. CI e QA pendentes.
+
+Complemento da revisão por eventos: CPF e telefone complementares em linhas sem identificador comum não autorizam unir dados de homônimos. Mantém pendência sem vínculo, preserva complemento quando há identificador coincidente. Regressão dedicada, novo CI/QA necessários.
+
+
 ## 28/11/2026 - Auditoria #256: falha de escrita da foto privada (proposta)
 
 F01/F06, base 1bc92bb. Regressão de disco recusando put na troca da foto de responsável: preserva bytes, caminho, data, auditoria e consulta privada da foto anterior. Verifica autoria, perfil e ausência de caminho no evento. Falha simulada antes de escrita; não comprova exclusão com falha, escrita parcial, crash ou concorrência real. Sem alteração de comportamento, schema, dados ou permissões. CI pendente, sem testes locais.
