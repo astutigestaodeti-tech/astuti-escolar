@@ -754,3 +754,8 @@ Frentes independentes sobre main 2e57e67: #293 propõe mascarar observações li
 ## 28/11/2026 - Auditoria #256: retirada e prévia de importação (propostas)
 
 Base b363d3b. Frentes independentes F02/F03: transação tenant com lock de aluno e vínculo e auditoria atômica no registro de saída, validação de UUID e regressões de revogação/rollback; aviso de nome de responsável inválido na prévia, sem bloquear matrícula por campo opcional ou guardar valor rejeitado na mensagem. Sem ampliar perfis, coletar dados judiciais, mudar schema ou tocar dados reais. A presunção de autorização e restrições judiciais estruturadas exigem decisão funcional; corrida real exige ensaio dedicado. CI e homologação pendentes, sem testes locais. #309 integrado, CI push aprovado, implantação a confirmar.
+
+
+## 28/11/2026 - Auditoria #256: contagem cadastral de transporte (proposta)
+
+F04, base 9dcf42c. A junção SQL de contagem de transporte ignorava a exclusão lógica de matrícula, divergindo do filtro Eloquent. Exclui deleted_at não nulo na junção e inclui regressão de aluno ativo com vínculo arquivado de outro ano, vínculo ativo de outra escola, transferido/encerrado e concordância de filtro, contagem e ficha. Mantém o universo de vínculos ativos de qualquer ano; precedência de transporte entre dois vínculos ativos e regra geral de ano cabem à revisão #257/#258, sem alteração automática. LGPD: sem ampliar escopo ou coleta, sem schema, tela ou dados reais. CI pendente, sem teste local.
