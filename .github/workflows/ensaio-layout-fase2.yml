@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sha: 40a4614f48924ab27bde9ca70f6728430532c8ad
+          - sha: aca1dcc658de11610366cb19542031d33f590d14
             pr: '318'
     services:
       postgres:
@@ -125,8 +125,10 @@ jobs:
                       page.keyboard.press('Shift+Tab')
                       # O resumo é programaticamente focalizável, mas não entra na ordem normal de Tab.
                       page.locator(f'.formulario-aluno [name="{first}"]').focus()
-                      page.keyboard.type('Texto fictício corrigido')
-                      assert page.locator(f'.formulario-aluno [name="{first}"]').input_value().endswith('Texto fictício corrigido')
+                      page.keyboard.press('Control+a')
+                      page.keyboard.type('Texto ficticio corrigido')
+                      actual = page.locator(f'.formulario-aluno [name="{first}"]').input_value()
+                      assert actual == 'Texto ficticio corrigido', (name, width, first, repr(actual))
                       page.close()
                   for name, first in [('resp_novo','full_name'), ('resp_editar','full_name'), ('resp_desvincular','motivo')]:
                       page = browser.new_page(viewport={'width': width, 'height': 900})
