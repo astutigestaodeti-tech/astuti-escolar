@@ -72,7 +72,8 @@ class SchoolStudentController extends Controller
         $transportCounts = (clone $query)->join('student_enrollments as transporte_matricula', function ($join) use ($school): void {
             $join->on('transporte_matricula.student_id', '=', 'students.id')
                 ->where('transporte_matricula.school_id', $school->id)
-                ->where('transporte_matricula.status', 'active');
+                ->where('transporte_matricula.status', 'active')
+                ->whereNull('transporte_matricula.deleted_at');
         })->selectRaw("coalesce(transporte_matricula.transport_status, 'sem_informacao') as situacao, count(distinct students.id) as total")
             ->groupBy('situacao')->pluck('total', 'situacao')->map(fn ($total): int => (int) $total)->all();
         $transportCounts['adaptado'] = (clone $query)->whereHas('enrollments', function (Builder $enrollments) use ($activeHere): void {
@@ -81,7 +82,9 @@ class SchoolStudentController extends Controller
         })->count();
 
         StudentSelection::filterTransport($query, $school, $transport);
-        $students = StudentSelection::ordered($query)->with(['enrollments' => $activeHere])->paginate(25)->withQueryString();
+        $students = StudentSelection::ordered($query)
+            ->with(['enrollments' => fn ($enrollments) => StudentSelection::matchingTransport($enrollments, $school, $transport)])
+            ->paginate(25)->withQueryString();
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $transportFilters = self::TRANSPORT_FILTERS;

@@ -37,17 +37,25 @@ final class StudentSelection
         if ($transport === '') {
             return;
         }
+        $query->whereHas('enrollments', fn (Builder $enrollments) => self::matchingTransport($enrollments, $school, $transport));
+    }
+
+    /** A linha exibida deve vir de um vínculo que satisfaça o mesmo filtro. */
+    public static function matchingTransport(Builder|Relation $enrollments, School $school, string $transport): void
+    {
+        self::activeHere($enrollments, $school);
+        if ($transport === '') {
+            return;
+        }
+
         $status = self::TRANSPORT_FILTERS[$transport]['status'];
-        $query->whereHas('enrollments', function (Builder $enrollments) use ($school, $status, $transport): void {
-            self::activeHere($enrollments, $school);
-            if ($transport === 'adaptado') {
-                $enrollments->where('transport_adapted_vehicle', true);
-            } elseif ($status === null) {
-                $enrollments->whereNull('transport_status');
-            } else {
-                $enrollments->where('transport_status', $status);
-            }
-        });
+        if ($transport === 'adaptado') {
+            $enrollments->where('transport_adapted_vehicle', true);
+        } elseif ($status === null) {
+            $enrollments->whereNull('transport_status');
+        } else {
+            $enrollments->where('transport_status', $status);
+        }
     }
 
     public static function ordered(Builder $query, string $direction = 'asc'): Builder
