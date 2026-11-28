@@ -375,6 +375,46 @@ class SchoolStudentIndexTest extends TwoMunicipalityTestCase
             ->assertDontSee('Ano letivo 2026')->assertDontSee('Ano letivo 2025');
     }
 
+    public function test_filtro_exibe_matricula_que_corresponde_ao_transporte_em_anos_distintos(): void
+    {
+        $user = $this->criarUsuario('alunos-transporte-dois-anos@example.invalid');
+        $this->vincular($user, $this->municipioA, 'school_secretary', [self::ESCOLA_A1]);
+        $studentId = $this->alunoCom('Ana Fictícia Dois Anos', [], 'not_requested');
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($studentId): void {
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $studentId,
+                'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $this->anoLetivo(2026)->id,
+                'status' => 'active',
+                'transport_status' => 'active',
+                'transport_route' => 'Linha Fictícia de 2026',
+                'transport_adapted_vehicle' => true,
+            ]);
+        });
+
+        $lista = '/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos';
+        foreach (['usa', 'adaptado', 'nao_solicitado'] as $filter) {
+            $response = $this->actingAs($user)->get($lista.'?transporte='.$filter)
+                ->assertOk()->assertSee('Ana Fictícia Dois Anos');
+            $students = $response->viewData('students');
+            $this->assertSame(1, $students->total());
+            $enrollments = $students->items()[0]->enrollments;
+            $this->assertCount(1, $enrollments);
+            if ($filter === 'nao_solicitado') {
+                $this->assertSame('not_requested', $enrollments->first()->transport_status);
+                $response->assertDontSee('Linha Fictícia de 2026');
+            } else {
+                $this->assertSame('active', $enrollments->first()->transport_status);
+                $response->assertSee('Linha Fictícia de 2026');
+            }
+            $counts = $response->viewData('transportCounts');
+            $this->assertSame(1, $counts['active']);
+            $this->assertSame(1, $counts['not_requested']);
+            $this->assertSame(1, $counts['adaptado']);
+        }
+    }
+
     public function test_busca_por_ra_cpf_e_nome_do_responsavel_sem_acento(): void
     {
         $user = $this->criarUsuario('alunos-busca@example.invalid');

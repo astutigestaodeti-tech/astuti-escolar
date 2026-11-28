@@ -82,7 +82,9 @@ class SchoolStudentController extends Controller
         })->count();
 
         StudentSelection::filterTransport($query, $school, $transport);
-        $students = StudentSelection::ordered($query)->with(['enrollments' => $activeHere])->paginate(25)->withQueryString();
+        $students = StudentSelection::ordered($query)
+            ->with(['enrollments' => fn ($enrollments) => StudentSelection::matchingTransport($enrollments, $school, $transport)])
+            ->paginate(25)->withQueryString();
 
         $canManage = Gate::allows('manageStudents', [$school, $municipality]);
         $transportFilters = self::TRANSPORT_FILTERS;
