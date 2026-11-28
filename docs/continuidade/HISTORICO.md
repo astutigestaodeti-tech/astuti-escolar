@@ -803,3 +803,5 @@ F08/16.1. Associa mensagens de erro individuais aos campos de criação/edição
 ## 28/11/2026 - Auditoria #256: isolamento e confirmação recente em educação especial (proposta)
 
 F05/12.2 e F06/13.1. Regressão fictícia: escola ofertante de AEE não herda acesso cadastral; direção com escopo duplo não pode trocar escola na URL sem matrícula ativa; consulta autorizada após 16 minutos, gravação JSON bloqueada por 2FA recente. Preserva atributos e único evento de auditoria. Sem mudança de comportamento, schema, permissões ou dados; CI pendente, sem teste local. Não encerra as matrizes integrais.
+
+Complemento da revisão por eventos: comparação do hash dos atributos completos do evento único antes/depois, para detectar também alterações com mesmo ID sem expor conteúdo nos logs. Novo CI necessário.

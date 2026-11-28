@@ -164,7 +164,7 @@ class SpecialEducationTest extends TwoMunicipalityTestCase
             $audit = AuditLog::query()->where('auditable_type', StudentSpecialEducation::class)
                 ->where('auditable_id', $this->student)->sole();
 
-            return [$record->getAttributes(), $audit->id];
+            return [$record->getAttributes(), hash('sha256', serialize($audit->getAttributes()))];
         });
 
         // A escola que oferta o AEE não recebe automaticamente acesso à ficha cadastral.
@@ -188,8 +188,9 @@ class SpecialEducationTest extends TwoMunicipalityTestCase
 
         app(TenantContext::class)->runFor($this->municipioA, function () use ($snapshot): void {
             $this->assertSame($snapshot[0], StudentSpecialEducation::query()->findOrFail($this->student)->getAttributes());
-            $this->assertSame($snapshot[1], AuditLog::query()->where('auditable_type', StudentSpecialEducation::class)
-                ->where('auditable_id', $this->student)->sole()->id);
+            $audit = AuditLog::query()->where('auditable_type', StudentSpecialEducation::class)
+                ->where('auditable_id', $this->student)->sole();
+            $this->assertSame($snapshot[1], hash('sha256', serialize($audit->getAttributes())));
         });
     }
 
