@@ -793,3 +793,8 @@ F06, base 1bc92bb. Complementa recomendação do revisor por eventos: identifica
 F01/F06, base 1bc92bb. Regressão de disco recusando put na troca da foto de responsável: preserva bytes, caminho, data, auditoria e consulta privada da foto anterior. Verifica autoria, perfil e ausência de caminho no evento. Falha simulada antes de escrita; não comprova exclusão com falha, escrita parcial, crash ou concorrência real. Sem alteração de comportamento, schema, dados ou permissões. CI pendente, sem testes locais.
 
 Complemento da revisão por eventos: conferir todos os eventos do responsável, não apenas photo.updated, antes e após falha de put. Novo CI necessário.
+
+
+## 28/11/2026 - Auditoria #256: responsáveis ambíguos no cadastro municipal (proposta)
+
+F03/09.1. A seleção por nome/telefone anteriormente usava o primeiro candidato compatível, mesmo com dois CPFs distintos e ausência de CPF na planilha. Prévia deixa vínculo pendente quando há mais de um candidato e preserva matrícula; confirmação revalida candidatos sob lock e reverte o lote se surgir ambiguidade. CPF exato continua prevalecendo. Testes fictícios de candidatos preexistentes e ambiguidade após prévia. Sem schema, alteração de tela ou ampliação de dados/permissões; CI pendente. Não garante exclusão de candidatos inseridos simultaneamente sem lock comum.

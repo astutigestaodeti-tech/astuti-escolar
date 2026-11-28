@@ -1126,6 +1126,84 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         });
     }
 
+    public function test_previa_nao_escolhe_responsavel_ambiguo_por_nome_e_telefone_sem_cpf(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            foreach (['529.982.247-25', '111.444.777-35'] as $cpf) {
+                Guardian::query()->create([
+                    'id' => (string) Str::uuid(),
+                    'full_name' => 'Maria Pessoa Fictícia',
+                    'cpf' => $cpf,
+                    'phone' => '1133334444',
+                ]);
+            }
+        });
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', ''],
+            ['Bruno Aluno Fictício', '01/03/2019', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', '111.444.777-35'],
+        ]);
+        try {
+            [$token] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $rows = $this->linhasDoLote($token);
+        $ana = $this->linhaDe($rows, 'Ana Aluna Fictícia');
+        $this->assertNull($ana['guardian']);
+        $this->assertContains('Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.', array_column($ana['pending'], 'message'));
+        $this->assertNotNull($this->linhaDe($rows, 'Bruno Aluno Fictício')['guardian']);
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(2, Student::query()->count());
+            $this->assertSame(2, StudentEnrollment::query()->count());
+            $this->assertSame(2, Guardian::query()->count());
+            $link = StudentGuardian::query()->with(['student', 'guardian'])->sole();
+            $this->assertSame('Bruno Aluno Fictício', $link->student->full_name);
+            $this->assertSame('111.444.777-35', $link->guardian->cpf);
+        });
+    }
+
+    public function test_ambiguidade_de_responsavel_surgida_apos_previa_reverte_lote(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+        $createGuardian = function (string $cpf): void {
+            app(TenantContext::class)->runFor($this->municipioA, function () use ($cpf): void {
+                Guardian::query()->create([
+                    'id' => (string) Str::uuid(),
+                    'full_name' => 'Maria Pessoa Fictícia',
+                    'cpf' => $cpf,
+                    'phone' => '1133334444',
+                ]);
+            });
+        };
+        $createGuardian('529.982.247-25');
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', ''],
+        ]);
+        try {
+            [$token] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $this->assertNotNull($this->linhasDoLote($token)[0]['guardian']);
+        $createGuardian('111.444.777-35');
+        $this->post($this->url().'/confirmar', ['lote' => $token])
+            ->assertSessionHasErrors(['lote' => 'Mais de um responsável corresponde ao nome e telefone depois da prévia. Refaça a conferência; nenhum registro foi gravado.']);
+        $this->assertSame([0, 0, 0], $this->contagens());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(2, Guardian::query()->count());
+            $this->assertSame(0, StudentGuardian::query()->count());
+            $this->assertSame(0, AuditLog::query()->where('action', 'student_import.completed')->count());
+        });
+    }
+
     public function test_reimportacao_vincula_responsavel_so_a_quem_nao_tem_e_recusa_cpf_com_outro_nome(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A']);

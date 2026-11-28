@@ -676,6 +676,12 @@ class ConfirmedStudentImportController extends Controller
 
             return null;
         }
+        if ($existing === null && ImportedGuardianLinker::compatiblePhoneCandidates($guardian)->count() > 1) {
+            $pending[] = ['field' => 'responsavel', 'message' => 'Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.'];
+
+            return null;
+        }
+
         if ($existing === null && $guardian['phone'] === null) {
             $pending[] = ['field' => 'responsavel', 'message' => $guardian['name'].' não foi cadastrado como responsável porque falta telefone com DDD. Cadastre na ficha.'];
 
