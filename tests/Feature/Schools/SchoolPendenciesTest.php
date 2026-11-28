@@ -221,6 +221,8 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
             $this->assertSame(['transporte'], $rows[$this->ids['longe']]['pendencies']);
         });
         $futureId = $this->tenant(fn (): string => StudentEnrollment::query()->where('student_id', $this->ids['longe'])->where('id', '!=', $currentId)->sole()->id);
+        // A mudança de ano também expira a autenticação recente do segundo fator.
+        $this->login('school_secretary');
         $this->get($this->url('?tipo=transporte'))->assertOk()
             ->assertSee('Ano letivo 2027')->assertSee('#matricula-'.$futureId, false);
         $this->get('/m/municipio-a/escolas/'.self::ESCOLA_A1.'/alunos/'.$this->ids['longe'])
