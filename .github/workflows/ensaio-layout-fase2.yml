@@ -1,4 +1,4 @@
-name: Ensaio integral de margens e abertura #256
+name: Ensaio isolado de teclado e erros #318
 
 on:
   push:
@@ -15,8 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sha: 0fc7f76cff748b41c09dbe1c88d4a80a85876204
-            pr: '256'
+          - sha: 434c567af06177c29bedfda8ef7c39e365dc0941
+            pr: '318'
     services:
       postgres:
         image: postgres:17
@@ -76,10 +76,12 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$TARGET_SHA"
           mkdir -p "${RUNNER_TEMP}/astuti-telas"
-          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=AllSchoolPagesOpenTest
-          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=ConfirmedStudentImportTest
-          for name in alunos aluno matriculas resp_novo resp_editar resp_desvincular aluno_imprimir_config aluno_mapa importacao_alunos_previa importacao_responsavel_divergente importacao_responsavel_invalido alunos_transporte_usa alunos_transporte_adaptado alunos_transporte_nao_solicitado; do
+          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=test_todas_as_telas_da_escola_abrem_para_a_direcao
+          php artisan test --filter=GuardianWriteTest
+          mkdir -p "${RUNNER_TEMP}/astuti-alvo"
+          for name in resp_novo resp_editar resp_desvincular resp_novo_erro resp_editar_erro resp_desvincular_erro; do
             test -s "${RUNNER_TEMP}/astuti-telas/$name.html"
+            cp "${RUNNER_TEMP}/astuti-telas/$name.html" "${RUNNER_TEMP}/astuti-alvo/"
           done
           echo "Telas renderizadas: $(find "${RUNNER_TEMP}/astuti-telas" -maxdepth 1 -type f -name '*.html' | wc -l)"
           find "${RUNNER_TEMP}/astuti-telas" -maxdepth 1 -type f -name '*.html' -printf '%f\n' | sort
@@ -93,4 +95,51 @@ jobs:
         run: |
           python -m pip install 'playwright==1.51.0'
           python -m playwright install --with-deps chromium
-          python scripts/qualidade/checar-margens.py "${RUNNER_TEMP}/astuti-telas" 1440 390
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+
+          root = Path(os.environ['RUNNER_TEMP'], 'astuti-alvo')
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              for width in (1440, 390):
+                  for name, expected in (
+                      ('resp_novo_erro', ['full_name', 'cpf', 'phone', 'relationship']),
+                      ('resp_editar_erro', ['full_name', 'phone', 'relationship']),
+                      ('resp_desvincular_erro', ['motivo']),
+                  ):
+                      page = browser.new_page(viewport={'width': width, 'height': 900})
+                      page.goto((root / (name + '.html')).as_uri())
+                      summary = page.locator('.formulario-aluno .erro[role="alert"]')
+                      assert summary.count() == 1, name
+                      page.wait_for_function("document.activeElement.matches('.formulario-aluno .erro[role=alert]')")
+                      for field in expected:
+                          control = page.locator(f'.formulario-aluno [name="{field}"]')
+                          assert control.get_attribute('aria-invalid') == 'true', (name, field)
+                          assert f'{field}-erro' in control.get_attribute('aria-describedby').split()
+                          assert page.locator(f'#{field}-erro').is_visible()
+                      first = expected[0]
+                      page.keyboard.press('Tab')
+                      assert page.evaluate('document.activeElement.name') == first, name
+                      page.keyboard.press('Shift+Tab')
+                      # O resumo é programaticamente focalizável, mas não entra na ordem normal de Tab.
+                      page.locator(f'.formulario-aluno [name="{first}"]').focus()
+                      page.keyboard.type('Texto fictício corrigido')
+                      assert page.locator(f'.formulario-aluno [name="{first}"]').input_value().endswith('Texto fictício corrigido')
+                      page.close()
+                  for name, first in [('resp_novo','full_name'), ('resp_editar','full_name'), ('resp_desvincular','motivo')]:
+                      page = browser.new_page(viewport={'width': width, 'height': 900})
+                      page.goto((root / (name + '.html')).as_uri())
+                      assert page.locator('.formulario-aluno .erro[autofocus]').count() == 0
+                      page.locator(f'.formulario-aluno [name="{first}"]').focus()
+                      if name != 'resp_desvincular':
+                          page.keyboard.press('Tab')
+                          assert page.evaluate('document.activeElement.name') == 'cpf'
+                          page.keyboard.press('Shift+Tab')
+                          assert page.evaluate('document.activeElement.name') == first
+                      page.close()
+              browser.close()
+          print('Criação, edição e desvínculo: foco, Tab, erros associados e edição pelo teclado conferidos em 1440/390 px.')
+          PY
+          python scripts/qualidade/checar-margens.py "${RUNNER_TEMP}/astuti-alvo" 1440 390
