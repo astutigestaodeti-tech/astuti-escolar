@@ -759,3 +759,8 @@ Base b363d3b. Frentes independentes F02/F03: transação tenant com lock de alun
 ## 28/11/2026 - Auditoria #256: foto de responsável sem vínculo (proposta)
 
 F01, base 6dd5bce. Desvínculo preserva foto compartilhada enquanto houver outro aluno; último vínculo limpa referência e audita sob lock da pessoa, excluindo arquivo após commit. Alteração de foto revalida escopo após adquirir lock. Regressões de irmãos em escolas distintas, tentativa inválida, remoção final e rollback. Sem mudar schema, permissões ou regra de guarda. Concorrência real e falhas de disco continuam pendentes; CI e homologação a verificar. #311 QA isolado aprovado no head 69c84a5, sem margem, CI geral a confirmar.
+
+
+## 28/11/2026 - Auditoria #256: isolamento de localização residencial (proposta)
+
+F05/F06, base da0c8b1. Regressão de acesso direto ao mapa e gravação de coordenadas por secretaria autorizada somente em outra unidade: aluno fora do vínculo escolar retorna 404, escola sem escopo 403, nenhum envio ao geocodificador, coordenadas intactas e sem evento de atualização de aluno. Rota, Gate manageStudents, escopo de matrícula ativa e segundo fator confirmado na gravação existentes; sem mudança de política, schema ou dados reais. CI pendente; matriz integral F05/F06 permanece aberta.
