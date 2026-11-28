@@ -767,3 +767,8 @@ F04, base 9dcf42c. A junção SQL de contagem de transporte ignorava a exclusão
 
 
 Validação complementar: a matrícula exibida deve corresponder ao filtro selecionado, sem redefinir a precedência anual da lista geral. Ensaio de lista filtrada incluído na cobertura de layout, CI e QA no head sincronizado pendentes.
+
+
+## 28/11/2026 - Auditoria #256: responsáveis divergentes em linhas repetidas (proposta)
+
+F03, base 1c963ff. A consolidação escolhia o primeiro responsável válido mesmo com divergência posterior. Compara nome normalizado, parentesco, CPF e telefone quando ambos presentes; conflito deixa o vínculo pendente sem reintroduzi-lo pela terceira linha. Dados complementares compatíveis podem preencher o campo ausente. Prévia exibe aviso genérico, sem nomes divergentes, e matrícula continua após conferência; teste de regressão e dump visual. Sem schema, permissões ou dados reais. CI e QA pendentes.

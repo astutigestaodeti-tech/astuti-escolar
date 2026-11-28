@@ -459,6 +459,7 @@ final class StudentSpreadsheetPreview
         foreach ($groups as $group) {
             $first = array_shift($group);
             $censusConflicts = [];
+            $guardianConflict = false;
             foreach ($group as $other) {
                 foreach (['ra', 'classId', 'grade', 'usesTransport', 'street', 'number', 'district', 'postalCode', 'residenceZone'] as $field) {
                     if ($field === 'district' && ($first->districtConflict || $other->districtConflict)) {
@@ -498,7 +499,23 @@ final class StudentSpreadsheetPreview
                         $first->addIssue(ImportIssue::PENDING, 'censo', 'Dados do Censo diferentes entre as linhas repetidas; o campo não foi importado. Confira na ficha.');
                     }
                 }
-                $first->guardian ??= $other->guardian;
+                if (! $guardianConflict && $other->guardian !== null) {
+                    if ($first->guardian === null) {
+                        $first->guardian = $other->guardian;
+                    } elseif (ImportedGuardianLinker::normalizedName($first->guardian['name']) !== ImportedGuardianLinker::normalizedName($other->guardian['name'])
+                        || $first->guardian['relationship'] !== $other->guardian['relationship']
+                        || ($first->guardian['cpf'] !== null && $other->guardian['cpf'] !== null && $first->guardian['cpf'] !== $other->guardian['cpf'])
+                        || ($first->guardian['phone'] !== null && $other->guardian['phone'] !== null && $first->guardian['phone'] !== $other->guardian['phone'])) {
+                        // Uma linha não autoriza escolher entre pessoas ou dados divergentes.
+                        $guardianConflict = true;
+                        $first->guardian = null;
+                        $first->addIssue(ImportIssue::PENDING, 'responsavel_divergente', 'Responsáveis ou contatos divergentes nas linhas repetidas. Nenhum vínculo foi importado; confira na ficha.');
+                    } else {
+                        // Informações complementares compatíveis não devem sumir.
+                        $first->guardian['cpf'] ??= $other->guardian['cpf'];
+                        $first->guardian['phone'] ??= $other->guardian['phone'];
+                    }
+                }
                 // Pendências de outras ocorrências não podem sumir na consolidação.
                 $first->issues = [...$first->issues, ...$other->issues];
                 $first->sources = [...$first->sources, ...$other->sources];
