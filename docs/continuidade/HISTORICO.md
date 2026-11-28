@@ -798,3 +798,10 @@ Complemento da revisão por eventos: conferir todos os eventos do responsável, 
 ## 28/11/2026 - Auditoria #256: acessibilidade dos erros de responsáveis (proposta)
 
 F08/16.1. Associa mensagens de erro individuais aos campos de criação/edição e desvínculo por aria-invalid/aria-describedby, preserva ajudas e disponibiliza foco inicial no resumo somente quando houver erro. AllSchoolPagesOpenTest passa por respostas reais de validação e renderiza três telas de erro. Sem alteração de regras, coleta, autorização ou banco. CI e ensaio de teclado/margens necessários; nenhum teste local.
+
+
+## 28/11/2026 - Auditoria #256: isolamento e confirmação recente em educação especial (proposta)
+
+F05/12.2 e F06/13.1. Regressão fictícia: escola ofertante de AEE não herda acesso cadastral; direção com escopo duplo não pode trocar escola na URL sem matrícula ativa; consulta autorizada após 16 minutos, gravação JSON bloqueada por 2FA recente. Preserva atributos e único evento de auditoria. Sem mudança de comportamento, schema, permissões ou dados; CI pendente, sem teste local. Não encerra as matrizes integrais.
+
+Complemento da revisão por eventos: comparação do hash dos atributos completos do evento único antes/depois, para detectar também alterações com mesmo ID sem expor conteúdo nos logs. Novo CI necessário.

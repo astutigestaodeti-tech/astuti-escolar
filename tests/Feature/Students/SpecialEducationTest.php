@@ -154,6 +154,46 @@ class SpecialEducationTest extends TwoMunicipalityTestCase
         $this->get($this->url())->assertOk()->assertDontSee('Educação especial e AEE');
     }
 
+    public function test_educacao_especial_rejeita_escola_incompativel_e_segundo_fator_antigo_sem_alterar_dados_ou_auditoria(): void
+    {
+        $this->entrar('school_secretary');
+        $url = $this->url('/educacao-especial');
+        $this->post($url, ['conditions' => ['tea'], 'aee_status' => 'participa', 'aee_school_id' => self::ESCOLA_A2])->assertRedirect();
+        $snapshot = app(TenantContext::class)->runFor($this->municipioA, function (): array {
+            $record = StudentSpecialEducation::query()->findOrFail($this->student);
+            $audit = AuditLog::query()->where('auditable_type', StudentSpecialEducation::class)
+                ->where('auditable_id', $this->student)->sole();
+
+            return [$record->getAttributes(), hash('sha256', serialize($audit->getAttributes()))];
+        });
+
+        // A escola que oferta o AEE não recebe automaticamente acesso à ficha cadastral.
+        $this->entrar('school_director', [self::ESCOLA_A2]);
+        $otherUrl = str_replace('/escolas/'.self::ESCOLA_A1.'/', '/escolas/'.self::ESCOLA_A2.'/', $url);
+        foreach ([$url, $otherUrl] as $target) {
+            $this->get($target)->assertForbidden();
+            $this->postJson($target, ['conditions' => ['cegueira']])->assertForbidden();
+        }
+
+        // Um gestor com escopo nas duas escolas também não pode trocar a escola na URL.
+        $this->entrar('school_director', [self::ESCOLA_A1, self::ESCOLA_A2]);
+        $this->get($otherUrl)->assertForbidden();
+        $this->postJson($otherUrl, ['conditions' => ['cegueira']])->assertForbidden();
+
+        // Consulta permitida, mas alteração sensível exige confirmação recente.
+        $this->travel(16)->minutes();
+        $this->get($url)->assertOk();
+        $this->postJson($url, ['conditions' => ['cegueira']])->assertForbidden()
+            ->assertJson(['message' => 'Esta ação exige confirmar o segundo fator novamente.']);
+
+        app(TenantContext::class)->runFor($this->municipioA, function () use ($snapshot): void {
+            $this->assertSame($snapshot[0], StudentSpecialEducation::query()->findOrFail($this->student)->getAttributes());
+            $audit = AuditLog::query()->where('auditable_type', StudentSpecialEducation::class)
+                ->where('auditable_id', $this->student)->sole();
+            $this->assertSame($snapshot[1], hash('sha256', serialize($audit->getAttributes())));
+        });
+    }
+
     public function test_conferencia_do_censo_aponta_aee_nao_informado_e_soma_a_merenda_do_aee(): void
     {
         app(TenantContext::class)->runFor($this->municipioA, function (): void {
