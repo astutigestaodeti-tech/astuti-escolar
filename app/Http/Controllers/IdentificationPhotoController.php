@@ -147,7 +147,16 @@ class IdentificationPhotoController extends Controller
             default => abort(404),
         };
 
-        return $query->when($lock, fn (Builder $query) => $query->lockForUpdate())->findOrFail($id);
+        $entity = $query->when($lock, fn (Builder $query) => $query->lockForUpdate())->findOrFail($id);
+
+        // A consulta inicial pode ter esperado o lock enquanto o último vínculo
+        // do responsável era removido. Conferir o escopo novamente em nova
+        // consulta, já com o lock da pessoa, antes de alterar o arquivo.
+        if ($lock && $tipo === 'responsavel') {
+            return $this->entity($tipo, $id, $school);
+        }
+
+        return $entity;
     }
 
     private function save(Model $entity, ?string $path, string $action): void
