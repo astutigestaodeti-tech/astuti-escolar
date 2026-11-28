@@ -14,3 +14,8 @@ Base examinada: `2e57e67f24dfe3a08d42cc3c97d2218d975e7ad8`, 27/11/2026. Referên
 Teste de regressão proposto em GuardianWriteTest: garante identificadores únicos, rótulos associados, ajuda de CPF, controles obrigatórios e ausência de tabindex positivo no formulário de criação. Não modifica tela. O resultado depende do CI no SHA exato. A associação dos erros individuais ainda é uma lacuna; a correção visual/semântica precisa de ensaio com página renderizada e margem em 1440 e 390 px conforme AGENTS.md. Não marcar 16.1 integralmente antes da execução do roteiro real, incluindo edição e desvínculo.
 
 LGPD: somente dados fictícios; não adiciona campos, permissões nem coleta.
+
+
+### Complemento proposto em 28/11/2026
+
+Formulários de criação/edição e desvínculo: mensagens individuais com ID único, aria-invalid e aria-describedby preservando referências à ajuda; resumo com tabindex=-1 e autofocus apenas em erro. AllSchoolPagesOpenTest gera HTML de erros retornados pelo servidor para verificação com Tab/Shift+Tab, foco no resumo, rótulos e correção dos campos em Chromium. CI, margens e teclado ainda pendentes. Não encerra a acessibilidade integral do cadastro.
