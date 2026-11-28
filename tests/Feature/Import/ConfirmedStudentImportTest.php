@@ -932,6 +932,41 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertTrue($audit->every(fn ($log): bool => ($log->after['phone'] ?? null) === '[REDACTED]'));
     }
 
+    public function test_previa_avisa_nome_invalido_do_responsavel_sem_impedir_importacao_do_aluno(): void
+    {
+        $this->criarTurmas(self::ESCOLA_A1, ['1A']);
+        $this->entrar();
+
+        $file = $this->planilha([
+            self::CABECALHO_RESPONSAVEL,
+            ['Ana Aluna Fictícia', '01/02/2020', '1A', 'Nome 123', '11955554444', ''],
+            ['Bruno Aluno Fictício', '01/03/2019', '1A', '', '', ''],
+            ['Carla Aluna Fictícia', '01/04/2018', '1A', 'Maria Pessoa Fictícia', '11955553333', ''],
+        ]);
+        try {
+            [$token, , $html] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+        } finally {
+            unlink($file);
+        }
+
+        $message = 'Nome do responsável inválido na planilha; o vínculo não foi importado. Confira o nome completo na ficha.';
+        $rows = $this->linhasDoLote($token);
+        $invalid = $this->linhaDe($rows, 'Ana Aluna Fictícia');
+        $missing = $this->linhaDe($rows, 'Bruno Aluno Fictício');
+        $this->assertNull($invalid['guardian']);
+        $this->assertContains($message, array_column($invalid['pending'], 'message'));
+        $this->assertNull($missing['guardian']);
+        $this->assertNotContains($message, array_column($missing['pending'], 'message'));
+        $this->assertStringContainsString($message, $html);
+
+        $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
+        app(TenantContext::class)->runFor($this->municipioA, function (): void {
+            $this->assertSame(3, Student::query()->count());
+            $this->assertSame(1, Guardian::query()->count());
+            $this->assertSame('Carla Aluna Fictícia', StudentGuardian::query()->with('student')->sole()->student->full_name);
+        });
+    }
+
     public function test_lote_nao_reutiliza_responsavel_com_cpf_distinto_mesmo_nome_e_telefone(): void
     {
         $this->criarTurmas(self::ESCOLA_A1, ['1A']);

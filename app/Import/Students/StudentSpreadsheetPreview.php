@@ -358,7 +358,12 @@ final class StudentSpreadsheetPreview
     private function readGuardian(ImportedStudent $student, string $relationship): void
     {
         $name = $student->hints['responsavel'] ?? null;
-        if ($name === null || mb_strlen($name) < 5 || mb_strlen($name) > 180 || preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $name) !== 1) {
+        if ($name === null) {
+            return;
+        }
+        if (mb_strlen($name) < 5 || mb_strlen($name) > 180 || preg_match('/\A\p{L}[\p{L}\p{M}\' .-]*\z/u', $name) !== 1) {
+            $student->addIssue(ImportIssue::PENDING, 'responsavel', 'Nome do responsável inválido na planilha; o vínculo não foi importado. Confira o nome completo na ficha.');
+
             return;
         }
 
