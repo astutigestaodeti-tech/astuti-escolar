@@ -958,6 +958,13 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $this->assertNull($missing['guardian']);
         $this->assertNotContains($message, array_column($missing['pending'], 'message'));
         $this->assertStringContainsString($message, $html);
+        $this->assertStringContainsString('nomes de responsáveis inválidos (1 aluno)', $html);
+        $this->assertStringNotContainsString('Nome 123', $html);
+        $dump = getenv('ASTUTI_DUMP_TELAS') ?: null;
+        if ($dump !== null) {
+            $html = str_replace(rtrim((string) config('app.url'), '/').'/', 'file://'.public_path().'/', $html);
+            file_put_contents(rtrim($dump, '/').'/importacao_responsavel_invalido.html', preg_replace('/\.(css|js)\?v=\d+/', '.$1', $html));
+        }
 
         $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());
         app(TenantContext::class)->runFor($this->municipioA, function (): void {

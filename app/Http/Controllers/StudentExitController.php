@@ -66,42 +66,52 @@ class StudentExitController extends Controller
     public function store(Request $request, string $municipio, string $escola, string $aluno): RedirectResponse
     {
         [$municipality, $school] = $this->school($request, $escola);
-        $student = Student::query()->whereHas('enrollments', fn ($enrollments) => $enrollments->where('school_id', $school->id)->where('status', 'active'))->findOrFail($aluno);
-
         $person = (string) $request->validate(['pessoa' => ['required', 'string', 'regex:/\A(guardian|authorization):[0-9a-f-]{36}\z/']], [
             'pessoa.required' => 'Escolha quem está levando o aluno.',
             'pessoa.regex' => 'Escolha quem está levando o aluno.',
         ])['pessoa'];
         [$type, $id] = explode(':', $person, 2);
-
-        if ($type === 'guardian') {
-            $link = StudentGuardian::query()->where('student_id', $student->id)->where('guardian_id', $id)->with('guardian')->first();
-            $name = $link?->guardian?->full_name;
-            $relationship = $link === null ? null : (GuardianController::RELATIONSHIPS[$link->relationship] ?? 'Responsável');
-        } else {
-            $authorization = StudentPickupAuthorization::query()->where('student_id', $student->id)->find($id);
-            $name = $authorization !== null && ! $authorization->isExpired() ? $authorization->full_name : null;
-            $relationship = $authorization?->relationship ?: 'Pessoa autorizada';
-        }
-        if ($name === null) {
-            throw ValidationException::withMessages(['pessoa' => 'Esta pessoa não está autorizada a buscar o aluno. Não entregue e procure a secretaria.']);
+        if (! Str::isUuid($id)) {
+            throw ValidationException::withMessages(['pessoa' => 'Escolha quem está levando o aluno.']);
         }
 
-        $exit = StudentExit::query()->create([
-            'id' => (string) Str::uuid(),
-            'student_id' => $student->id,
-            'school_id' => $school->id,
-            'person_type' => $type,
-            'person_id' => $id,
-            'person_name' => $name,
-            'person_relationship' => $relationship,
-            'recorded_by' => $request->user()?->getAuthIdentifier(),
-            'exited_at' => now(),
-        ]);
-        app(AuditTrail::class)->record('tenant', 'student_exit.recorded', StudentExit::class, $exit->id, null, $exit->only(['id', 'student_id', 'school_id', 'person_type', 'person_id', 'person_name', 'person_relationship', 'exited_at']));
+        // Mesma ordem de locks do cadastro de responsáveis e autorizações:
+        // primeiro o aluno, depois o vínculo. A saída e a auditoria são atômicas.
+        [$student, $exit] = DB::connection('tenant')->transaction(function () use ($request, $school, $aluno, $type, $id): array {
+            $student = Student::query()->whereHas('enrollments', fn ($enrollments) => $enrollments->where('school_id', $school->id)->where('status', 'active'))
+                ->lockForUpdate()->findOrFail($aluno);
+
+            if ($type === 'guardian') {
+                $link = StudentGuardian::query()->where('student_id', $student->id)->where('guardian_id', $id)->with('guardian')->lockForUpdate()->first();
+                $name = $link?->guardian?->full_name;
+                $relationship = $link === null ? null : (GuardianController::RELATIONSHIPS[$link->relationship] ?? 'Responsável');
+            } else {
+                $authorization = StudentPickupAuthorization::query()->where('student_id', $student->id)->lockForUpdate()->find($id);
+                $name = $authorization !== null && ! $authorization->isExpired() ? $authorization->full_name : null;
+                $relationship = $authorization?->relationship ?: 'Pessoa autorizada';
+            }
+            if ($name === null) {
+                throw ValidationException::withMessages(['pessoa' => 'Esta pessoa não está autorizada a buscar o aluno. Não entregue e procure a secretaria.']);
+            }
+
+            $exit = StudentExit::query()->create([
+                'id' => (string) Str::uuid(),
+                'student_id' => $student->id,
+                'school_id' => $school->id,
+                'person_type' => $type,
+                'person_id' => $id,
+                'person_name' => $name,
+                'person_relationship' => $relationship,
+                'recorded_by' => $request->user()?->getAuthIdentifier(),
+                'exited_at' => now(),
+            ]);
+            app(AuditTrail::class)->record('tenant', 'student_exit.recorded', StudentExit::class, $exit->id, null, $exit->only(['id', 'student_id', 'school_id', 'person_type', 'person_id', 'person_name', 'person_relationship', 'exited_at']));
+
+            return [$student, $exit];
+        });
 
         return redirect()->route('school.exits.index', ['municipio' => $municipality->slug, 'escola' => $school->id])
-            ->with('status', 'Saída registrada: '.$student->full_name.' entregue a '.$name.' ('.$relationship.') às '.$exit->exited_at->format('H:i').'. Registrou por engano? Desfaça em até '.StudentExit::UNDO_MINUTES.' minutos em "Saídas de hoje".');
+            ->with('status', 'Saída registrada: '.$student->full_name.' entregue a '.$exit->person_name.' ('.$exit->person_relationship.') às '.$exit->exited_at->format('H:i').'. Registrou por engano? Desfaça em até '.StudentExit::UNDO_MINUTES.' minutos em "Saídas de hoje".');
     }
 
     /**

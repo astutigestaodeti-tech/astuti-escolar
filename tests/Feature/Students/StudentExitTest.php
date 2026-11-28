@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Security\Totp;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Tests\Support\TwoMunicipalityTestCase;
 
 class StudentExitTest extends TwoMunicipalityTestCase
@@ -127,6 +128,40 @@ class StudentExitTest extends TwoMunicipalityTestCase
             ->assertSessionHasErrors('pessoa');
 
         $this->assertSame(0, $this->inMunicipality(fn (): int => StudentExit::query()->count()));
+    }
+
+    public function test_saida_recusa_identificador_invalido_e_autorizacao_revogada_apos_consulta(): void
+    {
+        $this->user('teacher', [self::ESCOLA_A1]);
+        $this->get($this->url().'?busca=livia')->assertOk()->assertSee('Vera Fictícia Vizinha');
+        $this->inMunicipality(fn () => StudentPickupAuthorization::query()->whereKey($this->ids['vizinha'])->delete());
+
+        $this->post($this->url().'/'.$this->ids['aluno'], ['pessoa' => 'authorization:'.$this->ids['vizinha']])
+            ->assertSessionHasErrors('pessoa');
+        $this->post($this->url().'/'.$this->ids['aluno'], ['pessoa' => 'guardian:'.str_repeat('-', 36)])
+            ->assertSessionHasErrors('pessoa');
+        $this->assertSame(0, $this->inMunicipality(fn (): int => StudentExit::query()->count()));
+        $this->assertSame(0, $this->inMunicipality(fn (): int => AuditLog::query()->where('action', 'student_exit.recorded')->count()));
+    }
+
+    public function test_falha_da_auditoria_reverte_registro_de_saida(): void
+    {
+        $this->user('teacher', [self::ESCOLA_A1]);
+        AuditLog::creating(function (AuditLog $log): void {
+            if ($log->action === 'student_exit.recorded') {
+                throw new RuntimeException('Falha fictícia na auditoria de saída');
+            }
+        });
+        $this->withoutExceptionHandling();
+        try {
+            $this->post($this->url().'/'.$this->ids['aluno'], ['pessoa' => 'guardian:'.$this->ids['mae']]);
+            $this->fail('A falha fictícia deveria interromper o registro.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Falha fictícia na auditoria de saída', $exception->getMessage());
+        }
+
+        $this->assertSame(0, $this->inMunicipality(fn (): int => StudentExit::query()->count()));
+        $this->assertSame(0, $this->inMunicipality(fn (): int => AuditLog::query()->where('action', 'student_exit.recorded')->count()));
     }
 
     private function recordExit(): string
