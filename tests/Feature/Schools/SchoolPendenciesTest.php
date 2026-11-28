@@ -12,6 +12,7 @@ use App\Models\Tenant\StudentGuardian;
 use App\Security\Totp;
 use App\Students\RegistrationPendencies;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\TwoMunicipalityTestCase;
@@ -162,6 +163,61 @@ class SchoolPendenciesTest extends TwoMunicipalityTestCase
             $this->assertSame([...$summary['byType'], 'responsavel' => 1], $after['byType']);
             $this->assertSame(1, $after['byType']['nascimento']);
         });
+    }
+
+    public function test_pendencias_anuais_priorizam_matricula_vigente_sem_duplicar_ou_ocultar_alunos(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-20 12:00:00'));
+        $currentId = $this->tenant(function (): string {
+            $year = SchoolYear::query()->create([
+                'id' => (string) Str::uuid(), 'year' => 2026, 'start_date' => '2026-02-01', 'end_date' => '2026-12-18', 'status' => 'active',
+            ]);
+            // O aluno já tem turma em 2027, mas está sem turma em 2026.
+            $enrollment = StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $this->ids['longe'], 'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $year->id, 'status' => 'active', 'transport_status' => 'active',
+            ]);
+            $future = StudentEnrollment::query()->where('student_id', $this->ids['longe'])->where('id', '!=', $enrollment->id)->sole();
+            $this->assertNotNull($future->school_class_id);
+            $this->assertNull($future->transport_status);
+
+            $inactive = Student::query()->create(['id' => (string) Str::uuid(), 'full_name' => 'Matrícula Encerrada Fictícia']);
+            StudentEnrollment::query()->create([
+                'id' => (string) Str::uuid(), 'student_id' => $inactive->id, 'school_id' => self::ESCOLA_A1,
+                'school_year_id' => $year->id, 'status' => 'completed', 'started_at' => '2026-02-03', 'ended_at' => '2026-03-01',
+            ]);
+
+            return $enrollment->id;
+        });
+
+        $this->tenant(function () use ($currentId): void {
+            $service = app(RegistrationPendencies::class);
+            $school = School::query()->findOrFail(self::ESCOLA_A1);
+            $rows = $service->forSchool($school)->keyBy('id');
+            $this->assertCount(6, $rows);
+            $this->assertArrayNotHasKey($this->ids['outra_escola'], $rows->all());
+            $this->assertSame([], $rows[$this->ids['completo']]['pendencies']);
+            $this->assertSame($currentId, $rows[$this->ids['longe']]['enrollment']);
+            $this->assertSame(['turma'], $rows[$this->ids['longe']]['pendencies']);
+            $this->assertSame(2, $service->summary($rows)['byType']['turma']);
+            $this->assertSame(0, $service->summary($rows)['byType']['transporte']);
+        });
+
+        $this->login('school_secretary');
+        $this->get($this->url('?tipo=turma'))->assertOk()
+            ->assertSee('Eva Mora Longe')->assertSee('matricula='.$currentId, false)
+            ->assertDontSee('Matrícula Encerrada Fictícia')->assertDontSee('Gabi de Outra Escola');
+
+        $this->travelTo(Carbon::parse('2027-03-01 12:00:00'));
+        $this->tenant(function () use ($currentId): void {
+            $service = app(RegistrationPendencies::class);
+            $rows = $service->forSchool(School::query()->findOrFail(self::ESCOLA_A1))->keyBy('id');
+            $this->assertCount(6, $rows);
+            $this->assertNotSame($currentId, $rows[$this->ids['longe']]['enrollment']);
+            $this->assertSame('4º Ano A', $rows[$this->ids['longe']]['class']);
+            $this->assertSame(['transporte'], $rows[$this->ids['longe']]['pendencies']);
+        });
+        $this->travelBack();
     }
 
     public function test_calcula_a_escola_inteira_em_uma_consulta(): void
