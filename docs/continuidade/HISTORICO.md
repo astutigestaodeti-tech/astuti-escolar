@@ -774,3 +774,8 @@ Validação complementar: a matrícula exibida deve corresponder ao filtro selec
 F05/F06, base da0c8b1. Regressão de acesso direto ao mapa e gravação de coordenadas por secretaria autorizada somente em outra unidade: aluno fora do vínculo escolar retorna 404, escola sem escopo 403, nenhum envio ao geocodificador, coordenadas intactas e sem evento de atualização de aluno. Rota, Gate manageStudents, escopo de matrícula ativa e segundo fator confirmado na gravação existentes; sem mudança de política, schema ou dados reais. CI pendente; matriz integral F05/F06 permanece aberta.
 
 Complemento F06: gravação sem segundo fator configurado e sem verificação na sessão deve ser proibida; após confirmação TOTP, a mesma operação salva coordenadas e mascara ambos os valores na auditoria. Sem modificar política; CI pendente.
+
+
+## 28/11/2026 - Auditoria #256: falha de escrita da foto privada (proposta)
+
+F01/F06, base 1bc92bb. Regressão de disco recusando put na troca da foto de responsável: preserva bytes, caminho, data, auditoria e consulta privada da foto anterior. Verifica autoria, perfil e ausência de caminho no evento. Falha simulada antes de escrita; não comprova exclusão com falha, escrita parcial, crash ou concorrência real. Sem alteração de comportamento, schema, dados ou permissões. CI pendente, sem testes locais.
