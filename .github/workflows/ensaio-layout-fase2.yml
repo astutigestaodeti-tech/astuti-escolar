@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sha: f37f37a0b42d0f53d3b3cb055246dc849e4fbb55
+          - sha: 9062519c15696b7314c00c0e99da932458f8f124
             pr: '307'
     services:
       postgres:
