@@ -1,4 +1,4 @@
-name: Ensaio isolado de layout cadastral 313
+name: Ensaio isolado de layout cadastral 315
 
 on:
   push:
@@ -15,8 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sha: a0ee43a7997993a2bd0989b3ad5c0e31c118d02f
-            pr: '313'
+          - sha: 25c3ce92ae29a0a7bc23bf1613fd83ad3e35a1c9
+            pr: '315'
     services:
       postgres:
         image: postgres:17
@@ -76,9 +76,9 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$TARGET_SHA"
           mkdir -p "${RUNNER_TEMP}/astuti-telas" "${RUNNER_TEMP}/astuti-alvo"
-          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=SchoolStudentIndexTest
-          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=test_lista_filtrada_transporte_dois_anos_abre_e_renderiza_vinculo_correto
-          for name in alunos_transporte_usa alunos_transporte_adaptado alunos_transporte_nao_solicitado; do
+          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=ConfirmedStudentImportTest
+          ASTUTI_DUMP_TELAS="${RUNNER_TEMP}/astuti-telas" php artisan test --filter=test_todas_as_telas_da_escola_abrem_para_a_direcao
+          for name in importacao_alunos_previa importacao_responsavel_divergente importacao_responsavel_invalido; do
             test -s "${RUNNER_TEMP}/astuti-telas/$name.html"
             cp "${RUNNER_TEMP}/astuti-telas/$name.html" "${RUNNER_TEMP}/astuti-alvo/"
           done
@@ -87,7 +87,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Conferir matrícula exibida e margens reais em Chromium
+      - name: Conferir pendência de responsáveis divergentes e margens em Chromium
         shell: bash
         run: |
           python -m pip install 'playwright==1.51.0'
@@ -102,18 +102,13 @@ jobs:
               browser = p.chromium.launch()
               for width in (1440, 390):
                   page = browser.new_page(viewport={'width': width, 'height': 900})
-                  for filtro in ('usa', 'adaptado', 'nao_solicitado'):
-                      page.goto((root / f'alunos_transporte_{filtro}.html').as_uri())
-                      linha = page.get_by_role('row').filter(has_text='Ana Fictícia Dois Anos')
-                      assert linha.count() == 1
-                      if filtro == 'nao_solicitado':
-                          assert linha.get_by_text('Não solicitado', exact=True).count() == 1
-                          assert linha.get_by_text('Linha Fictícia de 2026', exact=False).count() == 0
-                      else:
-                          assert linha.get_by_text('Usa transporte', exact=True).count() == 1
-                          assert linha.get_by_text('Linha Fictícia de 2026', exact=False).count() == 1
+                  page.goto((root / 'importacao_responsavel_divergente.html').as_uri())
+                  assert page.get_by_text('Responsáveis ou contatos divergentes nas linhas repetidas. Nenhum vínculo foi importado; confira na ficha.', exact=True).count() == 1
+                  assert page.get_by_text('responsáveis divergentes em linhas repetidas (1 aluno)', exact=False).count() == 1
+                  assert page.get_by_text('Maria Pessoa Fictícia', exact=False).count() == 0
+                  assert page.get_by_text('Joana Pessoa Fictícia', exact=False).count() == 0
                   page.close()
               browser.close()
-          print('Três filtros e vínculo exibido conferidos em 1440/390 px.')
+          print('Pendência específica e ausência dos nomes divergentes conferidas em 1440/390 px.')
           PY
           python scripts/qualidade/checar-margens.py "${RUNNER_TEMP}/astuti-alvo" 1440 390
