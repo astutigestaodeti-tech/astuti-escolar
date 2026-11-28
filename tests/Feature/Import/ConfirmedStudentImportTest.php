@@ -1146,7 +1146,7 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
             ['Bruno Aluno Fictício', '01/03/2019', '1A', 'Maria Pessoa Fictícia', '(11) 3333-4444', '111.444.777-35'],
         ]);
         try {
-            [$token] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
+            [$token, , $html] = $this->preparar('responsaveis.xlsx', self::ESCOLA_A1, $file);
         } finally {
             unlink($file);
         }
@@ -1154,6 +1154,13 @@ class ConfirmedStudentImportTest extends TwoMunicipalityTestCase
         $rows = $this->linhasDoLote($token);
         $ana = $this->linhaDe($rows, 'Ana Aluna Fictícia');
         $this->assertNull($ana['guardian']);
+        $this->assertContains('responsavel_ambiguo', array_column($ana['pending'], 'field'));
+        $this->assertStringContainsString('Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.', $html);
+        $this->assertStringContainsString('responsáveis com identificação ambígua', $html);
+        if ($dump = getenv('ASTUTI_DUMP_TELAS')) {
+            $html = str_replace(rtrim((string) config('app.url'), '/').'/', 'file://'.public_path().'/', $html);
+            file_put_contents(rtrim($dump, '/').'/importacao_responsavel_ambiguo.html', preg_replace('/\.(css|js)\?v=\d+/', '.$1', $html));
+        }
         $this->assertContains('Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.', array_column($ana['pending'], 'message'));
         $this->assertNotNull($this->linhaDe($rows, 'Bruno Aluno Fictício')['guardian']);
         $this->post($this->url().'/confirmar', ['lote' => $token])->assertRedirect($this->url());

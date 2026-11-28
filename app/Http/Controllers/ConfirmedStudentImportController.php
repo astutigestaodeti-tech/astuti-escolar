@@ -166,7 +166,7 @@ class ConfirmedStudentImportController extends Controller
                 }
                 if (count($cpfs) > 1) {
                     $guardian = null;
-                    $pending[] = ['field' => 'responsavel', 'message' => 'Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.'];
+                    $pending[] = ['field' => 'responsavel_ambiguo', 'message' => 'Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.'];
                 }
             }
 
@@ -699,7 +699,7 @@ class ConfirmedStudentImportController extends Controller
             return null;
         }
         if ($existing === null && ImportedGuardianLinker::compatiblePhoneCandidates($guardian)->count() > 1) {
-            $pending[] = ['field' => 'responsavel', 'message' => 'Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.'];
+            $pending[] = ['field' => 'responsavel_ambiguo', 'message' => 'Mais de um responsável corresponde ao nome e telefone. Nenhum vínculo será importado; confira na ficha.'];
 
             return null;
         }
